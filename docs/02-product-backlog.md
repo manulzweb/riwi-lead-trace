@@ -25,11 +25,13 @@ Backlog **full-stack** del MVP (frontend SPA + backend FastAPI + MySQL). Estimac
 | DASH-02 | ICA por criterio e indicadores | **Lógica de negocio:** ICA por categoría, % participación, confianza | DASH | Should | 5 | DASH-01 |
 | DASH-03 | Visualización de tendencias | Evolución temporal del ICA por criterio/persona | DASH | Should | 3 | DASH-02 |
 | DASH-04 | Reportes básicos (export) | Exportar a CSV / vista imprimible | DASH | Could | 3 | DASH-01 |
+| DASH-05 | Configurar pesos del ICA | `GET/PUT/POST /metrics/ica-weights[/reset]` (admin) | DASH | Should | 3 | DASH-02 |
 | AIFEED-01 | Resumen de feedback con IA | `GET /metrics/ai-summary` (Claude, anonimizado, cacheado) | AIFEED | Should | 5 | DASH-02 |
 | AIFEED-02 | Manejo de errores/costos IA | Degradación elegante si falla la IA | AIFEED | Could | 2 | AIFEED-01 |
+| AIFEED-03 | Mejoras por IA para el evaluado | `GET /me/ai-feedback`: resultados + mejoras (TL/Tutor) | AIFEED | Should | 3 | AIFEED-01 |
 | TALENT-01 | Ranking de talento (futuros TL) | `GET /talent/candidates`: **Talent Score** por tutor | TALENT | Should | 5 | DASH-02, TLEVAL-02 |
 
-**Total backlog MVP:** 97 SP.
+**Total backlog MVP:** 103 SP.
 
 ## Lógica de negocio (no es solo CRUD)
 
@@ -38,7 +40,8 @@ La rúbrica exige lógica de negocio identificable más allá del CRUD. En este 
 - **EVAL-04:** anonimato real (no se persiste el evaluador).
 - **AUTH-03 / TLEVAL-02:** RBAC en servidor + visibilidad restringida de la bitácora (`403`).
 - **DASH-01/02/03:** **ICA** (índice ponderado por categoría, normalizado, con confianza, tendencia y estado), participación, tendencias.
-- **AIFEED-01:** orquestación de IA con privacidad por diseño (solo agregados anonimizados) y cache.
+- **DASH-05:** pesos del ICA configurables por el Admin con reset a defaults (defaults en código).
+- **AIFEED-01/03:** orquestación de IA con privacidad por diseño (solo agregados anonimizados) y cache; resúmenes al Admin y mejoras al propio TL/Tutor (sin exponer evaluadores).
 - **TALENT-01:** **Talent Score** por tutor (fórmula compuesta) para ranking de futuros TL.
 
 ## Orden de refinamiento

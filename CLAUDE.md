@@ -146,10 +146,12 @@ cliente nunca sustituye la verificación en el servidor.
 2. **Un Coder no evalúa dos veces** al mismo evaluado en el mismo **periodo y área** (validar en backend + índice único en BD).
 3. **Validación doble:** en cliente (UX) y en servidor con Pydantic (autoridad).
 4. **Lógica de negocio identificable** (no solo CRUD): **ICA** (índice 0–100 ponderado por categoría, con confianza, tendencia y estado) por persona/área/periodo, **analítica de talento**, % participación, estados de evaluación (borrador/enviada), RBAC. No la degrades a CRUD plano. El ICA y el talento son **derivados, no se persisten** (se calculan on-read).
-5. **Privacidad de IA:** a Claude API solo se envían **agregados anonimizados** (promedios, conteos, comentarios sin autor). **Nunca** `evaluator_id` ni textos que revelen identidad.
-6. **Bitácora TL→Tutor:** las notas continuas de un TL sobre un tutor **solo las ve ese TL** (y alimentan el resumen IA del Admin); nunca se exponen crudas a otros.
-7. **Seguridad:** contraseñas siempre hasheadas (passlib/bcrypt); `401` cierra sesión en cliente.
-8. **Respeta el alcance MVP** (`docs/09-mvp-alcance.md`): no implementes lo marcado "fuera del MVP" sin que el usuario lo pida.
+5. **Privacidad de IA:** a Claude API solo se envían **agregados anonimizados** (promedios, conteos, comentarios sin autor). **Nunca** `evaluator_id` ni textos que revelen identidad. La IA genera resúmenes para el Admin y **sugerencias de mejora** para el propio TL y Tutor (sobre su feedback agregado, sin exponer identidades).
+6. **Bitácora TL→Tutor:** las notas continuas de un TL sobre un tutor **solo las ve ese TL** (y alimentan el ICA del tutor, su mejora IA y el resumen del Admin); nunca se exponen crudas a otros.
+7. **Visibilidad de evaluadores:** una persona evaluada (TL/Tutor) **nunca ve quién la evaluó**; solo el **Admin** ve la identidad del evaluador en evaluaciones **no anónimas**. Las **anónimas permanecen anónimas para todos** (incluido el Admin).
+8. **Pesos del ICA configurables:** el Admin edita los pesos por categoría (tabla `ica_weights`); los **defaults viven en código** y un **reset** los restaura. No requieren sumar 1 (la fórmula normaliza por Σ). Cambiar pesos recalcula el ICA (derivado).
+9. **Seguridad:** contraseñas siempre hasheadas (passlib/bcrypt); `401` cierra sesión en cliente.
+10. **Respeta el alcance MVP** (`docs/09-mvp-alcance.md`): no implementes lo marcado "fuera del MVP" sin que el usuario lo pida.
 
 ## Convenciones de código
 
@@ -199,6 +201,8 @@ npm run build                            # bundle de producción
 | POST/GET | `/tutor-logs` | bitácora TL→Tutor | solo el TL autor la ve |
 | GET | `/metrics/summary?period_id=:p&area_id=:a` | KPIs + ICA por área | **agregaciones + ICA** |
 | GET | `/metrics/ai-summary?evaluatee_id=:e&period_id=:p` | resumen IA | **Claude API (anonimizado)**, admin |
+| GET | `/me/ai-feedback?period_id=:p` | mis resultados + mejoras IA | TL/Tutor, sin ver evaluadores |
+| GET/PUT/POST | `/metrics/ica-weights[/reset]` | ver/editar/resetear pesos del ICA | admin; defaults en código |
 | GET | `/talent/candidates?area_id=:a&period_id=:p` | ranking de futuros TL | **talent score**, admin |
 
 Detalle y modelo de datos: `docs/06-arquitectura.md` y `docs/07-base-de-datos.md`.

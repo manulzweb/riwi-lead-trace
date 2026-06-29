@@ -27,6 +27,7 @@ Justificación ampliada en [`12-justificacion-tecnologica.md`](./12-justificacio
 | `evaluation_answers` | Respuestas (puntaje + comentario) por pregunta de una evaluación |
 | `tutor_feedback_log` | Bitácora continua TL→Tutor (una nota por tutoría); visible solo al TL autor |
 | `ai_feedback_cache` | Cache de resúmenes generados por IA (Claude API) para el Admin |
+| `ica_weights` | Pesos por categoría del ICA, editables por el Admin (con reset a defaults) |
 
 ## Atributos principales
 
@@ -152,6 +153,18 @@ No es dato relacional duplicado, sino el **resultado materializado de un servici
 | generated_at | TIMESTAMP | cuándo se generó |
 | | | **UNIQUE(evaluatee_id, area_id, period_id)** |
 
+### `ica_weights`
+Pesos por categoría usados para ponderar el ICA. El Admin los edita; un **reset** los devuelve a los
+valores por defecto (`DEFAULT_ICA_WEIGHTS`, constante en código = fuente de verdad). Si la tabla está
+vacía, `metrics_service` usa los defaults.
+
+| Atributo | Tipo | Notas |
+|----------|------|-------|
+| category | VARCHAR(60) PK | categoría de `questions.category` (comunicación, técnica…) |
+| weight | DECIMAL(5,2) | peso > 0; **no** requiere sumar 1/100 (la fórmula normaliza por Σ) |
+| updated_by | INT FK → users.id (NULLABLE) | admin que lo modificó (auditoría) |
+| updated_at | TIMESTAMP | última modificación |
+
 ## Relaciones
 
 - `roles` 1—N `users`
@@ -220,6 +233,7 @@ evaluation_answers(id, evaluation_id→evaluations, question_id→questions, sco
 tutor_feedback_log(id, tl_id→users, tutor_id→users, area_id→areas, comment, score?, created_at)
 ai_feedback_cache(id, evaluatee_id→users, area_id→areas?, period_id→periods, summary, model,
                   generated_at)                   -- UNIQUE(evaluatee_id, area_id, period_id)
+ica_weights(category PK, weight, updated_by→users?, updated_at)   -- pesos del ICA, editables; reset a defaults
 ```
 
 ## Decisiones de diseño
@@ -229,7 +243,8 @@ ai_feedback_cache(id, evaluatee_id→users, area_id→areas?, period_id→period
 - **Una respuesta por pregunta** vía `evaluation_answers` (normalizado), facilitando métricas por criterio/categoría.
 - **Integridad de unicidad** (recomendada en backend): un evaluador no debería evaluar dos veces al mismo evaluado en el mismo periodo y área → índice único parcial sobre `(evaluator_id, evaluatee_id, period_id, area_id)` cuando no es anónima.
 - **Roles (4) y áreas:** `roles` = coder, tutor, team_leader, admin (`admin` antes `coordinador`). **`tutor` es un rol de cuenta de pleno derecho** (no una bandera sobre coder): conserva `clan_id` y tiene `area_id`. `areas` (Desarrollo/Inglés/HSE/BLS) es una **dimensión transversal**: el TL/Tutor pertenece a un área y cada evaluación lleva su `area_id`, de modo que el ICA se calcula **por área**.
-- **Métricas derivadas, no persistidas:** el **ICA** (índice 0–100), el **Talent Score** y la **participación** se calculan **on-read** en `services` desde `evaluation_answers`; no se guardan como columnas (evita redundancia/inconsistencia). El `ai_feedback_cache` es la **única** excepción: materializa el resultado costoso de un servicio externo (Claude API), con `UNIQUE(evaluatee_id, area_id, period_id)` para reutilizarlo.
+- **Métricas derivadas, no persistidas:** el **ICA** (índice 0–100), el **Talent Score** y la **participación** se calculan **on-read** en `services` desde `evaluation_answers`; no se guardan como columnas (evita redundancia/inconsistencia). Se persiste solo lo que **no** es derivación: el `ai_feedback_cache` (resultado costoso de un servicio externo, con `UNIQUE(evaluatee_id, area_id, period_id)`) y los `ica_weights` (configuración de entrada del ICA, no un resultado).
+- **Pesos del ICA configurables + reset:** los **defaults viven en código** (`DEFAULT_ICA_WEIGHTS`, fuente de verdad inmutable); la tabla `ica_weights` guarda los **overrides** que edita el Admin. El **reset** sobrescribe la tabla con los defaults. Los pesos **no** tienen que sumar 1/100: la fórmula del ICA normaliza por `Σ(pesos)`, así que el Admin solo define importancia relativa. Como el ICA es derivado, cambiar pesos **recalcula** todos los ICA (incluidos históricos).
 - **Bitácora TL→Tutor (`tutor_feedback_log`):** registro continuo (una nota por tutoría). La regla "solo el TL autor la ve" se aplica en `services` (`tl_id == current_user`), no a nivel de schema.
 - **Privacidad de IA:** al modelo solo se envían agregados/comentarios **anonimizados**; nunca `evaluator_id`. El cache guarda el texto resultante, no las identidades de origen.
 - **Cohortes y clanes:** un Coder pertenece a **un** clan (`users.clan_id`, relación 1—N), y cada clan vive dentro de **una** cohorte (`clanes.cohorte_id`). El número de clan es único **dentro** de su cohorte → `UNIQUE(cohorte_id, numero)`: el "clan 10" puede existir en la cohorte 5 y también en otra cohorte/ciudad como filas distintas, pero no dos veces en la misma cohorte.
@@ -255,6 +270,7 @@ ai_feedback_cache(id, evaluatee_id→users, area_id→areas?, period_id→period
 | areas | seed | catálogo, filtros | (admin, futuro) | — |
 | tutor_feedback_log | TL (POST) | bitácora del TL autor | nota propia | nota propia |
 | ai_feedback_cache | servicio IA | resumen del Admin | regenerar | invalidar |
+| ica_weights | seed (defaults) | pesos actuales (admin) | editar (admin) | reset → defaults (admin) |
 
 > La lógica de negocio (anonimato, no-duplicado por periodo/área, **ICA**, **talento**, resumen IA,
 > visibilidad de la bitácora) se implementa en la capa `services` del backend sobre estas

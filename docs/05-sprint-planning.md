@@ -18,7 +18,7 @@
   - **Semanas 2–3 — Desarrollo** → *Sprint 1*
   - **Semanas 4–5 — Integración y Sustentación** → *Sprint 2*
 - **Velocidad estimada del equipo:** ~30–37 SP por sprint de 2 semanas (5 personas).
-- **Total backlog MVP:** 97 SP (full-stack, con el alcance 360° + IA + talento). Ver
+- **Total backlog MVP:** 103 SP (full-stack, con el alcance 360° + IA + talento + pesos configurables). Ver
   [`02-product-backlog.md`](./02-product-backlog.md). **⚠️ El alcance excede la velocidad estimada**
   (decisión del equipo de meter "todo en el MVP"): ver *Gestión de riesgos* — los `Should/Could`
   (AIFEED, TALENT, DASH-03/04) son los primeros candidatos a recortar.
@@ -79,7 +79,7 @@
 
 **Sprint Goal:** el Admin visualiza el **ICA** por área, **resúmenes IA** y el **ranking de talento**; los TL consultan su bitácora; los Coders su historial; el producto queda integrado, probado, desplegado y con la documentación y pitches listos.
 
-**Capacidad:** 39 SP + integración/estabilización/entrega *(comprimido; AIFEED/TALENT son `Should`)*
+**Capacidad:** 45 SP + integración/estabilización/entrega *(comprimido; AIFEED/TALENT/DASH-05 son `Should`)*
 
 | ID | Historia | SP | Responsable sugerido |
 |----|----------|:--:|----------------------|
@@ -90,8 +90,10 @@
 | DASH-02 | ICA por criterio e indicadores | 5 | Backend Dev |
 | DASH-03 | Visualización de tendencias | 3 | Frontend Dev |
 | DASH-04 | Reportes básicos (export CSV) | 3 | PO/Frontend |
+| DASH-05 | Configurar pesos del ICA (admin) | 3 | Backend Dev |
 | AIFEED-01 | Resumen de feedback con IA (Claude) | 5 | Backend Dev |
 | AIFEED-02 | Manejo de errores/costos de IA | 2 | Backend Dev |
+| AIFEED-03 | Mejoras por IA para el evaluado (TL/Tutor) | 3 | Frontend Dev |
 | TALENT-01 | Ranking de talento (futuros TL) | 5 | SM/Fullstack |
 
 **Trabajo de integración/entrega (no SP):** corrección de errores, **casos de prueba y evidencias**, documento técnico final, **mockups finales**, despliegue (GitHub Pages/Vercel + backend en la nube), **pitch comercial (inglés)** y **pitch técnico (español)**.
@@ -106,7 +108,7 @@
 |--------|---------|------|:--:|--------|
 | 0 | 1 | Planeación + andamiaje + modelo de áreas | 13 | CORE, AREA |
 | 1 | 2–3 | Login + roles + evaluaciones 360° + bitácora | 45 | CORE, AUTH, AREA, EVAL, TLEVAL |
-| 2 | 4–5 | ICA + IA + talento + entrega | 39 | HIST, DASH, TLEVAL, AIFEED, TALENT |
+| 2 | 4–5 | ICA + IA + talento + entrega | 45 | HIST, DASH, TLEVAL, AIFEED, TALENT |
 
 ## Gestión de riesgos del plan
 

@@ -55,16 +55,16 @@ Las historias se organizan en épicas. `CORE` es transversal (habilitadora); las
 ## ÉPICA DASH — Dashboard, métricas e ICA
 **Objetivo:** transformar las evaluaciones en información accionable: **ICA** (índice ponderado por área), indicadores y tendencias.
 **Valor:** soporte a la toma de decisiones académicas.
-**Historias:** DASH-01, DASH-02, DASH-03, DASH-04
-**Done:** el Admin visualiza el ICA por área, indicadores, tendencias y puede exportar un reporte básico.
+**Historias:** DASH-01, DASH-02, DASH-03, DASH-04, DASH-05
+**Done:** el Admin visualiza el ICA por área, indicadores, tendencias, puede configurar los pesos del ICA (con reset) y exportar un reporte básico.
 
 ---
 
 ## ÉPICA AIFEED — Resumen de feedback con IA
 **Objetivo:** generar, con **Claude API**, un resumen en lenguaje natural del feedback agregado por persona/área/periodo para el Admin.
 **Valor:** síntesis accionable; diferenciador. Privacidad: solo agregados anonimizados.
-**Historias:** AIFEED-01, AIFEED-02
-**Done:** el Admin obtiene un resumen IA cacheado; el prompt nunca incluye identidades.
+**Historias:** AIFEED-01, AIFEED-02, AIFEED-03
+**Done:** el Admin obtiene un resumen IA cacheado y el propio TL/Tutor recibe mejoras por IA; el prompt nunca incluye identidades.
 
 ---
 

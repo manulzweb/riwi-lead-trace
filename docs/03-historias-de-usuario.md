@@ -173,6 +173,15 @@ Cada historia incluye criterios de aceptación (CA), prioridad y Story Points.
 - [ ] Exportar a CSV los resultados agregados visibles.
 - [ ] Vista imprimible del dashboard.
 
+### DASH-05 — Configurar pesos del ICA · `Should` · `3 SP`
+**Como** Admin **quiero** ajustar el peso de cada categoría del ICA (y poder resetear) **para** reflejar qué importa más en cada momento.
+
+**Criterios de aceptación**
+- [ ] `GET /metrics/ica-weights` muestra los pesos actuales; `PUT` los guarda (valida peso > 0).
+- [ ] `POST /metrics/ica-weights/reset` restaura los **defaults** (definidos en código).
+- [ ] Los pesos **no** tienen que sumar 1/100 (el ICA normaliza por Σ); el cambio recalcula el ICA.
+- [ ] Solo el Admin accede (RBAC, `403` a otros roles).
+
 ---
 
 ## ÉPICA AREA
@@ -231,6 +240,14 @@ Cada historia incluye criterios de aceptación (CA), prioridad y Story Points.
 **Criterios de aceptación**
 - [ ] Si falta `ANTHROPIC_API_KEY` o la API falla, el endpoint responde un mensaje claro (no `500` sin contexto).
 - [ ] El dashboard muestra el ICA aunque el resumen IA no esté disponible.
+
+### AIFEED-03 — Mejoras por IA para el evaluado · `Should` · `3 SP`
+**Como** Team Leader o Tutor **quiero** ver mis resultados y sugerencias de mejora por IA **para** crecer profesionalmente.
+
+**Criterios de aceptación**
+- [ ] `GET /me/ai-feedback?period_id=...` devuelve mis resultados agregados + sugerencias de mejora.
+- [ ] Para el Tutor, las mejoras combinan el feedback de su **TL (bitácora)** y de los **Coders**.
+- [ ] **Regla de negocio:** no expone identidades de quienes evaluaron (el evaluado nunca ve evaluadores).
 
 ---
 

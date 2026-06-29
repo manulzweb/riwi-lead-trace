@@ -166,7 +166,9 @@ Toda esta lógica vive en `services/` (no en routers ni queries dispersas). Es l
 ### Índice de Calidad de Acompañamiento (ICA) — `metrics_service`
 Por cada `(evaluatee_id, area_id, period_id)`, solo con evaluaciones `submitted`:
 1. `A_c` = promedio por categoría (`AVG(score)` de preguntas `scale`, escala 1–5).
-2. Base ponderada `B = Σ(w_c · A_c) / Σ(w_c)` con pesos `w_c` por categoría (constante de config).
+2. Base ponderada `B = Σ(w_c · A_c) / Σ(w_c)` con pesos `w_c` por categoría. Los pesos los
+   **edita el Admin** (tabla `ica_weights`); los **defaults** viven en código
+   (`DEFAULT_ICA_WEIGHTS`) y un **reset** los restaura. No requieren sumar 1 (la fórmula normaliza).
 3. Normaliza `score = round((B − 1) / 4 × 100)` → 0–100.
 4. **Confianza** según `n` (respuestas) y participación: `Datos insuficientes` si `n < N_MIN`.
 5. **Tendencia** `Δ = score_actual − score_periodo_anterior`.
@@ -175,13 +177,18 @@ Por cada `(evaluatee_id, area_id, period_id)`, solo con evaluaciones `submitted`
 
 > El ICA **no se persiste**: se calcula on-read. `repositories/` solo provee los agregados.
 
-### Resumen por IA — `ai_service`
+### Resumen y mejoras por IA — `ai_service`
 - Construye un prompt con **agregados anonimizados** (promedios por categoría, conteos, comentarios
   sin autor, notas de la bitácora) y llama a **Claude API** (SDK `anthropic`).
 - Modelo: `claude-sonnet-4-6` (calidad) o `claude-haiku-4-5-20251001` (económico). Clave en
   `core/config.py` (`ANTHROPIC_API_KEY`).
-- **Privacidad:** nunca se envían identidades ni `evaluator_id`. El texto resultante se guarda en
-  `ai_feedback_cache` (`UNIQUE(evaluatee_id, area_id, period_id)`) para no re-llamar al modelo.
+- **Destinatarios (no solo el Admin):**
+  - **Admin (Jefe de TL/tutores):** resumen ejecutivo del feedback por persona/área/periodo.
+  - **Team Leader:** sus propios resultados + **sugerencias de mejora** sobre su feedback.
+  - **Tutor:** **sugerencias de mejora** combinando el feedback de su **TL (bitácora)** y de los **Coders**.
+- **Privacidad:** nunca se envían identidades ni `evaluator_id`; el evaluado ve mejoras, **no** quién
+  lo evaluó. El texto resultante se guarda en `ai_feedback_cache`
+  (`UNIQUE(evaluatee_id, area_id, period_id)`) para no re-llamar al modelo.
 
 ### Analítica de talento — `talent_service`
 - **Talent Score** (0–100) por **tutor**: combina su ICA como tutor + consistencia entre periodos
@@ -206,6 +213,10 @@ Por cada `(evaluatee_id, area_id, period_id)`, solo con evaluaciones `submitted`
 | POST/GET | `/tutor-logs` | Bitácora TL→Tutor (solo el TL autor) |
 | GET | `/metrics/summary?period_id=:p&area_id=:a` | KPIs + **ICA** por área |
 | GET | `/metrics/ai-summary?evaluatee_id=:e&period_id=:p` | Resumen IA (Claude, anonimizado) — admin |
+| GET | `/me/ai-feedback?period_id=:p` | Mis resultados + mejoras IA — TL / Tutor (sin ver evaluadores) |
+| GET | `/metrics/ica-weights` | Pesos actuales del ICA — admin |
+| PUT | `/metrics/ica-weights` | Editar pesos del ICA — admin |
+| POST | `/metrics/ica-weights/reset` | Restaurar pesos por defecto — admin |
 | GET | `/talent/candidates?area_id=:a&period_id=:p` | Ranking de futuros TL — admin |
 
 > FastAPI expone documentación interactiva automática en `/docs` (Swagger) y `/redoc`, útil para pruebas y sustentación.
@@ -216,6 +227,10 @@ Por cada `(evaluatee_id, area_id, period_id)`, solo con evaluaciones `submitted`
 - El token viaja en cada petición (`http.js`); el backend lo valida en `get_current_user`.
 - `401` global en frontend → limpiar sesión + redirigir a `/login`. Logout → limpiar storage + store.
 - **Autorización por rol** en backend (`require_role`) — autoridad real — y en frontend (guards) — solo UX.
+- **Visibilidad de evaluadores (regla de negocio):** una persona evaluada (**TL/Tutor**) ve sus
+  resultados agregados y sus mejoras por IA, pero **nunca quién la evaluó**. Solo el **Admin** ve la
+  identidad del evaluador en evaluaciones **no anónimas**; las **anónimas permanecen anónimas para
+  todos** (incluido el Admin). Los pesos del ICA y su reset son **solo admin**.
 
 ## Manejo de errores
 
