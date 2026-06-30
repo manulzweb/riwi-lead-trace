@@ -30,8 +30,12 @@ Backlog **full-stack** del MVP (frontend SPA + backend FastAPI + MySQL). Estimac
 | AIFEED-02 | Manejo de errores/costos IA | Degradación elegante si falla la IA | AIFEED | Could | 2 | AIFEED-01 |
 | AIFEED-03 | Mejoras por IA para el evaluado | `GET /me/ai-feedback`: resultados + mejoras (TL/Tutor) | AIFEED | Should | 3 | AIFEED-01 |
 | TALENT-01 | Ranking de talento (futuros TL) | `GET /talent/candidates`: **Talent Score** por tutor | TALENT | Should | 5 | DASH-02, TLEVAL-02 |
+| DELIV-01 | Despliegue de la app | Backend + frontend + MySQL hospedados; URL pública; vars de entorno | ENTREGA | Must | 5 | EVAL-05 |
+| DELIV-02 | Pitch comercial (inglés) | Slides + script en inglés (3–5 min); ensayado por todos | ENTREGA | Must | 3 | — |
+| DELIV-03 | Pitch técnico (español) | Slides + demo en vivo (5–8 min); cada integrante explica su parte | ENTREGA | Must | 3 | DELIV-01 |
+| DELIV-04 | Documento técnico final | Compilado de `/docs` + capturas + mockups + evidencias QA | ENTREGA | Must | 5 | — |
 
-**Total backlog MVP:** 103 SP.
+**Total backlog MVP:** 119 SP.
 
 ## Lógica de negocio (no es solo CRUD)
 
@@ -51,6 +55,7 @@ La rúbrica exige lógica de negocio identificable más allá del CRUD. En este 
 3. **EVAL + TLEVAL** (núcleo de valor; feedback 360°).
 4. **HIST + DASH** (convierten datos en información accionable: ICA).
 5. **AIFEED + TALENT** (diferenciadores: resumen IA y analítica de talento).
+6. **ENTREGA** (transversal: el doc técnico se va escribiendo; despliegue + pitches al final).
 
 ## Definition of Ready (DoR)
 - Tiene descripción, criterios de aceptación y SP.

@@ -18,7 +18,7 @@
   - **Semanas 2–3 — Desarrollo** → *Sprint 1*
   - **Semanas 4–5 — Integración y Sustentación** → *Sprint 2*
 - **Velocidad estimada del equipo:** ~30–37 SP por sprint de 2 semanas (5 personas).
-- **Total backlog MVP:** 103 SP (full-stack, con el alcance 360° + IA + talento + pesos configurables). Ver
+- **Total backlog MVP:** 119 SP (full-stack + ENTREGA: alcance 360° + IA + talento + pesos configurables + despliegue + pitches + doc técnico). Ver
   [`02-product-backlog.md`](./02-product-backlog.md). **⚠️ El alcance excede la velocidad estimada**
   (decisión del equipo de meter "todo en el MVP"): ver *Gestión de riesgos* — los `Should/Could`
   (AIFEED, TALENT, DASH-03/04) son los primeros candidatos a recortar.
@@ -79,7 +79,7 @@
 
 **Sprint Goal:** el Admin visualiza el **ICA** por área, **resúmenes IA** y el **ranking de talento**; los TL consultan su bitácora; los Coders su historial; el producto queda integrado, probado, desplegado y con la documentación y pitches listos.
 
-**Capacidad:** 45 SP + integración/estabilización/entrega *(comprimido; AIFEED/TALENT/DASH-05 son `Should`)*
+**Capacidad:** 61 SP (incluyendo ENTREGA) *(muy comprimido; AIFEED/TALENT/DASH-05 son `Should` y se recortan primero si aprieta; los DELIV son `Must`)*
 
 | ID | Historia | SP | Responsable sugerido |
 |----|----------|:--:|----------------------|
@@ -95,6 +95,10 @@
 | AIFEED-02 | Manejo de errores/costos de IA | 2 | Backend Dev |
 | AIFEED-03 | Mejoras por IA para el evaluado (TL/Tutor) | 3 | Frontend Dev |
 | TALENT-01 | Ranking de talento (futuros TL) | 5 | SM/Fullstack |
+| DELIV-01 | Despliegue de la app | 5 | Backend Dev |
+| DELIV-02 | Pitch comercial (inglés) | 3 | PO/Equipo |
+| DELIV-03 | Pitch técnico (español) | 3 | SM/Equipo |
+| DELIV-04 | Documento técnico final | 5 | PO/Equipo |
 
 **Trabajo de integración/entrega (no SP):** corrección de errores, **casos de prueba y evidencias**, documento técnico final, **mockups finales**, despliegue (GitHub Pages/Vercel + backend en la nube), **pitch comercial (inglés)** y **pitch técnico (español)**.
 
@@ -108,7 +112,7 @@
 |--------|---------|------|:--:|--------|
 | 0 | 1 | Planeación + andamiaje + modelo de áreas | 13 | CORE, AREA |
 | 1 | 2–3 | Login + roles + evaluaciones 360° + bitácora | 45 | CORE, AUTH, AREA, EVAL, TLEVAL |
-| 2 | 4–5 | ICA + IA + talento + entrega | 45 | HIST, DASH, TLEVAL, AIFEED, TALENT |
+| 2 | 4–5 | ICA + IA + talento + entrega | 61 | HIST, DASH, TLEVAL, AIFEED, TALENT, ENTREGA |
 
 ## Gestión de riesgos del plan
 

@@ -76,6 +76,14 @@ Las historias se organizan en épicas. `CORE` es transversal (habilitadora); las
 
 ---
 
+## ÉPICA ENTREGA — Despliegue, pitches y documento técnico
+**Objetivo:** asegurar todos los **entregables no-código** que evalúa la rúbrica: app desplegada con URL pública, pitch comercial en inglés, pitch técnico en español y documento técnico final.
+**Valor:** sin esto el proyecto no se entrega aunque el código esté listo; es la diferencia entre "tener producto" y "ganar la sustentación".
+**Historias:** DELIV-01, DELIV-02, DELIV-03, DELIV-04
+**Done:** la app está desplegada y accesible vía URL pública; los dos pitches están listos y ensayados; el documento técnico y los mockups finales están en el repo.
+
+---
+
 ## Mapa épica → sprint (cronograma de 5 semanas)
 
 | Épica   | Sprint 0 (Sem. 1) | Sprint 1 (Sem. 2–3) | Sprint 2 (Sem. 4–5) |
@@ -89,3 +97,4 @@ Las historias se organizan en épicas. `CORE` es transversal (habilitadora); las
 | DASH    | | | ✅ (ICA) |
 | AIFEED  | | | ✅ |
 | TALENT  | | | ✅ |
+| ENTREGA | | parcial (DELIV-04 doc) | ✅ (despliegue + pitches) |

@@ -260,3 +260,45 @@ Cada historia incluye criterios de aceptación (CA), prioridad y Story Points.
 - [ ] `GET /talent/candidates?area_id=...&period_id=...` (solo admin) devuelve tutores rankeados por **Talent Score (0–100)**.
 - [ ] El score combina ICA como tutor + consistencia + volumen de tutorías + tendencia (fórmula documentada).
 - [ ] Distingue **datos insuficientes** y respeta el anonimato de los evaluadores.
+
+---
+
+## ÉPICA ENTREGA
+
+### DELIV-01 — Despliegue de la app · `Must` · `5 SP`
+**Como** equipo **queremos** la app desplegada con URL pública **para** que el jurado pueda usarla durante la sustentación.
+
+**Criterios de aceptación**
+- [ ] Backend FastAPI desplegado (Render/Railway/Fly) y accesible por HTTPS.
+- [ ] Frontend SPA desplegado (Vercel/Netlify/GitHub Pages) y conectado al backend.
+- [ ] MySQL hospedado y poblado con el seed (`database/schema.sql`).
+- [ ] Variables de entorno configuradas en producción (`DATABASE_URL`, `JWT_SECRET`, `ANTHROPIC_API_KEY`).
+- [ ] README con la URL pública, credenciales de usuarios demo y pasos para correr en local.
+
+### DELIV-02 — Pitch comercial (inglés) · `Must` · `3 SP`
+**Como** equipo **queremos** un pitch comercial de 3–5 min en inglés **para** demostrar dominio del idioma y vender el valor del producto.
+
+**Criterios de aceptación**
+- [ ] Slides en inglés con problema, solución, mercado, diferenciador (IA + ICA + talento) y modelo de negocio.
+- [ ] Script escrito y ensayado por **todos** los integrantes (no solo uno).
+- [ ] Duración objetivo: 3–5 min cronometrados.
+- [ ] Versión exportada (PDF/PPT) en `mockups/` o en el repo.
+
+### DELIV-03 — Pitch técnico (español) · `Must` · `3 SP`
+**Como** equipo **queremos** un pitch técnico de 5–8 min en español **para** sustentar arquitectura, lógica de negocio y decisiones técnicas ante los jurados.
+
+**Criterios de aceptación**
+- [ ] Slides en español: arquitectura full-stack, modelo de datos (3FN), lógica de negocio (ICA, talento, IA), GitFlow.
+- [ ] **Demo en vivo** de la app desplegada (login → evaluar → dashboard con ICA → resumen IA).
+- [ ] Cada integrante explica una parte (evidencia individual).
+- [ ] Versión exportada (PDF/PPT) en el repo.
+
+### DELIV-04 — Documento técnico final · `Must` · `5 SP`
+**Como** equipo **queremos** un documento técnico final consolidado **para** entregar la evidencia escrita que pide la rúbrica.
+
+**Criterios de aceptación**
+- [ ] Compila los `/docs` en un solo documento (PDF o Markdown maestro) con: visión, backlog, arquitectura, BD (MER + 3FN), endpoints, lógica de negocio, evidencias.
+- [ ] Incluye **capturas** de la app desplegada y de las consultas SQL clave.
+- [ ] **Mockups finales** (Figma) exportados y enlazados.
+- [ ] README actualizado con badges (estado de despliegue, lenguaje, licencia).
+- [ ] Casos de prueba / matriz de errores corregidos (evidencias QA).
