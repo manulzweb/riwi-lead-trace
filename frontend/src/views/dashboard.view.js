@@ -14,15 +14,12 @@ export const renderDashboard = () => {
     ],
     team_leader: [
       { href: "/my-results",    label: "Resultados", title: "Mi retroalimentación" },
-      { href: "/tutor-logs",    label: "Bitácora",   title: "Notas de tutores" },
-      { href: "/tutor-logs/new", label: "Nueva nota", title: "Agregar entrada" },
     ],
     tutor: [
       { href: "/my-results", label: "Resultados", title: "Mi retroalimentación" },
     ],
     admin: [
       { href: "/admin/metrics",    label: "Métricas",  title: "ICA por área" },
-      { href: "/admin/talent",     label: "Talento",   title: "Candidatos TL" },
       { href: "/admin/ai-summary", label: "Resumen IA", title: "Feedback con IA" },
     ],
   };
