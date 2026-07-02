@@ -1,5 +1,9 @@
 # 01 — Vision y Producto
 
+## La idea, en simple
+
+> **LeadTrace** es una app web donde los **Coders** evaluan —con formularios, y si quieren de forma **anonima**— a sus **Team Leaders** y **Tutores**. El sistema junta esas evaluaciones, calcula una **nota de 0 a 100 por persona (el ICA)** y le arma al **Admin** (jefe de TL/tutores) un **tablero + un resumen escrito por IA**, para que sepa quien acompana bien y quien necesita apoyo.
+
 ## Product Vision
 
 > **Para** el ecosistema Riwi **que** no cuenta con un canal formal para evaluar la calidad del acompanamiento, **Riwi LeadTrace es** una plataforma web de **feedback ascendente** **que** permite a los Coders evaluar —de forma estructurada y opcionalmente anonima— a Team Leaders y Tutores, **a diferencia de** los procesos informales o unidireccionales actuales, **nuestro producto** calcula un **Indice de Calidad de Acompanamiento (ICA)** y **resumenes con IA** que impulsan decisiones del Admin (Jefe de TL/tutores).
