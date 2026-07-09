@@ -1,8 +1,3 @@
-/**
- * Fondo responsive: imagen vertical en móvil, horizontal en escritorio.
- * @param {string} vertical  - ruta de la imagen para móvil
- * @param {string} horizontal - ruta de la imagen para escritorio
- */
 export const backgroundComponent = (
   vertical   = "/backgrounds/fondo-vertical.webp",
   horizontal = "/backgrounds/fondo-horizontal.webp"

@@ -3,11 +3,6 @@ export const isValidEmail = (email) => {
     return emailRegex.test(email)
 }
 
-/**
- * Validate dangerous chars (XSS)
- * @param {string} text - The text to validate
- * @returns {boolean} - True if contains dangerous chars, false otherwise
- */
 export const hasDangerousChars = (text) => {
     const dangerousChars = /[<>&|\/]/;
     return dangerousChars.test(text);
