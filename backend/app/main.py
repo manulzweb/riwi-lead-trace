@@ -20,12 +20,8 @@ app.add_middleware(
 
 app.include_router(health.router, tags=["health"])
 
-# Los siguientes routers se registran conforme se implementen las historias:
 # app.include_router(auth.router,        prefix="/auth",        tags=["auth"])
-# app.include_router(areas.router,       prefix="/areas",       tags=["areas"])
 # app.include_router(users.router,       prefix="/users",       tags=["users"])
 # app.include_router(forms.router,       prefix="/forms",       tags=["forms"])
 # app.include_router(evaluations.router, prefix="/evaluations", tags=["evaluations"])
-# app.include_router(tutor_logs.router,  prefix="/tutor-logs",  tags=["tutor-logs"])
 # app.include_router(metrics.router,     prefix="/metrics",     tags=["metrics"])
-# app.include_router(talent.router,      prefix="/talent",      tags=["talent"])
