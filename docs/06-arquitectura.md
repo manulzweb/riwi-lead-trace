@@ -7,6 +7,51 @@
 - **Logica de negocio explicita** (no solo CRUD): vive en la capa `services` del backend.
 - **Contrato REST estable** entre SPA y API -> frontend y backend evolucionan en paralelo.
 
+## Estilo arquitectonico: monolito modular por capas
+
+Es **un monolito**: un solo backend desplegable y una sola SPA desplegable (no microservicios). Es
+**modular**: dentro de cada uno, el codigo se separa en modulos con una responsabilidad clara, para
+que no se vuelva espagueti.
+
+La organizacion interna es **horizontal (por capa tecnica)**, no vertical (por feature): todo lo de
+rutas vive junto (`routers/`), toda la logica de negocio vive junta (`services/`), todo el acceso a
+datos vive junto (`repositories/`). La alternativa (**vertical**: una carpeta por feature con su
+propio router+service+repo adentro, ej. `features/evaluations/`) se descarta a proposito: con ~7
+entidades y ~8 endpoints, separar por feature agrega carpetas y decisiones sin beneficio real para
+un equipo de 5 en un MVP corto. Horizontal es mas facil de explicar y de encontrar codigo ("¿donde
+esta la logica? en `services/`").
+
+## Patrones de diseño
+
+En **backend, la programacion orientada a objetos encaja natural** (Python + FastAPI ya trabajan asi).
+En **frontend Vanilla JS, se usan clases solo donde de verdad ayudan** (cuando hay estado que
+mantener) — forzar clases en todo (vistas, servicios) agrega ceremonia sin beneficio real cuando una
+funcion pura hace lo mismo con menos codigo.
+
+### Backend (POO explicita)
+
+| Patron | Donde | Que resuelve |
+|---|---|---|
+| **Layered Architecture** | `routers/ -> services/ -> repositories/ -> models/` | Cada capa tiene una responsabilidad; los cambios quedan localizados |
+| **Repository** | `repositories/` (ej. `EvaluationRepository`) | Encapsula el acceso a datos; los `services` no escriben SQL/queries directamente |
+| **Service Layer** | `services/` (ej. `EvaluationService`, `MetricsService`) | Concentra la logica de negocio (anonimato, no-duplicado, calculo del ICA) fuera de los routers |
+| **Dependency Injection** | `Depends(get_db)`, `Depends(get_current_user)`, `Depends(require_role(...))` | FastAPI inyecta dependencias en vez de que cada endpoint las construya; facilita testear |
+| **DTO (Data Transfer Object)** | `schemas/` (Pydantic) | Define exactamente que entra/sale de la API, distinto del modelo de BD |
+| **Data Mapper** | `models/` (SQLAlchemy ORM) | Mapea objetos Python a filas de MySQL sin que el resto del codigo escriba SQL |
+
+### Frontend (funciones + un poco de OOP donde importa)
+
+| Patron | Donde | Que resuelve |
+|---|---|---|
+| **Module Pattern** | Cada archivo `*.service.js`, `*.view.js` (ES Modules) | Encapsula detalles; solo se exporta lo necesario |
+| **Observer** | `store.js` (`subscribe`/`setState` notifica a quien escucha) | El estado compartido (sesion, tema) cambia en un lugar y todos los suscriptores se enteran — es el unico lugar del frontend con estado real, por eso aqui si vale una clase |
+| **Front Controller** | `router.js` (`renderRoute`) | Un unico punto de entrada decide que vista renderizar segun la ruta y el rol |
+
+**Vistas, componentes y `*.service.js` se quedan como funciones**, no clases: no guardan estado propio
+entre llamadas (reciben datos, devuelven HTML o hacen un `fetch`), asi que una clase ahi solo anadiria
+`this.` sin ganar nada. El unico candado a OOP real en frontend es el **store**, porque es el unico
+sitio con estado que varias partes necesitan compartir y observar.
+
 ## Arquitectura general (full-stack)
 
 ```
