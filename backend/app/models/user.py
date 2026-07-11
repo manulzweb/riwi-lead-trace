@@ -13,7 +13,10 @@ class User(Base):
     email = Column(String(150), nullable=False, unique=True)
     password_hash = Column(String(255), nullable=False)
     role_id = Column(Integer, ForeignKey("roles.id"), nullable=False)
+    # NULL para team_leader/admin; lo usan coder y tutor
+    clan_id = Column(Integer, ForeignKey("clans.id"), nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
     created_at = Column(TIMESTAMP, nullable=False, server_default=func.now())
 
     role = relationship("Role")
+    clan = relationship("Clan")

@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-from app.routers import health
+from app.routes import health, period_routes
 
 app = FastAPI(
     title="Riwi LeadTrace API",
@@ -19,6 +19,7 @@ app.add_middleware(
 )
 
 app.include_router(health.router, tags=["health"])
+app.include_router(period_routes.router, tags=["periods"])
 
 # app.include_router(auth.router,        prefix="/auth",        tags=["auth"])
 # app.include_router(users.router,       prefix="/users",       tags=["users"])
