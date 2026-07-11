@@ -35,11 +35,11 @@ Las historias se organizan en 7 epicas. `CORE` es transversal (habilitadora); la
 
 | # | Integrante | Rol Scrum | Foco |
 |---|-----------|-----------|------|
-| 1 | — | Scrum Master / Lider | Coordinacion + Fullstack |
-| 2 | — | Product Owner | Backlog + Frontend |
-| 3 | — | Backend Developer | FastAPI + MySQL |
-| 4 | — | Backend Developer | FastAPI + logica de negocio |
-| 5 | — | Frontend Developer | SPA Vanilla JS |
+| 1 | Manuel (@manulzweb) | Scrum Master / Lider | Coordinacion + Backend (FastAPI + MySQL) |
+| 2 | Carlos (@karl26chy) | Product Owner | Backlog + Frontend |
+| 3 | Yamit (@YamitGC) | Backend Developer | FastAPI — Auth / JWT / RBAC |
+| 4 | Mendoza (@smendozab097) | Frontend Developer | SPA Vanilla JS |
+| 5 | Saeb (@SaebGC) | Frontend Developer | SPA Vanilla JS |
 
 - **Cronograma: 20 de junio – 17 de julio de 2026** (~4 semanas).
   - **Sprint 1 — Setup:** 20 jun – 1 jul
