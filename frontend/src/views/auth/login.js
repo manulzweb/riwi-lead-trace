@@ -93,16 +93,24 @@ const handleLoginSubmit = (elements) => async (event) => {
   setButtonLoadingState(elements.submitBtn, true, "Validando...", "Entrar al dashboard");
 
   try {
-    const users = await userService.get();
-    const hashedPassword = hashPassword(password);
+    // const users = await userService.get();
+    // const hashedPassword = hashPassword(password);
 
-    const user = users.find((user) => user.email.toLowerCase() === email.toLowerCase() && user.password === hashedPassword);
+    // const user = users.find((user) => user.email.toLowerCase() === email.toLowerCase() && user.password === hashedPassword);
 
-    if (!user) {
-      showToast("Falló el inicio de sesión", "error", "Credenciales incorrectas");
-      setButtonLoadingState(elements.submitBtn, false, "", "Entrar al dashboard");
-      return showFieldError(elements.emailInput, "Credenciales incorrectas", elements.emailError);
-    }
+    // if (!user) {
+    //   showToast("Falló el inicio de sesión", "error", "Credenciales incorrectas");
+    //   setButtonLoadingState(elements.submitBtn, false, "", "Entrar al dashboard");
+    //   return showFieldError(elements.emailInput, "Credenciales incorrectas", elements.emailError);
+    // }
+
+    // Mock user for testing
+    const user = {
+      id: "1",
+      name: "Usuario de Prueba",
+      email: email,
+      roles: ["admin"]
+    };
 
     authService.setSession(user);
     showToast(`Bienvenido ${user.name}!`, "success");
