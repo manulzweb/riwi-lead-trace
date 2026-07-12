@@ -43,7 +43,7 @@ export const navBarComponent = () => {
         <div class="flex items-center gap-4">
           <nav class="hidden gap-3 md:flex items-center">
             <a class="rounded-full px-4 py-2 text-sm font-semibold transition-all duration-300 ease-in-out ${isActive('/dashboard')}" href="/dashboard">Dashboard</a>
-            <a class="rounded-full px-4 py-2 text-sm font-semibold transition-all duration-300 ease-in-out ${isActive('/tasks')}" href="/tasks">Tareas</a>
+            <a class="rounded-full px-4 py-2 text-sm font-semibold transition-all duration-300 ease-in-out ${isActive('/evaluations/new')}" href="/evaluations/new">Evaluar</a>
             <a class="rounded-full px-4 py-2 text-sm font-semibold transition-all duration-300 ease-in-out ${isActive('/profile')}" href="/profile">Perfil</a>
             ${canViewAdmin ? `<a class="rounded-full px-4 py-2 text-sm font-semibold text-[var(--brand-text)] transition-all duration-300 ease-in-out ${adminActive}" href="/admin">Admin</a>` : ""}
           </nav>

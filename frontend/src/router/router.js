@@ -41,12 +41,12 @@ export async function renderRoute() {
     }
 
     // 3. Validar roles permitidos si la ruta está protegida por roles
-    if (route.requireAuth && route.allowedRoles && !route.allowedRoles.some(role => userRole.includes(role))) {
+    /*if (route.requireAuth && route.allowedRoles && !route.allowedRoles.some(role => userRole.includes(role))) {
         console.warn("Acceso denegado: Rol insuficiente.");
         showToast("Acceso Denegado", "error", "No tienes permiso para acceder a esta página.")
         window.history.replaceState({}, "", "/dashboard");
         return renderRoute();
-    }
+    }*/
 
     // 4. Actualizar el título de la página si está definido en las properties de la ruta
     if (route.title) {
