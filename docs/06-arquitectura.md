@@ -226,7 +226,7 @@ dimensiones de un instrumento validado, adaptadas al contexto Riwi.
 
 **Definicion de cada categoria (que mide).** Estas definiciones de una linea son la referencia
 para juzgar si una pregunta "pertenece" a su categoria: el editor de ADMIN-02 las muestra al
-editar, y el chequeo opcional de coherencia con IA las usa como criterio.
+editar, y el **chequeo de coherencia con IA** (parte de ADMIN-02) las usa como criterio.
 
 | Categoria | Que mide |
 |---|---|
@@ -283,6 +283,12 @@ se excluye y los pesos se renormalizan sobre las categorias presentes (el denomi
   persona/periodo.
 - **Privacidad:** nunca se envian identidades ni `evaluator_id`. El texto resultante se guarda en
   `ai_feedback_cache` (`UNIQUE(evaluatee_id, period_id)`) para no re-llamar al modelo.
+- **Segundo uso (ADMIN-02) — chequeo de coherencia de preguntas:** al editar una pregunta,
+  `ai_service` pide al modelo validar si el texto nuevo sigue midiendo la **definicion de su
+  categoria** (tabla anterior). Solo se envian el texto de la pregunta y esa definicion — cero
+  datos personales. Si no coincide, el editor **advierte** y exige confirmacion explicita del
+  admin para guardar (la IA no bloquea; la decision es humana). Sin API key o ante error, la
+  edicion funciona sin chequeo (degradacion elegante).
 
 ## Comunicacion con la API
 

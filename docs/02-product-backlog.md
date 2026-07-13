@@ -16,7 +16,7 @@ Backlog **full-stack** del MVP (frontend SPA + backend FastAPI + MySQL). Estimac
 | EVAL-04 | Feedback anonimo opcional | Toggle + regla backend: no persistir `evaluator_id` | EVAL | Should | 2 | EVAL-02 |
 | EVAL-05 | Registrar evaluacion (API) | `POST /evaluations`: validacion Pydantic, estados, **no-duplicado por periodo**, **requiere periodo activo** | EVAL | Must | 5 | EVAL-02 |
 | ADMIN-01 | Gestion del periodo de evaluacion | Admin activa/cierra el periodo (`PATCH /periods/:id`, solo uno activo); sin periodo activo los Coders ven "No hay formularios por realizar" | ADMIN | Must | 3 | AUTH-03 |
-| ADMIN-02 | Editar preguntas del formulario | Admin edita texto y activa/desactiva preguntas (`PATCH /questions/:id`), solo con periodo cerrado; edicion = versionado | ADMIN | Should | 3 | ADMIN-01 |
+| ADMIN-02 | Editar preguntas del formulario | Admin edita texto y activa/desactiva preguntas (`PATCH /questions/:id`), solo con periodo cerrado; edicion = versionado + **chequeo IA de coherencia** con la categoria | ADMIN | Should | 3 | ADMIN-01 |
 | HIST-01 | Historial del Coder | UI + `GET /evaluations?evaluator_id=` de evaluaciones propias | HIST | Should | 3 | EVAL-05 |
 | HIST-02 | Seguimiento historico | Admin: historico por evaluado/periodo, respeta anonimato | HIST | Should | 3 | EVAL-05 |
 | DASH-01 | Dashboard + ICP | Panel admin + `GET /metrics/summary` (**ICP**) | DASH | Must | 5 | EVAL-05 |

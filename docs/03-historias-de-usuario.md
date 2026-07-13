@@ -174,10 +174,14 @@ mejorar el formulario entre rondas sin depender del equipo tecnico.
 - [ ] **Reversibilidad garantizada:** como la edicion solo ocurre con periodo cerrado y versiona,
       una edicion desviada se corrige **antes de reabrir**: se desactiva la version mala y se
       reactiva la original. Ninguna respuesta llega a registrarse contra una pregunta desviada.
-- [ ] `Could` — **Chequeo de coherencia con IA:** al guardar, el backend pide a Claude validar si
-      el texto nuevo sigue midiendo su categoria (solo se envia el texto de la pregunta y la
-      definicion de la categoria — ningun dato personal) y **advierte** al admin si no coincide
-      (no bloquea).
+- [ ] **Chequeo de coherencia con IA:** al guardar una edicion, el backend pide a Claude validar
+      si el texto nuevo sigue midiendo su categoria (via `ai_service`; solo se envia el texto de
+      la pregunta y la definicion de la categoria — ningun dato personal). Si la IA detecta que la
+      pregunta se salio de su categoria, el admin ve una **advertencia clara** y debe **confirmar
+      explicitamente** para guardar de todos modos (la IA advierte y exige confirmacion; la
+      decision final es humana).
+- [ ] Si la IA no esta disponible (sin `ANTHROPIC_API_KEY` o error de la API), la edicion
+      funciona igual **sin el chequeo** (degradacion elegante, mismo patron que AIFEED-01).
 
 ---
 
