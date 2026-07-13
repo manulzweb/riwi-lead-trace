@@ -217,8 +217,12 @@ dimensiones de un instrumento validado, adaptadas al contexto Riwi.
 
 | Rol evaluado | Instrumento base | Categorias del ICP (con peso `w_c`) |
 |---|---|---|
-| **Team Leader** (es un *mentor*) | **MCA-21** — Mentoring Competency Assessment (Fleming et al.; revalidado 2022, J Clin Transl Sci) | Comunicacion efectiva (0.25) · Alineacion de expectativas (0.20) · Verificacion de comprension (0.20) · Fomento de la independencia (0.20) · Desarrollo profesional (0.15) |
-| **Tutor** (rol *docente/tecnico*) | **SEEQ** — Students' Evaluations of Educational Quality (Marsh, 1982) | Valor del aprendizaje (0.30) · Claridad y organizacion (0.30) · Cercania individual (0.20) · Disponibilidad e interaccion (0.20) |
+| **Team Leader** (es un *mentor*) | **MCA-21** — Mentoring Competency Assessment (Fleming et al.; revalidado 2022, J Clin Transl Sci) | Comunicación efectiva (0.25) · Alineación de expectativas (0.20) · Verificación de comprensión (0.20) · Fomento de la independencia (0.20) · Desarrollo profesional (0.15) |
+| **Tutor** (rol *docente/tecnico*) | **SEEQ** — Students' Evaluations of Educational Quality (Marsh, 1982) | Valor del aprendizaje (0.30) · Claridad y organización (0.30) · Cercanía individual (0.20) · Disponibilidad e interacción (0.20) |
+
+> Los nombres de categoria de esta tabla son **exactamente** los valores de `questions.category`
+> sembrados en `database/schema.sql` (con tildes): los pesos `DEFAULT_ICP_WEIGHTS` mapean por ese
+> string. La categoria `General` (comentario libre) no pondera en el ICP; alimenta el resumen IA.
 
 **Calculo.** Por cada `(evaluatee_id, period_id)`, solo con evaluaciones `submitted`:
 1. `A_c` = promedio por categoria (`AVG(score)` de preguntas `scale`, escala 1-5).

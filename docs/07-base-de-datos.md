@@ -85,10 +85,11 @@ Justificacion ampliada en [`06-arquitectura.md`](./06-arquitectura.md).
 |----------|------|-------|
 | id | INT PK | |
 | template_id | INT FK -> form_templates.id | |
-| text | VARCHAR(255) | |
-| category | VARCHAR(60) | agrupa criterios (comunicacion, tecnica...) |
+| text | VARCHAR(255) | editable por el Admin **solo con periodo cerrado** y via **versionado** (fila nueva + desactivar la anterior) |
+| category | VARCHAR(60) | categoria del ICP (fundada en MCA-21/SEEQ, ver `06-arquitectura.md`); **no editable** desde la UI |
 | input_type | VARCHAR(20) | 'scale' \| 'text' |
 | sort_order | INT | orden de despliegue |
+| is_active | BOOLEAN | default TRUE; las evaluaciones nuevas cargan solo preguntas activas; las respuestas historicas conservan su pregunta original |
 
 ### `evaluations`
 | Atributo | Tipo | Notas |
@@ -193,7 +194,8 @@ ai_feedback_cache(id, evaluatee_id->users, period_id->periods, summary, model,
 ## Decisiones de diseno
 
 - **Anonimato:** se modela con `is_anonymous` + `evaluator_id` NULLABLE. Si la evaluacion es anonima, no se persiste el evaluador -> anonimato real a nivel de datos.
-- **Plantillas dinamicas:** `form_templates` + `questions` permiten cambiar criterios sin tocar codigo (preparado para futuro CRUD de formularios, fuera del MVP).
+- **Plantillas dinamicas:** `form_templates` + `questions` permiten cambiar criterios sin tocar codigo. En el MVP el Admin puede **editar texto y activar/desactivar** preguntas (`questions.is_active`), **solo con periodo cerrado** y **versionando** (fila nueva + desactivar la anterior): asi las respuestas historicas conservan el texto que realmente respondieron y el ICP no se contamina. El editor completo (crear plantillas/tipos) queda fuera del MVP.
+- **Ventana de evaluacion controlada:** `periods.is_active` define si hay formularios disponibles. Solo **un** periodo activo a la vez (regla en `services`, transaccional); sin periodo activo, no se aceptan evaluaciones nuevas ni envios.
 - **Una respuesta por pregunta** via `evaluation_answers` (normalizado), facilitando metricas por criterio/categoria.
 - **Integridad de unicidad** (recomendada en backend): un evaluador no deberia evaluar dos veces al mismo evaluado en el mismo periodo -> indice unico parcial sobre `(evaluator_id, evaluatee_id, period_id)` cuando no es anonima.
 - **Roles (4):** `roles` = coder, tutor, team_leader, admin (`admin` antes `coordinador`). **`tutor` es un rol de cuenta de pleno derecho** (no una bandera sobre coder): conserva `clan_id`.
@@ -216,8 +218,8 @@ ai_feedback_cache(id, evaluatee_id->users, period_id->periods, summary, model,
 | users | seed/admin | login, listar evaluables | perfil (futuro) | baja logica (`is_active`) |
 | evaluations | Coder (POST) | historial, dashboard | borrador->enviada | borrador descartable |
 | evaluation_answers | con la evaluacion | en detalle/metricas | en borrador | cascada con evaluacion |
-| form_templates / questions | seed | render de formularios | (admin, futuro) | (admin, futuro) |
-| periods | seed/admin | filtros | activar/cerrar | — |
+| form_templates / questions | seed | render de formularios | admin: texto + `is_active` (versionado, periodo cerrado) | baja logica (`is_active`) |
+| periods | seed/admin | filtros | admin: activar/cerrar (uno activo) | — |
 | ai_feedback_cache | servicio IA | resumen del Admin | regenerar | invalidar |
 
 > La logica de negocio (anonimato, no-duplicado por periodo, **ICP**, resumen IA, RBAC)
@@ -227,7 +229,7 @@ ai_feedback_cache(id, evaluatee_id->users, period_id->periods, summary, model,
 
 - **Areas / multi-area:** agregar tabla `areas` y `area_id` a users/evaluations/form_templates para segmentar el ICP por area (Desarrollo, Ingles, HSE, BLS).
 - **Bitacora TL->Tutor:** tabla `tutor_feedback_log` para notas continuas del TL sobre tutores.
-- **Pesos del ICP configurables:** tabla `ica_weights` para que el Admin edite los pesos por categoria.
+- **Pesos del ICP configurables:** tabla `icp_weights` para que el Admin edite los pesos por categoria.
 - **Analitica de talento:** Talent Score derivado para ranking de futuros TL.
 - **N—N Coder-Clanes:** si un Coder puede estar en varias cohortes a la vez, migrar a tabla intermedia `coder_clanes(user_id, clan_id)`.
 
