@@ -11,7 +11,7 @@ export const renderMyResults = () => `
 
     <section class="mt-8 grid gap-6 md:grid-cols-3">
       <article class="rounded-3xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-lg">
-        <p class="text-sm text-[var(--text-muted)]">ICA actual</p>
+        <p class="text-sm text-[var(--text-muted)]">ICP actual</p>
         <div id="ica-score" class="mt-3 h-10 w-20 animate-pulse rounded bg-[var(--bg-base)]"></div>
       </article>
       <article class="rounded-3xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-lg">

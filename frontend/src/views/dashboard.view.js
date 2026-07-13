@@ -19,7 +19,7 @@ export const renderDashboard = () => {
       { href: "/my-results", label: "Resultados", title: "Mi retroalimentación" },
     ],
     admin: [
-      { href: "/admin/metrics",    label: "Métricas",  title: "ICA por área" },
+      { href: "/admin/metrics",    label: "Métricas",  title: "ICP por área" },
       { href: "/admin/ai-summary", label: "Resumen IA", title: "Feedback con IA" },
     ],
   };
