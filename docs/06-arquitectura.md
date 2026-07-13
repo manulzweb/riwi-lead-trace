@@ -224,6 +224,28 @@ dimensiones de un instrumento validado, adaptadas al contexto Riwi.
 > sembrados en `database/schema.sql` (con tildes): los pesos `DEFAULT_ICP_WEIGHTS` mapean por ese
 > string. La categoria `General` (comentario libre) no pondera en el ICP; alimenta el resumen IA.
 
+**Definicion de cada categoria (que mide).** Estas definiciones de una linea son la referencia
+para juzgar si una pregunta "pertenece" a su categoria: el editor de ADMIN-02 las muestra al
+editar, y el chequeo opcional de coherencia con IA las usa como criterio.
+
+| Categoria | Que mide |
+|---|---|
+| Comunicación efectiva | Si el TL se comunica claro, a tiempo y es facil hablarle cuando algo va mal |
+| Alineación de expectativas | Si el TL deja claro que se espera del coder y acuerda objetivos alcanzables |
+| Verificación de comprensión | Si el TL confirma que el coder entendio antes de avanzar y adapta su explicacion |
+| Fomento de la independencia | Si el TL impulsa al coder a resolver por su cuenta y reduce su dependencia |
+| Desarrollo profesional | Si el TL da retroalimentacion y orientacion que hacen crecer el perfil del coder |
+| Valor del aprendizaje | Si lo aprendido con el Tutor sirve para los retos y aporta mas que estudiar solo |
+| Claridad y organización | Si el Tutor explica claro/ordenado y prepara ejemplos al nivel del coder |
+| Cercanía individual | Si el coder se siente tratado con respeto y en confianza para preguntar |
+| Disponibilidad e interacción | Si el Tutor esta disponible en los espacios acordados y responde a tiempo |
+
+> **Riesgo documentado (deriva semantica):** el peso pondera la **categoria**, no el texto. Una
+> pregunta "re-temada" (ej. una de *Cercania individual* reescrita como desempeno general)
+> contaminaria su categoria hacia adelante. Por eso la regla de ADMIN-02 es **reformular, no
+> re-temar**: para preguntar otro tema se desactiva la pregunta y se crea una nueva en la
+> categoria correcta. El historico nunca se afecta (edicion solo con periodo cerrado + versionado).
+
 **Calculo.** Por cada `(evaluatee_id, period_id)`, solo con evaluaciones `submitted`:
 1. `A_c` = promedio por categoria (`AVG(score)` de preguntas `scale`, escala 1-5).
 2. Base ponderada `B = Sum(w_c · A_c) / Sum(w_c)` con pesos `w_c` por categoria (tabla

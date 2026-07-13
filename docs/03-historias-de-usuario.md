@@ -162,6 +162,22 @@ mejorar el formulario entre rondas sin depender del equipo tecnico.
       apuntando a la pregunta original con su texto intacto.
 - [ ] Las evaluaciones nuevas cargan **solo preguntas activas**; el calculo del ICP agrega por
       **categoria** con pesos fijos, por lo que la edicion de redaccion no altera el indice.
+- [ ] **Regla de negocio (anti deriva semantica — "reformular, no re-temar"):** editar el texto
+      sirve para mejorar la redaccion **dentro de la misma categoria**. Una pregunta **no se
+      convierte** en una de otro tema: si el admin necesita preguntar otra cosa, **desactiva** la
+      pregunta actual y la nueva se crea en su categoria correcta (creacion = v2/equipo). Si esto
+      no se respeta, las respuestas futuras se ponderarian bajo la categoria equivocada.
+- [ ] La UI del editor refuerza la regla: muestra de forma prominente la **categoria y su
+      definicion de una linea** (ej. *"Estas editando una pregunta de Cercania individual: mide si
+      el coder se siente tratado con respeto y en confianza"*) y el **texto anterior** como
+      referencia mientras se edita.
+- [ ] **Reversibilidad garantizada:** como la edicion solo ocurre con periodo cerrado y versiona,
+      una edicion desviada se corrige **antes de reabrir**: se desactiva la version mala y se
+      reactiva la original. Ninguna respuesta llega a registrarse contra una pregunta desviada.
+- [ ] `Could` — **Chequeo de coherencia con IA:** al guardar, el backend pide a Claude validar si
+      el texto nuevo sigue midiendo su categoria (solo se envia el texto de la pregunta y la
+      definicion de la categoria — ningun dato personal) y **advierte** al admin si no coincide
+      (no bloquea).
 
 ---
 
