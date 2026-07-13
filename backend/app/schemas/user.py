@@ -23,7 +23,6 @@ class UserOut(BaseModel):
     id: int
     name: str
     email: str
-    password: str  # Retornamos el hash para compatibilidad con el frontend
     role: str
     roles: List[str]
     is_active: bool

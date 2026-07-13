@@ -57,17 +57,16 @@ router  →  service  →  repository  →  model  →  (MySQL)
 | Capa / término | En simple |
 |----------------|-----------|
 | **FastAPI** | El framework de Python que usamos para construir la API. |
-| **Router** | La "puerta de entrada". Define los endpoints, valida lo que llega y devuelve la respuesta. **No** tiene reglas de negocio. |
-| **Service** | El **cerebro**: aquí viven las **reglas de negocio** (calcular ICA, revisar anonimato, evitar duplicados). Es la parte "que no es solo CRUD". |
-| **Repository** | El "bibliotecario": el único que sabe **cómo buscar/guardar** datos en la BD (las consultas). |
-| **Model** | La representación en Python de una **tabla** de la BD (ej. `User`, `Evaluation`). |
+| **Route** | La "puerta de entrada" (carpeta `routes/`). Define los endpoints, valida lo que llega y devuelve la respuesta. **No** tiene reglas de negocio. |
+| **Service** | El **cerebro**: aquí viven las **reglas de negocio** (calcular métricas, revisar anonimato, evitar duplicados) **y** las consultas a la BD. Es la parte "que no es solo CRUD". |
+| **Model** | La representación en Python de una **tabla** de la BD (ej. `users_table`, `evaluations_table`), usando SQLAlchemy Core. |
 | **Schema (Pydantic)** | El "molde" que define **qué forma** deben tener los datos que entran y salen. Si no cumplen, se rechazan. |
-| **`deps.py`** | Funciones reutilizables que FastAPI "inyecta": obtener la BD, saber quién es el usuario, exigir un rol. |
-| **CRUD** | Create, Read, Update, Delete = crear, leer, actualizar, borrar. Lo básico de una BD. La rúbrica pide **más que CRUD** (por eso el ICA y la lógica de negocio). |
+| **`deps.py`** | Funciones reutilizables que FastAPI "inyecta": saber quién es el usuario (`get_current_user`), exigir un rol (`require_role`). |
+| **CRUD** | Create, Read, Update, Delete = crear, leer, actualizar, borrar. Lo básico de una BD. La rúbrica pide **más que CRUD** (por eso las métricas y la lógica de negocio). |
 
 > **¿Por qué separar en capas?** Para que cada archivo sea pequeño y fácil de entender, no repetir
-> código (**DRY**) y que cada persona pueda explicar "su" capa. Si mañana cambia la BD, solo se toca
-> `repositories/`; el resto no se entera.
+> código (**DRY**) y que cada persona pueda explicar "su" capa. Si mañana cambia una regla de
+> negocio, solo se toca el archivo de `services/` de esa entidad; el route no se entera.
 
 ---
 

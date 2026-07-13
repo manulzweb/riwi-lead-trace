@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Query, Depends
-from app.services import metrics_service
+from app.services import metrics_service, ai_service
 from app.deps import require_role
 
 router = APIRouter()
@@ -19,5 +19,5 @@ def get_ai_summary(
     current_user: dict = Depends(require_role("admin"))
 ):
     """Obtiene o genera un resumen de feedback con Claude IA para un evaluado en un periodo."""
-    summary = metrics_service.get_or_generate_ai_summary(evaluatee_id, period_id)
+    summary = ai_service.get_or_generate_ai_summary(evaluatee_id, period_id)
     return {"summary": summary}

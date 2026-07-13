@@ -1,9 +1,7 @@
 import { getEmailRules, getPasswordRules } from "../../utils/validators";
 import { authService } from "../../services/auth.service";
 import { renderRoute } from "../../router/router";
-import { userService } from "../../services/users.service";
 import { showToast } from "../../components/alerts";
-import { hashPassword } from "../../utils/crypto";
 import { setButtonLoadingState, createDebouncedValidator, validateSync, showFieldError } from "../../utils/formUtils";
 import { backgroundComponent } from "../../components/background.js";
 import { langSwitcherComponent, setupLangSwitcher } from "../../components/lang-switcher.js";
@@ -93,25 +91,17 @@ const handleLoginSubmit = (elements) => async (event) => {
   setButtonLoadingState(elements.submitBtn, true, "Validando...", "Entrar al dashboard");
 
   try {
-    const users = await userService.get();
-    const hashedPassword = hashPassword(password);
+    const { user, access_token } = await authService.login(email, password);
 
-    const user = users.find((user) => user.email.toLowerCase() === email.toLowerCase() && user.password === hashedPassword);
-
-    if (!user) {
-      showToast("Falló el inicio de sesión", "error", "Credenciales incorrectas");
-      setButtonLoadingState(elements.submitBtn, false, "", "Entrar al dashboard");
-      return showFieldError(elements.emailInput, "Credenciales incorrectas", elements.emailError);
-    }
-
-    authService.setSession(user);
+    authService.setSession(user, access_token);
     showToast(`Bienvenido ${user.name}!`, "success");
 
     window.history.pushState({}, "", "/dashboard");
     renderRoute();
   } catch (error) {
-    showToast("Error", "error", "Hubo un problema al iniciar sesión");
+    showToast("Falló el inicio de sesión", "error", "Credenciales incorrectas");
     setButtonLoadingState(elements.submitBtn, false, "", "Entrar al dashboard");
+    return showFieldError(elements.emailInput, "Credenciales incorrectas", elements.emailError);
   }
 };
 

@@ -8,7 +8,8 @@ class EvaluationAnswerCreate(BaseModel):
     comment: Optional[str] = None
 
 class EvaluationCreate(BaseModel):
-    evaluator_id: Optional[int] = None
+    # evaluator_id no viene del cliente: se toma del usuario autenticado (JWT),
+    # asi nadie puede enviar una evaluacion haciendose pasar por otro coder.
     evaluatee_id: int
     template_id: int
     period_id: int

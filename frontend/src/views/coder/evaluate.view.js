@@ -236,7 +236,7 @@ export const setupEvaluate = async () => {
     }
 
     const evaluationData = {
-      evaluator_id: currentUser.id,
+      // evaluator_id no se manda: el backend lo toma del token de sesión.
       evaluatee_id: parseInt(evaluatee.value),
       template_id: currentTemplate.id,
       period_id: activePeriod.id,

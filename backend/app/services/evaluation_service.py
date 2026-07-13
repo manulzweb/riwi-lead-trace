@@ -7,26 +7,32 @@ from app.models.evaluation import evaluations_table, evaluation_answers_table
 from app.models.user import users_table
 from app.schemas.evaluation import EvaluationCreate
 
-def create_evaluation(eval_data: EvaluationCreate):
-    """Crea una evaluación y sus respuestas correspondientes."""
-    # Regla de negocio: Validar duplicado para evaluaciones no anónimas
-    if eval_data.evaluator_id and not eval_data.is_anonymous:
-        stmt_check = select(evaluations_table.c.id).where(
-            and_(
-                evaluations_table.c.evaluator_id == eval_data.evaluator_id,
-                evaluations_table.c.evaluatee_id == eval_data.evaluatee_id,
-                evaluations_table.c.period_id == eval_data.period_id
-            )
+def create_evaluation(eval_data: EvaluationCreate, evaluator_id: int):
+    """Crea una evaluación y sus respuestas correspondientes.
+
+    evaluator_id viene del usuario autenticado (token), nunca del body del
+    cliente, para que la validación de "no duplicado" no se pueda saltar.
+    """
+    # Regla de negocio: un evaluador no puede evaluar dos veces a la misma
+    # persona en el mismo periodo. Esto corre siempre, sea anónima o no,
+    # porque el registro se identifica por el evaluador real, no por lo
+    # que el evaluado o el admin puedan ver después.
+    stmt_check = select(evaluations_table.c.id).where(
+        and_(
+            evaluations_table.c.evaluator_id == evaluator_id,
+            evaluations_table.c.evaluatee_id == eval_data.evaluatee_id,
+            evaluations_table.c.period_id == eval_data.period_id
         )
-        existing = conn.execute(stmt_check).first()
-        if existing:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Ya has evaluado a esta persona en el periodo seleccionado."
-            )
+    )
+    existing = conn.execute(stmt_check).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Ya has evaluado a esta persona en el periodo seleccionado."
+        )
 
     # Si es anónima, no persistimos el evaluator_id (Anonimato real)
-    db_evaluator_id = None if eval_data.is_anonymous else eval_data.evaluator_id
+    db_evaluator_id = None if eval_data.is_anonymous else evaluator_id
 
     # Insertar evaluación
     eval_stmt = insert(evaluations_table).values(

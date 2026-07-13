@@ -14,12 +14,18 @@ Es **un monolito**: un solo backend desplegable y una sola SPA desplegable (no m
 que no se vuelva espagueti.
 
 La organizacion interna es **horizontal (por capa tecnica)**, no vertical (por feature): todo lo de
-rutas vive junto (`routers/`), toda la logica de negocio vive junta (`services/`), todo el acceso a
-datos vive junto (`repositories/`). La alternativa (**vertical**: una carpeta por feature con su
-propio router+service+repo adentro, ej. `features/evaluations/`) se descarta a proposito: con ~7
-entidades y ~8 endpoints, separar por feature agrega carpetas y decisiones sin beneficio real para
-un equipo de 5 en un MVP corto. Horizontal es mas facil de explicar y de encontrar codigo ("¿donde
-esta la logica? en `services/`").
+rutas vive junto (`routes/`), toda la logica de negocio (incluido el acceso a datos) vive junta
+(`services/`). La alternativa (**vertical**: una carpeta por feature con su propio router+service
+adentro, ej. `features/evaluations/`) se descarta a proposito: con ~7 entidades y ~8 endpoints,
+separar por feature agrega carpetas y decisiones sin beneficio real para un equipo de 5 en un MVP
+corto. Horizontal es mas facil de explicar y de encontrar codigo ("¿donde esta la logica? en
+`services/`").
+
+> **Nota:** una version anterior de esta arquitectura proponia una capa `repositories/` separada
+> para el acceso a datos. El equipo la elimino a proposito: con SQLAlchemy Core (`Table` +
+> `conn.execute`) las queries ya son pocas lineas por funcion, y una capa extra solo para
+> reenviarlas a `services/` agregaba indirection sin beneficio real en un MVP de este tamano. Las
+> queries viven directamente en el archivo de `services/` de cada entidad.
 
 ## Patrones de diseño
 
@@ -32,12 +38,11 @@ funcion pura hace lo mismo con menos codigo.
 
 | Patron | Donde | Que resuelve |
 |---|---|---|
-| **Layered Architecture** | `routers/ -> services/ -> repositories/ -> models/` | Cada capa tiene una responsabilidad; los cambios quedan localizados |
-| **Repository** | `repositories/` (ej. `EvaluationRepository`) | Encapsula el acceso a datos; los `services` no escriben SQL/queries directamente |
-| **Service Layer** | `services/` (ej. `EvaluationService`, `MetricsService`) | Concentra la logica de negocio (anonimato, no-duplicado, calculo del ICA) fuera de los routers |
-| **Dependency Injection** | `Depends(get_db)`, `Depends(get_current_user)`, `Depends(require_role(...))` | FastAPI inyecta dependencias en vez de que cada endpoint las construya; facilita testear |
+| **Layered Architecture** | `routes/ -> services/ -> models/` | Cada capa tiene una responsabilidad; los cambios quedan localizados |
+| **Service Layer** | `services/` (ej. `evaluation_service`, `metrics_service`, `ai_service`) | Concentra la logica de negocio (anonimato, no-duplicado, calculo de metricas) y el acceso a datos, fuera de los routes |
+| **Dependency Injection** | `Depends(get_current_user)`, `Depends(require_role(...))` | FastAPI inyecta dependencias en vez de que cada endpoint las construya; facilita testear |
 | **DTO (Data Transfer Object)** | `schemas/` (Pydantic) | Define exactamente que entra/sale de la API, distinto del modelo de BD |
-| **Data Mapper** | `models/` (SQLAlchemy ORM) | Mapea objetos Python a filas de MySQL sin que el resto del codigo escriba SQL |
+| **Data Mapper** | `models/` (SQLAlchemy Core, `Table`) | Describe las tablas de MySQL como objetos Python sin que el resto del codigo escriba SQL a mano |
 
 ### Frontend (funciones + un poco de OOP donde importa)
 
@@ -68,17 +73,14 @@ sitio con estado que varias partes necesitan compartir y observar.
                             │ HTTPS · REST (JSON) · JWT
                             v
 ┌──────────────────── Backend (backend/ · FastAPI) ───────────┐
-│  Routers (endpoints, validacion I/O con Pydantic)            │
+│  Routes (endpoints, validacion I/O con Pydantic)             │
 │     │                                                        │
 │     v                                                        │
-│  Services  <── LOGICA DE NEGOCIO (anonimato, no-duplicado,  │
-│     │           ICA, resumen IA, RBAC)                      │
+│  Services  <── LOGICA DE NEGOCIO + acceso a datos            │
+│     │           (anonimato, no-duplicado, metricas, RBAC)   │
 │     │           └─ ai_service ──HTTPS──> Claude API         │
 │     v                                                        │
-│  Repositories (consultas / acceso a datos)                  │
-│     │                                                        │
-│     v                                                        │
-│  Models (SQLAlchemy ORM)                                     │
+│  Models (SQLAlchemy Core: Table)                             │
 └───────────────────────────┬─────────────────────────────────┘
                             │ SQLAlchemy + PyMySQL
                             v
@@ -121,20 +123,18 @@ riwi-lead-trace/
 │
 ├── backend/
 │   ├── app/
-│   │   ├── main.py             # crea FastAPI, CORS, incluye routers
-│   │   ├── core/
-│   │   │   ├── config.py       # settings (DB_URL, JWT_SECRET) desde .env
-│   │   │   ├── database.py     # engine + SessionLocal + Base
+│   │   ├── main.py             # crea FastAPI, CORS, incluye los routers de routes/
+│   │   ├── config/
+│   │   │   ├── config.py       # settings (DATABASE_URL, SECRET_KEY...) desde .env
+│   │   │   ├── database.py     # engine + conexion SQLAlchemy
 │   │   │   └── security.py     # hash de contrasenas + crear/verificar JWT
-│   │   ├── models/             # SQLAlchemy: user, role, period, form_template,
-│   │   │                       # question, evaluation, answer, ai_feedback_cache
+│   │   ├── models/             # SQLAlchemy Core (Table): user, role, period,
+│   │   │                       # form_template, evaluation, ai_feedback_cache
 │   │   ├── schemas/            # Pydantic: request/response por dominio
-│   │   ├── repositories/       # acceso a datos (queries reutilizables)
-│   │   ├── services/           # LOGICA DE NEGOCIO: metrics_service (ICA),
-│   │   │                       # ai_service, evaluation_service
-│   │   ├── routers/            # auth, users, forms, evaluations, metrics
-│   │   └── deps.py             # get_db, get_current_user, require_role
-│   ├── tests/                  # pytest
+│   │   ├── services/           # LOGICA DE NEGOCIO + acceso a datos por entidad:
+│   │   │                       # auth, user, period, form, evaluation, metrics, ai
+│   │   ├── routes/              # auth, users, forms, evaluations, periods, metrics
+│   │   └── deps.py             # get_current_user, require_role
 │   ├── requirements.txt
 │   └── .env.example
 │
@@ -173,30 +173,33 @@ export const routes = [
 
 | Capa | Responsabilidad | Regla |
 |------|-----------------|-------|
-| `routers/` | Definir endpoints, validar I/O con Pydantic, codigos HTTP | No contiene logica de negocio |
-| `services/` | **Logica de negocio** (reglas, calculos, orquestacion) | No conoce detalles HTTP |
-| `repositories/` | Consultas y acceso a datos via ORM | Unico lugar con queries |
-| `models/` | Entidades SQLAlchemy mapeadas a MySQL | Definen el esquema |
-| `schemas/` | Contratos Pydantic (validacion/serializacion) | Frontera de datos |
-| `deps.py` | Dependencias: `get_db`, `get_current_user`, `require_role` | Inyeccion/seguridad |
+| `routes/` | Definir endpoints, validar I/O con Pydantic, codigos HTTP | No contiene logica de negocio |
+| `services/` | **Logica de negocio** (reglas, calculos, orquestacion) y acceso a datos (SQLAlchemy Core) | No conoce detalles HTTP |
+| `models/` | Tablas SQLAlchemy Core (`Table`) mapeadas a MySQL | Definen el esquema |
+| `schemas/` | Contratos Pydantic (validacion/serializacion) | Frontera de datos; nunca exponen campos sensibles (ej. `password_hash`) |
+| `deps.py` | Dependencias: `get_current_user`, `require_role` | Inyeccion/seguridad |
 
-Ejemplo de RBAC con dependencias (ilustrativo):
+Ejemplo de RBAC con dependencias (real, `app/deps.py` + `app/routes/metrics_routes.py`):
 
 ```python
 # app/deps.py
-def require_role(*roles):
-    def checker(user = Depends(get_current_user)):
-        if user.role not in roles:
-            raise HTTPException(status_code=403, detail="No autorizado")
-        return user
+def require_role(*roles: str):
+    def checker(current_user: dict = Depends(get_current_user)) -> dict:
+        if current_user["role"] not in roles:
+            raise HTTPException(status_code=403, detail="Sin permiso")
+        return current_user
     return checker
 
-# app/routers/metrics.py
+# app/routes/metrics_routes.py
 @router.get("/metrics/summary")
-def summary(period_id: int,
-            user = Depends(require_role("admin")), db = Depends(get_db)):
-    return metrics_service.build_summary(db, period_id)
+def get_metrics_summary(period_id: int, current_user: dict = Depends(require_role("admin"))):
+    return metrics_service.get_metrics_summary(period_id)
 ```
+
+> **evaluator_id nunca viene del body:** en `POST /evaluations`, el id del evaluador se toma de
+> `Depends(get_current_user)` (el JWT), nunca del JSON que manda el cliente. Si se aceptara del
+> body, cualquiera podria enviar evaluaciones haciendose pasar por otro coder y saltarse la regla
+> de "no evaluar dos veces" (ver `services/evaluation_service.py`).
 
 ## Logica de negocio destacada (ICA · IA)
 
@@ -213,7 +216,7 @@ Por cada `(evaluatee_id, period_id)`, solo con evaluaciones `submitted`:
 6. **Estado:** `En riesgo` (`score < 60` o `D <= -10`), `Solido` (`>=80` y `D>=0`), `Estable` o
    `Datos insuficientes`. Umbrales y pesos son constantes documentadas (sustentables).
 
-> El ICA **no se persiste**: se calcula on-read. `repositories/` solo provee los agregados.
+> El ICA **no se persiste**: se calcula on-read a partir de agregados que trae `metrics_service`.
 
 ### Resumen por IA — `ai_service`
 - Construye un prompt con **agregados anonimizados** (promedios por categoria, conteos, comentarios

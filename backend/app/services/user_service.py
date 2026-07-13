@@ -5,9 +5,9 @@ from app.models.user import users_table
 from app.schemas.user import UserCreate, UserUpdate
 
 def get_users():
-    """Obtiene todos los usuarios de la base de datos."""
+    """Obtiene todos los usuarios de la base de datos (sin el hash de contraseña)."""
     query = text("""
-        SELECT u.id, u.full_name AS name, u.email, u.password_hash AS password, u.is_active, u.role_id, u.clan_id, r.name AS role
+        SELECT u.id, u.full_name AS name, u.email, u.is_active, u.role_id, u.clan_id, r.name AS role
         FROM users u
         JOIN roles r ON u.role_id = r.id
     """)
@@ -20,9 +20,9 @@ def get_users():
     return users
 
 def get_user(user_id: int):
-    """Obtiene un usuario por ID."""
+    """Obtiene un usuario por ID (sin el hash de contraseña)."""
     query = text("""
-        SELECT u.id, u.full_name AS name, u.email, u.password_hash AS password, u.is_active, u.role_id, u.clan_id, r.name AS role
+        SELECT u.id, u.full_name AS name, u.email, u.is_active, u.role_id, u.clan_id, r.name AS role
         FROM users u
         JOIN roles r ON u.role_id = r.id
         WHERE u.id = :id
@@ -35,7 +35,11 @@ def get_user(user_id: int):
     return user_dict
 
 def get_user_by_email(email: str):
-    """Obtiene un usuario por email (usado por el login)."""
+    """Obtiene un usuario por email, incluyendo el hash de contraseña.
+
+    Solo lo usa auth_service para verificar el login: este hash nunca debe
+    salir por un endpoint (por eso UserOut no tiene el campo password).
+    """
     query = text("""
         SELECT u.id, u.full_name AS name, u.email, u.password_hash AS password, u.is_active, u.role_id, u.clan_id, r.name AS role
         FROM users u

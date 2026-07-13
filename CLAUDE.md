@@ -64,13 +64,14 @@ skill `.claude/skills/guia-generativa/SKILL.md`.
 
 ### Backend
 - **Python + FastAPI** (decision del equipo).
-- SQLAlchemy (ORM) + PyMySQL para acceso a MySQL.
+- SQLAlchemy Core (`Table` + `conn.execute`, no ORM declarativo) + PyMySQL para acceso a MySQL.
 - Validacion con **Pydantic**, autenticacion **JWT**, autorizacion por rol (RBAC) via dependencias.
-- Logica de negocio en la capa `services` (no en los routers).
+- Logica de negocio y acceso a datos en la capa `services` (no en los routes; no hay capa
+  `repositories/` separada — se elimino a proposito por ser indirection sin beneficio en un MVP
+  de este tamano).
 - **IA:** integracion con **Claude API** (SDK `anthropic`) en `services/ai_service.py` para resumir
-  feedback (solo para el Admin). Modelo recomendado `claude-sonnet-4-6` (calidad/costo) o
-  `claude-haiku-4-5-20251001` (economico). `ANTHROPIC_API_KEY` via `core/config.py`.
-  **Solo se envian agregados anonimizados.**
+  feedback (solo para el Admin). Modelo en uso: `claude-haiku-4-5-20251001` (economico).
+  `ANTHROPIC_API_KEY` via `config/config.py`. **Solo se envian agregados anonimizados.**
 
 ### Base de datos
 - **MySQL**, modelo relacional **normalizado hasta 3FN**, integridad referencial (FKs), CRUD completo y consultas agregadas para metricas.
@@ -98,7 +99,7 @@ Monorepo full-stack:
 
 ```
 SPA (frontend/)  ──HTTP/REST(JSON, JWT)──>  API (backend/ FastAPI)  ──SQLAlchemy──>  MySQL
-   vistas -> store -> services -> http              routers -> services -> repositories -> models
+   vistas -> store -> services -> http              routes -> services -> models
 ```
 
 ### `frontend/src/`
@@ -111,12 +112,14 @@ Reglas: las vistas **no** llaman `fetch` directo (usan `services/`); los service
 
 ### `backend/app/`
 ```
-main.py · core/ (config, security/JWT, database)
-models/ (SQLAlchemy) · schemas/ (Pydantic) · routers/ (endpoints)
-services/ (LOGICA DE NEGOCIO: metrics_service/ICA, ai_service) · repositories/ (queries)
-deps.py (get_db, get_current_user, require_role)
+main.py · config/ (config, security/JWT, database)
+models/ (SQLAlchemy Core: Table) · schemas/ (Pydantic) · routes/ (endpoints)
+services/ (LOGICA DE NEGOCIO + acceso a datos: auth, user, period, form, evaluation, metrics, ai)
+deps.py (get_current_user, require_role)
 ```
-Reglas: los **routers** validan entrada/salida con Pydantic y delegan; la **logica de negocio vive en `services/`**; el acceso a datos pasa por `repositories/`. Nunca pongas reglas de negocio en los routers ni queries crudas dispersas en endpoints.
+Reglas: los **routes** validan entrada/salida con Pydantic y delegan; la **logica de negocio (y las
+queries) viven en `services/`**. Nunca pongas reglas de negocio en los routes ni dupliques queries
+entre archivos de `services/`.
 
 Detalle completo en `docs/06-arquitectura.md`.
 
