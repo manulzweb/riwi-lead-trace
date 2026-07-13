@@ -10,7 +10,7 @@ Las historias se organizan en 7 epicas. `CORE` es transversal (habilitadora); la
 | **AUTH** | Login con JWT y autorizacion por rol en cliente y servidor. | AUTH-01/02/03 |
 | **EVALUACIONES** | Nucleo del producto: Coders evaluan TL/Tutores (con opcion anonima), persistido con sus reglas de negocio. | EVAL-01..05 |
 | **HISTORIAL** | Trazabilidad: consultar evaluaciones pasadas y su evolucion. | HIST-01/02 |
-| **DASHBOARD** | Transformar evaluaciones en informacion accionable: **ICA** e indicadores. | DASH-01/02 |
+| **DASHBOARD** | Transformar evaluaciones en informacion accionable: **ICP** e indicadores. | DASH-01/02 |
 | **AIFEED** | Resumen de feedback con **Claude API** para el Admin (diferenciador). | AIFEED-01 |
 | **ENTREGA** | Entregables no-codigo: despliegue, pitches y documento tecnico. | DELIV-01..04 |
 
@@ -100,7 +100,7 @@ Las historias se organizan en 7 epicas. `CORE` es transversal (habilitadora); la
 
 ## Sprint 3 — Metricas (10 – 13 jul)
 
-**Sprint Goal:** el Admin visualiza el **ICA** y el **resumen IA**; los Coders consultan su historial; el Admin consulta el historico por evaluado.
+**Sprint Goal:** el Admin visualiza el **ICP** y el **resumen IA**; los Coders consultan su historial; el Admin consulta el historico por evaluado.
 
 **Capacidad:** 19 SP
 
@@ -108,11 +108,11 @@ Las historias se organizan en 7 epicas. `CORE` es transversal (habilitadora); la
 |----|----------|:--:|----------------------|
 | HIST-01 | Historial del Coder | 3 | Frontend Dev |
 | HIST-02 | Seguimiento historico (admin) | 3 | Backend Dev |
-| DASH-01 | Dashboard + ICA | 5 | SM/Fullstack |
-| DASH-02 | ICA por criterio e indicadores | 3 | Backend Dev |
+| DASH-01 | Dashboard + ICP | 5 | SM/Fullstack |
+| DASH-02 | ICP por criterio e indicadores | 3 | Backend Dev |
 | AIFEED-01 | Resumen de feedback con IA (Claude) | 5 | Backend Dev |
 
-**Justificacion:** convierte los datos de evaluaciones en informacion accionable. El ICA es la logica de negocio "fuerte" para la rubrica; el resumen IA es el diferenciador. AIFEED-01 es `Should` y puede recortarse si aprieta.
+**Justificacion:** convierte los datos de evaluaciones en informacion accionable. El ICP es la logica de negocio "fuerte" para la rubrica; el resumen IA es el diferenciador. AIFEED-01 es `Should` y puede recortarse si aprieta.
 
 ---
 
@@ -141,7 +141,7 @@ Las historias se organizan en 7 epicas. `CORE` es transversal (habilitadora); la
 |--------|--------|------|:--:|--------|
 | 1 — Setup | 20 jun – 1 jul | Planeacion + estructura base full-stack | 15 | CORE |
 | 2 — Funcionalidad | 2 – 9 jul | Login + roles + evaluaciones | 29 | AUTH, EVALUACIONES |
-| 3 — Metricas | 10 – 13 jul | Historial + ICA + resumen IA | 19 | HISTORIAL, DASHBOARD, AIFEED |
+| 3 — Metricas | 10 – 13 jul | Historial + ICP + resumen IA | 19 | HISTORIAL, DASHBOARD, AIFEED |
 | 4 — Entrega | 14 – 17 jul | Despliegue + pitches + doc tecnico | 16 | ENTREGA |
 
 ## Gestion de riesgos del plan
@@ -154,5 +154,5 @@ Las historias se organizan en 7 epicas. `CORE` es transversal (habilitadora); la
 | Sprint 2 sobrecargado (29 SP > velocidad) | Paralelizar front/back; EVAL-04 es `Should` y puede posponerse |
 | Dependencia externa de IA (Claude API) | `ANTHROPIC_API_KEY` por `.env`; degradacion elegante; cache para costo; el dashboard funciona sin IA |
 | Privacidad del feedback con IA | Solo agregados anonimizados al modelo; nunca identidades (regla de negocio + test) |
-| Sobreingenieria | Sin frameworks de UI; capas simples; reutilizar motor de formularios; ICA derivado |
-| Quedar en "solo CRUD" | Priorizar logica de negocio (ICA, anonimato, no-duplicado, RBAC) como criterios de DoD |
+| Sobreingenieria | Sin frameworks de UI; capas simples; reutilizar motor de formularios; ICP derivado |
+| Quedar en "solo CRUD" | Priorizar logica de negocio (ICP, anonimato, no-duplicado, RBAC) como criterios de DoD |

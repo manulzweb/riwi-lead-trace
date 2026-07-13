@@ -64,7 +64,7 @@ Cada historia incluye criterios de aceptacion (CA), prioridad y Story Points.
 
 **Criterios de aceptacion**
 - [ ] El Coder ve evaluaciones e historial propio; no ve el dashboard.
-- [ ] El Admin ve dashboard, ICA, resumenes IA e historico.
+- [ ] El Admin ve dashboard, ICP, resumenes IA e historico.
 - [ ] Las rutas no autorizadas redirigen o muestran "no autorizado" (front).
 - [ ] El backend aplica `require_role` y responde `403` ante accesos no autorizados (autoridad real).
 - [ ] La navegacion se construye dinamicamente segun los permisos del rol.
@@ -81,12 +81,19 @@ Cada historia incluye criterios de aceptacion (CA), prioridad y Story Points.
 - [ ] Indica si ya evalue a esa persona en el periodo actual.
 - [ ] No me incluye a mi mismo (un tutor no se autoevalua).
 - [ ] Estado vacio si no hay evaluables asignados.
+- [ ] Si **no hay periodo activo**, se muestra el estado vacio **"No hay formularios por realizar"**
+      (componente `emptyState`) en lugar de la lista, y no se puede iniciar ninguna evaluacion.
 
 ### EVAL-02 — Evaluar Team Leader · `Must` · `5 SP`
 **Como** Coder **quiero** completar un formulario estructurado para evaluar a un Team Leader **para** retroalimentar su acompanamiento.
 
 **Criterios de aceptacion**
-- [ ] Formulario con criterios por categoria y escala (p.ej. 1-5) + comentario opcional.
+- [ ] Formulario con criterios por categoria y escala (p.ej. 1-5) + comentario opcional. Las
+      preguntas se cargan desde la API (plantilla + preguntas **activas**), nunca hardcodeadas.
+- [ ] **Experiencia interactiva "una pregunta a la vez"** (estilo Typeform) construida en
+      **JS Vanilla + CSS** (sin paquetes de formularios): se muestra una pregunta por pantalla,
+      con barra de progreso, navegacion adelante/atras y transiciones suaves.
+- [ ] Navegable 100% por teclado (Enter avanza, las opciones de escala se eligen con teclado).
 - [ ] Validacion: no se envia incompleto; muestra errores por campo.
 - [ ] Se puede guardar como borrador y retomar.
 - [ ] Confirmacion visual al enviar.
@@ -114,8 +121,67 @@ Cada historia incluye criterios de aceptacion (CA), prioridad y Story Points.
 - [ ] La evaluacion se persiste via `POST /evaluations` con validacion Pydantic en servidor.
 - [ ] Maneja estados: borrador y enviada.
 - [ ] **Regla de negocio:** rechaza (`409`) una segunda evaluacion del mismo evaluado en el mismo **periodo**.
+- [ ] **Regla de negocio:** rechaza (`409`) el registro/envio si **no hay periodo activo**; los
+      borradores existentes no se pierden, pero no pueden enviarse hasta que el Admin reabra un periodo.
 - [ ] Manejo de errores de red con reintento y mensaje claro.
 - [ ] Tras enviar, la persona evaluada aparece como "ya evaluada".
+
+---
+
+## ADMIN
+
+### ADMIN-01 — Gestion del periodo de evaluacion · `Must` · `3 SP`
+**Como** Admin **quiero** activar o cerrar el periodo de evaluacion **para** controlar cuando los
+Coders pueden ver y responder los formularios.
+
+**Criterios de aceptacion**
+- [ ] Vista de admin con la lista de periodos y su estado (activo/cerrado), con accion de
+      activar/cerrar (`PATCH /periods/:id`, solo rol `admin` via `require_role`).
+- [ ] **Regla de negocio:** solo puede existir **un periodo activo a la vez**; al activar uno, el
+      backend desactiva cualquier otro (transaccional).
+- [ ] Con el periodo **cerrado**, los Coders ven el estado vacio **"No hay formularios por
+      realizar"** y el backend rechaza envios (`409`) — la SPA sola no es la autoridad.
+- [ ] Con el periodo **activo**, el flujo de evaluacion funciona normal (listar evaluables,
+      formulario, envio).
+- [ ] Confirmacion antes de cerrar un periodo (accion con efecto global sobre los Coders).
+
+### ADMIN-02 — Editar preguntas del formulario (version minima) · `Should` · `3 SP`
+**Como** Admin **quiero** ajustar el texto de las preguntas y activarlas/desactivarlas **para**
+mejorar el formulario entre rondas sin depender del equipo tecnico.
+
+**Criterios de aceptacion**
+- [ ] Vista de admin que lista las plantillas (TL / Tutor) con sus preguntas, mostrando categoria
+      y estado (activa/inactiva). Solo rol `admin`.
+- [ ] Puede **editar el texto** de una pregunta y **activarla/desactivarla** (`PATCH /questions/:id`).
+      **No** puede cambiar la categoria, el tipo, ni crear/eliminar plantillas (eso es v2).
+- [ ] **Regla de negocio (integridad del ICP):** editar solo esta permitido **con el periodo
+      cerrado**; con periodo activo el backend responde `409` (el instrumento se congela dentro
+      del periodo).
+- [ ] **Regla de negocio (versionado):** editar el texto **no sobrescribe**: crea una pregunta
+      nueva (misma categoria y orden) y desactiva la anterior. Las respuestas historicas siguen
+      apuntando a la pregunta original con su texto intacto.
+- [ ] Las evaluaciones nuevas cargan **solo preguntas activas**; el calculo del ICP agrega por
+      **categoria** con pesos fijos, por lo que la edicion de redaccion no altera el indice.
+- [ ] **Regla de negocio (anti deriva semantica — "reformular, no re-temar"):** editar el texto
+      sirve para mejorar la redaccion **dentro de la misma categoria**. Una pregunta **no se
+      convierte** en una de otro tema: si el admin necesita preguntar otra cosa, **desactiva** la
+      pregunta actual y la nueva se crea en su categoria correcta (creacion = v2/equipo). Si esto
+      no se respeta, las respuestas futuras se ponderarian bajo la categoria equivocada.
+- [ ] La UI del editor refuerza la regla: muestra de forma prominente la **categoria y su
+      definicion de una linea** (ej. *"Estas editando una pregunta de Cercania individual: mide si
+      el coder se siente tratado con respeto y en confianza"*) y el **texto anterior** como
+      referencia mientras se edita.
+- [ ] **Reversibilidad garantizada:** como la edicion solo ocurre con periodo cerrado y versiona,
+      una edicion desviada se corrige **antes de reabrir**: se desactiva la version mala y se
+      reactiva la original. Ninguna respuesta llega a registrarse contra una pregunta desviada.
+- [ ] **Chequeo de coherencia con IA:** al guardar una edicion, el backend pide a Claude validar
+      si el texto nuevo sigue midiendo su categoria (via `ai_service`; solo se envia el texto de
+      la pregunta y la definicion de la categoria — ningun dato personal). Si la IA detecta que la
+      pregunta se salio de su categoria, el admin ve una **advertencia clara** y debe **confirmar
+      explicitamente** para guardar de todos modos (la IA advierte y exige confirmacion; la
+      decision final es humana).
+- [ ] Si la IA no esta disponible (sin `ANTHROPIC_API_KEY` o error de la API), la edicion
+      funciona igual **sin el chequeo** (degradacion elegante, mismo patron que AIFEED-01).
 
 ---
 
@@ -142,20 +208,20 @@ Cada historia incluye criterios de aceptacion (CA), prioridad y Story Points.
 ## DASHBOARD
 
 ### DASH-01 — Dashboard de resultados · `Must` · `5 SP`
-**Como** Admin **quiero** un panel con resultados agregados y el **ICA** **para** entender rapidamente la calidad del acompanamiento.
+**Como** Admin **quiero** un panel con resultados agregados y el **ICP** **para** entender rapidamente la calidad del acompanamiento.
 
 **Criterios de aceptacion**
 - [ ] Tarjetas resumen: no de evaluaciones, promedio general, participacion.
-- [ ] Ranking/listado de lideres y tutores con su **ICA (0-100)** y **estado** (Solido/Estable/En riesgo/Datos insuficientes).
+- [ ] Ranking/listado de lideres y tutores con su **ICP (0-100)** y **estado** (Solido/Estable/En riesgo/Datos insuficientes).
 - [ ] Filtro por **periodo**.
 
-### DASH-02 — ICA por criterio e indicadores · `Should` · `3 SP`
-**Como** Admin **quiero** ver el ICA desglosado por criterio **para** identificar fortalezas y debilidades.
+### DASH-02 — ICP por criterio e indicadores · `Should` · `3 SP`
+**Como** Admin **quiero** ver el ICP desglosado por criterio **para** identificar fortalezas y debilidades.
 
 **Criterios de aceptacion**
-- [ ] Promedio por categoria/criterio (componentes del ICA) para una persona seleccionada.
+- [ ] Promedio por categoria/criterio (componentes del ICP) para una persona seleccionada.
 - [ ] Indicador de participacion (% de Coders que evaluaron) y nivel de **confianza**.
-- [ ] **Datos insuficientes** cuando `n < N_MIN`: no se publica el ICA (se indica explicitamente).
+- [ ] **Datos insuficientes** cuando `n < N_MIN`: no se publica el ICP (se indica explicitamente).
 
 ---
 
@@ -188,7 +254,7 @@ Cada historia incluye criterios de aceptacion (CA), prioridad y Story Points.
 **Como** equipo **queremos** un pitch comercial de 3-5 min en ingles **para** demostrar dominio del idioma y vender el valor del producto.
 
 **Criterios de aceptacion**
-- [ ] Slides en ingles con problema, solucion, mercado, diferenciador (IA + ICA) y modelo de negocio.
+- [ ] Slides en ingles con problema, solucion, mercado, diferenciador (IA + ICP) y modelo de negocio.
 - [ ] Script escrito y ensayado por **todos** los integrantes (no solo uno).
 - [ ] Duracion objetivo: 3-5 min cronometrados.
 - [ ] Version exportada (PDF/PPT) en `mockups/` o en el repo.
@@ -197,8 +263,8 @@ Cada historia incluye criterios de aceptacion (CA), prioridad y Story Points.
 **Como** equipo **queremos** un pitch tecnico de 5-8 min en espanol **para** sustentar arquitectura, logica de negocio y decisiones tecnicas ante los jurados.
 
 **Criterios de aceptacion**
-- [ ] Slides en espanol: arquitectura full-stack, modelo de datos (3FN), logica de negocio (ICA, IA), GitFlow.
-- [ ] **Demo en vivo** de la app desplegada (login -> evaluar -> dashboard con ICA -> resumen IA).
+- [ ] Slides en espanol: arquitectura full-stack, modelo de datos (3FN), logica de negocio (ICP, IA), GitFlow.
+- [ ] **Demo en vivo** de la app desplegada (login -> evaluar -> dashboard con ICP -> resumen IA).
 - [ ] Cada integrante explica una parte (evidencia individual).
 - [ ] Version exportada (PDF/PPT) en el repo.
 

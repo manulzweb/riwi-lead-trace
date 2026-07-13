@@ -49,7 +49,6 @@ funcion pura hace lo mismo con menos codigo.
 | Patron | Donde | Que resuelve |
 |---|---|---|
 | **Module Pattern** | Cada archivo `*.service.js`, `*.view.js` (ES Modules) | Encapsula detalles; solo se exporta lo necesario |
-| **Observer** | `store.js` (`subscribe`/`setState` notifica a quien escucha) | El estado compartido (sesion, tema) cambia en un lugar y todos los suscriptores se enteran — es el unico lugar del frontend con estado real, por eso aqui si vale una clase |
 | **Front Controller** | `router.js` (`renderRoute`) | Un unico punto de entrada decide que vista renderizar segun la ruta y el rol |
 
 **Vistas, componentes y `*.service.js` se quedan como funciones**, no clases: no guardan estado propio
@@ -113,7 +112,7 @@ riwi-lead-trace/
 │       │   ├── auth.service.js
 │       │   ├── evaluation.service.js
 │       │   ├── user.service.js
-│       │   └── metrics.service.js       # ICA + resumen IA
+│       │   └── metrics.service.js       # ICP + resumen IA
 │       ├── views/              # login, home, evaluables, evaluation-form,
 │       │                       # history, dashboard, not-found (*.view.js)
 │       ├── components/         # navbar, form-field, rating-input, card,
@@ -205,14 +204,59 @@ def get_metrics_summary(period_id: int, current_user: dict = Depends(require_rol
 
 Toda esta logica vive en `services/` (no en routers ni queries dispersas). Es la parte "no CRUD".
 
-### Indice de Calidad de Acompanamiento (ICA) — `metrics_service`
-Por cada `(evaluatee_id, period_id)`, solo con evaluaciones `submitted`:
+### Indice de Calidad Percibida (ICP) — `metrics_service`
+
+**Que mide (y que no).** El ICP mide la **calidad percibida** del acompanamiento segun los
+Coders — es una *Student Evaluation of Teaching* (SET), el tipo de instrumento mas usado en
+educacion superior para evaluar docentes desde la percepcion del estudiante. La literatura
+muestra que estas encuestas correlacionan de forma **moderada** con el rendimiento academico
+(r ≈ 0.43) pero **no miden aprendizaje real**; por eso el indice se llama "percibida" y sus
+resultados se leen como senal de percepcion, no como veredicto de efectividad. Esta limitacion
+se declara explicitamente en el dashboard y en el pitch tecnico.
+
+**En que se fundamentan las categorias.** No son inventadas: cada rol evaluado usa las
+dimensiones de un instrumento validado, adaptadas al contexto Riwi.
+
+| Rol evaluado | Instrumento base | Categorias del ICP (con peso `w_c`) |
+|---|---|---|
+| **Team Leader** (es un *mentor*) | **MCA-21** — Mentoring Competency Assessment (Fleming et al.; revalidado 2022, J Clin Transl Sci) | Comunicación efectiva (0.25) · Alineación de expectativas (0.20) · Verificación de comprensión (0.20) · Fomento de la independencia (0.20) · Desarrollo profesional (0.15) |
+| **Tutor** (rol *docente/tecnico*) | **SEEQ** — Students' Evaluations of Educational Quality (Marsh, 1982) | Valor del aprendizaje (0.30) · Claridad y organización (0.30) · Cercanía individual (0.20) · Disponibilidad e interacción (0.20) |
+
+> Los nombres de categoria de esta tabla son **exactamente** los valores de `questions.category`
+> sembrados en `database/schema.sql` (con tildes): los pesos `DEFAULT_ICP_WEIGHTS` mapean por ese
+> string. La categoria `General` (comentario libre) no pondera en el ICP; alimenta el resumen IA.
+
+**Definicion de cada categoria (que mide).** Estas definiciones de una linea son la referencia
+para juzgar si una pregunta "pertenece" a su categoria: el editor de ADMIN-02 las muestra al
+editar, y el **chequeo de coherencia con IA** (parte de ADMIN-02) las usa como criterio.
+
+| Categoria | Que mide |
+|---|---|
+| Comunicación efectiva | Si el TL se comunica claro, a tiempo y es facil hablarle cuando algo va mal |
+| Alineación de expectativas | Si el TL deja claro que se espera del coder y acuerda objetivos alcanzables |
+| Verificación de comprensión | Si el TL confirma que el coder entendio antes de avanzar y adapta su explicacion |
+| Fomento de la independencia | Si el TL impulsa al coder a resolver por su cuenta y reduce su dependencia |
+| Desarrollo profesional | Si el TL da retroalimentacion y orientacion que hacen crecer el perfil del coder |
+| Valor del aprendizaje | Si lo aprendido con el Tutor sirve para los retos y aporta mas que estudiar solo |
+| Claridad y organización | Si el Tutor explica claro/ordenado y prepara ejemplos al nivel del coder |
+| Cercanía individual | Si el coder se siente tratado con respeto y en confianza para preguntar |
+| Disponibilidad e interacción | Si el Tutor esta disponible en los espacios acordados y responde a tiempo |
+
+> **Riesgo documentado (deriva semantica):** el peso pondera la **categoria**, no el texto. Una
+> pregunta "re-temada" (ej. una de *Cercania individual* reescrita como desempeno general)
+> contaminaria su categoria hacia adelante. Por eso la regla de ADMIN-02 es **reformular, no
+> re-temar**: para preguntar otro tema se desactiva la pregunta y se crea una nueva en la
+> categoria correcta. El historico nunca se afecta (edicion solo con periodo cerrado + versionado).
+
+**Calculo.** Por cada `(evaluatee_id, period_id)`, solo con evaluaciones `submitted`:
 1. `A_c` = promedio por categoria (`AVG(score)` de preguntas `scale`, escala 1-5).
-2. Base ponderada `B = Sum(w_c · A_c) / Sum(w_c)` con pesos `w_c` por categoria. Los pesos son
-   **constantes en codigo** (`DEFAULT_ICA_WEIGHTS`).
+2. Base ponderada `B = Sum(w_c · A_c) / Sum(w_c)` con pesos `w_c` por categoria (tabla
+   anterior). Los pesos son **constantes en codigo** (`DEFAULT_ICP_WEIGHTS`), no editables
+   desde la UI.
 3. Normaliza `score = round((B - 1) / 4 * 100)` -> 0-100.
 4. **Confianza** segun `n` (respuestas) y participacion: `Datos insuficientes` si `n < N_MIN`.
-5. **Tendencia** `D = score_actual - score_periodo_anterior`.
+5. **Tendencia** `D = score_actual - score_periodo_anterior`, comparada **por categoria** (no
+   por pregunta), de modo que editar la redaccion de una pregunta no rompe la comparabilidad.
 6. **Estado:** `En riesgo` (`score < 60` o `D <= -10`), `Solido` (`>=80` y `D>=0`), `Estable` o
    `Datos insuficientes`. Umbrales y pesos son constantes documentadas (sustentables).
 
@@ -227,6 +271,12 @@ Por cada `(evaluatee_id, period_id)`, solo con evaluaciones `submitted`:
   persona/periodo.
 - **Privacidad:** nunca se envian identidades ni `evaluator_id`. El texto resultante se guarda en
   `ai_feedback_cache` (`UNIQUE(evaluatee_id, period_id)`) para no re-llamar al modelo.
+- **Segundo uso (ADMIN-02) — chequeo de coherencia de preguntas:** al editar una pregunta,
+  `ai_service` pide al modelo validar si el texto nuevo sigue midiendo la **definicion de su
+  categoria** (tabla anterior). Solo se envian el texto de la pregunta y esa definicion — cero
+  datos personales. Si no coincide, el editor **advierte** y exige confirmacion explicita del
+  admin para guardar (la IA no bloquea; la decision es humana). Sin API key o ante error, la
+  edicion funciona sin chequeo (degradacion elegante).
 
 ## Comunicacion con la API
 
@@ -239,10 +289,13 @@ Por cada `(evaluatee_id, period_id)`, solo con evaluaciones `submitted`:
 | POST | `/auth/login` | Autenticacion -> `{ token, user }` |
 | GET | `/users?role=team_leader` | Evaluables por rol |
 | GET | `/forms?target_role=team_leader` | Plantilla de formulario por rol |
-| POST | `/evaluations` | Registrar evaluacion (anonimato + no-duplicado por periodo) |
+| POST | `/evaluations` | Registrar evaluacion (anonimato + no-duplicado por periodo + **requiere periodo activo**, si no `409`) |
 | GET | `/evaluations?evaluator_id=:id` | Historial del Coder |
 | GET | `/evaluations?evaluatee_id=:id` | Historico por evaluado (respeta anonimato) |
-| GET | `/metrics/summary?period_id=:p` | KPIs + **ICA** |
+| GET | `/periods` | Listar periodos (el activo define si hay formularios disponibles) |
+| PATCH | `/periods/:id` | **Admin:** activar/cerrar el periodo de evaluacion (solo uno activo a la vez) |
+| PATCH | `/questions/:id` | **Admin:** editar texto o activar/desactivar una pregunta (solo con periodo cerrado, si no `409`) |
+| GET | `/metrics/summary?period_id=:p` | KPIs + **ICP** |
 | GET | `/metrics/ai-summary?evaluatee_id=:e&period_id=:p` | Resumen IA (Claude, anonimizado) — admin |
 
 > FastAPI expone documentacion interactiva automatica en `/docs` (Swagger) y `/redoc`, util para pruebas y sustentacion.
@@ -283,6 +336,6 @@ La rubrica exige justificar las decisiones tecnicas. Todas las elecciones estan 
 | Auth | **JWT** | sesiones server-side | Sin estado, encaja con SPA + API REST |
 | IA (resumenes) | **Claude API** (`anthropic`) | otros LLM, sin IA | Calidad de redaccion + privacidad por diseno (solo agregados anonimos) |
 
-**FastAPI** trae validacion (Pydantic), tipado y documentacion automatica (Swagger/`/docs`) sin librerias extra — util para la sustentacion. **MySQL** encaja porque el dominio es naturalmente relacional (usuarios<->roles, evaluaciones<->respuestas) y el dashboard vive de consultas agregadas. **JWT** es la opcion natural para una SPA sin estado. **Claude API** resume el feedback en lenguaje natural para el Admin — es el diferenciador, pero la IA complementa la logica de negocio propia (el ICA), que es lo que evalua la rubrica como "no-CRUD".
+**FastAPI** trae validacion (Pydantic), tipado y documentacion automatica (Swagger/`/docs`) sin librerias extra — util para la sustentacion. **MySQL** encaja porque el dominio es naturalmente relacional (usuarios<->roles, evaluaciones<->respuestas) y el dashboard vive de consultas agregadas. **JWT** es la opcion natural para una SPA sin estado. **Claude API** resume el feedback en lenguaje natural para el Admin — es el diferenciador, pero la IA complementa la logica de negocio propia (el ICP), que es lo que evalua la rubrica como "no-CRUD".
 
 **Decisiones que evitan sobreingenieria:** sin frameworks de frontend ni estado externo; ORM simple (SQLAlchemy) sobre un esquema 3FN sin complejidad extra; `database/schema.sql` versionado en vez de migraciones (Alembic queda como mejora futura); tests enfocados en la logica de negocio, no en cobertura total.
