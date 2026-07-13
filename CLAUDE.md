@@ -10,7 +10,7 @@ formularios estructurados (con opcion anonima). Un **backend FastAPI + MySQL** p
 la informacion, calcula un **Indice de Calidad Percibida (ICP)** y **genera resumenes de
 feedback con IA (Claude API)** para el **Admin (Jefe de TL/tutores)**.
 
-> **Estado actual:** fase de **planeacion**. El repo contiene documentacion Scrum y de diseno (`/docs`), el script SQL (`/database`) y esta guia. **Todavia no hay codigo de la app.** Al implementar, sigue la arquitectura definida en `/docs` — no la reinventes.
+> **Estado actual:** **desarrollo temprano**. Ademas de la documentacion (`/docs`) y el script SQL (`/database`), en `develop` ya existe la base del codigo: backend FastAPI con `/health` y `GET /periods` (auth, forms, evaluations y metrics aun pendientes) y una SPA con router por roles y vistas estaticas (sin conectar a la API). Al implementar, sigue la arquitectura definida en `/docs` — no la reinventes.
 
 ## Modo de operacion: GUIA GENERATIVA (regla principal)
 
@@ -139,11 +139,13 @@ cliente nunca sustituye la verificacion en el servidor.
 1. **Anonimato real:** si `is_anonymous` es true, **no** persistas ni expongas `evaluator_id`. Imposible reconstruir la identidad del evaluador anonimo.
 2. **Un Coder no evalua dos veces** al mismo evaluado en el mismo **periodo** (validar en backend + indice unico en BD).
 3. **Validacion doble:** en cliente (UX) y en servidor con Pydantic (autoridad).
-4. **Logica de negocio identificable** (no solo CRUD): **ICP** (indice 0-100 ponderado por categoria, con confianza, tendencia y estado) por persona/periodo, % participacion, estados de evaluacion (borrador/enviada), RBAC. No la degrades a CRUD plano. El ICP es **derivado, no se persiste** (se calcula on-read).
-5. **Privacidad de IA:** a Claude API solo se envian **agregados anonimizados** (promedios, conteos, comentarios sin autor). **Nunca** `evaluator_id` ni textos que revelen identidad. La IA genera resumenes **solo para el Admin**.
-6. **Visibilidad de evaluadores:** una persona evaluada (TL/Tutor) **nunca ve quien la evaluo**; solo el **Admin** ve la identidad del evaluador en evaluaciones **no anonimas**. Las **anonimas permanecen anonimas para todos** (incluido el Admin).
-7. **Seguridad:** contrasenas siempre hasheadas (passlib/bcrypt); `401` cierra sesion en cliente.
-8. **Respeta el alcance MVP** (`docs/09-mvp-alcance.md`): no implementes lo marcado "fuera del MVP" sin que el usuario lo pida.
+4. **Logica de negocio identificable** (no solo CRUD): **ICP** (indice 0-100 ponderado por categoria, con confianza, tendencia y estado) por persona/periodo, % participacion, estados de evaluacion (borrador/enviada), RBAC. No la degrades a CRUD plano. El ICP es **derivado, no se persiste** (se calcula on-read). Sus categorias estan **fundadas en instrumentos validados** (MCA-21 para Team Leaders, SEEQ para Tutores — ver `docs/06-arquitectura.md`) y mide **calidad percibida**, no aprendizaje real: no cambies categorias ni pesos sin actualizar docs y seed a la vez.
+5. **Ventana de evaluacion controlada (ADMIN-01):** solo puede existir **un periodo activo** a la vez y solo el **admin** lo activa/cierra. Sin periodo activo, la SPA muestra "No hay formularios por realizar" y el backend **rechaza** (`409`) crear/enviar evaluaciones — la SPA nunca es la autoridad.
+6. **Integridad del instrumento (ADMIN-02):** las preguntas solo se editan **con periodo cerrado**; editar el texto **versiona** (fila nueva + `is_active=FALSE` en la anterior), nunca sobrescribe. El admin no puede tocar `category`, tipos ni pesos. Las respuestas historicas conservan su pregunta original.
+7. **Privacidad de IA:** a Claude API solo se envian **agregados anonimizados** (promedios, conteos, comentarios sin autor). **Nunca** `evaluator_id` ni textos que revelen identidad. La IA genera resumenes **solo para el Admin**.
+8. **Visibilidad de evaluadores:** una persona evaluada (TL/Tutor) **nunca ve quien la evaluo**; solo el **Admin** ve la identidad del evaluador en evaluaciones **no anonimas**. Las **anonimas permanecen anonimas para todos** (incluido el Admin).
+9. **Seguridad:** contrasenas siempre hasheadas (passlib/bcrypt); `401` cierra sesion en cliente.
+10. **Respeta el alcance MVP** (`docs/09-mvp-alcance.md`): no implementes lo marcado "fuera del MVP" sin que el usuario lo pida. El formulario de evaluacion es **interactivo "una pregunta a la vez" en JS Vanilla + CSS** — sin paquetes de formularios (SurveyJS y similares cuentan como framework de UI prohibido).
 
 ## Convenciones de codigo
 
@@ -186,9 +188,12 @@ npm run build                            # bundle de produccion
 | POST | `/auth/login` | login -> `{ token, user }` | hash + JWT |
 | GET | `/users?role=team_leader` | evaluables por rol | RBAC |
 | GET | `/forms?target_role=team_leader` | plantilla de formulario | — |
-| POST | `/evaluations` | registrar evaluacion | anonimato + no-duplicado(periodo) + validacion |
+| POST | `/evaluations` | registrar evaluacion | anonimato + no-duplicado(periodo) + **periodo activo** + validacion |
 | GET | `/evaluations?evaluator_id=:id` | historial del Coder | RBAC (propio) |
 | GET | `/evaluations?evaluatee_id=:id` | historico por evaluado | RBAC (admin), respeta anonimato |
+| GET | `/periods` | listar periodos | el activo habilita los formularios |
+| PATCH | `/periods/:id` | activar/cerrar periodo | RBAC (admin), **solo uno activo** |
+| PATCH | `/questions/:id` | editar/desactivar pregunta | RBAC (admin), **solo periodo cerrado**, versionado |
 | GET | `/metrics/summary?period_id=:p` | KPIs + ICP | **agregaciones + ICP** |
 | GET | `/metrics/ai-summary?evaluatee_id=:e&period_id=:p` | resumen IA | **Claude API (anonimizado)**, admin |
 
