@@ -1,33 +1,23 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
-from sqlalchemy.orm import relationship
+from sqlalchemy import MetaData, Table, Column, Integer, String, Boolean, ForeignKey
 
-from app.core.database import Base
+metadata_obj = MetaData()
 
+form_templates_table = Table(
+    "form_templates",
+    metadata_obj,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("title", String(120), nullable=False),
+    Column("target_role_id", Integer, ForeignKey("roles.id"), nullable=False),
+    Column("is_active", Boolean, nullable=False, default=True),
+)
 
-class FormTemplate(Base):
-    __tablename__ = "form_templates"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    title = Column(String(120), nullable=False)
-    target_role_id = Column(Integer, ForeignKey("roles.id"), nullable=False)
-    is_active = Column(Boolean, nullable=False, default=True)
-
-    target_role = relationship("Role")
-    questions = relationship("Question", back_populates="template", order_by="Question.sort_order")
-
-
-class Question(Base):
-    __tablename__ = "questions"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    template_id = Column(Integer, ForeignKey("form_templates.id"), nullable=False)
-    text = Column(String(255), nullable=False)
-    category = Column(String(60), nullable=False)
-    # 'scale' | 'text' — el CHECK constraint vive en el schema SQL
-    input_type = Column(String(20), nullable=False, default="scale")
-    sort_order = Column(Integer, nullable=False, default=0)
-    # ADMIN-02: editar texto versiona (fila nueva + desactivar la anterior);
-    # las evaluaciones nuevas cargan solo preguntas activas
-    is_active = Column(Boolean, nullable=False, default=True)
-
-    template = relationship("FormTemplate", back_populates="questions")
+questions_table = Table(
+    "questions",
+    metadata_obj,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("template_id", Integer, ForeignKey("form_templates.id"), nullable=False),
+    Column("text", String(255), nullable=False),
+    Column("category", String(60), nullable=False),
+    Column("input_type", String(20), nullable=False, default="scale"),
+    Column("sort_order", Integer, nullable=False, default=0),
+)

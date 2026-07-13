@@ -1,22 +1,15 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, TIMESTAMP
-from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
+from sqlalchemy import MetaData, Table, Column, Integer, String, Boolean
 
-from app.core.database import Base
+metadata = MetaData()
 
-
-class User(Base):
-    __tablename__ = "users"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    full_name = Column(String(120), nullable=False)
-    email = Column(String(150), nullable=False, unique=True)
-    password_hash = Column(String(255), nullable=False)
-    role_id = Column(Integer, ForeignKey("roles.id"), nullable=False)
-    # NULL para team_leader/admin; lo usan coder y tutor
-    clan_id = Column(Integer, ForeignKey("clans.id"), nullable=True)
-    is_active = Column(Boolean, nullable=False, default=True)
-    created_at = Column(TIMESTAMP, nullable=False, server_default=func.now())
-
-    role = relationship("Role")
-    clan = relationship("Clan")
+users_table = Table(
+    "users",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("full_name", String(120), nullable=False),
+    Column("email", String(150), nullable=False, unique=True),
+    Column("password_hash", String(255), nullable=False),
+    Column("role_id", Integer, nullable=False),
+    Column("clan_id", Integer, nullable=True),
+    Column("is_active", Boolean, nullable=False, default=True),
+)

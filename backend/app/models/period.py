@@ -1,26 +1,13 @@
-from datetime import date
+from sqlalchemy import MetaData, Table, Column, Integer, String, Date, Boolean
 
-from pydantic import BaseModel, ConfigDict
-from sqlalchemy import Boolean, Column, Date, Integer, String
+metadata = MetaData()
 
-from app.core.database import Base
-
-
-class Period(Base):
-    __tablename__ = "periods"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(60), nullable=False)
-    starts_at = Column(Date, nullable=False)
-    ends_at = Column(Date, nullable=False)
-    is_active = Column(Boolean, nullable=False, default=False)
-
-
-class PeriodOut(BaseModel):
-    id: int
-    name: str
-    starts_at: date
-    ends_at: date
-    is_active: bool
-
-    model_config = ConfigDict(from_attributes=True)
+periods_table = Table(
+    "periods",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("name", String(60), nullable=False),
+    Column("starts_at", Date, nullable=False),
+    Column("ends_at", Date, nullable=False),
+    Column("is_active", Boolean, nullable=False, default=False),
+)

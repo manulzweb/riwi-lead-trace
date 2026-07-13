@@ -1,19 +1,14 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, Text, TIMESTAMP
-from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
+from sqlalchemy import MetaData, Table, Column, Integer, String, Text, TIMESTAMP, ForeignKey
 
-from app.core.database import Base
+metadata_obj = MetaData()
 
-
-class AiFeedbackCache(Base):
-    __tablename__ = "ai_feedback_cache"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    evaluatee_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    period_id = Column(Integer, ForeignKey("periods.id"), nullable=False)
-    summary = Column(Text, nullable=False)
-    model = Column(String(40), nullable=False)
-    generated_at = Column(TIMESTAMP, nullable=False, server_default=func.now())
-
-    evaluatee = relationship("User")
-    period = relationship("Period")
+ai_feedback_cache_table = Table(
+    "ai_feedback_cache",
+    metadata_obj,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("evaluatee_id", Integer, ForeignKey("users.id"), nullable=False),
+    Column("period_id", Integer, ForeignKey("periods.id"), nullable=False),
+    Column("summary", Text, nullable=False),
+    Column("model", String(40), nullable=False),
+    Column("generated_at", TIMESTAMP, nullable=True),
+)
