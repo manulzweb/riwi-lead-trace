@@ -1,10 +1,10 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import MetaData, Table, Column, Integer, String
 
-from app.core.database import Base
+metadata_obj = MetaData()
 
-
-class Role(Base):
-    __tablename__ = "roles"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(30), nullable=False, unique=True)
+roles_table = Table(
+    "roles",
+    metadata_obj,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("name", String(30), nullable=False, unique=True),
+)
