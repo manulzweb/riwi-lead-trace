@@ -7,7 +7,7 @@ Guia para asistentes de IA (Claude Code y similares) que trabajen en **Riwi Lead
 MVP **full-stack** de **feedback ascendente** para el **Proyecto Integrador de Riwi (Ruta
 Basica)**: una **SPA** permite a los **Coders** evaluar a **Team Leaders** y **Tutores** con
 formularios estructurados (con opcion anonima). Un **backend FastAPI + MySQL** persiste y procesa
-la informacion, calcula un **Indice de Calidad de Acompanamiento (ICA)** y **genera resumenes de
+la informacion, calcula un **Indice de Calidad Percibida (ICP)** y **genera resumenes de
 feedback con IA (Claude API)** para el **Admin (Jefe de TL/tutores)**.
 
 > **Estado actual:** fase de **planeacion**. El repo contiene documentacion Scrum y de diseno (`/docs`), el script SQL (`/database`) y esta guia. **Todavia no hay codigo de la app.** Al implementar, sigue la arquitectura definida en `/docs` — no la reinventes.
@@ -113,7 +113,7 @@ Reglas: las vistas **no** llaman `fetch` directo (usan `services/`); los service
 ```
 main.py · core/ (config, security/JWT, database)
 models/ (SQLAlchemy) · schemas/ (Pydantic) · routers/ (endpoints)
-services/ (LOGICA DE NEGOCIO: metrics_service/ICA, ai_service) · repositories/ (queries)
+services/ (LOGICA DE NEGOCIO: metrics_service/ICP, ai_service) · repositories/ (queries)
 deps.py (get_db, get_current_user, require_role)
 ```
 Reglas: los **routers** validan entrada/salida con Pydantic y delegan; la **logica de negocio vive en `services/`**; el acceso a datos pasa por `repositories/`. Nunca pongas reglas de negocio en los routers ni queries crudas dispersas en endpoints.
@@ -128,7 +128,7 @@ Son **4 roles** (un solo `role_id` por usuario; **no hay rol "teacher"/"instruct
 - **`tutor`** — **rol propio** (no es una bandera sobre coder); es principalmente evaluable;
   conserva `clan_id`.
 - **`team_leader`** (staff) — es evaluable por coders; ve su feedback agregado.
-- **`admin`** (Jefe de TL y de tutores; antes `coordinador`) — dashboards, metricas/ICA, resumenes
+- **`admin`** (Jefe de TL y de tutores; antes `coordinador`) — dashboards, metricas/ICP, resumenes
   IA. Acceso global, respetando anonimato.
 
 RBAC aplicado **tanto en frontend (UX)** como en **backend (seguridad real)**. El control en
@@ -139,7 +139,7 @@ cliente nunca sustituye la verificacion en el servidor.
 1. **Anonimato real:** si `is_anonymous` es true, **no** persistas ni expongas `evaluator_id`. Imposible reconstruir la identidad del evaluador anonimo.
 2. **Un Coder no evalua dos veces** al mismo evaluado en el mismo **periodo** (validar en backend + indice unico en BD).
 3. **Validacion doble:** en cliente (UX) y en servidor con Pydantic (autoridad).
-4. **Logica de negocio identificable** (no solo CRUD): **ICA** (indice 0-100 ponderado por categoria, con confianza, tendencia y estado) por persona/periodo, % participacion, estados de evaluacion (borrador/enviada), RBAC. No la degrades a CRUD plano. El ICA es **derivado, no se persiste** (se calcula on-read).
+4. **Logica de negocio identificable** (no solo CRUD): **ICP** (indice 0-100 ponderado por categoria, con confianza, tendencia y estado) por persona/periodo, % participacion, estados de evaluacion (borrador/enviada), RBAC. No la degrades a CRUD plano. El ICP es **derivado, no se persiste** (se calcula on-read).
 5. **Privacidad de IA:** a Claude API solo se envian **agregados anonimizados** (promedios, conteos, comentarios sin autor). **Nunca** `evaluator_id` ni textos que revelen identidad. La IA genera resumenes **solo para el Admin**.
 6. **Visibilidad de evaluadores:** una persona evaluada (TL/Tutor) **nunca ve quien la evaluo**; solo el **Admin** ve la identidad del evaluador en evaluaciones **no anonimas**. Las **anonimas permanecen anonimas para todos** (incluido el Admin).
 7. **Seguridad:** contrasenas siempre hasheadas (passlib/bcrypt); `401` cierra sesion en cliente.
@@ -189,7 +189,7 @@ npm run build                            # bundle de produccion
 | POST | `/evaluations` | registrar evaluacion | anonimato + no-duplicado(periodo) + validacion |
 | GET | `/evaluations?evaluator_id=:id` | historial del Coder | RBAC (propio) |
 | GET | `/evaluations?evaluatee_id=:id` | historico por evaluado | RBAC (admin), respeta anonimato |
-| GET | `/metrics/summary?period_id=:p` | KPIs + ICA | **agregaciones + ICA** |
+| GET | `/metrics/summary?period_id=:p` | KPIs + ICP | **agregaciones + ICP** |
 | GET | `/metrics/ai-summary?evaluatee_id=:e&period_id=:p` | resumen IA | **Claude API (anonimizado)**, admin |
 
 Detalle y modelo de datos: `docs/06-arquitectura.md` y `docs/07-base-de-datos.md`.

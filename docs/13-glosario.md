@@ -58,12 +58,12 @@ router  →  service  →  repository  →  model  →  (MySQL)
 |----------------|-----------|
 | **FastAPI** | El framework de Python que usamos para construir la API. |
 | **Router** | La "puerta de entrada". Define los endpoints, valida lo que llega y devuelve la respuesta. **No** tiene reglas de negocio. |
-| **Service** | El **cerebro**: aquí viven las **reglas de negocio** (calcular ICA, revisar anonimato, evitar duplicados). Es la parte "que no es solo CRUD". |
+| **Service** | El **cerebro**: aquí viven las **reglas de negocio** (calcular ICP, revisar anonimato, evitar duplicados). Es la parte "que no es solo CRUD". |
 | **Repository** | El "bibliotecario": el único que sabe **cómo buscar/guardar** datos en la BD (las consultas). |
 | **Model** | La representación en Python de una **tabla** de la BD (ej. `User`, `Evaluation`). |
 | **Schema (Pydantic)** | El "molde" que define **qué forma** deben tener los datos que entran y salen. Si no cumplen, se rechazan. |
 | **`deps.py`** | Funciones reutilizables que FastAPI "inyecta": obtener la BD, saber quién es el usuario, exigir un rol. |
-| **CRUD** | Create, Read, Update, Delete = crear, leer, actualizar, borrar. Lo básico de una BD. La rúbrica pide **más que CRUD** (por eso el ICA y la lógica de negocio). |
+| **CRUD** | Create, Read, Update, Delete = crear, leer, actualizar, borrar. Lo básico de una BD. La rúbrica pide **más que CRUD** (por eso el ICP y la lógica de negocio). |
 
 > **¿Por qué separar en capas?** Para que cada archivo sea pequeño y fácil de entender, no repetir
 > código (**DRY**) y que cada persona pueda explicar "su" capa. Si mañana cambia la BD, solo se toca
@@ -108,11 +108,11 @@ router  →  service  →  repository  →  model  →  (MySQL)
 | Término | En simple |
 |---------|-----------|
 | **Feedback ascendente** | Que los **coders evalúen a quienes los acompañan** (Team Leaders y Tutores), no al revés. |
-| **ICA** (Índice de Calidad de Acompañamiento) | Un puntaje de **0 a 100** que resume qué tan bien acompaña un TL/Tutor, calculado a partir de las evaluaciones. Es el corazón "no-CRUD" del backend. |
-| **ICA "derivado, no se persiste"** | El ICA **no se guarda** en la BD: se **calcula al momento** de pedirlo, a partir de las evaluaciones. Así siempre está actualizado. |
-| **Ponderado / pesos** | Algunas categorías del ICA "valen" más que otras. Los **pesos** dicen cuánto. Son constantes fijas en el código (sustentables). |
-| **Confianza** | Aviso de si hay **suficientes respuestas** para confiar en el ICA (con pocas, decimos "datos insuficientes"). |
-| **Tendencia** | Si el ICA **subió o bajó** respecto al periodo anterior. |
+| **ICP** (Índice de Calidad Percibida) | Un puntaje de **0 a 100** que resume qué tan bien acompaña un TL/Tutor, calculado a partir de las evaluaciones. Es el corazón "no-CRUD" del backend. |
+| **ICP "derivado, no se persiste"** | El ICP **no se guarda** en la BD: se **calcula al momento** de pedirlo, a partir de las evaluaciones. Así siempre está actualizado. |
+| **Ponderado / pesos** | Algunas categorías del ICP "valen" más que otras. Los **pesos** dicen cuánto. Son constantes fijas en el código (sustentables). |
+| **Confianza** | Aviso de si hay **suficientes respuestas** para confiar en el ICP (con pocas, decimos "datos insuficientes"). |
+| **Tendencia** | Si el ICP **subió o bajó** respecto al periodo anterior. |
 | **Periodo** | La ventana de tiempo de una ronda de evaluaciones (ej. un sprint/mes). |
 | **Anonimato real** | Si una evaluación es anónima, **nunca** se guarda quién la hizo. Ni el admin puede saberlo. |
 | **No-duplicado** | Un coder no puede evaluar dos veces a la misma persona en el mismo periodo. |

@@ -34,7 +34,7 @@ funcion pura hace lo mismo con menos codigo.
 |---|---|---|
 | **Layered Architecture** | `routers/ -> services/ -> repositories/ -> models/` | Cada capa tiene una responsabilidad; los cambios quedan localizados |
 | **Repository** | `repositories/` (ej. `EvaluationRepository`) | Encapsula el acceso a datos; los `services` no escriben SQL/queries directamente |
-| **Service Layer** | `services/` (ej. `EvaluationService`, `MetricsService`) | Concentra la logica de negocio (anonimato, no-duplicado, calculo del ICA) fuera de los routers |
+| **Service Layer** | `services/` (ej. `EvaluationService`, `MetricsService`) | Concentra la logica de negocio (anonimato, no-duplicado, calculo del ICP) fuera de los routers |
 | **Dependency Injection** | `Depends(get_db)`, `Depends(get_current_user)`, `Depends(require_role(...))` | FastAPI inyecta dependencias en vez de que cada endpoint las construya; facilita testear |
 | **DTO (Data Transfer Object)** | `schemas/` (Pydantic) | Define exactamente que entra/sale de la API, distinto del modelo de BD |
 | **Data Mapper** | `models/` (SQLAlchemy ORM) | Mapea objetos Python a filas de MySQL sin que el resto del codigo escriba SQL |
@@ -72,7 +72,7 @@ sitio con estado que varias partes necesitan compartir y observar.
 │     │                                                        │
 │     v                                                        │
 │  Services  <── LOGICA DE NEGOCIO (anonimato, no-duplicado,  │
-│     │           ICA, resumen IA, RBAC)                      │
+│     │           ICP, resumen IA, RBAC)                      │
 │     │           └─ ai_service ──HTTPS──> Claude API         │
 │     v                                                        │
 │  Repositories (consultas / acceso a datos)                  │
@@ -111,7 +111,7 @@ riwi-lead-trace/
 │       │   ├── auth.service.js
 │       │   ├── evaluation.service.js
 │       │   ├── user.service.js
-│       │   └── metrics.service.js       # ICA + resumen IA
+│       │   └── metrics.service.js       # ICP + resumen IA
 │       ├── views/              # login, home, evaluables, evaluation-form,
 │       │                       # history, dashboard, not-found (*.view.js)
 │       ├── components/         # navbar, form-field, rating-input, card,
@@ -130,7 +130,7 @@ riwi-lead-trace/
 │   │   │                       # question, evaluation, answer, ai_feedback_cache
 │   │   ├── schemas/            # Pydantic: request/response por dominio
 │   │   ├── repositories/       # acceso a datos (queries reutilizables)
-│   │   ├── services/           # LOGICA DE NEGOCIO: metrics_service (ICA),
+│   │   ├── services/           # LOGICA DE NEGOCIO: metrics_service (ICP),
 │   │   │                       # ai_service, evaluation_service
 │   │   ├── routers/            # auth, users, forms, evaluations, metrics
 │   │   └── deps.py             # get_db, get_current_user, require_role
@@ -198,11 +198,11 @@ def summary(period_id: int,
     return metrics_service.build_summary(db, period_id)
 ```
 
-## Logica de negocio destacada (ICA · IA)
+## Logica de negocio destacada (ICP · IA)
 
 Toda esta logica vive en `services/` (no en routers ni queries dispersas). Es la parte "no CRUD".
 
-### Indice de Calidad de Acompanamiento (ICA) — `metrics_service`
+### Indice de Calidad Percibida (ICP) — `metrics_service`
 Por cada `(evaluatee_id, period_id)`, solo con evaluaciones `submitted`:
 1. `A_c` = promedio por categoria (`AVG(score)` de preguntas `scale`, escala 1-5).
 2. Base ponderada `B = Sum(w_c · A_c) / Sum(w_c)` con pesos `w_c` por categoria. Los pesos son
@@ -213,7 +213,7 @@ Por cada `(evaluatee_id, period_id)`, solo con evaluaciones `submitted`:
 6. **Estado:** `En riesgo` (`score < 60` o `D <= -10`), `Solido` (`>=80` y `D>=0`), `Estable` o
    `Datos insuficientes`. Umbrales y pesos son constantes documentadas (sustentables).
 
-> El ICA **no se persiste**: se calcula on-read. `repositories/` solo provee los agregados.
+> El ICP **no se persiste**: se calcula on-read. `repositories/` solo provee los agregados.
 
 ### Resumen por IA — `ai_service`
 - Construye un prompt con **agregados anonimizados** (promedios por categoria, conteos, comentarios
@@ -239,7 +239,7 @@ Por cada `(evaluatee_id, period_id)`, solo con evaluaciones `submitted`:
 | POST | `/evaluations` | Registrar evaluacion (anonimato + no-duplicado por periodo) |
 | GET | `/evaluations?evaluator_id=:id` | Historial del Coder |
 | GET | `/evaluations?evaluatee_id=:id` | Historico por evaluado (respeta anonimato) |
-| GET | `/metrics/summary?period_id=:p` | KPIs + **ICA** |
+| GET | `/metrics/summary?period_id=:p` | KPIs + **ICP** |
 | GET | `/metrics/ai-summary?evaluatee_id=:e&period_id=:p` | Resumen IA (Claude, anonimizado) — admin |
 
 > FastAPI expone documentacion interactiva automatica en `/docs` (Swagger) y `/redoc`, util para pruebas y sustentacion.
@@ -280,6 +280,6 @@ La rubrica exige justificar las decisiones tecnicas. Todas las elecciones estan 
 | Auth | **JWT** | sesiones server-side | Sin estado, encaja con SPA + API REST |
 | IA (resumenes) | **Claude API** (`anthropic`) | otros LLM, sin IA | Calidad de redaccion + privacidad por diseno (solo agregados anonimos) |
 
-**FastAPI** trae validacion (Pydantic), tipado y documentacion automatica (Swagger/`/docs`) sin librerias extra — util para la sustentacion. **MySQL** encaja porque el dominio es naturalmente relacional (usuarios<->roles, evaluaciones<->respuestas) y el dashboard vive de consultas agregadas. **JWT** es la opcion natural para una SPA sin estado. **Claude API** resume el feedback en lenguaje natural para el Admin — es el diferenciador, pero la IA complementa la logica de negocio propia (el ICA), que es lo que evalua la rubrica como "no-CRUD".
+**FastAPI** trae validacion (Pydantic), tipado y documentacion automatica (Swagger/`/docs`) sin librerias extra — util para la sustentacion. **MySQL** encaja porque el dominio es naturalmente relacional (usuarios<->roles, evaluaciones<->respuestas) y el dashboard vive de consultas agregadas. **JWT** es la opcion natural para una SPA sin estado. **Claude API** resume el feedback en lenguaje natural para el Admin — es el diferenciador, pero la IA complementa la logica de negocio propia (el ICP), que es lo que evalua la rubrica como "no-CRUD".
 
 **Decisiones que evitan sobreingenieria:** sin frameworks de frontend ni estado externo; ORM simple (SQLAlchemy) sobre un esquema 3FN sin complejidad extra; `database/schema.sql` versionado en vez de migraciones (Alembic queda como mejora futura); tests enfocados en la logica de negocio, no en cobertura total.

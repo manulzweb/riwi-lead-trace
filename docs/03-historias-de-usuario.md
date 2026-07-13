@@ -64,7 +64,7 @@ Cada historia incluye criterios de aceptacion (CA), prioridad y Story Points.
 
 **Criterios de aceptacion**
 - [ ] El Coder ve evaluaciones e historial propio; no ve el dashboard.
-- [ ] El Admin ve dashboard, ICA, resumenes IA e historico.
+- [ ] El Admin ve dashboard, ICP, resumenes IA e historico.
 - [ ] Las rutas no autorizadas redirigen o muestran "no autorizado" (front).
 - [ ] El backend aplica `require_role` y responde `403` ante accesos no autorizados (autoridad real).
 - [ ] La navegacion se construye dinamicamente segun los permisos del rol.
@@ -142,20 +142,20 @@ Cada historia incluye criterios de aceptacion (CA), prioridad y Story Points.
 ## DASHBOARD
 
 ### DASH-01 — Dashboard de resultados · `Must` · `5 SP`
-**Como** Admin **quiero** un panel con resultados agregados y el **ICA** **para** entender rapidamente la calidad del acompanamiento.
+**Como** Admin **quiero** un panel con resultados agregados y el **ICP** **para** entender rapidamente la calidad del acompanamiento.
 
 **Criterios de aceptacion**
 - [ ] Tarjetas resumen: no de evaluaciones, promedio general, participacion.
-- [ ] Ranking/listado de lideres y tutores con su **ICA (0-100)** y **estado** (Solido/Estable/En riesgo/Datos insuficientes).
+- [ ] Ranking/listado de lideres y tutores con su **ICP (0-100)** y **estado** (Solido/Estable/En riesgo/Datos insuficientes).
 - [ ] Filtro por **periodo**.
 
-### DASH-02 — ICA por criterio e indicadores · `Should` · `3 SP`
-**Como** Admin **quiero** ver el ICA desglosado por criterio **para** identificar fortalezas y debilidades.
+### DASH-02 — ICP por criterio e indicadores · `Should` · `3 SP`
+**Como** Admin **quiero** ver el ICP desglosado por criterio **para** identificar fortalezas y debilidades.
 
 **Criterios de aceptacion**
-- [ ] Promedio por categoria/criterio (componentes del ICA) para una persona seleccionada.
+- [ ] Promedio por categoria/criterio (componentes del ICP) para una persona seleccionada.
 - [ ] Indicador de participacion (% de Coders que evaluaron) y nivel de **confianza**.
-- [ ] **Datos insuficientes** cuando `n < N_MIN`: no se publica el ICA (se indica explicitamente).
+- [ ] **Datos insuficientes** cuando `n < N_MIN`: no se publica el ICP (se indica explicitamente).
 
 ---
 
@@ -188,7 +188,7 @@ Cada historia incluye criterios de aceptacion (CA), prioridad y Story Points.
 **Como** equipo **queremos** un pitch comercial de 3-5 min en ingles **para** demostrar dominio del idioma y vender el valor del producto.
 
 **Criterios de aceptacion**
-- [ ] Slides en ingles con problema, solucion, mercado, diferenciador (IA + ICA) y modelo de negocio.
+- [ ] Slides en ingles con problema, solucion, mercado, diferenciador (IA + ICP) y modelo de negocio.
 - [ ] Script escrito y ensayado por **todos** los integrantes (no solo uno).
 - [ ] Duracion objetivo: 3-5 min cronometrados.
 - [ ] Version exportada (PDF/PPT) en `mockups/` o en el repo.
@@ -197,8 +197,8 @@ Cada historia incluye criterios de aceptacion (CA), prioridad y Story Points.
 **Como** equipo **queremos** un pitch tecnico de 5-8 min en espanol **para** sustentar arquitectura, logica de negocio y decisiones tecnicas ante los jurados.
 
 **Criterios de aceptacion**
-- [ ] Slides en espanol: arquitectura full-stack, modelo de datos (3FN), logica de negocio (ICA, IA), GitFlow.
-- [ ] **Demo en vivo** de la app desplegada (login -> evaluar -> dashboard con ICA -> resumen IA).
+- [ ] Slides en espanol: arquitectura full-stack, modelo de datos (3FN), logica de negocio (ICP, IA), GitFlow.
+- [ ] **Demo en vivo** de la app desplegada (login -> evaluar -> dashboard con ICP -> resumen IA).
 - [ ] Cada integrante explica una parte (evidencia individual).
 - [ ] Version exportada (PDF/PPT) en el repo.
 
