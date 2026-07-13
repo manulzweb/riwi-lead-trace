@@ -203,17 +203,50 @@ def summary(period_id: int,
 Toda esta logica vive en `services/` (no en routers ni queries dispersas). Es la parte "no CRUD".
 
 ### Indice de Calidad Percibida (ICP) — `metrics_service`
-Por cada `(evaluatee_id, period_id)`, solo con evaluaciones `submitted`:
+
+**Que mide (y que no).** El ICP mide la **calidad percibida** del acompanamiento segun los
+Coders — es una *Student Evaluation of Teaching* (SET), el tipo de instrumento mas usado en
+educacion superior para evaluar docentes desde la percepcion del estudiante. La literatura
+muestra que estas encuestas correlacionan de forma **moderada** con el rendimiento academico
+(r ≈ 0.43) pero **no miden aprendizaje real**; por eso el indice se llama "percibida" y sus
+resultados se leen como senal de percepcion, no como veredicto de efectividad. Esta limitacion
+se declara explicitamente en el dashboard y en el pitch tecnico.
+
+**En que se fundamentan las categorias.** No son inventadas: cada rol evaluado usa las
+dimensiones de un instrumento validado, adaptadas al contexto Riwi.
+
+| Rol evaluado | Instrumento base | Categorias del ICP (con peso `w_c`) |
+|---|---|---|
+| **Team Leader** (es un *mentor*) | **MCA-21** — Mentoring Competency Assessment (Fleming et al.; revalidado 2022, J Clin Transl Sci) | Comunicacion efectiva (0.25) · Alineacion de expectativas (0.20) · Verificacion de comprension (0.20) · Fomento de la independencia (0.20) · Desarrollo profesional (0.15) |
+| **Tutor** (rol *docente/tecnico*) | **SEEQ** — Students' Evaluations of Educational Quality (Marsh, 1982) | Valor del aprendizaje (0.30) · Claridad y organizacion (0.30) · Cercania individual (0.20) · Disponibilidad e interaccion (0.20) |
+
+**Calculo.** Por cada `(evaluatee_id, period_id)`, solo con evaluaciones `submitted`:
 1. `A_c` = promedio por categoria (`AVG(score)` de preguntas `scale`, escala 1-5).
-2. Base ponderada `B = Sum(w_c · A_c) / Sum(w_c)` con pesos `w_c` por categoria. Los pesos son
-   **constantes en codigo** (`DEFAULT_ICA_WEIGHTS`).
+2. Base ponderada `B = Sum(w_c · A_c) / Sum(w_c)` con pesos `w_c` por categoria (tabla
+   anterior). Los pesos son **constantes en codigo** (`DEFAULT_ICP_WEIGHTS`), no editables
+   desde la UI.
 3. Normaliza `score = round((B - 1) / 4 * 100)` -> 0-100.
 4. **Confianza** segun `n` (respuestas) y participacion: `Datos insuficientes` si `n < N_MIN`.
-5. **Tendencia** `D = score_actual - score_periodo_anterior`.
+5. **Tendencia** `D = score_actual - score_periodo_anterior`, comparada **por categoria** (no
+   por pregunta), de modo que editar la redaccion de una pregunta no rompe la comparabilidad.
 6. **Estado:** `En riesgo` (`score < 60` o `D <= -10`), `Solido` (`>=80` y `D>=0`), `Estable` o
    `Datos insuficientes`. Umbrales y pesos son constantes documentadas (sustentables).
 
+**Renormalizacion defensiva:** si una categoria queda sin preguntas activas o sin respuestas,
+se excluye y los pesos se renormalizan sobre las categorias presentes (el denominador
+`Sum(w_c)` ya lo hace naturalmente).
+
 > El ICP **no se persiste**: se calcula on-read. `repositories/` solo provee los agregados.
+
+**Referencias del instrumento (para el documento tecnico y la sustentacion):**
+- Marsh, H. W. (1982). *SEEQ: A reliable, valid, and useful instrument for collecting
+  students' evaluations of university teaching.* British Journal of Educational Psychology.
+- *Revalidation of the Mentoring Competency Assessment (MCA-21).* Journal of Clinical and
+  Translational Science (2022).
+- *Students' Evaluation of Teaching and Their Academic Achievement* (Frontiers in
+  Psychology, 2020) — correlacion r ≈ 0.43 entre SET y rendimiento.
+- La evaluacion 360° enmarca este MVP: la vista ascendente (Coder -> TL/Tutor) es **una** de
+  las fuentes posibles; autoevaluacion y evaluacion de pares quedan como version futura.
 
 ### Resumen por IA — `ai_service`
 - Construye un prompt con **agregados anonimizados** (promedios por categoria, conteos, comentarios
@@ -236,9 +269,12 @@ Por cada `(evaluatee_id, period_id)`, solo con evaluaciones `submitted`:
 | POST | `/auth/login` | Autenticacion -> `{ token, user }` |
 | GET | `/users?role=team_leader` | Evaluables por rol |
 | GET | `/forms?target_role=team_leader` | Plantilla de formulario por rol |
-| POST | `/evaluations` | Registrar evaluacion (anonimato + no-duplicado por periodo) |
+| POST | `/evaluations` | Registrar evaluacion (anonimato + no-duplicado por periodo + **requiere periodo activo**, si no `409`) |
 | GET | `/evaluations?evaluator_id=:id` | Historial del Coder |
 | GET | `/evaluations?evaluatee_id=:id` | Historico por evaluado (respeta anonimato) |
+| GET | `/periods` | Listar periodos (el activo define si hay formularios disponibles) |
+| PATCH | `/periods/:id` | **Admin:** activar/cerrar el periodo de evaluacion (solo uno activo a la vez) |
+| PATCH | `/questions/:id` | **Admin:** editar texto o activar/desactivar una pregunta (solo con periodo cerrado, si no `409`) |
 | GET | `/metrics/summary?period_id=:p` | KPIs + **ICP** |
 | GET | `/metrics/ai-summary?evaluatee_id=:e&period_id=:p` | Resumen IA (Claude, anonimizado) — admin |
 

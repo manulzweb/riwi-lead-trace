@@ -108,12 +108,17 @@ router  →  service  →  repository  →  model  →  (MySQL)
 | Término | En simple |
 |---------|-----------|
 | **Feedback ascendente** | Que los **coders evalúen a quienes los acompañan** (Team Leaders y Tutores), no al revés. |
-| **ICP** (Índice de Calidad Percibida) | Un puntaje de **0 a 100** que resume qué tan bien acompaña un TL/Tutor, calculado a partir de las evaluaciones. Es el corazón "no-CRUD" del backend. |
+| **ICP** (Índice de Calidad Percibida) | Un puntaje de **0 a 100** que resume qué tan bien acompaña un TL/Tutor **según la percepción de los Coders**, calculado a partir de las evaluaciones. Es el corazón "no-CRUD" del backend. Mide percepción, no aprendizaje real (por eso se llama "percibida"). |
 | **ICP "derivado, no se persiste"** | El ICP **no se guarda** en la BD: se **calcula al momento** de pedirlo, a partir de las evaluaciones. Así siempre está actualizado. |
-| **Ponderado / pesos** | Algunas categorías del ICP "valen" más que otras. Los **pesos** dicen cuánto. Son constantes fijas en el código (sustentables). |
+| **SET** (Student Evaluation of Teaching) | El tipo de instrumento al que pertenece el ICP: encuestas donde el estudiante evalúa a quien le enseña/acompaña. Muy estudiado en educación superior. |
+| **SEEQ** | Cuestionario validado (Marsh, 1982) del que salen las **categorías del ICP para Tutores**: valor del aprendizaje, claridad/organización, cercanía, disponibilidad. |
+| **MCA-21** | Instrumento validado de **competencias de mentoría** del que salen las **categorías del ICP para Team Leaders**: comunicación, expectativas, comprensión, independencia, desarrollo. Un TL es más mentor que profesor. |
+| **Ponderado / pesos** | Algunas categorías del ICP "valen" más que otras. Los **pesos** dicen cuánto. Son constantes fijas en el código (sustentables); el admin **no** puede cambiarlos. |
 | **Confianza** | Aviso de si hay **suficientes respuestas** para confiar en el ICP (con pocas, decimos "datos insuficientes"). |
-| **Tendencia** | Si el ICP **subió o bajó** respecto al periodo anterior. |
+| **Tendencia** | Si el ICP **subió o bajó** respecto al periodo anterior. Se compara **por categoría**, así que cambiar la redacción de una pregunta no la daña. |
 | **Periodo** | La ventana de tiempo de una ronda de evaluaciones (ej. un sprint/mes). |
+| **Periodo activo** | El único periodo "abierto": mientras esté activo, los Coders ven y envían formularios. El **admin** lo activa/cierra. Sin periodo activo, la SPA muestra "No hay formularios por realizar". |
+| **Versionar una pregunta** | Cuando el admin edita el texto de una pregunta, **no se sobrescribe**: se crea una pregunta nueva y la vieja se desactiva. Las respuestas históricas conservan el texto original que respondieron. |
 | **Anonimato real** | Si una evaluación es anónima, **nunca** se guarda quién la hizo. Ni el admin puede saberlo. |
 | **No-duplicado** | Un coder no puede evaluar dos veces a la misma persona en el mismo periodo. |
 | **Resumen con IA** | Un texto ejecutivo que **Claude** (IA) genera para el **admin**, resumiendo el feedback. Solo se le envían **datos agregados y anónimos**. |

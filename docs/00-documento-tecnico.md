@@ -25,7 +25,9 @@ información accionable para tomar decisiones.
 ## 4. Objetivos específicos
 
 1. Dar a los Coders un canal formal, seguro y opcionalmente anónimo para evaluar a sus líderes y tutores.
-2. Medir la calidad del acompañamiento con un índice propio y ponderado: el **ICP**.
+2. Medir la **calidad percibida** del acompañamiento con un índice propio y ponderado: el **ICP**,
+   cuyas categorías se fundamentan en instrumentos validados (MCA-21 para Team Leaders, SEEQ para
+   Tutores — ver [`06-arquitectura.md`](./06-arquitectura.md)).
 3. Dejar trazabilidad y métricas de seguimiento histórico por líder, tutor y periodo.
 4. Habilitar decisiones basadas en datos para el Admin, apoyadas en un resumen generado por IA.
 5. Fomentar la mejora continua dentro del ecosistema de aprendizaje de Riwi.
@@ -37,12 +39,16 @@ Leaders y Tutores. El sistema calcula una nota de 0 a 100 por persona (el ICP) y
 tablero más un resumen escrito por IA.
 
 **Dentro del MVP:** login con JWT, 4 roles (coder/tutor/team_leader/admin), listar evaluables, evaluar
-Team Leader y Tutor con formulario estructurado, feedback anónimo opcional, historial del Coder,
-dashboard con ICP para el Admin, resumen de feedback con IA, despliegue accesible.
+Team Leader y Tutor con formulario estructurado e interactivo (una pregunta a la vez), feedback anónimo
+opcional, historial del Coder, **gestión del periodo de evaluación por el Admin** (activa/cierra la
+ventana; sin periodo activo los Coders ven "No hay formularios por realizar"), **edición mínima de
+preguntas por el Admin** (texto y activar/desactivar, con periodo cerrado), dashboard con ICP para el
+Admin, resumen de feedback con IA, despliegue accesible.
 
 **Fuera del MVP** (post-validación): segmentación multi-área, bitácora descendente TL→Tutor, analítica
-de talento, pesos del ICP configurables por el Admin, notificaciones, i18n. Detalle completo y el
-porqué de cada recorte en [`09-mvp-alcance.md`](./09-mvp-alcance.md).
+de talento, pesos del ICP configurables por el Admin, editor completo de formularios (crear plantillas
+y tipos de pregunta), notificaciones, i18n. Detalle completo y el porqué de cada recorte en
+[`09-mvp-alcance.md`](./09-mvp-alcance.md).
 
 ## 6. Historias de usuario
 
