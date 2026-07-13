@@ -81,12 +81,19 @@ Cada historia incluye criterios de aceptacion (CA), prioridad y Story Points.
 - [ ] Indica si ya evalue a esa persona en el periodo actual.
 - [ ] No me incluye a mi mismo (un tutor no se autoevalua).
 - [ ] Estado vacio si no hay evaluables asignados.
+- [ ] Si **no hay periodo activo**, se muestra el estado vacio **"No hay formularios por realizar"**
+      (componente `emptyState`) en lugar de la lista, y no se puede iniciar ninguna evaluacion.
 
 ### EVAL-02 — Evaluar Team Leader · `Must` · `5 SP`
 **Como** Coder **quiero** completar un formulario estructurado para evaluar a un Team Leader **para** retroalimentar su acompanamiento.
 
 **Criterios de aceptacion**
-- [ ] Formulario con criterios por categoria y escala (p.ej. 1-5) + comentario opcional.
+- [ ] Formulario con criterios por categoria y escala (p.ej. 1-5) + comentario opcional. Las
+      preguntas se cargan desde la API (plantilla + preguntas **activas**), nunca hardcodeadas.
+- [ ] **Experiencia interactiva "una pregunta a la vez"** (estilo Typeform) construida en
+      **JS Vanilla + CSS** (sin paquetes de formularios): se muestra una pregunta por pantalla,
+      con barra de progreso, navegacion adelante/atras y transiciones suaves.
+- [ ] Navegable 100% por teclado (Enter avanza, las opciones de escala se eligen con teclado).
 - [ ] Validacion: no se envia incompleto; muestra errores por campo.
 - [ ] Se puede guardar como borrador y retomar.
 - [ ] Confirmacion visual al enviar.
@@ -114,8 +121,47 @@ Cada historia incluye criterios de aceptacion (CA), prioridad y Story Points.
 - [ ] La evaluacion se persiste via `POST /evaluations` con validacion Pydantic en servidor.
 - [ ] Maneja estados: borrador y enviada.
 - [ ] **Regla de negocio:** rechaza (`409`) una segunda evaluacion del mismo evaluado en el mismo **periodo**.
+- [ ] **Regla de negocio:** rechaza (`409`) el registro/envio si **no hay periodo activo**; los
+      borradores existentes no se pierden, pero no pueden enviarse hasta que el Admin reabra un periodo.
 - [ ] Manejo de errores de red con reintento y mensaje claro.
 - [ ] Tras enviar, la persona evaluada aparece como "ya evaluada".
+
+---
+
+## ADMIN
+
+### ADMIN-01 — Gestion del periodo de evaluacion · `Must` · `3 SP`
+**Como** Admin **quiero** activar o cerrar el periodo de evaluacion **para** controlar cuando los
+Coders pueden ver y responder los formularios.
+
+**Criterios de aceptacion**
+- [ ] Vista de admin con la lista de periodos y su estado (activo/cerrado), con accion de
+      activar/cerrar (`PATCH /periods/:id`, solo rol `admin` via `require_role`).
+- [ ] **Regla de negocio:** solo puede existir **un periodo activo a la vez**; al activar uno, el
+      backend desactiva cualquier otro (transaccional).
+- [ ] Con el periodo **cerrado**, los Coders ven el estado vacio **"No hay formularios por
+      realizar"** y el backend rechaza envios (`409`) — la SPA sola no es la autoridad.
+- [ ] Con el periodo **activo**, el flujo de evaluacion funciona normal (listar evaluables,
+      formulario, envio).
+- [ ] Confirmacion antes de cerrar un periodo (accion con efecto global sobre los Coders).
+
+### ADMIN-02 — Editar preguntas del formulario (version minima) · `Should` · `3 SP`
+**Como** Admin **quiero** ajustar el texto de las preguntas y activarlas/desactivarlas **para**
+mejorar el formulario entre rondas sin depender del equipo tecnico.
+
+**Criterios de aceptacion**
+- [ ] Vista de admin que lista las plantillas (TL / Tutor) con sus preguntas, mostrando categoria
+      y estado (activa/inactiva). Solo rol `admin`.
+- [ ] Puede **editar el texto** de una pregunta y **activarla/desactivarla** (`PATCH /questions/:id`).
+      **No** puede cambiar la categoria, el tipo, ni crear/eliminar plantillas (eso es v2).
+- [ ] **Regla de negocio (integridad del ICP):** editar solo esta permitido **con el periodo
+      cerrado**; con periodo activo el backend responde `409` (el instrumento se congela dentro
+      del periodo).
+- [ ] **Regla de negocio (versionado):** editar el texto **no sobrescribe**: crea una pregunta
+      nueva (misma categoria y orden) y desactiva la anterior. Las respuestas historicas siguen
+      apuntando a la pregunta original con su texto intacto.
+- [ ] Las evaluaciones nuevas cargan **solo preguntas activas**; el calculo del ICP agrega por
+      **categoria** con pesos fijos, por lo que la edicion de redaccion no altera el indice.
 
 ---
 

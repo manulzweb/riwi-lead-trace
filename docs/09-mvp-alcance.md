@@ -15,6 +15,8 @@ Filosofia: **startup validando una idea**. El MVP debe ser lo minimo para compro
 | Evaluar Tutor (formulario estructurado) | Completa el alcance del feedback ascendente |
 | Feedback anonimo opcional | Clave para obtener feedback honesto (confianza) |
 | Registro/persistencia de evaluaciones (API) | Sin datos no hay validacion ni metricas |
+| **Gestion del periodo de evaluacion (Admin)** | El Admin activa/cierra la ventana; sin periodo activo los Coders ven "No hay formularios por realizar" (disponibilidad controlada = logica de negocio) |
+| **Edicion minima de preguntas (Admin)** | Editar texto y activar/desactivar preguntas, solo con periodo cerrado y con versionado (protege historial e ICP) |
 | Historial de evaluaciones (Coder) | Trazabilidad minima para el evaluador |
 | Dashboard de resultados (Admin) | Convierte datos en decision; razon de negocio |
 | **ICP** e indicadores | Mide calidad del acompanamiento con un indice accionable |
@@ -35,7 +37,7 @@ Filosofia: **startup validando una idea**. El MVP debe ser lo minimo para compro
 | Mejoras por IA para el evaluado (TL/Tutor) | El MVP entrega IA solo al Admin; el evaluado ve resultados sin IA |
 | Visualizacion de tendencias (graficos temporales) | CSV/tabla basica como `Could`; graficos avanzados son futuro |
 | Reportes avanzados / exportacion PDF estilizada | CSV/impresion basica como `Could`; lo demas es futuro |
-| CRUD de formularios y criterios desde la UI | Las plantillas se siembran en BD; editor visual es v2 |
+| Editor completo de formularios (crear/eliminar plantillas y preguntas, tipos nuevos, categorias) | El MVP solo incluye la **edicion minima** (texto + activar/desactivar); el editor visual completo es v2 |
 | Notificaciones (email/in-app) y recordatorios | No esencial para validar la hipotesis |
 | Gestion de usuarios/altas desde la UI (admin) | Se cargan via seed/BD en el MVP |
 | Comparativas avanzadas, benchmarking entre cohortes | Requiere volumen de datos; post-validacion |
