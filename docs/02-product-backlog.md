@@ -14,26 +14,30 @@ Backlog **full-stack** del MVP (frontend SPA + backend FastAPI + MySQL). Estimac
 | EVAL-02 | Evaluar Team Leader | Formulario estructurado + `GET /forms?target_role=` plantilla | EVAL | Must | 5 | EVAL-01 |
 | EVAL-03 | Evaluar Tutor | Reutiliza motor de formularios con plantilla de Tutor | EVAL | Must | 3 | EVAL-02 |
 | EVAL-04 | Feedback anonimo opcional | Toggle + regla backend: no persistir `evaluator_id` | EVAL | Should | 2 | EVAL-02 |
-| EVAL-05 | Registrar evaluacion (API) | `POST /evaluations`: validacion Pydantic, estados, **no-duplicado por periodo** | EVAL | Must | 5 | EVAL-02 |
+| EVAL-05 | Registrar evaluacion (API) | `POST /evaluations`: validacion Pydantic, estados, **no-duplicado por periodo**, **requiere periodo activo** | EVAL | Must | 5 | EVAL-02 |
+| ADMIN-01 | Gestion del periodo de evaluacion | Admin activa/cierra el periodo (`PATCH /periods/:id`, solo uno activo); sin periodo activo los Coders ven "No hay formularios por realizar" | ADMIN | Must | 3 | AUTH-03 |
+| ADMIN-02 | Editar preguntas del formulario | Admin edita texto y activa/desactiva preguntas (`PATCH /questions/:id`), solo con periodo cerrado; edicion = versionado + **chequeo IA de coherencia** con la categoria | ADMIN | Should | 3 | ADMIN-01 |
 | HIST-01 | Historial del Coder | UI + `GET /evaluations?evaluator_id=` de evaluaciones propias | HIST | Should | 3 | EVAL-05 |
 | HIST-02 | Seguimiento historico | Admin: historico por evaluado/periodo, respeta anonimato | HIST | Should | 3 | EVAL-05 |
-| DASH-01 | Dashboard + ICA | Panel admin + `GET /metrics/summary` (**ICA**) | DASH | Must | 5 | EVAL-05 |
-| DASH-02 | ICA por criterio e indicadores | **Logica de negocio:** ICA por categoria, % participacion, confianza | DASH | Should | 3 | DASH-01 |
+| DASH-01 | Dashboard + ICP | Panel admin + `GET /metrics/summary` (**ICP**) | DASH | Must | 5 | EVAL-05 |
+| DASH-02 | ICP por criterio e indicadores | **Logica de negocio:** ICP por categoria, % participacion, confianza | DASH | Should | 3 | DASH-01 |
 | AIFEED-01 | Resumen de feedback con IA | `GET /metrics/ai-summary` (Claude, anonimizado, cacheado) | AIFEED | Should | 5 | DASH-01 |
 | DELIV-01 | Despliegue de la app | Backend + frontend + MySQL hospedados; URL publica; vars de entorno | ENTREGA | Must | 5 | EVAL-05 |
 | DELIV-02 | Pitch comercial (ingles) | Slides + script en ingles (3-5 min); ensayado por todos | ENTREGA | Must | 3 | — |
 | DELIV-03 | Pitch tecnico (espanol) | Slides + demo en vivo (5-8 min); cada integrante explica su parte | ENTREGA | Must | 3 | DELIV-01 |
 | DELIV-04 | Documento tecnico final | Compilado de `/docs` + capturas + mockups + evidencias QA | ENTREGA | Must | 5 | — |
 
-**Total backlog MVP:** 79 SP (20 historias).
+**Total backlog MVP:** 85 SP (22 historias).
 
 ## Logica de negocio (no es solo CRUD)
 
 La rubrica exige logica de negocio identificable mas alla del CRUD. En este backlog reside en:
-- **EVAL-05:** prevencion de evaluacion duplicada por (evaluador, evaluado, periodo) + estados borrador/enviada.
+- **EVAL-05:** prevencion de evaluacion duplicada por (evaluador, evaluado, periodo) + estados borrador/enviada + rechazo (`409`) si no hay periodo activo.
 - **EVAL-04:** anonimato real (no se persiste el evaluador).
 - **AUTH-03:** RBAC en servidor + visibilidad restringida por rol (`403`).
-- **DASH-01/02:** **ICA** (indice ponderado por categoria, normalizado, con confianza, tendencia y estado), participacion.
+- **ADMIN-01:** ventana de evaluacion controlada — el periodo activo habilita/deshabilita los formularios para todos los Coders (solo un periodo activo a la vez).
+- **ADMIN-02:** integridad del instrumento — las preguntas solo se editan con periodo cerrado y editarlas **versiona** (nueva fila + desactivar la anterior) para no falsear el historial ni el ICP.
+- **DASH-01/02:** **ICP** (indice ponderado por categoria, normalizado, con confianza, tendencia y estado), participacion.
 - **AIFEED-01:** orquestacion de IA con privacidad por diseno (solo agregados anonimizados) y cache.
 
 ## Orden de refinamiento
@@ -41,7 +45,7 @@ La rubrica exige logica de negocio identificable mas alla del CRUD. En este back
 1. **CORE** (estructura base front + back + BD).
 2. **AUTH** (identidad y rol; todo depende de ello).
 3. **EVAL** (nucleo de valor; feedback ascendente).
-4. **HIST + DASH** (convierten datos en informacion accionable: ICA).
+4. **HIST + DASH** (convierten datos en informacion accionable: ICP).
 5. **AIFEED** (diferenciador: resumen IA).
 6. **ENTREGA** (transversal: el doc tecnico se va escribiendo; despliegue + pitches al final).
 

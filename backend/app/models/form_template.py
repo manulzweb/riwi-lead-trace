@@ -26,5 +26,8 @@ class Question(Base):
     # 'scale' | 'text' — el CHECK constraint vive en el schema SQL
     input_type = Column(String(20), nullable=False, default="scale")
     sort_order = Column(Integer, nullable=False, default=0)
+    # ADMIN-02: editar texto versiona (fila nueva + desactivar la anterior);
+    # las evaluaciones nuevas cargan solo preguntas activas
+    is_active = Column(Boolean, nullable=False, default=True)
 
     template = relationship("FormTemplate", back_populates="questions")

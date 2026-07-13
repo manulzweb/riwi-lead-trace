@@ -1,12 +1,12 @@
 # Riwi LeadTrace
 
-> MVP de **feedback ascendente** para el **Proyecto Integrador — CodeUp Riwi: Beyond Limits (Ruta Basica)**. Aplicacion web full-stack: los Coders evaluan a Team Leaders y Tutores (con opcion anonima). Calcula un **Indice de Calidad de Acompanamiento (ICA)** y **resumenes con IA (Claude)** para el Admin (Jefe de TL/tutores).
+> MVP de **feedback ascendente** para el **Proyecto Integrador — CodeUp Riwi: Beyond Limits (Ruta Basica)**. Aplicacion web full-stack: los Coders evaluan a Team Leaders y Tutores (con opcion anonima). Calcula un **Indice de Calidad Percibida (ICP)** y **resumenes con IA (Claude)** para el Admin (Jefe de TL/tutores).
 
 ## Que es?
 
 Hoy los Team Leaders evaluan a los Coders, pero **no existe un mecanismo formal para que los Coders evaluen a sus lideres y tutores**. Riwi LeadTrace cierra ese ciclo: habilita feedback ascendente (con opcion anonima), identifica fortalezas y debilidades del acompanamiento, y entrega metricas accionables a los responsables academicos.
 
-No es un CRUD basico: incorpora **logica de negocio** real (reglas de anonimato, prevencion de evaluaciones duplicadas por periodo, **ICA** —indice ponderado por criterio con confianza, tendencia y estado—, resumenes con IA anonimizados y control de acceso por rol).
+No es un CRUD basico: incorpora **logica de negocio** real (reglas de anonimato, prevencion de evaluaciones duplicadas por periodo, **ICP** —indice ponderado por criterio con confianza, tendencia y estado—, resumenes con IA anonimizados y control de acceso por rol).
 
 ## Equipo (5 integrantes)
 

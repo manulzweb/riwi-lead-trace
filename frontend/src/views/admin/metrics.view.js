@@ -5,8 +5,8 @@ export const renderMetrics = () => `
   <main class="mx-auto max-w-6xl px-6 py-10">
     <section>
       <p class="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--brand-bg)]">Admin</p>
-      <h1 class="mt-1 text-4xl font-black tracking-tight text-[var(--text-main)]">Métricas ICA</h1>
-      <p class="mt-4 text-[var(--text-muted)]">Índice de Calidad de Acompañamiento por área y periodo.</p>
+      <h1 class="mt-1 text-4xl font-black tracking-tight text-[var(--text-main)]">Métricas ICP</h1>
+      <p class="mt-4 text-[var(--text-muted)]">Índice de Calidad Percibida por área y periodo.</p>
     </section>
 
     <section class="mt-6 flex gap-4 flex-wrap">

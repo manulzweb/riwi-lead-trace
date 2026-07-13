@@ -108,6 +108,10 @@ CREATE TABLE questions (
     category    VARCHAR(60) NOT NULL,
     input_type  VARCHAR(20) NOT NULL DEFAULT 'scale', -- 'scale' | 'text'
     sort_order  INT NOT NULL DEFAULT 0,
+    -- Edición del Admin (ADMIN-02): editar texto = versionar (fila nueva +
+    -- desactivar la anterior). Las evaluaciones nuevas cargan solo activas;
+    -- las respuestas históricas conservan su pregunta original.
+    is_active   BOOLEAN NOT NULL DEFAULT TRUE,
     CONSTRAINT fk_question_template FOREIGN KEY (template_id) REFERENCES form_templates(id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
@@ -212,15 +216,32 @@ INSERT INTO form_templates (title, target_role_id) VALUES
     ('Evaluación de Team Leader', 2),
     ('Evaluación de Tutor', 3);
 
--- Preguntas de ejemplo para la plantilla de Team Leader (id=1)
+-- Preguntas de la plantilla de Team Leader (id=1)
+-- Categorías del ICP para TL, basadas en el MCA-21 (competencias de mentoría).
+-- Deben coincidir EXACTAMENTE con las categorías/pesos de docs/06-arquitectura.md.
 INSERT INTO questions (template_id, text, category, input_type, sort_order) VALUES
-    (1, '¿Qué tan clara fue la comunicación del Team Leader?', 'Comunicación', 'scale', 1),
-    (1, '¿El Team Leader brindó acompañamiento oportuno?',     'Acompañamiento', 'scale', 2),
-    (1, '¿Promovió un ambiente de aprendizaje seguro?',        'Liderazgo', 'scale', 3),
-    (1, 'Comentarios adicionales',                              'General', 'text', 4);
+    (1, '¿Tu Team Leader se comunica de forma clara y oportuna contigo?',                   'Comunicación efectiva',       'scale', 1),
+    (1, '¿Sientes que puedes hablar con tu Team Leader cuando algo no va bien?',            'Comunicación efectiva',       'scale', 2),
+    (1, '¿Tu Team Leader deja claro qué se espera de ti en cada sprint o entrega?',         'Alineación de expectativas',  'scale', 3),
+    (1, '¿Los objetivos que acuerda contigo son alcanzables y se revisan a tiempo?',        'Alineación de expectativas',  'scale', 4),
+    (1, '¿Tu Team Leader verifica que realmente entendiste antes de seguir avanzando?',     'Verificación de comprensión', 'scale', 5),
+    (1, '¿Adapta sus explicaciones cuando nota que algo no quedó claro?',                   'Verificación de comprensión', 'scale', 6),
+    (1, '¿Te impulsa a resolver problemas por tu cuenta antes de darte la solución?',       'Fomento de la independencia', 'scale', 7),
+    (1, '¿Sientes que hoy dependes menos de él/ella que al inicio del módulo?',             'Fomento de la independencia', 'scale', 8),
+    (1, '¿Te da retroalimentación que te ayuda a crecer como desarrollador/a?',             'Desarrollo profesional',      'scale', 9),
+    (1, '¿Te orienta sobre cómo mejorar tu perfil profesional (hábitos, portafolio, rol)?', 'Desarrollo profesional',      'scale', 10),
+    (1, 'Comentarios adicionales (¿qué debería mantener y qué debería cambiar?)',           'General',                     'text',  11);
 
--- Preguntas de ejemplo para la plantilla de Tutor (id=2)
+-- Preguntas de la plantilla de Tutor (id=2)
+-- Categorías del ICP para Tutor, basadas en el SEEQ (Marsh, 1982).
+-- Deben coincidir EXACTAMENTE con las categorías/pesos de docs/06-arquitectura.md.
 INSERT INTO questions (template_id, text, category, input_type, sort_order) VALUES
-    (2, '¿El Tutor resolvió tus dudas técnicas con claridad?', 'Técnica', 'scale', 1),
-    (2, '¿Estuvo disponible cuando lo necesitaste?',           'Disponibilidad', 'scale', 2),
-    (2, 'Comentarios adicionales',                              'General', 'text', 3);
+    (2, '¿Lo que aprendes con tu Tutor te sirve para resolver los retos del módulo?',       'Valor del aprendizaje',        'scale', 1),
+    (2, '¿Las sesiones con tu Tutor te aportan algo que no lograrías solo/a?',              'Valor del aprendizaje',        'scale', 2),
+    (2, '¿Tu Tutor explica los temas técnicos de forma clara y ordenada?',                  'Claridad y organización',      'scale', 3),
+    (2, '¿Sus ejemplos y ejercicios están bien preparados para tu nivel?',                  'Claridad y organización',      'scale', 4),
+    (2, '¿Tu Tutor te trata con respeto y se interesa por tu proceso individual?',          'Cercanía individual',          'scale', 5),
+    (2, '¿Te sientes en confianza para preguntarle sin temor a ser juzgado/a?',             'Cercanía individual',          'scale', 6),
+    (2, '¿Tu Tutor está disponible en los espacios acordados cuando lo necesitas?',         'Disponibilidad e interacción', 'scale', 7),
+    (2, '¿Responde tus dudas en un tiempo razonable?',                                      'Disponibilidad e interacción', 'scale', 8),
+    (2, 'Comentarios adicionales (¿qué debería mantener y qué debería cambiar?)',           'General',                      'text',  9);

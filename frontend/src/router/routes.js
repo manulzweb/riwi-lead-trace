@@ -59,7 +59,7 @@ export const ROUTES = {
 
   // ── Admin ──────────────────────────────────────────────────────────────────
   "/admin/metrics": {
-    title: "Métricas ICA | LeadTrace",
+    title: "Métricas ICP | LeadTrace",
     renderView: renderMetrics,
     initSetup: setupMetrics,
     requireAuth: true,

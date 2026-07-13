@@ -25,7 +25,9 @@ información accionable para tomar decisiones.
 ## 4. Objetivos específicos
 
 1. Dar a los Coders un canal formal, seguro y opcionalmente anónimo para evaluar a sus líderes y tutores.
-2. Medir la calidad del acompañamiento con un índice propio y ponderado: el **ICA**.
+2. Medir la **calidad percibida** del acompañamiento con un índice propio y ponderado: el **ICP**,
+   cuyas categorías se fundamentan en instrumentos validados (MCA-21 para Team Leaders, SEEQ para
+   Tutores — ver [`06-arquitectura.md`](./06-arquitectura.md)).
 3. Dejar trazabilidad y métricas de seguimiento histórico por líder, tutor y periodo.
 4. Habilitar decisiones basadas en datos para el Admin, apoyadas en un resumen generado por IA.
 5. Fomentar la mejora continua dentro del ecosistema de aprendizaje de Riwi.
@@ -33,16 +35,20 @@ información accionable para tomar decisiones.
 ## 5. Alcance (MVP)
 
 La idea en una frase: los Coders evalúan —con formularios, y si quieren de forma anónima— a sus Team
-Leaders y Tutores. El sistema calcula una nota de 0 a 100 por persona (el ICA) y le arma al Admin un
+Leaders y Tutores. El sistema calcula una nota de 0 a 100 por persona (el ICP) y le arma al Admin un
 tablero más un resumen escrito por IA.
 
 **Dentro del MVP:** login con JWT, 4 roles (coder/tutor/team_leader/admin), listar evaluables, evaluar
-Team Leader y Tutor con formulario estructurado, feedback anónimo opcional, historial del Coder,
-dashboard con ICA para el Admin, resumen de feedback con IA, despliegue accesible.
+Team Leader y Tutor con formulario estructurado e interactivo (una pregunta a la vez), feedback anónimo
+opcional, historial del Coder, **gestión del periodo de evaluación por el Admin** (activa/cierra la
+ventana; sin periodo activo los Coders ven "No hay formularios por realizar"), **edición mínima de
+preguntas por el Admin** (texto y activar/desactivar, con periodo cerrado), dashboard con ICP para el
+Admin, resumen de feedback con IA, despliegue accesible.
 
 **Fuera del MVP** (post-validación): segmentación multi-área, bitácora descendente TL→Tutor, analítica
-de talento, pesos del ICA configurables por el Admin, notificaciones, i18n. Detalle completo y el
-porqué de cada recorte en [`09-mvp-alcance.md`](./09-mvp-alcance.md).
+de talento, pesos del ICP configurables por el Admin, editor completo de formularios (crear plantillas
+y tipos de pregunta), notificaciones, i18n. Detalle completo y el porqué de cada recorte en
+[`09-mvp-alcance.md`](./09-mvp-alcance.md).
 
 ## 6. Historias de usuario
 
@@ -52,7 +58,7 @@ de aceptación— está en [`03-historias-de-usuario.md`](./03-historias-de-usua
 completo con estimaciones en [`02-product-backlog.md`](./02-product-backlog.md).
 
 Las dos historias que sostienen que este proyecto no es un CRUD básico son **EVAL-05** (registrar una
-evaluación con anonimato real y no-duplicado por periodo) y **DASH-01** (calcular y mostrar el ICA).
+evaluación con anonimato real y no-duplicado por periodo) y **DASH-01** (calcular y mostrar el ICP).
 
 ## 7. Arquitectura de la solución
 
@@ -64,7 +70,7 @@ SPA (frontend/)  ──HTTP/REST (JSON, JWT)──>  API (backend/ FastAPI)  ─
 ```
 
 El backend está organizado en capas — `routers` (validan entrada/salida), `services` (la lógica de
-negocio: ICA, anonimato, no-duplicado, RBAC), `repositories` (acceso a datos) y `models` (SQLAlchemy) —
+negocio: ICP, anonimato, no-duplicado, RBAC), `repositories` (acceso a datos) y `models` (SQLAlchemy) —
 para que cada pieza tenga una sola responsabilidad y nadie mezcle reglas de negocio con endpoints.
 El detalle completo, con diagramas y el contrato REST, está en
 [`06-arquitectura.md`](./06-arquitectura.md).
@@ -73,7 +79,7 @@ El detalle completo, con diagramas y el contrato REST, está en
 
 Base de datos relacional en MySQL, normalizada hasta 3FN, con las entidades principales: `users`,
 `roles`, `periods`, `form_templates` + `questions`, `evaluations` + `evaluation_answers`, y
-`ai_feedback_cache`. El **ICA no se persiste**: se calcula al momento a partir de las evaluaciones, así
+`ai_feedback_cache`. El **ICP no se persiste**: se calcula al momento a partir de las evaluaciones, así
 siempre refleja los datos más recientes. Modelo entidad-relación completo, diccionario de datos y el
 script SQL ejecutable en [`07-base-de-datos.md`](./07-base-de-datos.md) y
 [`database/schema.sql`](../database/schema.sql).
