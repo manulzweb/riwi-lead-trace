@@ -58,12 +58,12 @@ router  →  service  →  repository  →  model  →  (MySQL)
 |----------------|-----------|
 | **FastAPI** | El framework de Python que usamos para construir la API. |
 | **Router** | La "puerta de entrada". Define los endpoints, valida lo que llega y devuelve la respuesta. **No** tiene reglas de negocio. |
-| **Service** | El **cerebro**: aquí viven las **reglas de negocio** (calcular ICA, revisar anonimato, evitar duplicados). Es la parte "que no es solo CRUD". |
+| **Service** | El **cerebro**: aquí viven las **reglas de negocio** (calcular ICP, revisar anonimato, evitar duplicados). Es la parte "que no es solo CRUD". |
 | **Repository** | El "bibliotecario": el único que sabe **cómo buscar/guardar** datos en la BD (las consultas). |
 | **Model** | La representación en Python de una **tabla** de la BD (ej. `User`, `Evaluation`). |
 | **Schema (Pydantic)** | El "molde" que define **qué forma** deben tener los datos que entran y salen. Si no cumplen, se rechazan. |
 | **`deps.py`** | Funciones reutilizables que FastAPI "inyecta": obtener la BD, saber quién es el usuario, exigir un rol. |
-| **CRUD** | Create, Read, Update, Delete = crear, leer, actualizar, borrar. Lo básico de una BD. La rúbrica pide **más que CRUD** (por eso el ICA y la lógica de negocio). |
+| **CRUD** | Create, Read, Update, Delete = crear, leer, actualizar, borrar. Lo básico de una BD. La rúbrica pide **más que CRUD** (por eso el ICP y la lógica de negocio). |
 
 > **¿Por qué separar en capas?** Para que cada archivo sea pequeño y fácil de entender, no repetir
 > código (**DRY**) y que cada persona pueda explicar "su" capa. Si mañana cambia la BD, solo se toca
@@ -108,12 +108,18 @@ router  →  service  →  repository  →  model  →  (MySQL)
 | Término | En simple |
 |---------|-----------|
 | **Feedback ascendente** | Que los **coders evalúen a quienes los acompañan** (Team Leaders y Tutores), no al revés. |
-| **ICA** (Índice de Calidad de Acompañamiento) | Un puntaje de **0 a 100** que resume qué tan bien acompaña un TL/Tutor, calculado a partir de las evaluaciones. Es el corazón "no-CRUD" del backend. |
-| **ICA "derivado, no se persiste"** | El ICA **no se guarda** en la BD: se **calcula al momento** de pedirlo, a partir de las evaluaciones. Así siempre está actualizado. |
-| **Ponderado / pesos** | Algunas categorías del ICA "valen" más que otras. Los **pesos** dicen cuánto. Son constantes fijas en el código (sustentables). |
-| **Confianza** | Aviso de si hay **suficientes respuestas** para confiar en el ICA (con pocas, decimos "datos insuficientes"). |
-| **Tendencia** | Si el ICA **subió o bajó** respecto al periodo anterior. |
+| **ICP** (Índice de Calidad Percibida) | Un puntaje de **0 a 100** que resume qué tan bien acompaña un TL/Tutor **según la percepción de los Coders**, calculado a partir de las evaluaciones. Es el corazón "no-CRUD" del backend. Mide percepción, no aprendizaje real (por eso se llama "percibida"). |
+| **ICP "derivado, no se persiste"** | El ICP **no se guarda** en la BD: se **calcula al momento** de pedirlo, a partir de las evaluaciones. Así siempre está actualizado. |
+| **SET** (Student Evaluation of Teaching) | El tipo de instrumento al que pertenece el ICP: encuestas donde el estudiante evalúa a quien le enseña/acompaña. Muy estudiado en educación superior. |
+| **SEEQ** | Cuestionario validado (Marsh, 1982) del que salen las **categorías del ICP para Tutores**: valor del aprendizaje, claridad/organización, cercanía, disponibilidad. |
+| **MCA-21** | Instrumento validado de **competencias de mentoría** del que salen las **categorías del ICP para Team Leaders**: comunicación, expectativas, comprensión, independencia, desarrollo. Un TL es más mentor que profesor. |
+| **Ponderado / pesos** | Algunas categorías del ICP "valen" más que otras. Los **pesos** dicen cuánto. Son constantes fijas en el código (sustentables); el admin **no** puede cambiarlos. |
+| **Confianza** | Aviso de si hay **suficientes respuestas** para confiar en el ICP (con pocas, decimos "datos insuficientes"). |
+| **Tendencia** | Si el ICP **subió o bajó** respecto al periodo anterior. Se compara **por categoría**, así que cambiar la redacción de una pregunta no la daña. |
 | **Periodo** | La ventana de tiempo de una ronda de evaluaciones (ej. un sprint/mes). |
+| **Periodo activo** | El único periodo "abierto": mientras esté activo, los Coders ven y envían formularios. El **admin** lo activa/cierra. Sin periodo activo, la SPA muestra "No hay formularios por realizar". |
+| **Versionar una pregunta** | Cuando el admin edita el texto de una pregunta, **no se sobrescribe**: se crea una pregunta nueva y la vieja se desactiva. Las respuestas históricas conservan el texto original que respondieron. |
+| **Deriva semántica** | El riesgo de que una pregunta editada **deje de medir su categoría** (ej. una de cercanía reescrita como desempeño general): las respuestas se pesarían bajo la categoría equivocada. Se previene con la regla **"reformular, no re-temar"**: editar solo mejora la redacción; para otro tema, se desactiva la pregunta y se crea una nueva en su categoría. Al guardar, **la IA comprueba** que el texto siga midiendo su categoría y advierte si no (el admin debe confirmar). Y como se edita con periodo cerrado y versionando, cualquier desvío se revierte antes de que alguien responda. |
 | **Anonimato real** | Si una evaluación es anónima, **nunca** se guarda quién la hizo. Ni el admin puede saberlo. |
 | **No-duplicado** | Un coder no puede evaluar dos veces a la misma persona en el mismo periodo. |
 | **Resumen con IA** | Un texto ejecutivo que **Claude** (IA) genera para el **admin**, resumiendo el feedback. Solo se le envían **datos agregados y anónimos**. |
