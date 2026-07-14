@@ -203,61 +203,32 @@ Toda esta logica vive en `services/` (no en routers ni queries dispersas). Es la
 
 ### Indice de Calidad Percibida (ICP) — `metrics_service`
 
-**Que mide (y que no).** El ICP mide la **calidad percibida** del acompanamiento segun los
-Coders — es una *Student Evaluation of Teaching* (SET), el tipo de instrumento mas usado en
-educacion superior para evaluar docentes desde la percepcion del estudiante. La literatura
-muestra que estas encuestas correlacionan de forma **moderada** con el rendimiento academico
-(r ≈ 0.43) pero **no miden aprendizaje real**; por eso el indice se llama "percibida" y sus
-resultados se leen como senal de percepcion, no como veredicto de efectividad. Esta limitacion
-se declara explicitamente en el dashboard y en el pitch tecnico.
+**Que mide.** El ICP mide la **calidad percibida** del acompanamiento segun los Coders: un
+puntaje de 0 a 100 por persona y periodo, calculado a partir de sus evaluaciones. Mide
+percepcion, no aprendizaje real — por eso "percibida".
 
-**En que se fundamentan las categorias.** No son inventadas: cada rol evaluado usa las
-dimensiones de un instrumento validado, adaptadas al contexto Riwi.
+**Calculo.** Es un **promedio simple con un filtro de tamano de muestra**, sin categorias
+ponderadas. Por cada `(evaluatee_id, period_id)`, en `calculate_average_score`:
 
-| Rol evaluado | Instrumento base | Categorias del ICP (con peso `w_c`) |
-|---|---|---|
-| **Team Leader** (es un *mentor*) | **MCA-21** — Mentoring Competency Assessment (Fleming et al.; revalidado 2022, J Clin Transl Sci) | Comunicación efectiva (0.25) · Alineación de expectativas (0.20) · Verificación de comprensión (0.20) · Fomento de la independencia (0.20) · Desarrollo profesional (0.15) |
-| **Tutor** (rol *docente/tecnico*) | **SEEQ** — Students' Evaluations of Educational Quality (Marsh, 1982) | Valor del aprendizaje (0.30) · Claridad y organización (0.30) · Cercanía individual (0.20) · Disponibilidad e interacción (0.20) |
+1. Cuenta cuantas evaluaciones `submitted` tiene esa persona en ese periodo (`n_evals`).
+2. Si `n_evals < MIN_EVALUATIONS` (3), no calcula nada: devuelve "datos insuficientes". Evita
+   mostrar un puntaje basado en muy pocas respuestas.
+3. Si hay suficientes, promedia los puntajes (1-5) de **todas** las preguntas tipo `scale`
+   (las de tipo `text` no entran al calculo; alimentan el resumen de IA).
+4. Normaliza ese promedio de la escala 1-5 a 0-100: `score = round((promedio - 1) / 4 * 100)`.
 
-> Los nombres de categoria de esta tabla son **exactamente** los valores de `questions.category`
-> sembrados en `database/schema.sql` (con tildes): los pesos `DEFAULT_ICP_WEIGHTS` mapean por ese
-> string. La categoria `General` (comentario libre) no pondera en el ICP; alimenta el resumen IA.
+`get_metrics_summary` repite esto para cada Team Leader/Tutor del periodo y agrega: promedio
+global, total de evaluaciones enviadas, y tasa de participacion (evaluaciones enviadas ÷
+evaluaciones posibles, asumiendo 2 evaluaciones por coder activo).
 
-**Definicion de cada categoria (que mide).** Estas definiciones de una linea son la referencia
-para juzgar si una pregunta "pertenece" a su categoria: el editor de ADMIN-02 las muestra al
-editar, y el **chequeo de coherencia con IA** (parte de ADMIN-02) las usa como criterio.
+**Lo que el ICP no hace (a proposito, para no sobre-construir en el MVP):** no pondera por
+categoria (todas las preguntas `scale` pesan igual), no calcula tendencia contra el periodo
+anterior, no clasifica en estados tipo "Solido"/"En riesgo". Las preguntas sí tienen una
+`category` en la BD (ver `07-base-de-datos.md`) para organizar el formulario, pero el calculo
+del ICP no la usa. Si el equipo decide agregar alguna de estas senales mas adelante, son
+extensiones puntuales sobre `calculate_average_score`, no un rediseno.
 
-| Categoria | Que mide |
-|---|---|
-| Comunicación efectiva | Si el TL se comunica claro, a tiempo y es facil hablarle cuando algo va mal |
-| Alineación de expectativas | Si el TL deja claro que se espera del coder y acuerda objetivos alcanzables |
-| Verificación de comprensión | Si el TL confirma que el coder entendio antes de avanzar y adapta su explicacion |
-| Fomento de la independencia | Si el TL impulsa al coder a resolver por su cuenta y reduce su dependencia |
-| Desarrollo profesional | Si el TL da retroalimentacion y orientacion que hacen crecer el perfil del coder |
-| Valor del aprendizaje | Si lo aprendido con el Tutor sirve para los retos y aporta mas que estudiar solo |
-| Claridad y organización | Si el Tutor explica claro/ordenado y prepara ejemplos al nivel del coder |
-| Cercanía individual | Si el coder se siente tratado con respeto y en confianza para preguntar |
-| Disponibilidad e interacción | Si el Tutor esta disponible en los espacios acordados y responde a tiempo |
-
-> **Riesgo documentado (deriva semantica):** el peso pondera la **categoria**, no el texto. Una
-> pregunta "re-temada" (ej. una de *Cercania individual* reescrita como desempeno general)
-> contaminaria su categoria hacia adelante. Por eso la regla de ADMIN-02 es **reformular, no
-> re-temar**: para preguntar otro tema se desactiva la pregunta y se crea una nueva en la
-> categoria correcta. El historico nunca se afecta (edicion solo con periodo cerrado + versionado).
-
-**Calculo.** Por cada `(evaluatee_id, period_id)`, solo con evaluaciones `submitted`:
-1. `A_c` = promedio por categoria (`AVG(score)` de preguntas `scale`, escala 1-5).
-2. Base ponderada `B = Sum(w_c · A_c) / Sum(w_c)` con pesos `w_c` por categoria (tabla
-   anterior). Los pesos son **constantes en codigo** (`DEFAULT_ICP_WEIGHTS`), no editables
-   desde la UI.
-3. Normaliza `score = round((B - 1) / 4 * 100)` -> 0-100.
-4. **Confianza** segun `n` (respuestas) y participacion: `Datos insuficientes` si `n < N_MIN`.
-5. **Tendencia** `D = score_actual - score_periodo_anterior`, comparada **por categoria** (no
-   por pregunta), de modo que editar la redaccion de una pregunta no rompe la comparabilidad.
-6. **Estado:** `En riesgo` (`score < 60` o `D <= -10`), `Solido` (`>=80` y `D>=0`), `Estable` o
-   `Datos insuficientes`. Umbrales y pesos son constantes documentadas (sustentables).
-
-> El ICP **no se persiste**: se calcula on-read a partir de agregados que trae `metrics_service`.
+> El ICP **no se persiste**: se calcula on-read en `metrics_service`.
 
 ### Resumen por IA — `ai_service`
 - Construye un prompt con **agregados anonimizados** (promedios por categoria, conteos, comentarios

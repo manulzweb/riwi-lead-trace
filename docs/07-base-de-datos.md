@@ -86,7 +86,7 @@ Justificacion ampliada en [`06-arquitectura.md`](./06-arquitectura.md).
 | id | INT PK | |
 | template_id | INT FK -> form_templates.id | |
 | text | VARCHAR(255) | editable por el Admin **solo con periodo cerrado** y via **versionado** (fila nueva + desactivar la anterior) |
-| category | VARCHAR(60) | categoria del ICP (fundada en MCA-21/SEEQ, ver `06-arquitectura.md`); **no editable** desde la UI |
+| category | VARCHAR(60) | categoria tematica de la pregunta (organiza el formulario); el calculo del ICP no la usa hoy — ver `06-arquitectura.md`); **no editable** desde la UI |
 | input_type | VARCHAR(20) | 'scale' \| 'text' |
 | sort_order | INT | orden de despliegue |
 | is_active | BOOLEAN | default TRUE; las evaluaciones nuevas cargan solo preguntas activas; las respuestas historicas conservan su pregunta original |
