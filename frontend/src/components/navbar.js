@@ -44,8 +44,10 @@ export const navBarComponent = () => {
           <button id="open-sidebar-btn" class="p-2 hover:bg-white/20 rounded-xl transition-colors cursor-pointer text-white">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
           </button>
-          <img src="../../public/icons/riwi_logo.png" alt="Logo" class="w-auto h-6">
-          <a class="font-heading font-semibold text-xl font-black hidden mt-1 sm:block text-white tracking-wide" href="/dashboard">LeadTrace</a>
+          <a class="font-heading font-black font-semibold text-xl hidden sm:flex items-center gap-4 mt-1 text-white tracking-wide" href="/dashboard">
+            <img src="../../public/icons/riwi_logo.png" alt="Logo" class="w-auto h-6"> 
+            <span>LeadTrace</span>
+          </a>
         </div>
 
         <div class="flex items-center gap-4 text-white">

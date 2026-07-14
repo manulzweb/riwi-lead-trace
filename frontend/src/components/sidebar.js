@@ -14,18 +14,20 @@ export const sidebarComponent = (isActive) => {
       <div class="p-6 border-b border-[var(--border-main)] flex items-center justify-between">
 
         <div>
-          <img src="../../public/icons/riwi_logo_oscuro.png" alt="Logo Riwi" class="logo-light block w-auto h-8 object-contain">
-          <img src="../../public/icons/riwi_logo.png" alt="Logo Riwi" class="logo-dark block w-auto h-8 object-contain">
-          <h2 class="text-xl font-medium font-black text-[var(--text-main)] ">
+          <div class="flex items-center gap-2">
+            <img src="../../public/icons/riwi_logo_oscuro.png" alt="Logo Riwi" class="logo-light block w-auto h-6 object-contain">
+            <img src="../../public/icons/riwi_logo.png" alt="Logo Riwi" class="logo-dark block w-auto h-6 object-contain">
+            <h2 class="text-xl mt-1 font-medium font-black text-[var(--text-main)] ">
             LeadTrace
           </h2>
+          </div>          
           <p class="text-xs text-[var(--text-muted)] font-medium mt-1">Professional Feedback</p>
         </div>
 
         <button id="close-sidebar-btn" class="p-2 text-[var(--text-muted)] hover:bg-[var(--bg-base)] rounded-xl cursor-pointer hover:text-[var(--text-main)] transition-colors lg:hidden">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
-        
+
       </div>
 
       <div class="px-6 py-4">
