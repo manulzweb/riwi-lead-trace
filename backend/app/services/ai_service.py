@@ -1,15 +1,9 @@
-from sqlalchemy import select, insert, and_
+from sqlalchemy import text
 from fastapi import HTTPException, status
 import anthropic
 
 from app.config.database import conn
 from app.config.config import settings
-from app.models.evaluation import evaluations_table, evaluation_answers_table
-from app.models.form_template import questions_table
-from app.models.period import periods_table
-from app.models.user import users_table
-from app.models.role import roles_table
-from app.models.ai_feedback_cache import ai_feedback_cache_table
 from app.services.metrics_service import calculate_average_score, MIN_EVALUATIONS
 
 AI_MODEL = "claude-haiku-4-5-20251001"
@@ -17,13 +11,11 @@ AI_MODEL = "claude-haiku-4-5-20251001"
 
 def get_or_generate_ai_summary(evaluatee_id: int, period_id: int):
     """Genera u obtiene de cache el resumen ejecutivo por IA para un evaluado."""
-    cache_stmt = select(ai_feedback_cache_table.c.summary).where(
-        and_(
-            ai_feedback_cache_table.c.evaluatee_id == evaluatee_id,
-            ai_feedback_cache_table.c.period_id == period_id
-        )
-    )
-    cached = conn.execute(cache_stmt).scalar()
+    cache_query = text("""
+        SELECT summary FROM ai_feedback_cache
+        WHERE evaluatee_id = :evaluatee_id AND period_id = :period_id
+    """)
+    cached = conn.execute(cache_query, {"evaluatee_id": evaluatee_id, "period_id": period_id}).scalar()
     if cached:
         return cached
 
@@ -54,36 +46,36 @@ def get_or_generate_ai_summary(evaluatee_id: int, period_id: int):
 
 def _get_anonymized_comments(evaluatee_id: int, period_id: int) -> list[str]:
     """Solo texto y agregados, nunca el evaluator_id (privacidad de IA)."""
-    stmt = select(evaluation_answers_table.c.comment).select_from(
-        evaluation_answers_table
-    ).join(
-        evaluations_table, evaluation_answers_table.c.evaluation_id == evaluations_table.c.id
-    ).join(
-        questions_table, evaluation_answers_table.c.question_id == questions_table.c.id
-    ).where(
-        and_(
-            evaluations_table.c.evaluatee_id == evaluatee_id,
-            evaluations_table.c.period_id == period_id,
-            evaluations_table.c.status == "submitted",
-            questions_table.c.input_type == "text",
-            evaluation_answers_table.c.comment != None,
-            evaluation_answers_table.c.comment != ""
-        )
-    )
-    return [row[0] for row in conn.execute(stmt).all()]
+    query = text("""
+        SELECT a.comment
+        FROM evaluation_answers a
+        JOIN evaluations e ON a.evaluation_id = e.id
+        JOIN questions q ON a.question_id = q.id
+        WHERE e.evaluatee_id = :evaluatee_id
+          AND e.period_id = :period_id
+          AND e.status = 'submitted'
+          AND q.input_type = 'text'
+          AND a.comment IS NOT NULL
+          AND a.comment != ''
+    """)
+    result = conn.execute(query, {"evaluatee_id": evaluatee_id, "period_id": period_id})
+    return [row[0] for row in result.all()]
 
 
 def _get_evaluatee_name_and_role(evaluatee_id: int) -> tuple[str, str]:
-    stmt = select(users_table.c.full_name, roles_table.c.name).select_from(users_table).join(
-        roles_table, users_table.c.role_id == roles_table.c.id
-    ).where(users_table.c.id == evaluatee_id)
-    row = conn.execute(stmt).first()
+    query = text("""
+        SELECT u.full_name, r.name
+        FROM users u
+        JOIN roles r ON u.role_id = r.id
+        WHERE u.id = :id
+    """)
+    row = conn.execute(query, {"id": evaluatee_id}).first()
     return (row[0], row[1]) if row else ("Persona", "Rol")
 
 
 def _get_period_name(period_id: int) -> str:
-    stmt = select(periods_table.c.name).where(periods_table.c.id == period_id)
-    return conn.execute(stmt).scalar() or "Periodo"
+    query = text("SELECT name FROM periods WHERE id = :id")
+    return conn.execute(query, {"id": period_id}).scalar() or "Periodo"
 
 
 def _build_prompt(name, role, period_name, average_score, n_evals, comments: list[str]) -> str:
@@ -123,11 +115,14 @@ def _ask_claude(prompt: str) -> str:
 
 
 def _cache_summary(evaluatee_id: int, period_id: int, summary: str) -> None:
-    stmt = insert(ai_feedback_cache_table).values(
-        evaluatee_id=evaluatee_id,
-        period_id=period_id,
-        summary=summary,
-        model=AI_MODEL
-    )
-    conn.execute(stmt)
+    query = text("""
+        INSERT INTO ai_feedback_cache (evaluatee_id, period_id, summary, model)
+        VALUES (:evaluatee_id, :period_id, :summary, :model)
+    """)
+    conn.execute(query, {
+        "evaluatee_id": evaluatee_id,
+        "period_id": period_id,
+        "summary": summary,
+        "model": AI_MODEL
+    })
     conn.commit()

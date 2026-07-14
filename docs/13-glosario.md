@@ -59,7 +59,7 @@ router  →  service  →  repository  →  model  →  (MySQL)
 | **FastAPI** | El framework de Python que usamos para construir la API. |
 | **Route** | La "puerta de entrada" (carpeta `routes/`). Define los endpoints, valida lo que llega y devuelve la respuesta. **No** tiene reglas de negocio. |
 | **Service** | El **cerebro**: aquí viven las **reglas de negocio** (calcular métricas, revisar anonimato, evitar duplicados) **y** las consultas a la BD. Es la parte "que no es solo CRUD". |
-| **Model** | La representación en Python de una **tabla** de la BD (ej. `users_table`, `evaluations_table`), usando SQLAlchemy Core. |
+| **Model** | No hay una capa `models/` en Python: la forma de cada tabla vive en `database/schema.sql` y los `services/` escriben SQL directo contra ella. |
 | **Schema (Pydantic)** | El "molde" que define **qué forma** deben tener los datos que entran y salen. Si no cumplen, se rechazan. |
 | **`deps.py`** | Funciones reutilizables que FastAPI "inyecta": saber quién es el usuario (`get_current_user`), exigir un rol (`require_role`). |
 | **CRUD** | Create, Read, Update, Delete = crear, leer, actualizar, borrar. Lo básico de una BD. La rúbrica pide **más que CRUD** (por eso las métricas y la lógica de negocio). |

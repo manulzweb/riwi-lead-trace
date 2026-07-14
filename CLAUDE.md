@@ -64,7 +64,8 @@ skill `.claude/skills/guia-generativa/SKILL.md`.
 
 ### Backend
 - **Python + FastAPI** (decision del equipo).
-- SQLAlchemy Core (`Table` + `conn.execute`, no ORM declarativo) + PyMySQL para acceso a MySQL.
+- SQL plano con SQLAlchemy `text()` + `conn.execute` (no ORM declarativo, no `Table`) + PyMySQL
+  para acceso a MySQL. Sin capa `models/`: el esquema de tablas vive solo en `database/schema.sql`.
 - Validacion con **Pydantic**, autenticacion **JWT**, autorizacion por rol (RBAC) via dependencias.
 - Logica de negocio y acceso a datos en la capa `services` (no en los routes; no hay capa
   `repositories/` separada — se elimino a proposito por ser indirection sin beneficio en un MVP
@@ -113,7 +114,7 @@ Reglas: las vistas **no** llaman `fetch` directo (usan `services/`); los service
 ### `backend/app/`
 ```
 main.py · config/ (config, security/JWT, database)
-models/ (SQLAlchemy Core: Table) · schemas/ (Pydantic) · routes/ (endpoints)
+schemas/ (Pydantic) · routes/ (endpoints)
 services/ (LOGICA DE NEGOCIO + acceso a datos: auth, user, period, form, evaluation, metrics, ai)
 deps.py (get_current_user, require_role)
 ```

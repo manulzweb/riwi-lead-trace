@@ -22,10 +22,13 @@ corto. Horizontal es mas facil de explicar y de encontrar codigo ("¿donde esta 
 `services/`").
 
 > **Nota:** una version anterior de esta arquitectura proponia una capa `repositories/` separada
-> para el acceso a datos. El equipo la elimino a proposito: con SQLAlchemy Core (`Table` +
-> `conn.execute`) las queries ya son pocas lineas por funcion, y una capa extra solo para
-> reenviarlas a `services/` agregaba indirection sin beneficio real en un MVP de este tamano. Las
-> queries viven directamente en el archivo de `services/` de cada entidad.
+> para el acceso a datos, y modelos SQLAlchemy Core (`Table`) en `models/`. El equipo elimino
+> ambas cosas a proposito: las queries se escriben como SQL plano con `text()` (la misma sintaxis
+> que ya usan en MySQL Workbench y que explica `docs/13-glosario.md`), directo en el archivo de
+> `services/` de cada entidad — sin aprender el mini-lenguaje de `select()/insert()/join()` de
+> SQLAlchemy, y sin una capa de `models/` que solo repetiria lo que ya dice `database/schema.sql`.
+> Menos "profesional" en el sentido de perder el constructor de queries tipado, pero mas facil de
+> leer para alguien que recien esta aprendiendo SQL.
 
 ## Patrones de diseño
 
@@ -38,11 +41,10 @@ funcion pura hace lo mismo con menos codigo.
 
 | Patron | Donde | Que resuelve |
 |---|---|---|
-| **Layered Architecture** | `routes/ -> services/ -> models/` | Cada capa tiene una responsabilidad; los cambios quedan localizados |
-| **Service Layer** | `services/` (ej. `evaluation_service`, `metrics_service`, `ai_service`) | Concentra la logica de negocio (anonimato, no-duplicado, calculo de metricas) y el acceso a datos, fuera de los routes |
+| **Layered Architecture** | `routes/ -> services/ -> MySQL` | Cada capa tiene una responsabilidad; los cambios quedan localizados |
+| **Service Layer** | `services/` (ej. `evaluation_service`, `metrics_service`, `ai_service`) | Concentra la logica de negocio (anonimato, no-duplicado, calculo de metricas) y las queries SQL, fuera de los routes |
 | **Dependency Injection** | `Depends(get_current_user)`, `Depends(require_role(...))` | FastAPI inyecta dependencias en vez de que cada endpoint las construya; facilita testear |
-| **DTO (Data Transfer Object)** | `schemas/` (Pydantic) | Define exactamente que entra/sale de la API, distinto del modelo de BD |
-| **Data Mapper** | `models/` (SQLAlchemy Core, `Table`) | Describe las tablas de MySQL como objetos Python sin que el resto del codigo escriba SQL a mano |
+| **DTO (Data Transfer Object)** | `schemas/` (Pydantic) | Define exactamente que entra/sale de la API, distinto de las columnas de la BD |
 
 ### Frontend (funciones + un poco de OOP donde importa)
 
@@ -75,13 +77,11 @@ sitio con estado que varias partes necesitan compartir y observar.
 │  Routes (endpoints, validacion I/O con Pydantic)             │
 │     │                                                        │
 │     v                                                        │
-│  Services  <── LOGICA DE NEGOCIO + acceso a datos            │
+│  Services  <── LOGICA DE NEGOCIO + queries SQL (text())      │
 │     │           (anonimato, no-duplicado, metricas, RBAC)   │
 │     │           └─ ai_service ──HTTPS──> Claude API         │
-│     v                                                        │
-│  Models (SQLAlchemy Core: Table)                             │
 └───────────────────────────┬─────────────────────────────────┘
-                            │ SQLAlchemy + PyMySQL
+                            │ SQLAlchemy (text()) + PyMySQL
                             v
                    ┌──────────────────┐
                    │   MySQL (3FN)    │  (ver 07-base-de-datos)
@@ -127,8 +127,6 @@ riwi-lead-trace/
 │   │   │   ├── config.py       # settings (DATABASE_URL, SECRET_KEY...) desde .env
 │   │   │   ├── database.py     # engine + conexion SQLAlchemy
 │   │   │   └── security.py     # hash de contrasenas + crear/verificar JWT
-│   │   ├── models/             # SQLAlchemy Core (Table): user, role, period,
-│   │   │                       # form_template, evaluation, ai_feedback_cache
 │   │   ├── schemas/            # Pydantic: request/response por dominio
 │   │   ├── services/           # LOGICA DE NEGOCIO + acceso a datos por entidad:
 │   │   │                       # auth, user, period, form, evaluation, metrics, ai
@@ -173,8 +171,7 @@ export const routes = [
 | Capa | Responsabilidad | Regla |
 |------|-----------------|-------|
 | `routes/` | Definir endpoints, validar I/O con Pydantic, codigos HTTP | No contiene logica de negocio |
-| `services/` | **Logica de negocio** (reglas, calculos, orquestacion) y acceso a datos (SQLAlchemy Core) | No conoce detalles HTTP |
-| `models/` | Tablas SQLAlchemy Core (`Table`) mapeadas a MySQL | Definen el esquema |
+| `services/` | **Logica de negocio** (reglas, calculos, orquestacion) y las queries SQL (`text()`) | No conoce detalles HTTP |
 | `schemas/` | Contratos Pydantic (validacion/serializacion) | Frontera de datos; nunca exponen campos sensibles (ej. `password_hash`) |
 | `deps.py` | Dependencias: `get_current_user`, `require_role` | Inyeccion/seguridad |
 
