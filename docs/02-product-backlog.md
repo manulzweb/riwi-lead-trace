@@ -37,7 +37,7 @@ La rubrica exige logica de negocio identificable mas alla del CRUD. En este back
 - **AUTH-03:** RBAC en servidor + visibilidad restringida por rol (`403`).
 - **ADMIN-01:** ventana de evaluacion controlada — el periodo activo habilita/deshabilita los formularios para todos los Coders (solo un periodo activo a la vez).
 - **ADMIN-02:** integridad del instrumento — las preguntas solo se editan con periodo cerrado y editarlas **versiona** (nueva fila + desactivar la anterior) para no falsear el historial ni el ICP.
-- **DASH-01/02:** **ICP** (indice ponderado por categoria, normalizado, con confianza, tendencia y estado), participacion.
+- **DASH-01/02:** **ICP** (promedio normalizado 0-100, con minimo de respuestas para calcularlo), participacion.
 - **AIFEED-01:** orquestacion de IA con privacidad por diseno (solo agregados anonimizados) y cache.
 
 ## Orden de refinamiento

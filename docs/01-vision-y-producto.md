@@ -15,7 +15,7 @@ Validar, mediante un MVP funcional, que un proceso de **feedback ascendente estr
 ## Objetivos de negocio
 
 1. **Dar voz a los Coders** con un canal formal, seguro y opcionalmente anonimo para evaluar a sus lideres y tutores.
-2. **Mejorar la calidad del acompanamiento** con el **ICP** (indice ponderado, accionable).
+2. **Mejorar la calidad del acompanamiento** con el **ICP** (indice 0-100, accionable).
 3. **Crear trazabilidad y metricas** de seguimiento historico por lider, tutor y periodo.
 4. **Habilitar decisiones basadas en datos** para el Admin (Jefe de TL/tutores), apoyadas en **IA**.
 5. **Fomentar la mejora continua** dentro del ecosistema de aprendizaje de Riwi.
@@ -40,7 +40,7 @@ Validar, mediante un MVP funcional, que un proceso de **feedback ascendente estr
 - **Para el Coder:** voz formal y segura sobre su experiencia de acompanamiento.
 - **Para el Team Leader:** feedback concreto y accionable para crecer como lider.
 - **Para el Tutor:** feedback para mejorar su apoyo tecnico.
-- **Para el Admin (Jefe de TL/tutores):** panel con **ICP**, tendencias y **resumenes IA** para decidir.
+- **Para el Admin (Jefe de TL/tutores):** panel con **ICP** y **resumenes IA** para decidir.
 - **Para Riwi:** mejora medible y continua de la calidad academica.
 
 ## Supuestos y restricciones
