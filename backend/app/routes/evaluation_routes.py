@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query, status, Depends
 from typing import List, Optional
-from app.schemas.evaluation import EvaluationCreate, EvaluationOut, EvaluationDetailOut
+from app.schemas.evaluation import EvaluationCreate, EvaluationDetailOut
 from app.services import evaluation_service
 from app.deps import get_current_user
 
@@ -28,10 +28,14 @@ def get_evaluations(
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sin permiso")
         return evaluation_service.get_evaluations_by_evaluator(evaluator_id)
     elif evaluatee_id is not None:
-        # Regla de negocio: solo el Admin ve el histórico completo por evaluado
-        if current_user["role"] != "admin":
+        # Regla de negocio: el propio evaluado ve su historial (para "Mis resultados"),
+        # y el Admin puede ver el de cualquiera. Nadie mas.
+        is_admin = current_user["role"] == "admin"
+        if not is_admin and current_user["id"] != evaluatee_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sin permiso")
-        return evaluation_service.get_evaluations_by_evaluatee(evaluatee_id, period_id)
+        return evaluation_service.get_evaluations_by_evaluatee(
+            evaluatee_id, period_id, hide_evaluator=not is_admin
+        )
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

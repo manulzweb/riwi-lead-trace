@@ -25,9 +25,9 @@ información accionable para tomar decisiones.
 ## 4. Objetivos específicos
 
 1. Dar a los Coders un canal formal, seguro y opcionalmente anónimo para evaluar a sus líderes y tutores.
-2. Medir la **calidad percibida** del acompañamiento con un índice propio y ponderado: el **ICP**,
-   cuyas categorías se fundamentan en instrumentos validados (MCA-21 para Team Leaders, SEEQ para
-   Tutores — ver [`06-arquitectura.md`](./06-arquitectura.md)).
+2. Medir la **calidad percibida** del acompañamiento con un índice propio, el **ICP**: promedio
+   de las respuestas tipo escala, normalizado de 0 a 100, con un mínimo de respuestas para
+   calcularlo (ver [`06-arquitectura.md`](./06-arquitectura.md)).
 3. Dejar trazabilidad y métricas de seguimiento histórico por líder, tutor y periodo.
 4. Habilitar decisiones basadas en datos para el Admin, apoyadas en un resumen generado por IA.
 5. Fomentar la mejora continua dentro del ecosistema de aprendizaje de Riwi.

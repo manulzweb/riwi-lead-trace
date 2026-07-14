@@ -59,7 +59,7 @@ router  →  service  →  repository  →  model  →  (MySQL)
 | **FastAPI** | El framework de Python que usamos para construir la API. |
 | **Route** | La "puerta de entrada" (carpeta `routes/`). Define los endpoints, valida lo que llega y devuelve la respuesta. **No** tiene reglas de negocio. |
 | **Service** | El **cerebro**: aquí viven las **reglas de negocio** (calcular métricas, revisar anonimato, evitar duplicados) **y** las consultas a la BD. Es la parte "que no es solo CRUD". |
-| **Model** | La representación en Python de una **tabla** de la BD (ej. `users_table`, `evaluations_table`), usando SQLAlchemy Core. |
+| **Model** | No hay una capa `models/` en Python: la forma de cada tabla vive en `database/schema.sql` y los `services/` escriben SQL directo contra ella. |
 | **Schema (Pydantic)** | El "molde" que define **qué forma** deben tener los datos que entran y salen. Si no cumplen, se rechazan. |
 | **`deps.py`** | Funciones reutilizables que FastAPI "inyecta": saber quién es el usuario (`get_current_user`), exigir un rol (`require_role`). |
 | **CRUD** | Create, Read, Update, Delete = crear, leer, actualizar, borrar. Lo básico de una BD. La rúbrica pide **más que CRUD** (por eso las métricas y la lógica de negocio). |
@@ -107,14 +107,9 @@ router  →  service  →  repository  →  model  →  (MySQL)
 | Término | En simple |
 |---------|-----------|
 | **Feedback ascendente** | Que los **coders evalúen a quienes los acompañan** (Team Leaders y Tutores), no al revés. |
-| **ICP** (Índice de Calidad Percibida) | Un puntaje de **0 a 100** que resume qué tan bien acompaña un TL/Tutor **según la percepción de los Coders**, calculado a partir de las evaluaciones. Es el corazón "no-CRUD" del backend. Mide percepción, no aprendizaje real (por eso se llama "percibida"). |
+| **ICP** (Índice de Calidad Percibida) | Un puntaje de **0 a 100** que resume qué tan bien acompaña un TL/Tutor **según la percepción de los Coders**: es el promedio de sus respuestas tipo escala, normalizado. Es el corazón "no-CRUD" del backend. Mide percepción, no aprendizaje real (por eso se llama "percibida"). |
 | **ICP "derivado, no se persiste"** | El ICP **no se guarda** en la BD: se **calcula al momento** de pedirlo, a partir de las evaluaciones. Así siempre está actualizado. |
-| **SET** (Student Evaluation of Teaching) | El tipo de instrumento al que pertenece el ICP: encuestas donde el estudiante evalúa a quien le enseña/acompaña. Muy estudiado en educación superior. |
-| **SEEQ** | Cuestionario validado (Marsh, 1982) del que salen las **categorías del ICP para Tutores**: valor del aprendizaje, claridad/organización, cercanía, disponibilidad. |
-| **MCA-21** | Instrumento validado de **competencias de mentoría** del que salen las **categorías del ICP para Team Leaders**: comunicación, expectativas, comprensión, independencia, desarrollo. Un TL es más mentor que profesor. |
-| **Ponderado / pesos** | Algunas categorías del ICP "valen" más que otras. Los **pesos** dicen cuánto. Son constantes fijas en el código (sustentables); el admin **no** puede cambiarlos. |
-| **Confianza** | Aviso de si hay **suficientes respuestas** para confiar en el ICP (con pocas, decimos "datos insuficientes"). |
-| **Tendencia** | Si el ICP **subió o bajó** respecto al periodo anterior. Se compara **por categoría**, así que cambiar la redacción de una pregunta no la daña. |
+| **Mínimo de respuestas** | El ICP solo se calcula si hay al menos 3 evaluaciones enviadas (`MIN_EVALUATIONS`); con menos, se muestra "datos insuficientes" en vez de un puntaje poco confiable. |
 | **Periodo** | La ventana de tiempo de una ronda de evaluaciones (ej. un sprint/mes). |
 | **Periodo activo** | El único periodo "abierto": mientras esté activo, los Coders ven y envían formularios. El **admin** lo activa/cierra. Sin periodo activo, la SPA muestra "No hay formularios por realizar". |
 | **Versionar una pregunta** | Cuando el admin edita el texto de una pregunta, **no se sobrescribe**: se crea una pregunta nueva y la vieja se desactiva. Las respuestas históricas conservan el texto original que respondieron. |

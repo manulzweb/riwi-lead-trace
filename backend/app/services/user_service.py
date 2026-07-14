@@ -1,7 +1,6 @@
-from sqlalchemy import select, insert, update, delete, text
+from sqlalchemy import text
 from app.config.database import conn
 from app.config.security import hash_password
-from app.models.user import users_table
 from app.schemas.user import UserCreate, UserUpdate
 
 def get_users():
@@ -54,21 +53,24 @@ def get_user_by_email(email: str):
     return user_dict
 
 def create_user(user: UserCreate):
-    """Crea un usuario usando consultas SQLAlchemy y conn.execute."""
-    stmt = insert(users_table).values(
-        full_name=user.name,
-        email=user.email,
-        password_hash=hash_password(user.password),
-        role_id=user.role_id,
-        clan_id=user.clan_id,
-        is_active=user.is_active
-    )
-    result = conn.execute(stmt)
+    """Crea un usuario nuevo."""
+    query = text("""
+        INSERT INTO users (full_name, email, password_hash, role_id, clan_id, is_active)
+        VALUES (:full_name, :email, :password_hash, :role_id, :clan_id, :is_active)
+    """)
+    result = conn.execute(query, {
+        "full_name": user.name,
+        "email": user.email,
+        "password_hash": hash_password(user.password),
+        "role_id": user.role_id,
+        "clan_id": user.clan_id,
+        "is_active": user.is_active
+    })
     conn.commit()
     return get_user(result.lastrowid)
 
 def update_user(user_id: int, user: UserUpdate):
-    """Actualiza un usuario usando consultas SQLAlchemy y conn.execute."""
+    """Actualiza solo los campos de usuario que vengan con valor."""
     values = {}
     if user.name is not None:
         values["full_name"] = user.name
@@ -86,8 +88,12 @@ def update_user(user_id: int, user: UserUpdate):
     if not values:
         return get_user(user_id)
 
-    stmt = update(users_table).where(users_table.c.id == user_id).values(**values)
-    conn.execute(stmt)
+    # values solo trae claves que nosotros mismos definimos arriba (nunca
+    # nombres de columna que vengan del cliente), asi que armar el SET a
+    # partir de sus claves es seguro.
+    set_clause = ", ".join(f"{column} = :{column}" for column in values)
+    query = text(f"UPDATE users SET {set_clause} WHERE id = :id")
+    conn.execute(query, {**values, "id": user_id})
     conn.commit()
     return get_user(user_id)
 
@@ -96,7 +102,7 @@ def delete_user(user_id: int):
     user = get_user(user_id)
     if not user:
         return False
-    stmt = delete(users_table).where(users_table.c.id == user_id)
-    conn.execute(stmt)
+    query = text("DELETE FROM users WHERE id = :id")
+    conn.execute(query, {"id": user_id})
     conn.commit()
     return True

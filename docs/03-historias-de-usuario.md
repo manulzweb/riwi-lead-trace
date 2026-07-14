@@ -212,7 +212,7 @@ mejorar el formulario entre rondas sin depender del equipo tecnico.
 
 **Criterios de aceptacion**
 - [ ] Tarjetas resumen: no de evaluaciones, promedio general, participacion.
-- [ ] Ranking/listado de lideres y tutores con su **ICP (0-100)** y **estado** (Solido/Estable/En riesgo/Datos insuficientes).
+- [ ] Ranking/listado de lideres y tutores con su **ICP (0-100)**, o **"Datos insuficientes"** si tiene menos de `MIN_EVALUATIONS` evaluaciones enviadas en el periodo.
 - [ ] Filtro por **periodo**.
 
 ### DASH-02 — ICP por criterio e indicadores · `Should` · `3 SP`

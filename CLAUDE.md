@@ -64,7 +64,8 @@ skill `.claude/skills/guia-generativa/SKILL.md`.
 
 ### Backend
 - **Python + FastAPI** (decision del equipo).
-- SQLAlchemy Core (`Table` + `conn.execute`, no ORM declarativo) + PyMySQL para acceso a MySQL.
+- SQL plano con SQLAlchemy `text()` + `conn.execute` (no ORM declarativo, no `Table`) + PyMySQL
+  para acceso a MySQL. Sin capa `models/`: el esquema de tablas vive solo en `database/schema.sql`.
 - Validacion con **Pydantic**, autenticacion **JWT**, autorizacion por rol (RBAC) via dependencias.
 - Logica de negocio y acceso a datos en la capa `services` (no en los routes; no hay capa
   `repositories/` separada — se elimino a proposito por ser indirection sin beneficio en un MVP
@@ -113,7 +114,7 @@ Reglas: las vistas **no** llaman `fetch` directo (usan `services/`); los service
 ### `backend/app/`
 ```
 main.py · config/ (config, security/JWT, database)
-models/ (SQLAlchemy Core: Table) · schemas/ (Pydantic) · routes/ (endpoints)
+schemas/ (Pydantic) · routes/ (endpoints)
 services/ (LOGICA DE NEGOCIO + acceso a datos: auth, user, period, form, evaluation, metrics, ai)
 deps.py (get_current_user, require_role)
 ```
@@ -142,7 +143,7 @@ cliente nunca sustituye la verificacion en el servidor.
 1. **Anonimato real:** si `is_anonymous` es true, **no** persistas ni expongas `evaluator_id`. Imposible reconstruir la identidad del evaluador anonimo.
 2. **Un Coder no evalua dos veces** al mismo evaluado en el mismo **periodo** (validar en backend + indice unico en BD).
 3. **Validacion doble:** en cliente (UX) y en servidor con Pydantic (autoridad).
-4. **Logica de negocio identificable** (no solo CRUD): **ICP** (indice 0-100 ponderado por categoria, con confianza, tendencia y estado) por persona/periodo, % participacion, estados de evaluacion (borrador/enviada), RBAC. No la degrades a CRUD plano. El ICP es **derivado, no se persiste** (se calcula on-read). Sus categorias estan **fundadas en instrumentos validados** (MCA-21 para Team Leaders, SEEQ para Tutores — ver `docs/06-arquitectura.md`) y mide **calidad percibida**, no aprendizaje real: no cambies categorias ni pesos sin actualizar docs y seed a la vez.
+4. **Logica de negocio identificable** (no solo CRUD): **ICP** (indice 0-100 por persona/periodo — promedio de respuestas tipo escala, normalizado, solo si hay al menos `MIN_EVALUATIONS` respuestas) por persona/periodo, % participacion, estados de evaluacion (borrador/enviada), RBAC. No la degrades a CRUD plano. El ICP es **derivado, no se persiste** (se calcula on-read en `metrics_service.calculate_average_score`) y mide **calidad percibida**, no aprendizaje real. No pondera por categoria ni calcula tendencia (ver `docs/06-arquitectura.md` para el detalle exacto del calculo antes de asumir que existe algo mas elaborado).
 5. **Ventana de evaluacion controlada (ADMIN-01):** solo puede existir **un periodo activo** a la vez y solo el **admin** lo activa/cierra. Sin periodo activo, la SPA muestra "No hay formularios por realizar" y el backend **rechaza** (`409`) crear/enviar evaluaciones — la SPA nunca es la autoridad.
 6. **Integridad del instrumento (ADMIN-02):** las preguntas solo se editan **con periodo cerrado**; editar el texto **versiona** (fila nueva + `is_active=FALSE` en la anterior), nunca sobrescribe. El admin no puede tocar `category`, tipos ni pesos. Las respuestas historicas conservan su pregunta original. Editar es **reformular dentro de la misma categoria** (anti deriva semantica): una pregunta de otro tema **no se convierte** — se desactiva y la nueva se crea en su categoria correcta (v2/equipo). Al guardar una edicion, la **IA comprueba la coherencia** texto↔categoria (via `ai_service`, solo texto de la pregunta + definicion de la categoria) y, si no coincide, el admin debe confirmar explicitamente.
 7. **Privacidad de IA:** a Claude API solo se envian **agregados anonimizados** (promedios, conteos, comentarios sin autor). **Nunca** `evaluator_id` ni textos que revelen identidad. La IA genera resumenes **solo para el Admin**.

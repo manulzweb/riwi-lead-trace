@@ -33,7 +33,7 @@ Filosofia: **startup validando una idea**. El MVP debe ser lo minimo para compro
 | Areas / segmentacion multi-area | Simplifica el MVP; la segmentacion se agrega post-validacion |
 | Bitacora TL->Tutor (evaluacion descendente) | Excede el feedback ascendente; se agrega como v2 |
 | Analitica de talento (ranking de futuros TL) | Requiere volumen de datos y bitacora; post-validacion |
-| Pesos del ICP configurables por Admin | Los defaults son suficientes para el piloto |
+| ICP ponderado por categoria (con pesos, editables o no) | El MVP usa un promedio simple; alcanza para validar la hipotesis del piloto |
 | Mejoras por IA para el evaluado (TL/Tutor) | El MVP entrega IA solo al Admin; el evaluado ve resultados sin IA |
 | Visualizacion de tendencias (graficos temporales) | CSV/tabla basica como `Could`; graficos avanzados son futuro |
 | Reportes avanzados / exportacion PDF estilizada | CSV/impresion basica como `Could`; lo demas es futuro |
