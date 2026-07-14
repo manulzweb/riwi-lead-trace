@@ -57,3 +57,36 @@ def test_duplicado_no_se_salta_marcando_anonima(client, coder_headers, temp_peri
         headers=coder_headers
     )
     assert segunda_anonima.status_code == 409
+
+
+def test_evaluado_puede_ver_su_propio_historial(client, coder_headers, team_leader_headers, temp_period):
+    creada = client.post("/evaluations", json=_payload(temp_period), headers=coder_headers)
+    assert creada.status_code == 201
+
+    response = client.get(f"/evaluations?evaluatee_id={TEAM_LEADER_ID}", headers=team_leader_headers)
+    assert response.status_code == 200
+    assert len(response.json()) >= 1
+
+
+def test_evaluado_no_puede_ver_historial_de_otra_persona(client, team_leader_headers):
+    # El TL (id=2) intenta ver el historial del Tutor (id=3): no es ni admin ni el mismo.
+    response = client.get("/evaluations?evaluatee_id=3", headers=team_leader_headers)
+    assert response.status_code == 403
+
+
+def test_evaluado_no_ve_quien_lo_evaluo_ni_en_no_anonimas(
+    client, coder_headers, team_leader_headers, admin_headers, temp_period
+):
+    creada = client.post(
+        "/evaluations",
+        json=_payload(temp_period, is_anonymous=False),
+        headers=coder_headers
+    )
+    assert creada.status_code == 201
+    assert creada.json()["evaluator_id"] == CODER_ID_FROM_TOKEN  # se guardo el id real
+
+    como_evaluado = client.get(f"/evaluations?evaluatee_id={TEAM_LEADER_ID}", headers=team_leader_headers)
+    assert como_evaluado.json()[0]["evaluator_id"] is None  # el TL nunca lo ve
+
+    como_admin = client.get(f"/evaluations?evaluatee_id={TEAM_LEADER_ID}", headers=admin_headers)
+    assert como_admin.json()[0]["evaluator_id"] == CODER_ID_FROM_TOKEN  # el admin si

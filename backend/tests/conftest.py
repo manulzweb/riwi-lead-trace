@@ -17,8 +17,10 @@ from app.main import app
 from app.config.database import conn
 from app.config.security import create_access_token
 
-# IDs de los usuarios semilla de database/schema.sql (coder@riwi.edu, admin@riwi.edu)
+# IDs de los usuarios semilla de database/schema.sql
 CODER_ID = 1
+TEAM_LEADER_ID = 2
+TUTOR_ID = 3
 ADMIN_ID = 4
 
 
@@ -30,6 +32,18 @@ def client():
 @pytest.fixture
 def coder_headers():
     token = create_access_token({"sub": str(CODER_ID), "role": "coder"})
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+def team_leader_headers():
+    token = create_access_token({"sub": str(TEAM_LEADER_ID), "role": "team_leader"})
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+def tutor_headers():
+    token = create_access_token({"sub": str(TUTOR_ID), "role": "tutor"})
     return {"Authorization": f"Bearer {token}"}
 
 

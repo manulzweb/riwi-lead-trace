@@ -102,8 +102,13 @@ def get_evaluations_by_evaluator(evaluator_id: int):
 
     return evaluations
 
-def get_evaluations_by_evaluatee(evaluatee_id: int, period_id: Optional[int] = None):
-    """Obtiene el historial de evaluaciones recibidas por un evaluado, opcionalmente filtrado por periodo."""
+def get_evaluations_by_evaluatee(evaluatee_id: int, period_id: Optional[int] = None, hide_evaluator: bool = False):
+    """Obtiene el historial de evaluaciones recibidas por un evaluado, opcionalmente filtrado por periodo.
+
+    hide_evaluator=True se usa cuando quien pide los datos es el propio
+    evaluado (no un admin): nunca debe ver quien lo evaluo, ni siquiera en
+    evaluaciones no anonimas (esa identidad es solo para el Admin).
+    """
     query_str = """
         SELECT id, evaluator_id, evaluatee_id, template_id, period_id, is_anonymous, status, submitted_at
         FROM evaluations WHERE evaluatee_id = :evaluatee_id
@@ -118,8 +123,8 @@ def get_evaluations_by_evaluatee(evaluatee_id: int, period_id: Optional[int] = N
     evaluations = []
     for row in result.mappings():
         eval_dict = dict(row)
-        if eval_dict["is_anonymous"]:
-            eval_dict["evaluator_id"] = None  # Asegurar anonimato
+        if eval_dict["is_anonymous"] or hide_evaluator:
+            eval_dict["evaluator_id"] = None  # Asegurar anonimato / privacidad frente al evaluado
 
         eval_dict["answers"] = _get_answers(eval_dict["id"])
         evaluations.append(eval_dict)

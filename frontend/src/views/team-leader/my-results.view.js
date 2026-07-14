@@ -24,7 +24,7 @@ export const renderMyResults = () => `
 
     <section class="mt-8 grid gap-6 md:grid-cols-3">
       <article class="rounded-3xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-lg">
-        <p class="text-sm text-[var(--text-muted)]">ICA actual</p>
+        <p class="text-sm text-[var(--text-muted)]">ICP actual</p>
         <div id="ica-score" class="mt-3 text-3xl font-black text-[var(--text-main)]">--</div>
       </article>
       <article class="rounded-3xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-lg">
@@ -97,12 +97,12 @@ export const setupMyResults = async () => {
 
       const myMetrics = summary.evaluatees.find(e => e.id === userId);
       
-      if (!myMetrics || myMetrics.score === null) {
+      if (!myMetrics || myMetrics.average_score === null) {
         icaScore.textContent = "--";
         evalCount.textContent = myMetrics ? myMetrics.n_evals : "0";
         evalStatus.innerHTML = `<span class="text-gray-400">Datos insuficientes</span>`;
       } else {
-        icaScore.textContent = `${myMetrics.score}/100`;
+        icaScore.textContent = `${myMetrics.average_score}/100`;
         evalCount.textContent = myMetrics.n_evals;
         
         let statusColor = "text-gray-500";

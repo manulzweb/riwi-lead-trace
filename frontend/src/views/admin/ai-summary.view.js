@@ -1,4 +1,8 @@
 import { navBarComponent } from "../../components/navbar";
+import { userService } from "../../services/users.service";
+import { periodService } from "../../services/periods.service";
+import { metricsService } from "../../services/metrics.service";
+import { showToast } from "../../components/alerts";
 
 export const renderAiSummary = () => `
   ${navBarComponent()}
@@ -40,9 +44,53 @@ export const renderAiSummary = () => `
   </main>
 `;
 
-export const setupAiSummary = () => {
+export const setupAiSummary = async () => {
   const generateBtn = document.getElementById("generate-btn");
-  if (!generateBtn) return;
+  const targetUserSelect = document.getElementById("target-user");
+  const periodSelect = document.getElementById("period");
+  const resultSection = document.getElementById("ai-result");
+  const resultContent = document.getElementById("ai-content");
 
-  generateBtn.addEventListener("click", () => {});
+  if (!generateBtn || !targetUserSelect || !periodSelect || !resultSection || !resultContent) return;
+
+  try {
+    const [users, periods] = await Promise.all([userService.get(), periodService.get()]);
+    const evaluables = users.filter(u => u.role === "team_leader" || u.role === "tutor");
+
+    targetUserSelect.innerHTML = '<option value="">Selecciona una persona...</option>' +
+      evaluables.map(u => `<option value="${u.id}">${u.name} (${u.role.replace('_', ' ')})</option>`).join("");
+
+    periodSelect.innerHTML = '<option value="">Selecciona un periodo...</option>' +
+      periods.map(p => `<option value="${p.id}" ${p.is_active ? "selected" : ""}>${p.name}</option>`).join("");
+  } catch (err) {
+    showToast("Error", "error", "No se pudieron cargar las personas o periodos.");
+    console.error(err);
+    return;
+  }
+
+  generateBtn.addEventListener("click", async () => {
+    const evaluateeId = parseInt(targetUserSelect.value);
+    const periodId = parseInt(periodSelect.value);
+
+    if (!evaluateeId || !periodId) {
+      showToast("Falta información", "warning", "Selecciona una persona y un periodo.");
+      return;
+    }
+
+    resultSection.classList.add("hidden");
+    generateBtn.disabled = true;
+    generateBtn.textContent = "Generando...";
+
+    try {
+      const { summary } = await metricsService.getAiSummary(evaluateeId, periodId);
+      resultContent.textContent = summary;
+      resultSection.classList.remove("hidden");
+    } catch (err) {
+      showToast("Error", "error", "No se pudo generar el resumen (¿hay suficientes evaluaciones enviadas en ese periodo?).");
+      console.error(err);
+    } finally {
+      generateBtn.disabled = false;
+      generateBtn.textContent = "Generar resumen";
+    }
+  });
 };
