@@ -58,6 +58,8 @@ export const renderMetrics = () => `
         </article>
       </section>
 
+      <section id="highlights-section" class="mt-10 grid gap-4 sm:grid-cols-2"></section>
+
       <section class="mt-10">
         <h2 class="text-2xl font-bold text-[var(--text-main)] mb-6">Resultados Detallados</h2>
         <div id="metrics-grid" class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -77,6 +79,7 @@ export const setupMetrics = async () => {
   const kpiIcp = document.getElementById("kpi-avg-icp");
   const kpiPart = document.getElementById("kpi-participation");
   const gridContainer = document.getElementById("metrics-grid");
+  const highlightsContainer = document.getElementById("highlights-section");
   const downloadBtn = document.getElementById("download-pdf-btn");
   const reportPeriodLabel = document.getElementById("report-period-label");
   const reportElement = document.getElementById("metrics-report");
@@ -142,6 +145,49 @@ export const setupMetrics = async () => {
     console.error(err);
   }
 
+  // Destaca al mejor evaluado y, en tono constructivo, a quien mas se
+  // beneficiaria de apoyo ("oportunidad de mejora", no "el peor").
+  // Reutiliza los datos que ya trae /metrics/summary, sin endpoints nuevos.
+  function renderHighlights(list) {
+    if (!highlightsContainer) return;
+
+    const withScore = list.filter(e => e.average_score !== null);
+    if (withScore.length === 0) {
+      highlightsContainer.innerHTML = "";
+      return;
+    }
+
+    const sorted = [...withScore].sort((a, b) => b.average_score - a.average_score);
+    const best = sorted[0];
+    const needsSupport = sorted[sorted.length - 1];
+
+    const highlightCard = (label, person, colorClasses) => `
+      <article class="rounded-3xl border p-6 ${colorClasses.border} ${colorClasses.bg}">
+        <p class="text-xs font-semibold uppercase tracking-wider ${colorClasses.text}">${label}</p>
+        <h3 class="mt-2 text-lg font-bold text-[var(--text-main)]">${person.name}</h3>
+        <p class="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">${person.role.replace('_', ' ')}</p>
+        <p class="text-3xl font-black mt-2 ${colorClasses.text}">${person.average_score}/100</p>
+      </article>
+    `;
+
+    const bestCard = highlightCard("Mejor evaluado", best, {
+      border: "border-emerald-200 dark:border-emerald-900/50",
+      bg: "bg-emerald-50/50 dark:bg-emerald-950/20",
+      text: "text-emerald-600 dark:text-emerald-400"
+    });
+
+    // Si solo hay una persona con datos, no tiene sentido mostrarla dos veces.
+    const opportunityCard = withScore.length > 1
+      ? highlightCard("Oportunidad de mejora", needsSupport, {
+          border: "border-amber-200 dark:border-amber-900/50",
+          bg: "bg-amber-50/50 dark:bg-amber-950/20",
+          text: "text-amber-600 dark:text-amber-400"
+        })
+      : "";
+
+    highlightsContainer.innerHTML = bestCard + opportunityCard;
+  }
+
   async function loadMetrics(periodId, roleFilter) {
     try {
       gridContainer.innerHTML = `
@@ -167,6 +213,8 @@ export const setupMetrics = async () => {
       if (roleFilter !== "all") {
         list = list.filter(e => e.role === roleFilter);
       }
+
+      renderHighlights(list);
 
       if (list.length === 0) {
         gridContainer.innerHTML = `
