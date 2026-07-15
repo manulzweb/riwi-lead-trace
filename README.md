@@ -28,10 +28,11 @@ riwi-lead-trace/
 ├── frontend/      # SPA Vanilla JS (ES Modules) + Vite
 ├── backend/       # API REST: FastAPI + SQLAlchemy (SQL plano) + MySQL
 ├── database/      # schema.sql (3FN) + datos semilla
-└── docs/          # documentación Scrum y técnica
+├── docs/          # documentación Scrum y técnica
+└── mockups/       # prototipos de las pantallas del MVP
 ```
 
-Cada capa tiene su propio README con detalle: [`backend/README.md`](./backend/README.md) · `frontend/README.md`.
+Detalle del backend: [`backend/README.md`](./backend/README.md).
 
 ## Puesta en marcha
 
