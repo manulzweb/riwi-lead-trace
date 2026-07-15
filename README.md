@@ -80,7 +80,13 @@ Si quieres ver el proyecto completo de una sola vez, arranca por [`docs/00-docum
 
 ## Equipo
 
-[@manulzweb](https://github.com/manulzweb) · [@YamitGC](https://github.com/YamitGC) · [@karl26chy](https://github.com/karl26chy) · [@smendozab097](https://github.com/smendozab097) · [@SaebGC](https://github.com/SaebGC)
+| Integrante | Rol | Foco |
+|---|---|---|
+| Manuel Vasquez ([@manulzweb](https://github.com/manulzweb)) | Scrum Master / Lider | Coordinacion + backend (FastAPI + MySQL) |
+| Carlos Charris ([@karl26chy](https://github.com/karl26chy)) | Product Owner | Backlog + frontend |
+| Yamit Garcia ([@YamitGC](https://github.com/YamitGC)) | Backend Developer | Auth, sesiones y permisos |
+| Sebastian Mendoza ([@smendozab097](https://github.com/smendozab097)) | Frontend Developer | SPA en Vanilla JS |
+| Saeb Garcia ([@SaebGC](https://github.com/SaebGC)) | Frontend Developer | SPA en Vanilla JS |
 
 Trabajamos con GitFlow y Conventional Commits. Cada historia sale en su propia rama `feature/<ID>-<slug>` desde `develop`.
 
