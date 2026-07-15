@@ -18,6 +18,22 @@ def get_users():
         users.append(user_dict)
     return users
 
+def get_evaluables():
+    """Obtiene todos los usuarios evaluables (Team Leaders y Tutores)."""
+    query = text("""
+        SELECT u.id, u.full_name AS name, u.email, u.is_active, u.role_id, u.clan_id, r.name AS role
+        FROM users u
+        JOIN roles r ON u.role_id = r.id
+        WHERE r.name IN ('team_leader', 'tutor') AND u.is_active = 1
+    """)
+    result = conn.execute(query)
+    users = []
+    for row in result.mappings():
+        user_dict = dict(row)
+        user_dict["roles"] = [user_dict["role"]]
+        users.append(user_dict)
+    return users
+
 def get_user(user_id: int):
     """Obtiene un usuario por ID (sin el hash de contraseña)."""
     query = text("""

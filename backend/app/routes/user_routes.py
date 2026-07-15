@@ -10,6 +10,11 @@ def get_users():
     """Obtiene todos los usuarios (ej. para elegir a quién evaluar)."""
     return user_service.get_users()
 
+@router.get("/evaluables", response_model=List[UserOut])
+def get_evaluables():
+    """Obtiene la lista de Team Leaders y Tutores evaluables."""
+    return user_service.get_evaluables()
+
 @router.get("/users/{user_id}", response_model=UserOut)
 def get_user(user_id: int):
     """Obtiene un usuario por ID."""
