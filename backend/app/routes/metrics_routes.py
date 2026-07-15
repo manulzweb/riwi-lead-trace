@@ -7,7 +7,7 @@ router = APIRouter()
 @router.get("/metrics/summary")
 def get_metrics_summary(
     period_id: int = Query(..., description="ID del periodo a consultar"),
-    current_user: dict = Depends(require_role("admin"))
+    current_user: dict = Depends(require_role("admin", "team_leader", "tutor"))
 ):
     """Obtiene un resumen global de las métricas (KPIs y promedios por persona) en un periodo."""
     return metrics_service.get_metrics_summary(period_id)
