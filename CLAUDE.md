@@ -7,17 +7,12 @@ Guia para asistentes de IA (Claude Code y similares) que trabajen en **Riwi Lead
 MVP **full-stack** de **feedback ascendente** para el **Proyecto Integrador de Riwi (Ruta
 Basica)**: una **SPA** permite a los **Coders** evaluar a **Team Leaders** y **Tutores** con
 formularios estructurados (con opcion anonima). Un **backend FastAPI + MySQL** persiste y procesa
-<<<<<<< HEAD
-la informacion, calcula un **Indice de Calidad de Acompanamiento (ICA)** y **genera resumenes de
-feedback con IA (Claude API)** para el **Admin (Jefe de TL/tutores)**.
-
-> **Estado actual:** fase de **planeacion**. El repo contiene documentacion Scrum y de diseno (`/docs`), el script SQL (`/database`) y esta guia. **Todavia no hay codigo de la app.** Al implementar, sigue la arquitectura definida en `/docs` — no la reinventes.
-=======
 la informacion, calcula un **Indice de Calidad Percibida (ICP)** y **genera resumenes de
 feedback con IA (Claude API)** para el **Admin (Jefe de TL/tutores)**.
 
-> **Estado actual:** **desarrollo temprano**. Ademas de la documentacion (`/docs`) y el script SQL (`/database`), en `develop` ya existe la base del codigo: backend FastAPI con `/health` y `GET /periods` (auth, forms, evaluations y metrics aun pendientes) y una SPA con router por roles y vistas estaticas (sin conectar a la API). Al implementar, sigue la arquitectura definida en `/docs` — no la reinventes.
->>>>>>> upstream/develop
+> **Estado actual:** en desarrollo activo. Backend FastAPI y SPA estan implementados y conectados
+> (auth, periods, forms, evaluations, metrics, users). Al implementar, sigue la arquitectura
+> definida en `/docs` — no la reinventes.
 
 ## Modo de operacion: GUIA GENERATIVA (regla principal)
 
@@ -71,25 +66,23 @@ skill `.claude/skills/guia-generativa/SKILL.md`.
 
 ### Backend
 - **Python + FastAPI** (decision del equipo).
-<<<<<<< HEAD
-- SQLAlchemy (ORM) + PyMySQL para acceso a MySQL.
-- Validacion con **Pydantic**, autenticacion **JWT**, autorizacion por rol (RBAC) via dependencias.
-- Logica de negocio en la capa `services` (no en los routers).
-- **IA:** integracion con **Claude API** (SDK `anthropic`) en `services/ai_service.py` para resumir
-  feedback (solo para el Admin). Modelo recomendado `claude-sonnet-4-6` (calidad/costo) o
-  `claude-haiku-4-5-20251001` (economico). `ANTHROPIC_API_KEY` via `core/config.py`.
-  **Solo se envian agregados anonimizados.**
-=======
 - SQL plano con SQLAlchemy `text()` + `conn.execute` (no ORM declarativo, no `Table`) + PyMySQL
   para acceso a MySQL. Sin capa `models/`: el esquema de tablas vive solo en `database/schema.sql`.
-- Validacion con **Pydantic**, autenticacion **JWT**, autorizacion por rol (RBAC) via dependencias.
+- Validacion con **Pydantic**.
+- **Sin JWT (decision de equipo, MVP):** el login verifica credenciales con bcrypt en el servidor,
+  pero **no emite ni verifica token**. El rol/identidad de quien hace cada peticion se **confia**
+  al valor que manda el propio front (ej. `viewer_role` en `GET /evaluations`, `evaluator_id` en
+  `POST /evaluations`). **No hay verificacion criptografica de identidad en el backend.** Es un
+  tradeoff de seguridad consciente para simplificar el MVP, no un descuido — hay que poder
+  sustentarlo si preguntan en la evaluacion. `backend/app/deps.py` y las funciones JWT de
+  `security.py` (`create_access_token`/`decode_access_token`) ya no se usan; no los reintroduzcas
+  sin que el equipo lo decida explicitamente.
 - Logica de negocio y acceso a datos en la capa `services` (no en los routes; no hay capa
   `repositories/` separada — se elimino a proposito por ser indirection sin beneficio en un MVP
   de este tamano).
 - **IA:** integracion con **Claude API** (SDK `anthropic`) en `services/ai_service.py` para resumir
   feedback (solo para el Admin). Modelo en uso: `claude-haiku-4-5-20251001` (economico).
   `ANTHROPIC_API_KEY` via `config/config.py`. **Solo se envian agregados anonimizados.**
->>>>>>> upstream/develop
 
 ### Base de datos
 - **MySQL**, modelo relacional **normalizado hasta 3FN**, integridad referencial (FKs), CRUD completo y consultas agregadas para metricas.
@@ -98,31 +91,17 @@ skill `.claude/skills/guia-generativa/SKILL.md`.
 
 | Tema | Archivo |
 |------|---------|
-<<<<<<< HEAD
-| Vision, objetivos, metricas | `docs/01-vision-y-producto.md` |
-| Product Backlog (IDs, SP, prioridad) | `docs/02-product-backlog.md` |
-| Historias + criterios de aceptacion | `docs/03-historias-de-usuario.md` |
-| Epicas | `docs/04-epicas.md` |
-| Sprints (cronograma, entrega 17 jul) | `docs/05-sprint-planning.md` |
-| **Arquitectura full-stack** | `docs/06-arquitectura.md` |
-| **Base de datos (MER, 3FN, SQL)** | `docs/07-base-de-datos.md` |
-| **Convenciones, GitFlow, repo** | `docs/08-diseno-tecnico.md` |
-| Alcance MVP | `docs/09-mvp-alcance.md` |
-| Requisitos no funcionales | `docs/10-requisitos-no-funcionales.md` |
-| Entregables y evaluacion | `docs/11-entregables-y-evaluacion.md` |
-| Justificacion tecnologica | `docs/12-justificacion-tecnologica.md` |
-=======
 | **Resumen completo del proyecto (1 solo documento)** | `docs/00-documento-tecnico.md` |
 | Vision, objetivos, metricas | `docs/01-vision-y-producto.md` |
 | Product Backlog (IDs, SP, prioridad) | `docs/02-product-backlog.md` |
 | Historias + criterios de aceptacion | `docs/03-historias-de-usuario.md` |
+| Epicas | `docs/04-epicas.md` |
 | Epicas + Sprints (cronograma, entrega 17 jul) | `docs/05-sprint-planning.md` |
 | **Arquitectura full-stack + justificacion tecnologica** | `docs/06-arquitectura.md` |
 | **Base de datos (MER, 3FN, SQL)** | `docs/07-base-de-datos.md` |
 | **Convenciones, GitFlow, repo** | `docs/08-diseno-tecnico.md` |
 | Alcance MVP + requisitos no funcionales | `docs/09-mvp-alcance.md` |
 | Entregables y evaluacion | `docs/11-entregables-y-evaluacion.md` |
->>>>>>> upstream/develop
 | **Glosario de terminos (en simple)** | `docs/13-glosario.md` |
 | Script SQL ejecutable | `database/schema.sql` |
 
@@ -131,12 +110,8 @@ skill `.claude/skills/guia-generativa/SKILL.md`.
 Monorepo full-stack:
 
 ```
-SPA (frontend/)  ──HTTP/REST(JSON, JWT)──>  API (backend/ FastAPI)  ──SQLAlchemy──>  MySQL
-<<<<<<< HEAD
-   vistas -> store -> services -> http              routers -> services -> repositories -> models
-=======
-   vistas -> store -> services -> http              routes -> services -> models
->>>>>>> upstream/develop
+SPA (frontend/)  ──HTTP/REST(JSON)──>  API (backend/ FastAPI)  ──SQLAlchemy──>  MySQL
+   vistas -> store -> services -> http              routes -> services -> MySQL
 ```
 
 ### `frontend/src/`
@@ -149,23 +124,13 @@ Reglas: las vistas **no** llaman `fetch` directo (usan `services/`); los service
 
 ### `backend/app/`
 ```
-<<<<<<< HEAD
-main.py · core/ (config, security/JWT, database)
-models/ (SQLAlchemy) · schemas/ (Pydantic) · routers/ (endpoints)
-services/ (LOGICA DE NEGOCIO: metrics_service/ICA, ai_service) · repositories/ (queries)
-deps.py (get_db, get_current_user, require_role)
-```
-Reglas: los **routers** validan entrada/salida con Pydantic y delegan; la **logica de negocio vive en `services/`**; el acceso a datos pasa por `repositories/`. Nunca pongas reglas de negocio en los routers ni queries crudas dispersas en endpoints.
-=======
-main.py · config/ (config, security/JWT, database)
+main.py · config/ (config, security, database)
 schemas/ (Pydantic) · routes/ (endpoints)
-services/ (LOGICA DE NEGOCIO + acceso a datos: auth, user, period, form, evaluation, metrics, ai)
-deps.py (get_current_user, require_role)
+services/ (LOGICA DE NEGOCIO + acceso a datos: auth, user, period, form, question, evaluation, metrics, ai)
 ```
 Reglas: los **routes** validan entrada/salida con Pydantic y delegan; la **logica de negocio (y las
 queries) viven en `services/`**. Nunca pongas reglas de negocio en los routes ni dupliques queries
 entre archivos de `services/`.
->>>>>>> upstream/develop
 
 Detalle completo en `docs/06-arquitectura.md`.
 
@@ -177,36 +142,27 @@ Son **4 roles** (un solo `role_id` por usuario; **no hay rol "teacher"/"instruct
 - **`tutor`** — **rol propio** (no es una bandera sobre coder); es principalmente evaluable;
   conserva `clan_id`.
 - **`team_leader`** (staff) — es evaluable por coders; ve su feedback agregado.
-<<<<<<< HEAD
-- **`admin`** (Jefe de TL y de tutores; antes `coordinador`) — dashboards, metricas/ICA, resumenes
-=======
 - **`admin`** (Jefe de TL y de tutores; antes `coordinador`) — dashboards, metricas/ICP, resumenes
->>>>>>> upstream/develop
   IA. Acceso global, respetando anonimato.
 
-RBAC aplicado **tanto en frontend (UX)** como en **backend (seguridad real)**. El control en
-cliente nunca sustituye la verificacion en el servidor.
+RBAC aplicado en **frontend** (oculta rutas y opciones por rol) y en **backend** solo como filtro
+de datos basado en el rol/ID que **manda el propio front** (sin JWT no hay forma de verificarlo
+criptograficamente). **No es una barrera de seguridad real** — es un filtro de conveniencia. Si el
+equipo decide que hace falta seguridad real, la unica forma correcta es reintroducir algun
+mecanismo de sesion verificable en servidor (JWT u otro), no maquillar el front.
 
 ## Reglas de negocio que NO debes romper
 
 1. **Anonimato real:** si `is_anonymous` es true, **no** persistas ni expongas `evaluator_id`. Imposible reconstruir la identidad del evaluador anonimo.
 2. **Un Coder no evalua dos veces** al mismo evaluado en el mismo **periodo** (validar en backend + indice unico en BD).
 3. **Validacion doble:** en cliente (UX) y en servidor con Pydantic (autoridad).
-<<<<<<< HEAD
-4. **Logica de negocio identificable** (no solo CRUD): **ICA** (indice 0-100 ponderado por categoria, con confianza, tendencia y estado) por persona/periodo, % participacion, estados de evaluacion (borrador/enviada), RBAC. No la degrades a CRUD plano. El ICA es **derivado, no se persiste** (se calcula on-read).
-5. **Privacidad de IA:** a Claude API solo se envian **agregados anonimizados** (promedios, conteos, comentarios sin autor). **Nunca** `evaluator_id` ni textos que revelen identidad. La IA genera resumenes **solo para el Admin**.
-6. **Visibilidad de evaluadores:** una persona evaluada (TL/Tutor) **nunca ve quien la evaluo**; solo el **Admin** ve la identidad del evaluador en evaluaciones **no anonimas**. Las **anonimas permanecen anonimas para todos** (incluido el Admin).
-7. **Seguridad:** contrasenas siempre hasheadas (passlib/bcrypt); `401` cierra sesion en cliente.
-8. **Respeta el alcance MVP** (`docs/09-mvp-alcance.md`): no implementes lo marcado "fuera del MVP" sin que el usuario lo pida.
-=======
-4. **Logica de negocio identificable** (no solo CRUD): **ICP** (indice 0-100 por persona/periodo — promedio de respuestas tipo escala, normalizado, solo si hay al menos `MIN_EVALUATIONS` respuestas) por persona/periodo, % participacion, estados de evaluacion (borrador/enviada), RBAC. No la degrades a CRUD plano. El ICP es **derivado, no se persiste** (se calcula on-read en `metrics_service.calculate_average_score`) y mide **calidad percibida**, no aprendizaje real. No pondera por categoria ni calcula tendencia (ver `docs/06-arquitectura.md` para el detalle exacto del calculo antes de asumir que existe algo mas elaborado).
-5. **Ventana de evaluacion controlada (ADMIN-01):** solo puede existir **un periodo activo** a la vez y solo el **admin** lo activa/cierra. Sin periodo activo, la SPA muestra "No hay formularios por realizar" y el backend **rechaza** (`409`) crear/enviar evaluaciones — la SPA nunca es la autoridad.
-6. **Integridad del instrumento (ADMIN-02):** las preguntas solo se editan **con periodo cerrado**; editar el texto **versiona** (fila nueva + `is_active=FALSE` en la anterior), nunca sobrescribe. El admin no puede tocar `category`, tipos ni pesos. Las respuestas historicas conservan su pregunta original. Editar es **reformular dentro de la misma categoria** (anti deriva semantica): una pregunta de otro tema **no se convierte** — se desactiva y la nueva se crea en su categoria correcta (v2/equipo). Al guardar una edicion, la **IA comprueba la coherencia** texto↔categoria (via `ai_service`, solo texto de la pregunta + definicion de la categoria) y, si no coincide, el admin debe confirmar explicitamente.
+4. **Logica de negocio identificable** (no solo CRUD): **ICP** (indice 0-100 por persona/periodo, ponderado por el peso de cada pregunta — ver regla 6 — y normalizado, solo si hay al menos `MIN_EVALUATIONS` respuestas), % participacion, estados de evaluacion (borrador/enviada), filtros por rol. No la degrades a CRUD plano. El ICP es **derivado, no se persiste** (se calcula on-read en `metrics_service.calculate_average_score`) y mide **calidad percibida**, no aprendizaje real. No calcula tendencia entre periodos (ver `docs/06-arquitectura.md` para el detalle exacto del calculo antes de asumir que existe algo mas elaborado).
+5. **Ventana de evaluacion controlada (ADMIN-01):** solo puede existir **un periodo activo** a la vez y solo el **admin** lo activa/cierra (activar uno desactiva cualquier otro). Sin periodo activo, la SPA muestra "No hay formularios por realizar" y el backend **rechaza** (`409`) crear/enviar evaluaciones — la SPA nunca es la autoridad.
+6. **Integridad del instrumento (ADMIN-02):** las preguntas solo se editan **con periodo cerrado**; editar el texto **versiona** (fila nueva + `is_active=FALSE` en la anterior), nunca sobrescribe. El admin **si puede** ajustar el **peso** (`weight_percent`) de cada pregunta de escala — es la unica ponderacion que existe — pero **no puede tocar** `category` ni `input_type`. Los pesos de las preguntas de escala **activas de un mismo `form_template` deben sumar exactamente 100** (validado en `question_service` antes de guardar; si no suma, se rechaza con `422`/`409`). Las respuestas historicas conservan su pregunta y su peso original. Editar el texto es **reformular dentro de la misma categoria** (anti deriva semantica): una pregunta de otro tema **no se convierte** — se desactiva y la nueva se crea en su categoria correcta (v2/equipo). Al guardar una edicion de texto, la **IA comprueba la coherencia** texto↔categoria (via `ai_service`, solo texto de la pregunta + definicion de la categoria) y, si no coincide, el admin debe confirmar explicitamente.
 7. **Privacidad de IA:** a Claude API solo se envian **agregados anonimizados** (promedios, conteos, comentarios sin autor). **Nunca** `evaluator_id` ni textos que revelen identidad. La IA genera resumenes **solo para el Admin**.
 8. **Visibilidad de evaluadores:** una persona evaluada (TL/Tutor) **nunca ve quien la evaluo**; solo el **Admin** ve la identidad del evaluador en evaluaciones **no anonimas**. Las **anonimas permanecen anonimas para todos** (incluido el Admin).
-9. **Seguridad:** contrasenas siempre hasheadas (passlib/bcrypt); `401` cierra sesion en cliente.
+9. **Seguridad:** contrasenas siempre hasheadas (passlib/bcrypt), nunca en texto plano ni devueltas en responses.
 10. **Respeta el alcance MVP** (`docs/09-mvp-alcance.md`): no implementes lo marcado "fuera del MVP" sin que el usuario lo pida. El formulario de evaluacion es **interactivo "una pregunta a la vez" en JS Vanilla + CSS** — sin paquetes de formularios (SurveyJS y similares cuentan como framework de UI prohibido).
->>>>>>> upstream/develop
 
 ## Convenciones de codigo
 
@@ -224,7 +180,7 @@ cliente nunca sustituye la verificacion en el servidor.
 - **No abrir Pull Requests salvo que el usuario lo pida explicitamente.**
 - En sesiones asistidas, trabaja en la rama indicada por la tarea e integra hacia `develop`.
 
-## Comandos previstos (cuando exista el codigo)
+## Comandos previstos
 
 ```bash
 # Base de datos
@@ -244,26 +200,23 @@ npm run build                            # bundle de produccion
 
 ## Contrato REST del MVP (resumen)
 
+> Nota: sin JWT, ninguna columna "RBAC" de esta tabla es una verificacion criptografica — es un
+> filtro de datos basado en un rol/ID que manda el propio front. Ver seccion "Roles del sistema".
+
 | Metodo | Endpoint | Uso | Logica de negocio |
 |--------|----------|-----|-------------------|
-| POST | `/auth/login` | login -> `{ token, user }` | hash + JWT |
-| GET | `/users?role=team_leader` | evaluables por rol | RBAC |
+| POST | `/auth/login` | login -> `{ user }` (sin token) | hash bcrypt en servidor |
+| GET | `/users?role=team_leader` | evaluables por rol | filtro por rol |
 | GET | `/forms?target_role=team_leader` | plantilla de formulario | — |
-<<<<<<< HEAD
-| POST | `/evaluations` | registrar evaluacion | anonimato + no-duplicado(periodo) + validacion |
-| GET | `/evaluations?evaluator_id=:id` | historial del Coder | RBAC (propio) |
-| GET | `/evaluations?evaluatee_id=:id` | historico por evaluado | RBAC (admin), respeta anonimato |
-| GET | `/metrics/summary?period_id=:p` | KPIs + ICA | **agregaciones + ICA** |
-=======
 | POST | `/evaluations` | registrar evaluacion | anonimato + no-duplicado(periodo) + **periodo activo** + validacion |
-| GET | `/evaluations?evaluator_id=:id` | historial del Coder | RBAC (propio) |
-| GET | `/evaluations?evaluatee_id=:id` | historico por evaluado | RBAC (admin), respeta anonimato |
+| GET | `/evaluations?evaluator_id=:id` | historial del Coder | filtro por `evaluator_id` |
+| GET | `/evaluations?evaluatee_id=:id` | historico por evaluado | `viewer_role` del front, respeta anonimato |
 | GET | `/periods` | listar periodos | el activo habilita los formularios |
-| PATCH | `/periods/:id` | activar/cerrar periodo | RBAC (admin), **solo uno activo** |
-| PATCH | `/questions/:id` | editar/desactivar pregunta | RBAC (admin), **solo periodo cerrado**, versionado |
-| GET | `/metrics/summary?period_id=:p` | KPIs + ICP | **agregaciones + ICP** |
->>>>>>> upstream/develop
-| GET | `/metrics/ai-summary?evaluatee_id=:e&period_id=:p` | resumen IA | **Claude API (anonimizado)**, admin |
+| PUT | `/periods/:id` | activar/cerrar periodo | **solo uno activo** a la vez |
+| PATCH | `/questions/:id` | editar texto de una pregunta | **solo periodo cerrado**, versionado + chequeo IA de coherencia |
+| PUT | `/questions/weights` | actualizar pesos de las preguntas de un template | **solo periodo cerrado**, pesos deben sumar 100 |
+| GET | `/metrics/summary?period_id=:p` | KPIs + ICP | **agregaciones + ICP ponderado** |
+| GET | `/metrics/ai-summary?evaluatee_id=:e&period_id=:p` | resumen IA | **Claude API (anonimizado)** |
 
 Detalle y modelo de datos: `docs/06-arquitectura.md` y `docs/07-base-de-datos.md`.
 
@@ -273,10 +226,6 @@ Detalle y modelo de datos: `docs/06-arquitectura.md` y `docs/07-base-de-datos.md
 2. **Respeta la arquitectura** de `docs/06-arquitectura.md` (capas y ubicacion de archivos en front y back).
 3. Implementa lo minimo para cumplir los criterios; **sin sobreingenieria** y **sin degradar la logica de negocio a CRUD**.
 4. Valida en **servidor** (Pydantic) ademas de en cliente; maneja errores y devuelve codigos HTTP correctos.
-<<<<<<< HEAD
-5. Asegura **responsive** y **accesibilidad** basica (`docs/10-requisitos-no-funcionales.md`).
-=======
 5. Asegura **responsive** y **accesibilidad** basica (`docs/09-mvp-alcance.md`).
->>>>>>> upstream/develop
 6. Commits pequenos con Conventional Commits; cumple la Definition of Done.
 7. Si cambias decisiones de arquitectura/producto, **actualiza tambien `/docs` y este `CLAUDE.md`**.
