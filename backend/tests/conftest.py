@@ -15,7 +15,6 @@ from sqlalchemy import text
 
 from app.main import app
 from app.config.database import conn
-from app.config.security import create_access_token
 
 # IDs de los usuarios semilla de database/schema.sql
 CODER_ID = 1
@@ -27,31 +26,6 @@ ADMIN_ID = 4
 @pytest.fixture
 def client():
     return TestClient(app)
-
-
-@pytest.fixture
-def coder_headers():
-    token = create_access_token({"sub": str(CODER_ID), "role": "coder"})
-    return {"Authorization": f"Bearer {token}"}
-
-
-@pytest.fixture
-def team_leader_headers():
-    token = create_access_token({"sub": str(TEAM_LEADER_ID), "role": "team_leader"})
-    return {"Authorization": f"Bearer {token}"}
-
-
-@pytest.fixture
-def tutor_headers():
-    token = create_access_token({"sub": str(TUTOR_ID), "role": "tutor"})
-    return {"Authorization": f"Bearer {token}"}
-
-
-@pytest.fixture
-def admin_headers():
-    token = create_access_token({"sub": str(ADMIN_ID), "role": "admin"})
-    return {"Authorization": f"Bearer {token}"}
-
 
 @pytest.fixture
 def temp_period():

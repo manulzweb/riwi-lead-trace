@@ -1,13 +1,9 @@
 import { getEmailRules, getPasswordRules } from "../../utils/validators";
 import { authService } from "../../services/auth.service";
 import { renderRoute } from "../../router/router";
-<<<<<<< HEAD
 import { userService } from "../../services/users.service";
 import { showToast } from "../../components/alerts";
 import { hashPassword } from "../../utils/crypto";
-=======
-import { showToast } from "../../components/alerts";
->>>>>>> upstream/develop
 import { setButtonLoadingState, createDebouncedValidator, validateSync, showFieldError } from "../../utils/formUtils";
 import { backgroundComponent } from "../../components/background.js";
 import { langSwitcherComponent, setupLangSwitcher } from "../../components/lang-switcher.js";
@@ -97,44 +93,9 @@ const handleLoginSubmit = (elements) => async (event) => {
   setButtonLoadingState(elements.submitBtn, true, "Validando...", "Entrar al dashboard");
 
   try {
-    // const users = await userService.get();
-    // const hashedPassword = hashPassword(password);
+    const { user } = await authService.login(email, password);
 
-    // const user = users.find((user) => user.email.toLowerCase() === email.toLowerCase() && user.password === hashedPassword);
-
-    // if (!user) {
-    //   showToast("Falló el inicio de sesión", "error", "Credenciales incorrectas");
-    //   setButtonLoadingState(elements.submitBtn, false, "", "Entrar al dashboard");
-    //   return showFieldError(elements.emailInput, "Credenciales incorrectas", elements.emailError);
-    // }
-
-    // Mock user for testing: asignar rol basado en el email
-    let userRole = "admin";
-    let userName = "Admin User";
-    
-    const emailLower = email.toLowerCase();
-    if (emailLower.includes("coder")) {
-      userRole = "coder";
-      userName = "Coder User";
-    } else if (emailLower.includes("team")) {
-      userRole = "team_leader";
-      userName = "Team Leader";
-    } else if (emailLower.includes("tutor")) {
-      userRole = "tutor";
-      userName = "Tutor User";
-    }
-
-    const user = {
-      id: "1",
-      name: userName,
-      email: emailLower,
-      roles: [userRole]
-    };
-
-    /*authService.setSession(user);
-    const { user, access_token } = await authService.login(email, password);
-
-    authService.setSession(user, access_token);
+    authService.setSession(user);
     showToast(`Bienvenido ${user.name}!`, "success");
 
     window.history.pushState({}, "", "/dashboard");

@@ -332,6 +332,7 @@ export const setupEvaluate = async () => {
     }
 
     const evaluationData = {
+      evaluator_id: currentUser.id,
       evaluatee_id: parseInt(evaluatee.value),
       template_id: currentTemplate.id,
       period_id: activePeriod.id,

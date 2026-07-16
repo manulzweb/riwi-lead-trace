@@ -1,3 +1,5 @@
+"""
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError
@@ -28,3 +30,5 @@ def require_role(*roles: str):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sin permiso")
         return current_user
     return checker
+    
+"""
