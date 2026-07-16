@@ -14,7 +14,7 @@ export const renderMyEvaluations = () => `
         <h1 class="mt-1 text-4xl font-black tracking-tight text-[var(--text-main)]">Mis evaluaciones</h1>
       </div>
       <a href="/evaluations/new"
-        class="inline-flex items-center justify-center rounded-2xl bg-[var(--brand-bg)] px-5 py-3 text-sm font-bold text-white transition-all duration-300 ease-in-out hover:bg-[var(--brand-hover)] hover:shadow-md">
+        class="inline-flex items-center justify-center rounded-2xl bg-[var(--brand-bg)] px-5 py-3 text-sm font-bold text-[var(--brand-text)] transition-all duration-300 ease-in-out hover:bg-[var(--brand-hover)] hover:shadow-md">
         Nueva evaluación
       </a>
     </section>
@@ -59,8 +59,8 @@ export const setupMyEvaluations = async () => {
       const evaluateeName = evaluatee ? evaluatee.name : `Usuario #${ev.evaluatee_id}`;
       const evaluateeRole = evaluatee ? evaluatee.role.replace('_', ' ') : 'Colaborador';
       const periodName = period ? period.name : `Periodo #${ev.period_id}`;
-      
-      const formattedDate = ev.submitted_at 
+
+      const formattedDate = ev.submitted_at
         ? new Date(ev.submitted_at).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" })
         : "No enviada";
 
@@ -96,13 +96,13 @@ export const setupMyEvaluations = async () => {
 
       const evaluatee = usersMap.get(evaluation.evaluatee_id);
       const evaluateeName = evaluatee ? evaluatee.name : `Usuario #${evaluation.evaluatee_id}`;
-      
+
       const answersHtml = evaluation.answers.map(ans => {
-        const scoreHtml = ans.score 
-          ? `<span class="font-bold text-[var(--brand-bg)]">${ans.score}/5</span>` 
+        const scoreHtml = ans.score
+          ? `<span class="font-bold text-[var(--brand-bg)]">${ans.score}/5</span>`
           : `<span class="text-[var(--text-muted)]">N/A</span>`;
-        const commentHtml = ans.comment 
-          ? `<p class="mt-2 text-xs text-[var(--text-muted)] italic">"${ans.comment}"</p>` 
+        const commentHtml = ans.comment
+          ? `<p class="mt-2 text-xs text-[var(--text-muted)] italic">"${ans.comment}"</p>`
           : "";
         return `
           <div class="border-b border-[var(--border-main)] pb-3 last:border-b-0">

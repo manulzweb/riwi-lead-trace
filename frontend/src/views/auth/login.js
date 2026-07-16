@@ -1,7 +1,9 @@
 import { getEmailRules, getPasswordRules } from "../../utils/validators";
 import { authService } from "../../services/auth.service";
 import { renderRoute } from "../../router/router";
+import { userService } from "../../services/users.service";
 import { showToast } from "../../components/alerts";
+import { hashPassword } from "../../utils/crypto";
 import { setButtonLoadingState, createDebouncedValidator, validateSync, showFieldError } from "../../utils/formUtils";
 import { backgroundComponent } from "../../components/background.js";
 import { langSwitcherComponent, setupLangSwitcher } from "../../components/lang-switcher.js";
@@ -97,7 +99,7 @@ const handleLoginSubmit = (elements) => async (event) => {
     showToast(`Bienvenido ${user.name}!`, "success");
 
     window.history.pushState({}, "", "/dashboard");
-    renderRoute();
+    renderRoute();*/
   } catch (error) {
     showToast("Falló el inicio de sesión", "error", "Credenciales incorrectas");
     setButtonLoadingState(elements.submitBtn, false, "", "Entrar al dashboard");

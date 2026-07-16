@@ -1,12 +1,13 @@
-import { renderDashboard, setupDashboard }         from "../views/dashboard.view.js";
-import { renderProfile, setupProfile }               from "../views/profile.view.js";
-import { renderLogin, setupLogin }                   from "../views/auth/login.js";
-import { renderNotFound, setupNotFound }             from "../views/notFound.js";
-import { renderEvaluate, setupEvaluate }             from "../views/coder/evaluate.view.js";
-import { renderMyEvaluations, setupMyEvaluations }   from "../views/coder/my-evaluations.view.js";
-import { renderMyResults, setupMyResults }           from "../views/team-leader/my-results.view.js";
-import { renderMetrics, setupMetrics }               from "../views/admin/metrics.view.js";
-import { renderAiSummary, setupAiSummary }           from "../views/admin/ai-summary.view.js";
+import { renderDashboard, setupDashboard } from "../views/dashboard.view.js";
+import { renderProfile, setupProfile } from "../views/profile.view.js";
+import { renderLogin, setupLogin } from "../views/auth/login.js";
+import { renderNotFound, setupNotFound } from "../views/notFound.js";
+import { renderEvaluate, setupEvaluate } from "../views/coder/evaluate.view.js";
+import { renderMyEvaluations, setupMyEvaluations } from "../views/coder/my-evaluations.view.js";
+import { renderMyResults, setupMyResults } from "../views/team-leader/my-results.view.js";
+import { renderMetrics, setupMetrics } from "../views/admin/metrics.view.js";
+import { renderAiSummary, setupAiSummary } from "../views/admin/ai-summary.view.js";
+import { renderAdminEvaluations, setupAdminEvaluations } from "../views/admin/evaluations.view.js";
 
 export const ROUTES = {
   "/login": {
@@ -58,6 +59,13 @@ export const ROUTES = {
   },
 
   // ── Admin ──────────────────────────────────────────────────────────────────
+  "/admin/evaluations": {
+    title: "Gestión de Evaluaciones | LeadTrace",
+    renderView: renderAdminEvaluations,
+    initSetup: setupAdminEvaluations,
+    requireAuth: true,
+    allowedRoles: ["admin"],
+  },
   "/admin/metrics": {
     title: "Métricas ICP | LeadTrace",
     renderView: renderMetrics,

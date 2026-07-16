@@ -60,19 +60,19 @@ export const setupMyResults = async () => {
 
   try {
     periods = await periodService.get();
-    
+
     if (periods.length === 0) {
       periodSelector.innerHTML = '<option value="">No hay periodos</option>';
       feedbackList.innerHTML = '<p class="text-[var(--text-muted)]">No hay periodos registrados.</p>';
       return;
     }
 
-    periodSelector.innerHTML = periods.map(p => 
+    periodSelector.innerHTML = periods.map(p =>
       `<option value="${p.id}" ${p.is_active ? 'selected' : ''}>${p.name}</option>`
     ).join("");
 
     const activePeriod = periods.find(p => p.is_active) || periods[0];
-    
+
     // Cargar datos del periodo inicial
     await loadResultsForPeriod(currentUser.id, activePeriod.id);
 
@@ -89,14 +89,14 @@ export const setupMyResults = async () => {
   async function loadResultsForPeriod(userId, periodId) {
     try {
       feedbackList.innerHTML = '<div class="text-center py-4 text-[var(--text-muted)] animate-pulse">Cargando comentarios...</div>';
-      
+
       const [summary, evaluations] = await Promise.all([
         metricsService.getSummary(periodId),
         evaluationService.getByEvaluatee(userId)
       ]);
 
       const myMetrics = summary.evaluatees.find(e => e.id === userId);
-      
+
       if (!myMetrics || myMetrics.average_score === null) {
         icaScore.textContent = "--";
         evalCount.textContent = myMetrics ? myMetrics.n_evals : "0";
@@ -104,12 +104,12 @@ export const setupMyResults = async () => {
       } else {
         icaScore.textContent = `${myMetrics.average_score}/100`;
         evalCount.textContent = myMetrics.n_evals;
-        
+
         let statusColor = "text-gray-500";
         if (myMetrics.status === "Sólido") statusColor = "text-emerald-500";
         if (myMetrics.status === "En riesgo") statusColor = "text-red-500";
         if (myMetrics.status === "Estable") statusColor = "text-amber-500";
-        
+
         evalStatus.innerHTML = `<span class="${statusColor}">${myMetrics.status}</span>`;
       }
 
