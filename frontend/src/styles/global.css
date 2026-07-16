@@ -102,6 +102,7 @@ h5,
 h6,
 .font-heading {
   font-family: var(--font-heading);
+  font-weight: 600;
 }
 
 /* Control de logos según el tema */

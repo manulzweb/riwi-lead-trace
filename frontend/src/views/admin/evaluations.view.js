@@ -1,6 +1,7 @@
 import { navBarComponent } from "../../components/navbar";
 import { showToast } from "../../components/alerts";
 import { escapeHtml } from "../../utils/validators";
+import { dropdownComponent, setupDropdown } from "../../components/dropdown";
 
 export const renderAdminEvaluations = () => `
   ${navBarComponent()}
@@ -56,10 +57,12 @@ export const renderAdminEvaluations = () => `
           </div>
           <div>
             <label class="mb-2 block text-sm font-bold text-[var(--text-main)]">Dirigido a (Rol destino)</label>
-            <select id="template-role" class="w-full md:w-1/2 rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] px-4 py-3 text-[var(--text-main)] focus:border-[var(--brand-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-hover)]/20 cursor-pointer">
-              <option value="coder">Coders</option>
-              <option value="tutor">Tutores</option>
-            </select>
+            <div class="md:w-1/2">
+              ${dropdownComponent('template-role', [
+                { value: 'coder', label: 'Coders' },
+                { value: 'tutor', label: 'Tutores' }
+              ], 'coder')}
+            </div>
           </div>
         </div>
       </section>
@@ -103,6 +106,7 @@ export const setupAdminEvaluations = () => {
   const showBuilder = () => {
     viewList.classList.add("hidden");
     viewBuilder.classList.remove("hidden");
+    setupDropdown('template-role');
   };
 
   const showList = () => {
@@ -164,18 +168,15 @@ export const setupAdminEvaluations = () => {
           <div class="flex-1">
             <input type="text" class="q-text-input w-full bg-transparent text-lg font-bold text-[var(--text-main)] focus:outline-none placeholder-[var(--text-muted)]" placeholder="Escribe tu pregunta aquí..." value="${escapeHtml(q.text)}" data-id="${q.id}">
             
-            <div class="mt-4 flex items-center gap-3">
-              <div class="relative">
-                <select class="q-type-select appearance-none bg-[var(--bg-base)] border border-[var(--border-main)] rounded-xl pl-10 pr-10 py-2 text-sm font-medium text-[var(--text-main)] focus:outline-none focus:border-[var(--brand-bg)] cursor-pointer transition-colors" data-id="${q.id}">
-                  <option value="scale_1_5" ${q.type === 'scale_1_5' ? 'selected' : ''}>Escala (1-5)</option>
-                  <option value="yes_no" ${q.type === 'yes_no' ? 'selected' : ''}>Sí / No</option>
-                  <option value="open_text" ${q.type === 'open_text' ? 'selected' : ''}>Texto Abierto</option>
-                </select>
-                <div class="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none">
+            <div class="mt-4">
+              <div class="w-64 relative">
+                ${dropdownComponent(`q-type-${q.id}`, [
+                  {value: 'scale_1_5', label: 'Escala (1-5)'},
+                  {value: 'yes_no', label: 'Sí / No'},
+                  {value: 'open_text', label: 'Texto Abierto'}
+                ], q.type)}
+                <div class="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none z-10">
                   ${getQuestionIcon(q.type)}
-                </div>
-                <div class="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                 </div>
               </div>
             </div>
@@ -202,15 +203,15 @@ export const setupAdminEvaluations = () => {
       });
     });
 
-    document.querySelectorAll(".q-type-select").forEach(select => {
-      select.addEventListener("change", (e) => {
-        const id = e.target.dataset.id;
-        const q = questions.find(item => item.id === id);
-        if (q) {
-          q.type = e.target.value;
-          renderQuestions(); // Re-render para actualizar icono y preview visual
-        }
+    // Configurar dropdowns dinámicos para el tipo de pregunta
+    questions.forEach(q => {
+      setupDropdown(`q-type-${q.id}`, (val) => {
+        q.type = val;
+        renderQuestions();
       });
+      // Ajustar el padding izquierdo del botón del dropdown generado para que no tape el ícono
+      const btn = document.getElementById(`q-type-${q.id}-btn`);
+      if (btn) btn.classList.add("pl-10");
     });
 
     document.querySelectorAll(".btn-delete-q").forEach(btn => {
@@ -251,7 +252,7 @@ export const setupAdminEvaluations = () => {
       id: editId || Date.now().toString(),
       title,
       description: inputDesc.value.trim(),
-      targetRole: selectRole.value,
+      targetRole: document.getElementById("template-role").value,
       questions,
       createdAt: new Date().toISOString()
     };

@@ -38,7 +38,7 @@ export const renderDashboard = () => {
     <main class="mx-auto max-w-6xl px-6 py-10">
       <section class="rounded-[2rem] bg-[var(--brand-bg)] px-8 py-10 text-white shadow-xl transition-colors duration-300">
         <p class="text-sm font-semibold uppercase tracking-[0.3em] opacity-80">Dashboard</p>
-        <h1 class="mt-3 text-5xl font-black font-semibold tracking-tight">Bienvenido, ${name}</h1>
+        <h1 class="mt-3 text-5xl font-black  tracking-tight">Bienvenido, ${name}</h1>
         <p class="mt-4 max-w-2xl opacity-90">Accede a tus herramientas según tu rol en el proceso de evaluación 360°.</p>
       </section>
 

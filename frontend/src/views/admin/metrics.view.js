@@ -1,4 +1,5 @@
 import { navBarComponent } from "../../components/navbar";
+import { dropdownComponent, setupDropdown } from "../../components/dropdown";
 
 export const renderMetrics = () => `
   ${navBarComponent()}
@@ -10,14 +11,16 @@ export const renderMetrics = () => `
     </section>
 
     <section class="mt-6 flex gap-4 flex-wrap">
-      <select id="filter-area"
-        class="rounded-2xl border border-[var(--border-main)] bg-[var(--bg-panel)] px-4 py-2 text-sm text-[var(--text-main)] focus:border-[var(--brand-hover)] focus:outline-none">
-        <option value="">Todas las áreas</option>
-      </select>
-      <select id="filter-period"
-        class="rounded-2xl border border-[var(--border-main)] bg-[var(--bg-panel)] px-4 py-2 text-sm text-[var(--text-main)] focus:border-[var(--brand-hover)] focus:outline-none">
-        <option value="">Todos los periodos</option>
-      </select>
+      <div class="w-48">
+        ${dropdownComponent('filter-area', [
+          { value: '', label: 'Todas las áreas' }
+        ], '')}
+      </div>
+      <div class="w-48">
+        ${dropdownComponent('filter-period', [
+          { value: '', label: 'Todos los periodos' }
+        ], '')}
+      </div>
     </section>
 
     <section id="metrics-grid" class="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -28,4 +31,7 @@ export const renderMetrics = () => `
   </main>
 `;
 
-export const setupMetrics = () => {};
+export const setupMetrics = () => {
+  setupDropdown('filter-area');
+  setupDropdown('filter-period');
+};
