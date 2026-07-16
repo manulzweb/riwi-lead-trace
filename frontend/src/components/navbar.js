@@ -1,4 +1,3 @@
-// src/components/navbar.js
 import { authService } from "../services/auth.service";
 import { escapeHtml } from "../utils/validators"
 import { renderRoute } from "../router/router";

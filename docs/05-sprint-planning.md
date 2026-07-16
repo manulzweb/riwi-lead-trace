@@ -1,5 +1,33 @@
 # 05 — Sprint Planning
 
+## Epicas
+
+Las historias se organizan en 7 epicas. `CORE` es transversal (habilitadora); las demas representan valor de negocio. Todas son **full-stack** (frontend SPA + backend FastAPI + MySQL).
+
+| Epica | Objetivo | Historias |
+|---|---|---|
+| **CORE** | Estructura base del monorepo: SPA modular + API FastAPI + MySQL. | CORE-01/02/03 |
+| **AUTH** | Login con JWT y autorizacion por rol en cliente y servidor. | AUTH-01/02/03 |
+| **EVALUACIONES** | Nucleo del producto: Coders evaluan TL/Tutores (con opcion anonima), persistido con sus reglas de negocio. | EVAL-01..05 |
+| **HISTORIAL** | Trazabilidad: consultar evaluaciones pasadas y su evolucion. | HIST-01/02 |
+| **DASHBOARD** | Transformar evaluaciones en informacion accionable: **ICP** e indicadores. | DASH-01/02 |
+| **AIFEED** | Resumen de feedback con **Claude API** para el Admin (diferenciador). | AIFEED-01 |
+| **ENTREGA** | Entregables no-codigo: despliegue, pitches y documento tecnico. | DELIV-01..04 |
+
+### Mapa epica -> sprint
+
+| Epica | Sprint 1 Setup | Sprint 2 Funcionalidad | Sprint 3 Metricas | Sprint 4 Entrega |
+|---|:--:|:--:|:--:|:--:|
+| CORE | CORE-01/02/03 | | | |
+| AUTH | | AUTH-01/02/03 | | |
+| EVALUACIONES | | EVAL-01..05 | | |
+| HISTORIAL | | | HIST-01/02 | |
+| DASHBOARD | | | DASH-01/02 | |
+| AIFEED | | | AIFEED-01 | |
+| ENTREGA | | parcial (DELIV-04) | | DELIV-01..04 |
+
+---
+
 ## Marco de trabajo
 
 - **Equipo:** 5 Coders de la misma jornada (Scrum obligatorio).
@@ -7,18 +35,18 @@
 
 | # | Integrante | Rol Scrum | Foco |
 |---|-----------|-----------|------|
-| 1 | — | Scrum Master / Lider | Coordinacion + Fullstack |
-| 2 | — | Product Owner | Backlog + Frontend |
-| 3 | — | Backend Developer | FastAPI + MySQL |
-| 4 | — | Backend Developer | FastAPI + logica de negocio |
-| 5 | — | Frontend Developer | SPA Vanilla JS |
+| 1 | Manuel Vasquez (@manulzweb) | Scrum Master / Lider | Coordinacion + Backend (FastAPI + MySQL) |
+| 2 | Carlos Charris (@karl26chy) | Product Owner | Backlog + Frontend |
+| 3 | Yamit Garcia (@YamitGC) | Backend Developer | FastAPI — Auth / JWT / RBAC |
+| 4 | Sebastian Mendoza (@smendozab097) | Frontend Developer | SPA Vanilla JS |
+| 5 | Saeb Garcia (@SaebGC) | Frontend Developer | SPA Vanilla JS |
 
-- **Cronograma comprimido: entrega el 17 de julio de 2026** (~2.5 semanas desde el 1 de julio).
-  - **Sprint 1 — Setup:** 1–4 jul (mie–sab)
-  - **Sprint 2 — Funcionalidad:** 5–9 jul (dom–jue)
-  - **Sprint 3 — Metricas:** 10–13 jul (vie–lun)
-  - **Sprint 4 — Entrega:** 14–17 jul (mar–vie)
-- **Velocidad estimada del equipo:** ~20 SP por semana (5 personas); en sprints de 4–5 dias equivale a ~11–14 SP por sprint.
+- **Cronograma: 20 de junio – 17 de julio de 2026** (~4 semanas).
+  - **Sprint 1 — Setup:** 20 jun – 1 jul
+  - **Sprint 2 — Funcionalidad:** 2 – 9 jul
+  - **Sprint 3 — Metricas:** 10 – 13 jul
+  - **Sprint 4 — Entrega:** 14 – 17 jul
+- **Velocidad estimada del equipo:** ~20 SP por semana (5 personas).
 - **Total backlog MVP:** 79 SP (20 historias). Ver [`02-product-backlog.md`](./02-product-backlog.md).
 
 ### Eventos Scrum
@@ -29,7 +57,7 @@
 
 ---
 
-## Sprint 1 — Setup (1–4 jul)
+## Sprint 1 — Setup (20 jun – 1 jul)
 
 **Sprint Goal:** dejar el proyecto listo para construir: problema definido, backlog, mockups, arquitectura, BD y estructura base tecnica funcionando.
 
@@ -43,11 +71,11 @@
 
 **Trabajo de planeacion (no SP):** definicion del problema y alcance, historias de usuario, MVP, **mockups (Figma)**, modelo de datos (3FN), arquitectura, configuracion de tablero Scrum y GitFlow, plantilla de PR.
 
-**Justificacion:** el primer sprint se dedica a planeacion y diseno. Se aprovecha para dejar la estructura base full-stack lista (repo, SPA vacia navegable, API arrancando contra MySQL con seed) de modo que el Sprint 2 empiece a producir valor de inmediato.
+**Justificacion:** las primeras semanas combinaron planeacion, investigacion y construccion en paralelo: mientras se refinaban historias, MVP y modelo de datos, el equipo ya dejaba lista la estructura base full-stack (CORE-01, CORE-02) para que el Sprint 2 empezara a producir valor de inmediato.
 
 ---
 
-## Sprint 2 — Funcionalidad (5–9 jul)
+## Sprint 2 — Funcionalidad (2 – 9 jul)
 
 **Sprint Goal:** un usuario inicia sesion segun su rol; un Coder puede evaluar (incl. anonimo) a Team Leaders y Tutores — todo persistido en la API con sus reglas de negocio.
 
@@ -70,9 +98,9 @@
 
 ---
 
-## Sprint 3 — Metricas (10–13 jul)
+## Sprint 3 — Metricas (10 – 13 jul)
 
-**Sprint Goal:** el Admin visualiza el **ICA** y el **resumen IA**; los Coders consultan su historial; el Admin consulta el historico por evaluado.
+**Sprint Goal:** el Admin visualiza el **ICP** y el **resumen IA**; los Coders consultan su historial; el Admin consulta el historico por evaluado.
 
 **Capacidad:** 19 SP
 
@@ -80,15 +108,15 @@
 |----|----------|:--:|----------------------|
 | HIST-01 | Historial del Coder | 3 | Frontend Dev |
 | HIST-02 | Seguimiento historico (admin) | 3 | Backend Dev |
-| DASH-01 | Dashboard + ICA | 5 | SM/Fullstack |
-| DASH-02 | ICA por criterio e indicadores | 3 | Backend Dev |
+| DASH-01 | Dashboard + ICP | 5 | SM/Fullstack |
+| DASH-02 | ICP por criterio e indicadores | 3 | Backend Dev |
 | AIFEED-01 | Resumen de feedback con IA (Claude) | 5 | Backend Dev |
 
-**Justificacion:** convierte los datos de evaluaciones en informacion accionable. El ICA es la logica de negocio "fuerte" para la rubrica; el resumen IA es el diferenciador. AIFEED-01 es `Should` y puede recortarse si aprieta.
+**Justificacion:** convierte los datos de evaluaciones en informacion accionable. El ICP es la logica de negocio "fuerte" para la rubrica; el resumen IA es el diferenciador. AIFEED-01 es `Should` y puede recortarse si aprieta.
 
 ---
 
-## Sprint 4 — Entrega (14–17 jul)
+## Sprint 4 — Entrega (14 – 17 jul)
 
 **Sprint Goal:** el producto queda integrado, probado, desplegado y con la documentacion y pitches listos para la sustentacion.
 
@@ -111,20 +139,20 @@
 
 | Sprint | Fechas | Goal | SP | Epicas |
 |--------|--------|------|:--:|--------|
-| 1 — Setup | 1–4 jul | Planeacion + estructura base full-stack | 15 | CORE |
-| 2 — Funcionalidad | 5–9 jul | Login + roles + evaluaciones | 29 | AUTH, EVALUACIONES |
-| 3 — Metricas | 10–13 jul | Historial + ICA + resumen IA | 19 | HISTORIAL, DASHBOARD, AIFEED |
-| 4 — Entrega | 14–17 jul | Despliegue + pitches + doc tecnico | 16 | ENTREGA |
+| 1 — Setup | 20 jun – 1 jul | Planeacion + estructura base full-stack | 15 | CORE |
+| 2 — Funcionalidad | 2 – 9 jul | Login + roles + evaluaciones | 29 | AUTH, EVALUACIONES |
+| 3 — Metricas | 10 – 13 jul | Historial + ICP + resumen IA | 19 | HISTORIAL, DASHBOARD, AIFEED |
+| 4 — Entrega | 14 – 17 jul | Despliegue + pitches + doc tecnico | 16 | ENTREGA |
 
 ## Gestion de riesgos del plan
 
 | Riesgo | Mitigacion |
 |--------|------------|
-| **Cronograma comprimido** (79 SP en ~2.5 semanas vs. las 4 originales) | Priorizar **Must**; parte del Sprint 1 ya esta hecho (estructura base front + back). Los **Should** (EVAL-04, HIST-01, HIST-02, DASH-02, AIFEED-01 = 16 SP) se recortan o posponen si aprieta. Recomendado conservar **AIFEED-01** por ser el diferenciador. |
+| **Sprints 2-4 comprimidos** (64 SP en ~2.5 semanas) | Priorizar **Must**; el Sprint 1 ya esta hecho (estructura base front + back). Los **Should** (EVAL-04, HIST-01, HIST-02, DASH-02, AIFEED-01 = 16 SP) se recortan o posponen si aprieta. Recomendado conservar **AIFEED-01** por ser el diferenciador. |
 | Integracion front/back tardia | Contrato REST acordado en Sprint 1; `/docs` de FastAPI desde el inicio |
 | Reparto desigual de contribucion | Asignacion por historia + evidencia GitFlow por integrante |
 | Sprint 2 sobrecargado (29 SP > velocidad) | Paralelizar front/back; EVAL-04 es `Should` y puede posponerse |
 | Dependencia externa de IA (Claude API) | `ANTHROPIC_API_KEY` por `.env`; degradacion elegante; cache para costo; el dashboard funciona sin IA |
 | Privacidad del feedback con IA | Solo agregados anonimizados al modelo; nunca identidades (regla de negocio + test) |
-| Sobreingenieria | Sin frameworks de UI; capas simples; reutilizar motor de formularios; ICA derivado |
-| Quedar en "solo CRUD" | Priorizar logica de negocio (ICA, anonimato, no-duplicado, RBAC) como criterios de DoD |
+| Sobreingenieria | Sin frameworks de UI; capas simples; reutilizar motor de formularios; ICP derivado |
+| Quedar en "solo CRUD" | Priorizar logica de negocio (ICP, anonimato, no-duplicado, RBAC) como criterios de DoD |

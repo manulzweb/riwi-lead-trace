@@ -57,17 +57,16 @@ router  →  service  →  repository  →  model  →  (MySQL)
 | Capa / término | En simple |
 |----------------|-----------|
 | **FastAPI** | El framework de Python que usamos para construir la API. |
-| **Router** | La "puerta de entrada". Define los endpoints, valida lo que llega y devuelve la respuesta. **No** tiene reglas de negocio. |
-| **Service** | El **cerebro**: aquí viven las **reglas de negocio** (calcular ICA, revisar anonimato, evitar duplicados). Es la parte "que no es solo CRUD". |
-| **Repository** | El "bibliotecario": el único que sabe **cómo buscar/guardar** datos en la BD (las consultas). |
-| **Model** | La representación en Python de una **tabla** de la BD (ej. `User`, `Evaluation`). |
+| **Route** | La "puerta de entrada" (carpeta `routes/`). Define los endpoints, valida lo que llega y devuelve la respuesta. **No** tiene reglas de negocio. |
+| **Service** | El **cerebro**: aquí viven las **reglas de negocio** (calcular métricas, revisar anonimato, evitar duplicados) **y** las consultas a la BD. Es la parte "que no es solo CRUD". |
+| **Model** | No hay una capa `models/` en Python: la forma de cada tabla vive en `database/schema.sql` y los `services/` escriben SQL directo contra ella. |
 | **Schema (Pydantic)** | El "molde" que define **qué forma** deben tener los datos que entran y salen. Si no cumplen, se rechazan. |
-| **`deps.py`** | Funciones reutilizables que FastAPI "inyecta": obtener la BD, saber quién es el usuario, exigir un rol. |
-| **CRUD** | Create, Read, Update, Delete = crear, leer, actualizar, borrar. Lo básico de una BD. La rúbrica pide **más que CRUD** (por eso el ICA y la lógica de negocio). |
+| **`deps.py`** | Funciones reutilizables que FastAPI "inyecta": saber quién es el usuario (`get_current_user`), exigir un rol (`require_role`). |
+| **CRUD** | Create, Read, Update, Delete = crear, leer, actualizar, borrar. Lo básico de una BD. La rúbrica pide **más que CRUD** (por eso las métricas y la lógica de negocio). |
 
 > **¿Por qué separar en capas?** Para que cada archivo sea pequeño y fácil de entender, no repetir
-> código (**DRY**) y que cada persona pueda explicar "su" capa. Si mañana cambia la BD, solo se toca
-> `repositories/`; el resto no se entera.
+> código (**DRY**) y que cada persona pueda explicar "su" capa. Si mañana cambia una regla de
+> negocio, solo se toca el archivo de `services/` de esa entidad; el route no se entera.
 
 ---
 
@@ -108,12 +107,13 @@ router  →  service  →  repository  →  model  →  (MySQL)
 | Término | En simple |
 |---------|-----------|
 | **Feedback ascendente** | Que los **coders evalúen a quienes los acompañan** (Team Leaders y Tutores), no al revés. |
-| **ICA** (Índice de Calidad de Acompañamiento) | Un puntaje de **0 a 100** que resume qué tan bien acompaña un TL/Tutor, calculado a partir de las evaluaciones. Es el corazón "no-CRUD" del backend. |
-| **ICA "derivado, no se persiste"** | El ICA **no se guarda** en la BD: se **calcula al momento** de pedirlo, a partir de las evaluaciones. Así siempre está actualizado. |
-| **Ponderado / pesos** | Algunas categorías del ICA "valen" más que otras. Los **pesos** dicen cuánto. Son constantes fijas en el código (sustentables). |
-| **Confianza** | Aviso de si hay **suficientes respuestas** para confiar en el ICA (con pocas, decimos "datos insuficientes"). |
-| **Tendencia** | Si el ICA **subió o bajó** respecto al periodo anterior. |
+| **ICP** (Índice de Calidad Percibida) | Un puntaje de **0 a 100** que resume qué tan bien acompaña un TL/Tutor **según la percepción de los Coders**: es el promedio de sus respuestas tipo escala, normalizado. Es el corazón "no-CRUD" del backend. Mide percepción, no aprendizaje real (por eso se llama "percibida"). |
+| **ICP "derivado, no se persiste"** | El ICP **no se guarda** en la BD: se **calcula al momento** de pedirlo, a partir de las evaluaciones. Así siempre está actualizado. |
+| **Mínimo de respuestas** | El ICP solo se calcula si hay al menos 3 evaluaciones enviadas (`MIN_EVALUATIONS`); con menos, se muestra "datos insuficientes" en vez de un puntaje poco confiable. |
 | **Periodo** | La ventana de tiempo de una ronda de evaluaciones (ej. un sprint/mes). |
+| **Periodo activo** | El único periodo "abierto": mientras esté activo, los Coders ven y envían formularios. El **admin** lo activa/cierra. Sin periodo activo, la SPA muestra "No hay formularios por realizar". |
+| **Versionar una pregunta** | Cuando el admin edita el texto de una pregunta, **no se sobrescribe**: se crea una pregunta nueva y la vieja se desactiva. Las respuestas históricas conservan el texto original que respondieron. |
+| **Deriva semántica** | El riesgo de que una pregunta editada **deje de medir su categoría** (ej. una de cercanía reescrita como desempeño general): las respuestas se pesarían bajo la categoría equivocada. Se previene con la regla **"reformular, no re-temar"**: editar solo mejora la redacción; para otro tema, se desactiva la pregunta y se crea una nueva en su categoría. Al guardar, **la IA comprueba** que el texto siga midiendo su categoría y advierte si no (el admin debe confirmar). Y como se edita con periodo cerrado y versionando, cualquier desvío se revierte antes de que alguien responda. |
 | **Anonimato real** | Si una evaluación es anónima, **nunca** se guarda quién la hizo. Ni el admin puede saberlo. |
 | **No-duplicado** | Un coder no puede evaluar dos veces a la misma persona en el mismo periodo. |
 | **Resumen con IA** | Un texto ejecutivo que **Claude** (IA) genera para el **admin**, resumiendo el feedback. Solo se le envían **datos agregados y anónimos**. |

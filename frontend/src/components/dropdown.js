@@ -89,4 +89,3 @@ export const setupDropdown = (id, onChangeCallback = null) => {
     });
   });
 };
-

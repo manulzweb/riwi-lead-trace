@@ -10,16 +10,16 @@ export const renderDashboard = () => {
   const quickLinks = {
     coder: [
       { href: "/evaluations/new", label: "Evaluar", title: "Nueva evaluación" },
-      { href: "/evaluations",     label: "Historial", title: "Mis evaluaciones" },
+      { href: "/evaluations", label: "Historial", title: "Mis evaluaciones" },
     ],
     team_leader: [
-      { href: "/my-results",    label: "Resultados", title: "Mi retroalimentación" },
+      { href: "/my-results", label: "Resultados", title: "Mi retroalimentación" },
     ],
     tutor: [
       { href: "/my-results", label: "Resultados", title: "Mi retroalimentación" },
     ],
     admin: [
-      { href: "/admin/metrics",    label: "Métricas",  title: "ICA por área" },
+      { href: "/admin/metrics", label: "Métricas", title: "ICA por área" },
       { href: "/admin/ai-summary", label: "Resumen IA", title: "Feedback con IA" },
     ],
   };
@@ -57,4 +57,4 @@ export const renderDashboard = () => {
   `;
 };
 
-export const setupDashboard = () => {};
+export const setupDashboard = () => { };

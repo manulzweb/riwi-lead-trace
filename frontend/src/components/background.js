@@ -4,7 +4,7 @@
  * @param {string} horizontal - ruta de la imagen para escritorio
  */
 export const backgroundComponent = (
-  vertical   = "/backgrounds/fondo-vertical.webp",
+  vertical = "/backgrounds/fondo-vertical.webp",
   horizontal = "/backgrounds/fondo-horizontal.webp"
 ) => `
   <div class="absolute inset-0 -z-10">
