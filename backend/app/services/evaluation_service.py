@@ -5,12 +5,13 @@ from typing import Optional
 from app.config.database import conn
 from app.schemas.evaluation import EvaluationCreate
 
-def create_evaluation(eval_data: EvaluationCreate, evaluator_id: int):
+def create_evaluation(eval_data: EvaluationCreate):
     """Crea una evaluación y sus respuestas correspondientes.
 
-    evaluator_id viene del usuario autenticado (token), nunca del body del
-    cliente, para que la validación de "no duplicado" no se pueda saltar.
+    evaluator_id viene del body (sin JWT, el backend no puede confirmar
+    quien es realmente el que llama).
     """
+    evaluator_id = eval_data.evaluator_id
     # Regla de negocio: un evaluador no puede evaluar dos veces a la misma
     # persona en el mismo periodo. Esto corre siempre, sea anónima o no,
     # porque el registro se identifica por el evaluador real, no por lo
