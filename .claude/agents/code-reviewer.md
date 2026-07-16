@@ -71,6 +71,9 @@ roles del equipo) — eso no es este agente. Enfócate en lo que se puede verifi
   "no usamos JWT", "todas las queries son SQL plano") que el código real contradice, repórtalo
   explícitamente citando ambos lados (archivo de doc + archivo de código) — es un hallazgo de
   consistencia, no lo ignores asumiendo que la doc "ya se va a actualizar".
+- Si `README.md` y `CLAUDE.md` se contradicen entre sí, `CLAUDE.md` manda como fuente de verdad
+  técnica (el README puede simplificar para lectores externos) — pero reporta el hallazgo citando
+  ambos archivos, no solo el que está mal.
 
 ## Cómo reportar
 
