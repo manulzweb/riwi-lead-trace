@@ -92,7 +92,7 @@ marcados con un rol específico además exigen ese rol (`403` si no coincide); l
 | GET | `/periods` | Listar periodos | cualquier sesión |
 | GET | `/periods/{id}` | Obtener un periodo | cualquier sesión |
 | POST | `/periods` | Crear periodo | admin |
-| PUT | `/periods/{id}` | Actualizar periodo | admin |
+| PUT | `/periods/{id}` | Actualizar periodo (activarlo desactiva cualquier otro) | admin |
 | DELETE | `/periods/{id}` | Eliminar periodo | admin |
 | GET | `/forms?target_role=` | Plantilla de formulario para `team_leader` o `tutor` | cualquier sesión |
 | POST | `/evaluations` | Registrar evaluación (borrador o enviada) — valida anonimato y no-duplicado por periodo | cualquier sesión |
@@ -121,6 +121,8 @@ Reglas de negocio clave (no romper sin acordarlo con el equipo):
 - Evaluación anónima → nunca se persiste ni se expone `evaluator_id` (`hide_evaluator` en
   `evaluation_service.get_evaluations_by_evaluatee`).
 - Un Coder no puede evaluar dos veces a la misma persona en el mismo periodo.
+- Solo puede haber **un periodo activo a la vez**: activar uno (al crearlo o al actualizarlo)
+  desactiva automaticamente cualquier otro (`period_service._deactivate_other_periods`).
 - El ICP (`average_score` + `status`) se calcula on-read en `metrics_service.py`, no se persiste.
   Con menos de `MIN_EVALUATIONS` (3) respuestas, no se publica (`average_score: null`). El estado
   (`Sólido` / `Estable` / `En riesgo` / `Datos insuficientes`) sale de comparar contra dos umbrales
