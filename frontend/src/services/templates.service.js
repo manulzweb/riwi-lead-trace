@@ -16,22 +16,30 @@ const INPUT_TYPE_TO_TYPE = {
   yes_no: 'yes_no',
 };
 
-// El constructor no tiene un campo de categoria en su UI todavia; todas las
-// preguntas que crea quedan agrupadas bajo esta categoria por defecto.
-const DEFAULT_CATEGORY = 'General';
+// El constructor no tiene un campo de categoria en su UI todavia; las
+// preguntas que crea quedan agrupadas bajo esta categoria por defecto
+// (se resuelve su id real una sola vez, ver getDefaultCategoryId).
+const DEFAULT_CATEGORY_NAME = 'General';
+let defaultCategoryIdPromise = null;
+const getDefaultCategoryId = () => {
+  if (!defaultCategoryIdPromise) {
+    defaultCategoryIdPromise = request('/categories').then((categories) => {
+      const match = categories.find((c) => c.name === DEFAULT_CATEGORY_NAME);
+      return (match || categories[0]).id;
+    });
+  }
+  return defaultCategoryIdPromise;
+};
 
-// No hay GET /forms que liste todas las plantillas -- solo GET /forms?target_role=
-// (la activa de ESE rol). Como solo hay 2 roles evaluables, se piden ambas en
+// GET /forms?target_role= devuelve un arreglo (la plantilla activa de ESE
+// rol, si existe). Como solo hay 2 roles evaluables, se piden ambas en
 // paralelo y se arma la lista a partir de eso.
 const getTemplates = async () => {
   const results = await Promise.all(
     TARGET_ROLES.map(async (targetRole) => {
-      try {
-        const template = await request(`/forms?target_role=${targetRole}`);
-        return { ...template, targetRole };
-      } catch (err) {
-        return null; // 404: todavia no hay plantilla activa para ese rol
-      }
+      const templates = await request(`/forms?target_role=${targetRole}`);
+      const template = templates[0];
+      return template ? { ...template, targetRole } : null;
     })
   );
   return results.filter(Boolean);
@@ -48,14 +56,14 @@ const getTemplateForEdit = async (template) => {
       text: q.text,
       type: INPUT_TYPE_TO_TYPE[q.input_type] || 'open_text',
       weight: Number(q.weight_percent) || 0,
-      category: q.category,
+      categoryId: q.category_id,
     })),
   };
 };
 
-const toQuestionPayload = (q) => ({
+const toQuestionPayload = async (q) => ({
   text: q.text,
-  category: q.category || DEFAULT_CATEGORY,
+  category_id: q.categoryId || (await getDefaultCategoryId()),
   input_type: TYPE_TO_INPUT_TYPE[q.type] || 'text',
   weight_percent: (TYPE_TO_INPUT_TYPE[q.type] || 'text') === 'scale' ? (q.weight || 0) : 0,
 });
@@ -67,7 +75,7 @@ const createTemplate = async (templateData) => {
     title: templateData.title,
     description: templateData.description || null,
     target_role: templateData.targetRole,
-    questions: templateData.questions.map(toQuestionPayload),
+    questions: await Promise.all(templateData.questions.map(toQuestionPayload)),
   };
   return await request('/forms', jsonOptions('POST', payload));
 };
@@ -99,7 +107,7 @@ const updateTemplate = async (id, templateData) => {
   for (const q of added) {
     const created = await request('/questions', jsonOptions('POST', {
       template_id: id,
-      ...toQuestionPayload(q),
+      ...(await toQuestionPayload(q)),
     }));
     createdFromNew.push({ realId: created.id, type: q.type, weight: q.weight });
   }
@@ -124,7 +132,8 @@ const updateTemplate = async (id, templateData) => {
     }));
   }
 
-  return await request(`/forms?target_role=${templateData.targetRole}`);
+  const templates = await request(`/forms?target_role=${templateData.targetRole}`);
+  return templates[0];
 };
 
 const deleteTemplate = async (id) => await request(`/forms/${id}`, { method: 'DELETE' });
