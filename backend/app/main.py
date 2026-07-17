@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config.config import settings
-from app.routes import auth_routes, check, period_routes, user_routes, form_routes, evaluation_routes, metrics_routes, question_routes
+from app.routes import auth_routes, category_routes, check, period_routes, user_routes, form_routes, evaluation_routes, metrics_routes, question_routes
 
 app = FastAPI(
     title="Riwi LeadTrace API",
@@ -28,3 +28,4 @@ app.include_router(form_routes.router, tags=["forms"])
 app.include_router(evaluation_routes.router, tags=["evaluations"])
 app.include_router(metrics_routes.router, tags=["metrics"])
 app.include_router(question_routes.router, tags=["questions"])
+app.include_router(category_routes.router, tags=["categories"])

@@ -2,7 +2,7 @@
 -- Riwi LeadTrace — Script SQL inicial (MVP)
 -- Motor: MySQL 8
 -- Modelo relacional normalizado hasta 3FN (ver docs/07-base-de-datos.md)
--- Uso: mysql -u root -p < database/schema.sql
+-- Uso: mysql -u root -p < database/01_ddl.sql
 -- =====================================================================
 
 CREATE DATABASE IF NOT EXISTS riwi_lead_trace
@@ -14,6 +14,7 @@ DROP TABLE IF EXISTS ai_feedback_cache;
 DROP TABLE IF EXISTS evaluation_answers;
 DROP TABLE IF EXISTS evaluations;
 DROP TABLE IF EXISTS questions;
+DROP TABLE IF EXISTS categories;
 DROP TABLE IF EXISTS form_templates;
 DROP TABLE IF EXISTS periods;
 DROP TABLE IF EXISTS team_leader_clans;
@@ -128,11 +129,24 @@ CREATE TABLE periods (
 );
 
 -- ---------------------------------------------------------------------
+-- Categorias de pregunta (tema/competencia que agrupa preguntas dentro de
+-- una plantilla, ej. "Comunicación efectiva"). El Admin las administra
+-- (crear/renombrar/borrar) independientemente de las plantillas: no se
+-- puede borrar una categoria mientras alguna pregunta -activa o historica-
+-- la use (fk_question_category, ON DELETE RESTRICT mas abajo).
+-- ---------------------------------------------------------------------
+CREATE TABLE categories (
+    id   INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(60) NOT NULL UNIQUE
+);
+
+-- ---------------------------------------------------------------------
 -- Plantillas de formulario (por rol evaluado)
 -- ---------------------------------------------------------------------
 CREATE TABLE form_templates (
     id             INT AUTO_INCREMENT PRIMARY KEY,
     title          VARCHAR(120) NOT NULL,
+    description    VARCHAR(255) NULL,
     target_role_id INT NOT NULL,
     is_active      BOOLEAN NOT NULL DEFAULT TRUE,
     CONSTRAINT fk_template_role
@@ -149,8 +163,8 @@ CREATE TABLE questions (
     id            INT AUTO_INCREMENT PRIMARY KEY,
     template_id   INT NOT NULL,
     text          VARCHAR(255) NOT NULL,
-    category      VARCHAR(60) NOT NULL,
-    input_type    VARCHAR(20) NOT NULL DEFAULT 'scale', -- 'scale' | 'text'
+    category_id   INT NOT NULL,
+    input_type    VARCHAR(20) NOT NULL DEFAULT 'scale', -- 'scale' | 'text' | 'yes_no'
     sort_order    INT NOT NULL DEFAULT 0,
     -- Peso de la pregunta en el ICP ponderado (ADMIN-02). Solo aplica a
     -- preguntas 'scale'; las 'text' quedan en 0. Los pesos de las preguntas
@@ -166,7 +180,13 @@ CREATE TABLE questions (
         REFERENCES form_templates(id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
-    CONSTRAINT chk_input_type CHECK (input_type IN ('scale','text')),
+    -- RESTRICT a proposito: el Admin no puede borrar una categoria mientras
+    -- una pregunta (activa o historica, para no perder el criterio que
+    -- realmente se respondio en evaluaciones pasadas) siga apuntando a ella.
+    CONSTRAINT fk_question_category FOREIGN KEY (category_id) REFERENCES categories(id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+    CONSTRAINT chk_input_type CHECK (input_type IN ('scale','text','yes_no')),
     CONSTRAINT chk_weight_percent_range CHECK (weight_percent >= 0 AND weight_percent <= 100)
 );
 

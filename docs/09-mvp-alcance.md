@@ -37,7 +37,7 @@ Filosofia: **startup validando una idea**. El MVP debe ser lo minimo para compro
 | Mejoras por IA para el evaluado (TL/Tutor) | El MVP entrega IA solo al Admin; el evaluado ve resultados sin IA |
 | Visualizacion de tendencias (graficos temporales) | CSV/tabla basica como `Could`; graficos avanzados son futuro |
 | Reportes avanzados / exportacion PDF estilizada | CSV/impresion basica como `Could`; lo demas es futuro |
-| Editor completo de formularios (crear/eliminar plantillas y preguntas, tipos nuevos, categorias) | El MVP solo incluye la **edicion minima** (texto + activar/desactivar); el editor visual completo es v2 |
+| ~~Editor completo de formularios~~ | Decision revisada: el MVP si incluye crear/desactivar plantillas y preguntas (`POST`/`DELETE /forms`, `POST`/`DELETE /questions`), con tipos `scale`\|`text`\|`yes_no`, para priorizar el trabajo de frontend en curso. Ver `docs/06-arquitectura.md` y `docs/07-base-de-datos.md`. |
 | Notificaciones (email/in-app) y recordatorios | No esencial para validar la hipotesis |
 | Gestion de usuarios/altas desde la UI (admin) | Se cargan via seed/BD en el MVP |
 | Comparativas avanzadas, benchmarking entre cohortes | Requiere volumen de datos; post-validacion |
