@@ -84,7 +84,7 @@ marcados con un rol específico además exigen ese rol (`403` si no coincide); l
 |---|---|---|---|
 | GET | `/` | Health check | público |
 | POST | `/auth/login` | Login → `{ user, access_token }` | público |
-| GET | `/users` | Listar usuarios | cualquier sesión |
+| GET | `/users?role=` | Listar usuarios, opcionalmente filtrados por rol (`coder`\|`team_leader`\|`tutor`\|`admin`) | cualquier sesión |
 | GET | `/users/{id}` | Obtener un usuario | cualquier sesión |
 | POST | `/users` | Crear usuario | admin |
 | PUT | `/users/{id}` | Actualizar usuario | admin |

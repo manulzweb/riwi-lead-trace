@@ -1,16 +1,30 @@
+from typing import Optional
+
 from sqlalchemy import text
 from app.config.database import conn
 from app.config.security import hash_password
 from app.schemas.user import UserCreate, UserUpdate
 
-def get_users():
-    """Obtiene todos los usuarios de la base de datos (sin el hash de contraseña)."""
-    query = text("""
+def get_users(role: Optional[str] = None):
+    """Obtiene los usuarios de la base de datos (sin el hash de contraseña).
+
+    role filtra por nombre de rol (ej. "team_leader", "tutor") -- se usa
+    para listar solo los evaluables al armar el formulario de evaluacion,
+    en vez de mandarle a cada Coder el listado completo de usuarios
+    (incluidos otros coders y el admin) solo para que el front descarte
+    lo que no necesita.
+    """
+    query_str = """
         SELECT u.id, u.full_name AS name, u.email, u.is_active, u.role_id, u.clan_id, r.name AS role
         FROM users u
         JOIN roles r ON u.role_id = r.id
-    """)
-    result = conn.execute(query)
+    """
+    params = {}
+    if role is not None:
+        query_str += " WHERE r.name = :role"
+        params["role"] = role
+
+    result = conn.execute(text(query_str), params)
     users = []
     for row in result.mappings():
         user_dict = dict(row)

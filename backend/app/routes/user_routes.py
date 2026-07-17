@@ -1,14 +1,14 @@
-from fastapi import APIRouter, HTTPException, status
-from typing import List
+from fastapi import APIRouter, HTTPException, Query, status
+from typing import List, Optional
 from app.schemas.user import UserCreate, UserUpdate, UserOut
 from app.services import user_service
 
 router = APIRouter()
 
 @router.get("/users", response_model=List[UserOut])
-def get_users():
-    """Obtiene todos los usuarios (ej. para elegir a quién evaluar)."""
-    return user_service.get_users()
+def get_users(role: Optional[str] = Query(None, description="Filtrar por rol (ej. team_leader, tutor)")):
+    """Obtiene los usuarios, opcionalmente filtrados por rol (ej. para elegir a quién evaluar)."""
+    return user_service.get_users(role)
 
 @router.get("/users/{user_id}", response_model=UserOut)
 def get_user(user_id: int):
