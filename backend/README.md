@@ -87,7 +87,7 @@ para filtrar datos, sin poder confirmar que sea real. No lo trates como control 
 |---|---|---|---|
 | GET | `/` | Health check | público |
 | POST | `/auth/login` | Login → `{ user }` (sin token) | público |
-| GET | `/users` | Listar usuarios | cualquiera |
+| GET | `/users?role=` | Listar usuarios, opcionalmente filtrados por rol (`coder`\|`team_leader`\|`tutor`\|`admin`) | cualquiera |
 | GET | `/users/{id}` | Obtener un usuario | cualquiera |
 | POST | `/users` | Crear usuario | admin |
 | PUT | `/users/{id}` | Actualizar usuario | admin |
