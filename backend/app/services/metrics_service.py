@@ -25,7 +25,18 @@ def classify_status(average_score):
 
 
 def calculate_average_score(evaluatee_id: int, period_id: int):
-    """Calcula el promedio simple (0-100) de los puntajes recibidos por una persona en un periodo."""
+    """Calcula el ICP (0-100) ponderado por el peso de cada pregunta.
+
+    Cada pregunta de escala pesa lo que diga su weight_percent (ADMIN-02):
+    se promedia el puntaje recibido por cada pregunta y esos promedios se
+    combinan usando su peso, no un promedio plano de todas las respuestas
+    sueltas -- asi una categoria con mas preguntas no domina el resultado
+    solo por tener mas filas.
+
+    Si ninguna de las preguntas respondidas tiene peso asignado (datos
+    viejos, antes de que existiera weight_percent), se cae de vuelta al
+    promedio simple para no dividir por cero ni descartar esos datos.
+    """
     count_query = text("""
         SELECT COUNT(DISTINCT id) FROM evaluations
         WHERE evaluatee_id = :evaluatee_id AND period_id = :period_id AND status = 'submitted'
@@ -35,8 +46,8 @@ def calculate_average_score(evaluatee_id: int, period_id: int):
     if n_evals < MIN_EVALUATIONS:
         return {"average_score": None, "n_evals": n_evals}
 
-    scores_query = text("""
-        SELECT a.score
+    per_question_query = text("""
+        SELECT a.question_id, q.weight_percent, AVG(a.score) AS avg_score
         FROM evaluation_answers a
         JOIN questions q ON a.question_id = q.id
         JOIN evaluations e ON a.evaluation_id = e.id
@@ -45,14 +56,22 @@ def calculate_average_score(evaluatee_id: int, period_id: int):
           AND e.status = 'submitted'
           AND q.input_type = 'scale'
           AND a.score IS NOT NULL
+        GROUP BY a.question_id, q.weight_percent
     """)
-    scores = [row[0] for row in conn.execute(scores_query, {"evaluatee_id": evaluatee_id, "period_id": period_id}).all()]
+    rows = conn.execute(per_question_query, {"evaluatee_id": evaluatee_id, "period_id": period_id}).all()
 
-    if not scores:
+    if not rows:
         return {"average_score": None, "n_evals": n_evals}
 
-    avg = sum(scores) / len(scores)
-    average_score = round((avg - 1) / 4 * 100)
+    total_weight = sum(float(weight) for _, weight, _ in rows)
+
+    if total_weight > 0:
+        avg_1_5 = sum(float(avg_score) * float(weight) for _, weight, avg_score in rows) / total_weight
+    else:
+        # Sin pesos configurados: promedio simple entre los promedios por pregunta.
+        avg_1_5 = sum(float(avg_score) for _, _, avg_score in rows) / len(rows)
+
+    average_score = round((avg_1_5 - 1) / 4 * 100)
 
     return {"average_score": average_score, "n_evals": n_evals}
 

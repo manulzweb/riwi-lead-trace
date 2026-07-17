@@ -98,7 +98,10 @@ marcados con un rol específico además exigen ese rol (`403` si no coincide); l
 | POST | `/evaluations` | Registrar evaluación (borrador o enviada) — valida anonimato y no-duplicado por periodo | cualquier sesión |
 | GET | `/evaluations?evaluator_id=` | Historial de evaluaciones hechas por un Coder | propio o admin |
 | GET | `/evaluations?evaluatee_id=&period_id=` | Histórico de evaluaciones recibidas | propio o admin |
-| GET | `/metrics/summary?period_id=` | KPIs globales + ICP por persona en un periodo | admin, team_leader, tutor |
+| GET | `/questions?template_id=` | Preguntas activas de un template (texto + peso) | admin |
+| PATCH | `/questions/{id}` | Reformular el texto de una pregunta — siempre versiona, solo con periodo cerrado | admin |
+| PUT | `/questions/weights` | Actualizar los pesos de las preguntas de escala de un template — deben sumar 100, solo con periodo cerrado | admin |
+| GET | `/metrics/summary?period_id=` | KPIs globales + ICP ponderado por persona en un periodo | admin, team_leader, tutor |
 | GET | `/metrics/ai-summary?evaluatee_id=&period_id=` | Resumen de feedback generado con Claude (cacheado) | admin |
 
 ## Estructura del proyecto
@@ -110,7 +113,7 @@ app/
 ├── config/       # settings (.env), conexión a MySQL, hashing/JWT
 ├── schemas/      # Pydantic — forma de entrada/salida de cada endpoint
 ├── routes/       # un router por recurso; valida y delega a services
-└── services/     # lógica de negocio + queries SQL (auth, user, period, form, evaluation, metrics, ai)
+└── services/     # lógica de negocio + queries SQL (auth, user, period, form, question, evaluation, metrics, ai)
 ```
 
 No hay carpeta `models/`: la forma de las tablas vive solo en
@@ -122,9 +125,16 @@ Reglas de negocio clave (no romper sin acordarlo con el equipo):
   `evaluation_service.get_evaluations_by_evaluatee`).
 - Un Coder no puede evaluar dos veces a la misma persona en el mismo periodo.
 - El ICP (`average_score` + `status`) se calcula on-read en `metrics_service.py`, no se persiste.
-  Con menos de `MIN_EVALUATIONS` (3) respuestas, no se publica (`average_score: null`). El estado
+  Es un **promedio ponderado**: cada pregunta de escala pesa lo que diga su `weight_percent`
+  (`questions.weight_percent`, que las preguntas de escala activas de un template deben sumar
+  exactamente 100 — se valida en `question_service.update_weights`). Con menos de
+  `MIN_EVALUATIONS` (3) respuestas, no se publica (`average_score: null`). El estado
   (`Sólido` / `Estable` / `En riesgo` / `Datos insuficientes`) sale de comparar contra dos umbrales
   fijos en código, no hay tendencia contra el periodo anterior.
+- Las preguntas (texto o pesos) solo se editan con el periodo cerrado. Editar el texto **versiona**
+  (fila nueva + `is_active=FALSE` en la anterior); `category`/`input_type`/`sort_order`/
+  `weight_percent` se heredan sin tocar. Al guardar, la IA revisa que el texto siga encajando en la
+  categoria (`ai_service.check_question_category_coherence`); si no, hace falta `confirm: true`.
 - A Claude API solo se le envían agregados anonimizados (nunca `evaluator_id` ni identidades).
 
 Detalle completo en [`CLAUDE.md`](../CLAUDE.md) y [`docs/`](../docs).
@@ -135,5 +145,5 @@ Detalle completo en [`CLAUDE.md`](../CLAUDE.md) y [`docs/`](../docs).
 pytest
 ```
 
-Suite en [`backend/tests/`](./tests): `test_auth.py`, `test_rbac.py`, `test_evaluations.py`,
-`test_metrics.py`. También podés probar a mano en `http://localhost:8000/docs` (Swagger).
+Suite en [`backend/tests/`](./tests): `test_auth.py`, `test_evaluations.py`, `test_metrics.py`,
+`test_questions.py`. También podés probar a mano en `http://localhost:8000/docs` (Swagger).
