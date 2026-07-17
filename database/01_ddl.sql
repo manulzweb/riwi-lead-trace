@@ -48,7 +48,9 @@ CREATE TABLE clans (
     cohort_id INT NOT NULL,
     number    INT NOT NULL,
     name      VARCHAR(80) NOT NULL,
-    CONSTRAINT fk_clan_cohort FOREIGN KEY (cohort_id) REFERENCES cohorts(id)
+    CONSTRAINT fk_clan_cohort
+        FOREIGN KEY (cohort_id)
+        REFERENCES cohorts(id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
     CONSTRAINT uq_clan_number_cohort UNIQUE (cohort_id, number)
@@ -66,7 +68,9 @@ CREATE TABLE users (
     clan_id       INT NULL,
     is_active     BOOLEAN NOT NULL DEFAULT TRUE,
     created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_users_clan FOREIGN KEY (clan_id) REFERENCES clans(id)
+    CONSTRAINT fk_users_clan
+        FOREIGN KEY (clan_id)
+        REFERENCES clans(id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT
 );
@@ -78,10 +82,16 @@ CREATE TABLE user_roles (
     user_id INT NOT NULL,
     role_id INT NOT NULL,
     PRIMARY KEY (user_id, role_id),
-    CONSTRAINT fk_userroles_user FOREIGN KEY (user_id) REFERENCES users(id)
-        ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT fk_userroles_role FOREIGN KEY (role_id) REFERENCES roles(id)
-        ON UPDATE CASCADE ON DELETE RESTRICT
+    CONSTRAINT fk_userroles_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
+    CONSTRAINT fk_userroles_role
+        FOREIGN KEY (role_id)
+        REFERENCES roles(id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT
 );
 
 -- ---------------------------------------------------------------------
@@ -93,10 +103,16 @@ CREATE TABLE team_leader_clans (
     user_id INT NOT NULL,
     clan_id INT NOT NULL,
     PRIMARY KEY (user_id, clan_id),
-    CONSTRAINT fk_tlclans_user FOREIGN KEY (user_id) REFERENCES users(id)
-        ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT fk_tlclans_clan FOREIGN KEY (clan_id) REFERENCES clans(id)
-        ON UPDATE CASCADE ON DELETE CASCADE
+    CONSTRAINT fk_tlclans_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
+    CONSTRAINT fk_tlclans_clan
+        FOREIGN KEY (clan_id)
+        REFERENCES clans(id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
 );
 
 -- ---------------------------------------------------------------------
@@ -118,7 +134,9 @@ CREATE TABLE form_templates (
     title          VARCHAR(120) NOT NULL,
     target_role_id INT NOT NULL,
     is_active      BOOLEAN NOT NULL DEFAULT TRUE,
-    CONSTRAINT fk_template_role FOREIGN KEY (target_role_id) REFERENCES roles(id)
+    CONSTRAINT fk_template_role
+        FOREIGN KEY (target_role_id)
+        REFERENCES roles(id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT
 );
@@ -138,7 +156,9 @@ CREATE TABLE questions (
     -- desactivar la anterior). Las evaluaciones nuevas cargan solo activas;
     -- las respuestas históricas conservan su pregunta original.
     is_active   BOOLEAN NOT NULL DEFAULT TRUE,
-    CONSTRAINT fk_question_template FOREIGN KEY (template_id) REFERENCES form_templates(id)
+    CONSTRAINT fk_question_template
+        FOREIGN KEY (template_id)
+        REFERENCES form_templates(id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
     CONSTRAINT chk_input_type CHECK (input_type IN ('scale','text'))
@@ -163,13 +183,19 @@ CREATE TABLE evaluations (
         REFERENCES users(id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
-    CONSTRAINT fk_eval_evaluatee FOREIGN KEY (evaluatee_id) REFERENCES users(id)
+    CONSTRAINT fk_eval_evaluatee
+        FOREIGN KEY (evaluatee_id)
+        REFERENCES users(id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
-    CONSTRAINT fk_eval_template  FOREIGN KEY (template_id)  REFERENCES form_templates(id)
+    CONSTRAINT fk_eval_template
+        FOREIGN KEY (template_id)
+        REFERENCES form_templates(id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
-    CONSTRAINT fk_eval_period    FOREIGN KEY (period_id)    REFERENCES periods(id)
+    CONSTRAINT fk_eval_period
+        FOREIGN KEY (period_id)
+        REFERENCES periods(id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
     CONSTRAINT chk_status CHECK (status IN ('draft','submitted'))
@@ -189,10 +215,14 @@ CREATE TABLE evaluation_answers (
     question_id   INT NOT NULL,
     score         SMALLINT NULL, -- 1..5 cuando la pregunta es de escala
     comment       TEXT NULL,
-    CONSTRAINT fk_answer_eval     FOREIGN KEY (evaluation_id) REFERENCES evaluations(id)
+    CONSTRAINT fk_answer_eval
+        FOREIGN KEY (evaluation_id)
+        REFERENCES evaluations(id)
         ON UPDATE CASCADE
         ON DELETE CASCADE,
-    CONSTRAINT fk_answer_question FOREIGN KEY (question_id)   REFERENCES questions(id)
+    CONSTRAINT fk_answer_question
+        FOREIGN KEY (question_id)
+        REFERENCES questions(id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
     CONSTRAINT chk_score_range CHECK (score IS NULL OR (score BETWEEN 1 AND 5))
@@ -208,10 +238,14 @@ CREATE TABLE ai_feedback_cache (
     summary       TEXT NOT NULL,
     model         VARCHAR(40) NOT NULL,
     generated_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_ai_cache_evaluatee FOREIGN KEY (evaluatee_id) REFERENCES users(id)
+    CONSTRAINT fk_ai_cache_evaluatee
+        FOREIGN KEY (evaluatee_id)
+        REFERENCES users(id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
-    CONSTRAINT fk_ai_cache_period    FOREIGN KEY (period_id)    REFERENCES periods(id)
+    CONSTRAINT fk_ai_cache_period
+        FOREIGN KEY (period_id)
+        REFERENCES periods(id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
     CONSTRAINT uq_ai_cache_evaluatee_period UNIQUE (evaluatee_id, period_id)
