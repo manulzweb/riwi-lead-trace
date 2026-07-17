@@ -85,8 +85,10 @@ def get_metrics_summary(period_id: int):
     users_query = text("""
         SELECT u.id, u.full_name AS name, u.email, r.name AS role
         FROM users u
-        JOIN roles r ON u.role_id = r.id
+        JOIN user_roles ur ON u.id = ur.user_id
+        JOIN roles r ON ur.role_id = r.id
         WHERE r.name IN ('team_leader', 'tutor')
+        GROUP BY u.id, r.name
     """)
     evaluatees_rows = conn.execute(users_query).mappings().all()
 
@@ -103,7 +105,12 @@ def get_metrics_summary(period_id: int):
 
     average_score_global = round(sum(scores) / len(scores)) if scores else 0
 
-    total_coders_query = text("SELECT COUNT(*) FROM users WHERE role_id = 1 AND is_active = TRUE")
+    total_coders_query = text("""
+        SELECT COUNT(DISTINCT u.id) 
+        FROM users u 
+        JOIN user_roles ur ON u.id = ur.user_id 
+        WHERE ur.role_id = 1 AND u.is_active = TRUE
+    """)
     total_coders = conn.execute(total_coders_query).scalar() or 0
 
     possible_evaluations = total_coders * 2

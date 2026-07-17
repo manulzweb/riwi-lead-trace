@@ -4,7 +4,7 @@ from typing import List, Optional
 class UserBase(BaseModel):
     name: str
     email: EmailStr
-    role_id: int
+    role_ids: List[int]
     clan_id: Optional[int] = None
     is_active: bool = True
 
@@ -14,17 +14,17 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
     name: Optional[str] = None
     email: Optional[EmailStr] = None
-    role_id: Optional[int] = None
+    role_ids: Optional[List[int]] = None
     clan_id: Optional[int] = None
     is_active: Optional[bool] = None
     password: Optional[str] = None
 
 class UserOut(BaseModel):
-    id: int
+    id: str
     name: str
     email: str
-    role: str
     roles: List[str]
+    clan_id: Optional[int] = None
     is_active: bool
 
     class Config:

@@ -54,6 +54,43 @@ def create_evaluation(eval_data: EvaluationCreate):
     # Si es anónima, no persistimos el evaluator_id (Anonimato real)
     db_evaluator_id = None if eval_data.is_anonymous else evaluator_id
 
+    # === Lógica de Validación de Clanes ===
+    if evaluator_id is not None:
+        evaluatee_query = text("""
+            SELECT u.clan_id, GROUP_CONCAT(r.name) as roles
+            FROM users u
+            LEFT JOIN user_roles ur ON u.id = ur.user_id
+            LEFT JOIN roles r ON ur.role_id = r.id
+            WHERE u.id = :evaluatee_id
+            GROUP BY u.id
+        """)
+        evaluatee_row = conn.execute(evaluatee_query, {"evaluatee_id": eval_data.evaluatee_id}).mappings().first()
+        
+        if not evaluatee_row:
+            raise HTTPException(status_code=404, detail="Evaluado no encontrado")
+            
+        evaluatee_roles = evaluatee_row["roles"].split(",") if evaluatee_row["roles"] else []
+        
+        if "tutor" not in evaluatee_roles and "team_leader" not in evaluatee_roles:
+            raise HTTPException(status_code=403, detail="El usuario a evaluar debe tener rol de Tutor o Team Leader.")
+        
+        evaluator_query = text("SELECT clan_id FROM users WHERE id = :evaluator_id")
+        evaluator_row = conn.execute(evaluator_query, {"evaluator_id": evaluator_id}).mappings().first()
+        evaluator_clan = evaluator_row["clan_id"] if evaluator_row else None
+
+        # Si el evaluado es Team Leader, buscar en team_leader_clans
+        if "team_leader" in evaluatee_roles:
+            tl_clans_query = text("SELECT clan_id FROM team_leader_clans WHERE user_id = :tl_id")
+            tl_clans_rows = conn.execute(tl_clans_query, {"tl_id": eval_data.evaluatee_id}).all()
+            tl_clans = [r.clan_id for r in tl_clans_rows]
+            if evaluator_clan not in tl_clans:
+                raise HTTPException(status_code=403, detail="No puedes evaluar a un Team Leader que no tiene a cargo tu clan.")
+        else:
+            # Para tutor o coder, el clan_id principal debe coincidir
+            if evaluator_clan != evaluatee_row["clan_id"]:
+                raise HTTPException(status_code=403, detail="Solo puedes evaluar a usuarios de tu mismo clan.")
+    # ======================================
+
     # Insertar evaluación
     insert_eval_query = text("""
         INSERT INTO evaluations (evaluator_id, evaluatee_id, template_id, period_id, is_anonymous, status, submitted_at)

@@ -139,7 +139,7 @@ export const setupEvaluate = async () => {
       return;
     }
 
-    const filtered = allUsers.filter(u => u.role === role && u.id !== currentUser.id);
+    const filtered = allUsers.filter(u => u.roles?.includes(role) && u.id !== currentUser.id);
     evaluatee.disabled = false;
     evaluatee.innerHTML = '<option value="">Selecciona una persona...</option>' +
       filtered.map(u => `<option value="${u.id}">${u.name} (${u.email})</option>`).join("");
