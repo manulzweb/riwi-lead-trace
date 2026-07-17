@@ -91,6 +91,7 @@ CREATE TABLE periods (
 CREATE TABLE form_templates (
     id             INT AUTO_INCREMENT PRIMARY KEY,
     title          VARCHAR(120) NOT NULL,
+    description    VARCHAR(255) NULL,
     target_role_id INT NOT NULL,
     is_active      BOOLEAN NOT NULL DEFAULT TRUE,
     CONSTRAINT fk_template_role FOREIGN KEY (target_role_id) REFERENCES roles(id)
@@ -106,7 +107,7 @@ CREATE TABLE questions (
     template_id   INT NOT NULL,
     text          VARCHAR(255) NOT NULL,
     category      VARCHAR(60) NOT NULL,
-    input_type    VARCHAR(20) NOT NULL DEFAULT 'scale', -- 'scale' | 'text'
+    input_type    VARCHAR(20) NOT NULL DEFAULT 'scale', -- 'scale' | 'text' | 'yes_no'
     sort_order    INT NOT NULL DEFAULT 0,
     -- Peso de la pregunta en el ICP ponderado (ADMIN-02). Solo aplica a
     -- preguntas 'scale'; las 'text' quedan en 0. Los pesos de las preguntas
@@ -120,7 +121,7 @@ CREATE TABLE questions (
     CONSTRAINT fk_question_template FOREIGN KEY (template_id) REFERENCES form_templates(id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
-    CONSTRAINT chk_input_type CHECK (input_type IN ('scale','text')),
+    CONSTRAINT chk_input_type CHECK (input_type IN ('scale','text','yes_no')),
     CONSTRAINT chk_weight_percent_range CHECK (weight_percent >= 0 AND weight_percent <= 100)
 );
 

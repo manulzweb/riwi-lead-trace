@@ -16,6 +16,21 @@ class QuestionOut(BaseModel):
         from_attributes = True
 
 
+class QuestionCreate(BaseModel):
+    """Body de POST /questions: agrega una pregunta nueva a una plantilla
+    ya existente (fuera del flujo de creacion de plantilla en POST /forms).
+
+    No exige que los pesos de escala sumen 100 en el momento: al agregar
+    una pregunta sola es normal que el total quede descuadrado; el admin
+    lo reequilibra despues con PUT /questions/weights.
+    """
+    template_id: int
+    text: str = Field(min_length=3, max_length=255)
+    category: str = Field(min_length=1, max_length=60)
+    input_type: str = Field(pattern="^(scale|text|yes_no)$")
+    weight_percent: float = Field(default=0, ge=0, le=100)
+
+
 class QuestionTextPatch(BaseModel):
     """Body de PATCH /questions/{id}: reformular el texto de una pregunta.
 
