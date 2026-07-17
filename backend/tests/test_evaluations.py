@@ -3,6 +3,8 @@ Reglas de negocio de POST /evaluations:
 1. El evaluador es el que mande el cliente en el body (evaluator_id).
 2. No se puede evaluar dos veces a la misma persona en el mismo periodo,
    ni siquiera marcando la evaluacion como anonima.
+3. Sin periodo activo (ADMIN-01), el backend rechaza con 409 -- la SPA
+   nunca es la autoridad.
 """
 
 # IDs de los datos semilla de database/schema.sql
@@ -44,13 +46,23 @@ def test_duplicado_no_se_salta_marcando_anonima(client, temp_period):
     assert segunda_anonima.status_code == 409
 
 
-def test_evaluado_puede_ver_su_propio_historial(client, team_leader_headers, temp_period):
+def test_evaluado_puede_ver_su_propio_historial(client, temp_period):
     creada = client.post("/evaluations", json=_payload(temp_period))
     assert creada.status_code == 201
 
-    response = client.get(f"/evaluations?evaluatee_id={TEAM_LEADER_ID}", headers=team_leader_headers)
+    response = client.get(f"/evaluations?evaluatee_id={TEAM_LEADER_ID}")
     assert response.status_code == 200
     assert len(response.json()) >= 1
+
+
+def test_no_se_crea_evaluacion_sin_periodo_activo(client, temp_inactive_period):
+    response = client.post("/evaluations", json=_payload(temp_inactive_period))
+    assert response.status_code == 409
+
+
+def test_no_se_crea_evaluacion_con_periodo_inexistente(client):
+    response = client.post("/evaluations", json=_payload(999999))
+    assert response.status_code == 404
 
 
 def test_evaluado_no_ve_quien_lo_evaluo_ni_en_no_anonimas(client, temp_period):
