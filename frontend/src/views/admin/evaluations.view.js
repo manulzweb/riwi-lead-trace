@@ -59,13 +59,25 @@ export const renderAdminEvaluations = () => `
             <label class="mb-2 block text-sm font-bold text-[var(--text-main)]">Descripción / Instrucciones (Opcional)</label>
             <textarea id="template-desc" rows="2" placeholder="Instrucciones para quien llena el formulario..." class="w-full resize-none rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] p-4 text-[var(--text-main)] focus:border-[var(--brand-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-hover)]/20"></textarea>
           </div>
-          <div>
-            <label class="mb-2 block text-sm font-bold text-[var(--text-main)]">Dirigido a (Rol destino)</label>
-            <div class="md:w-1/2">
-              ${dropdownComponent('template-role', [
-                { value: 'coder', label: 'Coders' },
-                { value: 'tutor', label: 'Tutores' }
-              ], 'coder')}
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="mb-2 block text-sm font-bold text-[var(--text-main)]">Rol Evaluador (Quién llena la encuesta)</label>
+              <div>
+                ${dropdownComponent('evaluator-role', [
+                  { value: 'coder', label: 'Coders' },
+                  { value: 'team_leader', label: 'Team Leaders' },
+                  { value: 'tutor', label: 'Tutores' }
+                ], 'coder')}
+              </div>
+            </div>
+            <div>
+              <label class="mb-2 block text-sm font-bold text-[var(--text-main)]">Rol a Evaluar (A quién se evalúa)</label>
+              <div>
+                ${dropdownComponent('template-role', [
+                  { value: 'tutor', label: 'Tutores' },
+                  { value: 'team_leader', label: 'Team Leaders' }
+                ], 'tutor')}
+              </div>
             </div>
           </div>
         </div>
@@ -111,6 +123,7 @@ export const setupAdminEvaluations = () => {
     viewList.classList.add("hidden");
     viewBuilder.classList.remove("hidden");
     setupDropdown('template-role');
+    setupDropdown('evaluator-role');
     updateWeightCounter();
   };
 
@@ -125,8 +138,9 @@ export const setupAdminEvaluations = () => {
     editId = null;
     inputTitle.value = "";
     inputDesc.value = "";
-    selectRole.value = "coder";
-    questions = [{ id: Date.now().toString(), text: "", type: "scale_1_5", weight: 0 }];
+    selectRole.value = "tutor";
+    document.getElementById("evaluator-role").value = "coder";
+    questions = [{ id: Date.now().toString(), text: "", input_type: "scale_1_5", category: "General", weight: 0 }];
     renderQuestions();
     showBuilder();
   });
@@ -194,11 +208,17 @@ export const setupAdminEvaluations = () => {
                   {value: 'scale_1_5', label: 'Escala (1-5)'},
                   {value: 'yes_no', label: 'Sí / No'},
                   {value: 'open_text', label: 'Texto Abierto'}
-                ], q.type)}
+                ], q.input_type)}
                 <div class="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none z-10">
-                  ${getQuestionIcon(q.type)}
+                  ${getQuestionIcon(q.input_type)}
                 </div>
               </div>
+              
+              <div class="flex items-center gap-2">
+                <label class="text-sm font-bold text-[var(--text-muted)]">Categoría:</label>
+                <input type="text" class="q-category-input w-48 rounded-xl border border-[var(--border-main)] bg-[var(--bg-base)] px-3 py-2 text-[var(--text-main)] text-sm focus:border-[var(--brand-bg)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-bg)]/20" placeholder="Ej. Comunicación" value="${escapeHtml(q.category || '')}" data-id="${q.id}">
+              </div>
+
               <div class="flex items-center gap-2">
                 <label class="text-sm font-bold text-[var(--text-muted)]">Puntos:</label>
                 <input type="number" min="0" max="100" class="q-weight-input w-24 rounded-xl border border-[var(--border-main)] bg-[var(--bg-base)] px-3 py-2 text-[var(--text-main)] font-bold focus:border-[var(--brand-bg)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-bg)]/20" placeholder="0-100" value="${q.weight || ''}" data-id="${q.id}">
@@ -206,7 +226,7 @@ export const setupAdminEvaluations = () => {
             </div>
             
             <!-- Vista Previa Visual -->
-            ${getQuestionPreview(q.type)}
+            ${getQuestionPreview(q.input_type)}
           </div>
           
           <button class="btn-delete-q p-2 text-[var(--text-muted)] hover:bg-[var(--danger-bg)] hover:text-[var(--danger-text)] rounded-xl transition-colors cursor-pointer" data-id="${q.id}" title="Eliminar pregunta">
@@ -243,10 +263,18 @@ export const setupAdminEvaluations = () => {
       });
     });
 
+    document.querySelectorAll(".q-category-input").forEach(input => {
+      input.addEventListener("input", (e) => {
+        const id = e.target.dataset.id;
+        const q = questions.find(item => item.id === id);
+        if (q) q.category = e.target.value;
+      });
+    });
+
     // Configurar dropdowns dinámicos para el tipo de pregunta
     questions.forEach(q => {
       setupDropdown(`q-type-${q.id}`, (val) => {
-        q.type = val;
+        q.input_type = val;
         renderQuestions();
       });
       // Ajustar el padding izquierdo del botón del dropdown generado para que no tape el ícono
@@ -304,6 +332,7 @@ export const setupAdminEvaluations = () => {
     const templateData = {
       title,
       description: inputDesc.value.trim(),
+      evaluatorRole: document.getElementById("evaluator-role").value,
       targetRole: document.getElementById("template-role").value,
       questions,
       createdAt: new Date().toISOString()
@@ -365,7 +394,7 @@ export const setupAdminEvaluations = () => {
             <div>
               <div class="flex items-center justify-between mb-4">
                 <span class="inline-flex items-center rounded-full bg-[var(--brand-bg)]/10 px-3 py-1 text-xs font-bold text-[var(--brand-bg)] capitalize">
-                  Para: ${escapeHtml(t.targetRole)}
+                  Evaluador: ${escapeHtml(t.evaluatorRole || 'Cualquiera')} ➔ Evalúa a: ${escapeHtml(t.targetRole)}
                 </span>
                 <span class="text-xs text-[var(--text-muted)] font-medium">
                   ${t.questions.length} preg.
@@ -403,12 +432,15 @@ export const setupAdminEvaluations = () => {
             editId = template.id;
             inputTitle.value = template.title;
             inputDesc.value = template.description || "";
-            selectRole.value = template.targetRole || "coder";
+            document.getElementById("evaluator-role").value = template.evaluatorRole || "coder";
+            selectRole.value = template.targetRole || "tutor";
             
-            // Asegurarse de que al editar tengan el campo de weight por defecto en 0 si no existía
+            // Asegurarse de que al editar tengan los campos correctos
             questions = JSON.parse(JSON.stringify(template.questions)).map(q => ({
               ...q,
-              weight: q.weight || 0
+              weight: q.weight || 0,
+              input_type: q.input_type || q.type || "scale_1_5",
+              category: q.category || "General"
             }));
             
             renderQuestions();

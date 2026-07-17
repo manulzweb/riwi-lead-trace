@@ -76,11 +76,20 @@ export const sidebarComponent = (isActive) => {
         { href: "/evaluations", label: "History" }
       ]}
     ];
-  } else {
-    // team_leader or tutor
+  } else if (role === "tutor") {
     navConfig = [
       { href: "/dashboard", label: "Home", icon: icons.home },
-      { href: "/my-results", label: "Evaluations", icon: icons.evaluations }
+      { label: "Make Evaluation", icon: icons.evaluations, submenu: [
+        { href: "/evaluations/new", label: "To-Do" },
+        { href: "/evaluations", label: "History" }
+      ]},
+      { href: "/my-results", label: "My Results", icon: icons.evaluations }
+    ];
+  } else {
+    // team_leader
+    navConfig = [
+      { href: "/dashboard", label: "Home", icon: icons.home },
+      { href: "/my-results", label: "My Results", icon: icons.evaluations }
     ];
   }
 

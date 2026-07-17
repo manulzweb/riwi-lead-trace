@@ -4,6 +4,8 @@ import { authService } from "../../services/auth.service";
 import { userService } from "../../services/users.service";
 import { periodService } from "../../services/periods.service";
 import { showToast } from "../../components/alerts";
+import { templatesService } from "../../services/templates.service";
+import Swal from 'sweetalert2';
 
 export const renderMyEvaluations = () => `
   ${navBarComponent()}
@@ -13,10 +15,6 @@ export const renderMyEvaluations = () => `
         <p class="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--brand-bg)]">Coder</p>
         <h1 class="mt-1 text-4xl font-black tracking-tight text-[var(--text-main)]">Mis evaluaciones</h1>
       </div>
-      <a href="/evaluations/new"
-        class="inline-flex items-center justify-center rounded-2xl bg-[var(--brand-bg)] px-5 py-3 text-sm font-bold text-[var(--brand-text)] transition-all duration-300 ease-in-out hover:bg-[var(--brand-hover)] hover:shadow-md">
-        Nueva evaluación
-      </a>
     </section>
 
     <section id="evaluations-list" class="mt-8 grid gap-4">
@@ -34,14 +32,16 @@ export const setupMyEvaluations = async () => {
   const currentUser = authService.getSession();
 
   try {
-    const [evaluations, users, periods] = await Promise.all([
+    const [evaluations, users, periods, templates] = await Promise.all([
       evaluationService.getByEvaluator(currentUser.id),
       userService.get(),
-      periodService.get()
+      periodService.get(),
+      templatesService.getTemplates()
     ]);
 
     const usersMap = new Map(users.map(u => [u.id, u]));
     const periodsMap = new Map(periods.map(p => [p.id, p]));
+    const templatesMap = new Map(templates.map(t => [t.id, t]));
 
     if (evaluations.length === 0) {
       container.innerHTML = `
@@ -97,35 +97,46 @@ export const setupMyEvaluations = async () => {
       const evaluatee = usersMap.get(evaluation.evaluatee_id);
       const evaluateeName = evaluatee ? evaluatee.name : `Usuario #${evaluation.evaluatee_id}`;
 
+      const template = templatesMap.get(evaluation.template_id);
+      const questionsMap = new Map();
+      if (template && template.questions) {
+        template.questions.forEach(q => questionsMap.set(String(q.id), q));
+      }
+
       const answersHtml = evaluation.answers.map(ans => {
-        const scoreHtml = ans.score
-          ? `<span class="font-bold text-[var(--brand-bg)]">${ans.score}/5</span>`
-          : `<span class="text-[var(--text-muted)]">N/A</span>`;
-        const commentHtml = ans.comment
-          ? `<p class="mt-2 text-xs text-[var(--text-muted)] italic">"${ans.comment}"</p>`
-          : "";
+        const questionData = questionsMap.get(String(ans.question_id));
+        const questionText = questionData ? questionData.text : `Pregunta #${ans.question_id}`;
+        
+        let answerDisplay = '';
+        if (questionData && (questionData.input_type === 'scale' || questionData.input_type === 'scale_1_5')) {
+          answerDisplay = `<div class="mt-2 text-sm"><span class="font-bold text-[var(--brand-bg)] text-2xl">${ans.score || 'N/A'}</span> <span class="text-[var(--text-muted)] font-medium">/ 5</span></div>`;
+        } else if (questionData && questionData.input_type === 'yes_no') {
+          answerDisplay = `<div class="mt-2 inline-flex items-center rounded-xl bg-[var(--brand-bg)]/10 px-4 py-2 text-sm font-bold text-[var(--brand-bg)]">${ans.comment || 'N/A'}</div>`;
+        } else {
+           answerDisplay = ans.comment ? `<p class="mt-2 rounded-xl bg-[var(--bg-base)] p-4 text-sm text-[var(--text-main)] border border-[var(--border-main)]">"${ans.comment}"</p>` : `<p class="mt-2 text-sm text-[var(--text-muted)] italic">Sin respuesta</p>`;
+        }
+
         return `
-          <div class="border-b border-[var(--border-main)] pb-3 last:border-b-0">
-            <div class="flex justify-between items-start">
-              <span class="text-sm font-medium text-[var(--text-main)]">Pregunta #${ans.question_id}</span>
-              ${scoreHtml}
-            </div>
-            ${commentHtml}
+          <div class="border-b border-[var(--border-main)] pb-5 mb-5 last:border-b-0 last:mb-0">
+            <h4 class="text-base font-semibold text-[var(--text-main)] leading-snug">${questionText}</h4>
+            ${answerDisplay}
           </div>
         `;
       }).join("");
 
       Swal.fire({
-        title: `<h3 class="text-xl font-bold text-[var(--text-main)]">Evaluación a ${evaluateeName}</h3>`,
+        title: `<div class="text-left"><h3 class="text-2xl font-black text-[var(--text-main)]">Resultados</h3><p class="text-sm text-[var(--text-muted)] mt-1 font-normal">Evaluación a <span class="font-semibold text-[var(--text-main)]">${evaluateeName}</span></p></div>`,
         html: `
-          <div class="text-left mt-4 grid gap-4 max-h-96 overflow-y-auto">
+          <div class="text-left mt-6 max-h-[60vh] overflow-y-auto pr-4 custom-scrollbar">
             ${answersHtml}
           </div>
         `,
-        confirmButtonText: "Entendido",
+        width: '600px',
+        showCloseButton: true,
+        confirmButtonText: "Cerrar ventana",
         customClass: {
-          popup: "rounded-3xl border border-[var(--border-main)] bg-[var(--bg-panel)]",
-          confirmButton: "rounded-2xl bg-[var(--brand-bg)] px-5 py-3 font-bold text-white"
+          popup: "rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-2",
+          confirmButton: "rounded-2xl bg-[var(--bg-base)] border border-[var(--border-main)] px-6 py-3 font-bold text-[var(--text-main)] hover:bg-[var(--border-main)] w-full mt-4 transition-colors"
         }
       });
     };

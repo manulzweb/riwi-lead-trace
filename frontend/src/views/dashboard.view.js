@@ -5,8 +5,7 @@ import { escapeHtml } from "../utils/validators";
 export const renderDashboard = () => {
   const user = authService.getSession();
   const name = user?.name ? escapeHtml(user.name) : "Usuario";
-  const role = user?.role ?? "";
-
+  const roles = user?.roles ?? [];
   const quickLinks = {
     coder: [
       { href: "/evaluations/new", label: "Evaluar", title: "Nueva evaluación" },
@@ -16,6 +15,8 @@ export const renderDashboard = () => {
       { href: "/my-results", label: "Resultados", title: "Mi retroalimentación" },
     ],
     tutor: [
+      { href: "/evaluations/new", label: "Evaluar", title: "Nueva evaluación" },
+      { href: "/evaluations", label: "Historial", title: "Mis evaluaciones" },
       { href: "/my-results", label: "Resultados", title: "Mi retroalimentación" },
     ],
     admin: [
@@ -24,7 +25,17 @@ export const renderDashboard = () => {
     ],
   };
 
-  const links = quickLinks[role] ?? [];
+  const allLinks = [];
+  roles.forEach(role => {
+    if (quickLinks[role]) {
+      allLinks.push(...quickLinks[role]);
+    }
+  });
+
+  // Deduplicate by href
+  const uniqueLinksMap = new Map();
+  allLinks.forEach(link => uniqueLinksMap.set(link.href, link));
+  const links = Array.from(uniqueLinksMap.values());
 
   const linksHtml = links.map(({ href, label, title }) => `
     <a class="rounded-3xl bg-[var(--bg-base)] p-5 transition-all duration-300 ease-in-out hover:bg-[var(--border-main)] hover:shadow-md hover:-translate-y-0.5" href="${href}">

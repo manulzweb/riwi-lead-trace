@@ -1,7 +1,7 @@
 import { request, jsonOptions } from './api.service.js'
 
-const getForm = async (targetRole) => {
-    const templates = await request(`/custom_templates?targetRole=${targetRole}`);
+const getForm = async (evaluatorRole, targetRole) => {
+    const templates = await request(`/forms?evaluatorRole=${evaluatorRole}&targetRole=${targetRole}`);
     if (templates && templates.length > 0) {
         return templates[0];
     }

@@ -1,12 +1,12 @@
 import { request, jsonOptions } from './api.service.js';
 
-const getTemplates = async () => await request('/custom_templates');
+const getTemplates = async () => await request('/forms');
 
-const createTemplate = async (templateData) => await request('/custom_templates', jsonOptions('POST', templateData));
+const createTemplate = async (templateData) => await request('/forms', jsonOptions('POST', templateData));
 
-const updateTemplate = async (id, templateData) => await request(`/custom_templates/${id}`, jsonOptions('PUT', templateData));
+const updateTemplate = async (id, templateData) => await request(`/forms/${id}`, jsonOptions('PUT', templateData));
 
-const deleteTemplate = async (id) => await request(`/custom_templates/${id}`, { method: 'DELETE' });
+const deleteTemplate = async (id) => await request(`/forms/${id}`, { method: 'DELETE' });
 
 export const templatesService = {
   getTemplates,
