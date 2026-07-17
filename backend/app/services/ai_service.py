@@ -8,6 +8,23 @@ from app.services.metrics_service import calculate_average_score, MIN_EVALUATION
 
 AI_MODEL = "claude-haiku-4-5-20251001"
 
+# Definiciones cortas de categoria para el chequeo de coherencia (regla
+# ADMIN-02). Si una categoria no esta aca (p. ej. una nueva que el equipo
+# agregue mas adelante), el chequeo usa el nombre de la categoria tal cual
+# -- sigue funcionando, solo con menos contexto para la IA.
+_CATEGORY_DEFINITIONS = {
+    "Comunicación efectiva": "que tan claro y oportuno se comunica el Team Leader con el Coder",
+    "Alineación de expectativas": "que tan claro deja el Team Leader lo que espera del Coder en cada entrega",
+    "Verificación de comprensión": "si el Team Leader confirma que el Coder realmente entendio antes de avanzar",
+    "Fomento de la independencia": "si el Team Leader impulsa al Coder a resolver problemas por su cuenta",
+    "Desarrollo profesional": "si el Team Leader ayuda al Coder a crecer como desarrollador/a",
+    "Valor del aprendizaje": "si las sesiones del Tutor le aportan al Coder algo que no lograria solo",
+    "Claridad y organización": "que tan clara y bien preparada esta la explicacion tecnica del Tutor",
+    "Cercanía individual": "si el Tutor trata al Coder con respeto y se interesa por su proceso",
+    "Disponibilidad e interacción": "si el Tutor esta disponible y responde a tiempo",
+    "General": "comentarios abiertos, sin un eje tematico especifico",
+}
+
 
 def get_or_generate_ai_summary(evaluatee_id: int, period_id: int):
     """Genera u obtiene de cache el resumen ejecutivo por IA para un evaluado."""
@@ -112,6 +129,39 @@ def _ask_claude(prompt: str) -> str:
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"Error al conectar con el servicio de IA de Claude: {str(e)}"
         )
+
+
+def check_question_category_coherence(question_text: str, category: str) -> bool:
+    """Regla de negocio ADMIN-02: al editar el texto de una pregunta, la IA
+    comprueba que siga hablando del mismo tema que su categoria (anti deriva
+    semantica). Devuelve True si son coherentes (o si no se pudo consultar a
+    la IA -- "fail open": esto es una ayuda para que el admin decida, no un
+    bloqueo duro, asi que un error de red no debe impedir editar preguntas).
+    """
+    if not settings.ANTHROPIC_API_KEY:
+        return True
+
+    definition = _CATEGORY_DEFINITIONS.get(category, category)
+    prompt = (
+        f"Categoria: \"{category}\" ({definition}).\n"
+        f"Pregunta: \"{question_text}\"\n\n"
+        "¿La pregunta encaja claramente en el tema de esa categoria? "
+        "Responde con una sola palabra: SI o NO."
+    )
+
+    try:
+        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+        message = client.messages.create(
+            model=AI_MODEL,
+            max_tokens=5,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        answer = message.content[0].text.strip().upper()
+        return answer.startswith("S")
+    except Exception:
+        # No tumbamos la edicion de la pregunta por un problema de red/API:
+        # el admin puede seguir, simplemente sin la ayuda de la IA.
+        return True
 
 
 def _cache_summary(evaluatee_id: int, period_id: int, summary: str) -> None:
