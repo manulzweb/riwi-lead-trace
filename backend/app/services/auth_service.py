@@ -13,5 +13,5 @@ def login(email: str, password: str) -> LoginResponse:
     if not user["is_active"]:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuario inactivo")
 
-    token = create_access_token({"sub": str(user["id"]), "role": user["role"]})
+    token = create_access_token({"sub": str(user["id"]), "roles": user["roles"]})
     return LoginResponse(access_token=token, user=UserOut(**user))

@@ -64,10 +64,12 @@ def _get_anonymized_comments(evaluatee_id: int, period_id: int) -> list[str]:
 
 def _get_evaluatee_name_and_role(evaluatee_id: int) -> tuple[str, str]:
     query = text("""
-        SELECT u.full_name, r.name
+        SELECT u.full_name, GROUP_CONCAT(r.name) as role
         FROM users u
-        JOIN roles r ON u.role_id = r.id
+        LEFT JOIN user_roles ur ON u.id = ur.user_id
+        LEFT JOIN roles r ON ur.role_id = r.id
         WHERE u.id = :id
+        GROUP BY u.id
     """)
     row = conn.execute(query, {"id": evaluatee_id}).first()
     return (row[0], row[1]) if row else ("Persona", "Rol")

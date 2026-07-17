@@ -19,12 +19,13 @@ def get_current_user(
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token invalido")
 
-    return {"id": int(user_id), "role": payload.get("role")}
+    return {"id": int(user_id), "roles": payload.get("roles", [])}
 
 
 def require_role(*roles: str):
     def checker(current_user: dict = Depends(get_current_user)) -> dict:
-        if current_user["role"] not in roles:
+        user_roles = set(current_user.get("roles", []))
+        if not user_roles.intersection(set(roles)):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sin permiso")
         return current_user
     return checker

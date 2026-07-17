@@ -207,25 +207,24 @@ Toda esta logica vive en `services/` (no en routers ni queries dispersas). Es la
 puntaje de 0 a 100 por persona y periodo, calculado a partir de sus evaluaciones. Mide
 percepcion, no aprendizaje real — por eso "percibida".
 
-**Calculo.** Es un **promedio simple con un filtro de tamano de muestra**, sin categorias
-ponderadas. Por cada `(evaluatee_id, period_id)`, en `calculate_average_score`:
+**Calculo.** Es un **promedio ponderado con un filtro de tamaño de muestra**. Por cada `(evaluatee_id, period_id)`, en `calculate_average_score`:
 
 1. Cuenta cuantas evaluaciones `submitted` tiene esa persona en ese periodo (`n_evals`).
 2. Si `n_evals < MIN_EVALUATIONS` (3), no calcula nada: devuelve "datos insuficientes". Evita
    mostrar un puntaje basado en muy pocas respuestas.
-3. Si hay suficientes, promedia los puntajes (1-5) de **todas** las preguntas tipo `scale`
-   (las de tipo `text` no entran al calculo; alimentan el resumen de IA).
-4. Normaliza ese promedio de la escala 1-5 a 0-100: `score = round((promedio - 1) / 4 * 100)`.
+3. Si hay suficientes, calcula el promedio ponderado usando los puntajes (1-5) y el **peso (`weight`)** de **todas** las preguntas tipo `scale`
+   (las de tipo `text` no entran al calculo; alimentan el resumen de IA). Fórmula: `sum(score * weight) / sum(weight)`.
+4. Normaliza ese promedio de la escala 1-5 a 0-100: `score = round((promedio_ponderado - 1) / 4 * 100)`.
 
 `get_metrics_summary` repite esto para cada Team Leader/Tutor del periodo y agrega: promedio
 global, total de evaluaciones enviadas, y tasa de participacion (evaluaciones enviadas ÷
 evaluaciones posibles, asumiendo 2 evaluaciones por coder activo).
 
 **Lo que el ICP no hace (a proposito, para no sobre-construir en el MVP):** no pondera por
-categoria (todas las preguntas `scale` pesan igual), no calcula tendencia contra el periodo
+categoría globalmente (usa los pesos individuales por pregunta, pero no agrupa matemáticamente por categoría), no calcula tendencia contra el periodo
 anterior, no clasifica en estados tipo "Solido"/"En riesgo". Las preguntas sí tienen una
 `category` en la BD (ver `07-base-de-datos.md`) para organizar el formulario, pero el calculo
-del ICP no la usa. Si el equipo decide agregar alguna de estas senales mas adelante, son
+del ICP no la usa matemáticamente (más allá del peso de cada pregunta). Si el equipo decide agregar alguna de estas senales mas adelante, son
 extensiones puntuales sobre `calculate_average_score`, no un rediseno.
 
 > El ICP **no se persiste**: se calcula on-read en `metrics_service`.

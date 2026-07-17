@@ -23,7 +23,7 @@ def get_form_template_by_role(role_name: str):
 
     # 3. Obtener las preguntas asociadas a esa plantilla
     questions_query = text("""
-        SELECT id, template_id, text, category, input_type, sort_order
+        SELECT id, template_id, text, category, input_type, sort_order, weight
         FROM questions
         WHERE template_id = :template_id
         ORDER BY sort_order ASC

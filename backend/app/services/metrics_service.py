@@ -36,7 +36,7 @@ def calculate_average_score(evaluatee_id: int, period_id: int):
         return {"average_score": None, "n_evals": n_evals}
 
     scores_query = text("""
-        SELECT a.score
+        SELECT a.score, q.weight
         FROM evaluation_answers a
         JOIN questions q ON a.question_id = q.id
         JOIN evaluations e ON a.evaluation_id = e.id
@@ -46,12 +46,18 @@ def calculate_average_score(evaluatee_id: int, period_id: int):
           AND q.input_type = 'scale'
           AND a.score IS NOT NULL
     """)
-    scores = [row[0] for row in conn.execute(scores_query, {"evaluatee_id": evaluatee_id, "period_id": period_id}).all()]
+    rows = conn.execute(scores_query, {"evaluatee_id": evaluatee_id, "period_id": period_id}).all()
 
-    if not scores:
+    if not rows:
         return {"average_score": None, "n_evals": n_evals}
 
-    avg = sum(scores) / len(scores)
+    total_weighted_score = sum(row.score * row.weight for row in rows)
+    total_weights = sum(row.weight for row in rows)
+    
+    if total_weights == 0:
+        return {"average_score": None, "n_evals": n_evals}
+
+    avg = total_weighted_score / total_weights
     average_score = round((avg - 1) / 4 * 100)
 
     return {"average_score": average_score, "n_evals": n_evals}
@@ -66,8 +72,10 @@ def get_metrics_summary(period_id: int):
     users_query = text("""
         SELECT u.id, u.full_name AS name, u.email, r.name AS role
         FROM users u
-        JOIN roles r ON u.role_id = r.id
+        JOIN user_roles ur ON u.id = ur.user_id
+        JOIN roles r ON ur.role_id = r.id
         WHERE r.name IN ('team_leader', 'tutor')
+        GROUP BY u.id, r.name
     """)
     evaluatees_rows = conn.execute(users_query).mappings().all()
 
@@ -84,7 +92,12 @@ def get_metrics_summary(period_id: int):
 
     average_score_global = round(sum(scores) / len(scores)) if scores else 0
 
-    total_coders_query = text("SELECT COUNT(*) FROM users WHERE role_id = 1 AND is_active = TRUE")
+    total_coders_query = text("""
+        SELECT COUNT(DISTINCT u.id) 
+        FROM users u 
+        JOIN user_roles ur ON u.id = ur.user_id 
+        WHERE ur.role_id = 1 AND u.is_active = TRUE
+    """)
     total_coders = conn.execute(total_coders_query).scalar() or 0
 
     possible_evaluations = total_coders * 2
