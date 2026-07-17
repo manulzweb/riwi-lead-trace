@@ -14,6 +14,16 @@ def get_period(period_id: int):
     result = conn.execute(query, {"id": period_id}).mappings().first()
     return dict(result) if result else None
 
+def _deactivate_other_periods(period_id_to_keep):
+    """Regla de negocio (ADMIN-01): solo puede haber un periodo activo a la vez.
+
+    Se llama siempre ANTES de dejar un periodo en is_active=TRUE, dentro de
+    la misma transaccion que ese insert/update, para que nunca quede un
+    estado intermedio con dos periodos activos.
+    """
+    query = text("UPDATE periods SET is_active = FALSE WHERE id != :id AND is_active = TRUE")
+    conn.execute(query, {"id": period_id_to_keep})
+
 def create_period(period: PeriodCreate):
     """Crea un periodo nuevo."""
     query = text("""
@@ -26,8 +36,11 @@ def create_period(period: PeriodCreate):
         "ends_at": period.ends_at,
         "is_active": period.is_active
     })
+    new_id = result.lastrowid
+    if period.is_active:
+        _deactivate_other_periods(new_id)
     conn.commit()
-    return get_period(result.lastrowid)
+    return get_period(new_id)
 
 def update_period(period_id: int, period: PeriodUpdate):
     """Actualiza solo los campos de periodo que vengan con valor."""
@@ -50,6 +63,8 @@ def update_period(period_id: int, period: PeriodUpdate):
     set_clause = ", ".join(f"{column} = :{column}" for column in values)
     query = text(f"UPDATE periods SET {set_clause} WHERE id = :id")
     conn.execute(query, {**values, "id": period_id})
+    if values.get("is_active") is True:
+        _deactivate_other_periods(period_id)
     conn.commit()
     return get_period(period_id)
 
