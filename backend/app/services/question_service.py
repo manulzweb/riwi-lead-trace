@@ -21,20 +21,25 @@ def _assert_no_active_period():
         )
 
 
+QUESTION_SELECT = """
+    SELECT q.id, q.template_id, q.text, q.category_id, c.name AS category,
+           q.input_type, q.sort_order, q.weight_percent, q.is_active
+    FROM questions q
+    JOIN categories c ON q.category_id = c.id
+"""
+
+
 def get_question(question_id: int):
-    query = text("""
-        SELECT id, template_id, text, category, input_type, sort_order, weight_percent, is_active
-        FROM questions WHERE id = :id
-    """)
+    query = text(f"{QUESTION_SELECT} WHERE q.id = :id")
     row = conn.execute(query, {"id": question_id}).mappings().first()
     return dict(row) if row else None
 
 
 def get_questions_by_template(template_id: int, only_active: bool = True):
-    query_str = "SELECT id, template_id, text, category, input_type, sort_order, weight_percent, is_active FROM questions WHERE template_id = :template_id"
+    query_str = f"{QUESTION_SELECT} WHERE q.template_id = :template_id"
     if only_active:
-        query_str += " AND is_active = TRUE"
-    query_str += " ORDER BY sort_order ASC"
+        query_str += " AND q.is_active = TRUE"
+    query_str += " ORDER BY q.sort_order ASC"
     result = conn.execute(text(query_str), {"template_id": template_id})
     return [dict(row) for row in result.mappings()]
 
@@ -70,20 +75,21 @@ def version_question_text(question_id: int, new_text: str, confirm: bool):
                 )
             )
 
-    # category, input_type, sort_order y weight_percent NUNCA los toca esta
+    # category_id, input_type, sort_order y weight_percent NUNCA los toca esta
     # operacion -- el admin no puede tocarlos al "editar el texto" (regla
-    # ADMIN-02). Si se quiere reponderar, es un paso aparte (PUT /questions/weights).
+    # ADMIN-02). Si se quiere reponderar, es un paso aparte (PUT /questions/weights);
+    # si se quiere mover a otra categoria, eso tampoco es "editar el texto".
     deactivate_query = text("UPDATE questions SET is_active = FALSE WHERE id = :id")
     conn.execute(deactivate_query, {"id": question_id})
 
     insert_query = text("""
-        INSERT INTO questions (template_id, text, category, input_type, sort_order, weight_percent, is_active)
-        VALUES (:template_id, :text, :category, :input_type, :sort_order, :weight_percent, TRUE)
+        INSERT INTO questions (template_id, text, category_id, input_type, sort_order, weight_percent, is_active)
+        VALUES (:template_id, :text, :category_id, :input_type, :sort_order, :weight_percent, TRUE)
     """)
     result = conn.execute(insert_query, {
         "template_id": original["template_id"],
         "text": new_text,
-        "category": original["category"],
+        "category_id": original["category_id"],
         "input_type": original["input_type"],
         "sort_order": original["sort_order"],
         "weight_percent": original["weight_percent"],
@@ -110,6 +116,12 @@ def create_question(payload: QuestionCreate):
     if not template_exists:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plantilla no encontrada.")
 
+    category_exists = conn.execute(
+        text("SELECT id FROM categories WHERE id = :id"), {"id": payload.category_id}
+    ).scalar()
+    if not category_exists:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Categoria no encontrada.")
+
     next_sort_order = conn.execute(
         text("SELECT COALESCE(MAX(sort_order), -1) + 1 FROM questions WHERE template_id = :template_id"),
         {"template_id": payload.template_id}
@@ -119,13 +131,13 @@ def create_question(payload: QuestionCreate):
     weight = payload.weight_percent if payload.input_type == "scale" else 0
 
     insert_query = text("""
-        INSERT INTO questions (template_id, text, category, input_type, sort_order, weight_percent, is_active)
-        VALUES (:template_id, :text, :category, :input_type, :sort_order, :weight_percent, TRUE)
+        INSERT INTO questions (template_id, text, category_id, input_type, sort_order, weight_percent, is_active)
+        VALUES (:template_id, :text, :category_id, :input_type, :sort_order, :weight_percent, TRUE)
     """)
     result = conn.execute(insert_query, {
         "template_id": payload.template_id,
         "text": payload.text,
-        "category": payload.category,
+        "category_id": payload.category_id,
         "input_type": payload.input_type,
         "sort_order": next_sort_order,
         "weight_percent": weight,

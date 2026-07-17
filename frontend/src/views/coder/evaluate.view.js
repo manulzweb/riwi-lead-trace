@@ -146,7 +146,14 @@ export const setupEvaluate = async () => {
 
     try {
       qContainer.innerHTML = '<div class="text-center py-4 text-[var(--text-muted)] animate-pulse">Cargando preguntas...</div>';
-      currentTemplate = await evaluationService.getForm(role);
+      // GET /forms?target_role= devuelve un arreglo (en la practica, 0 o 1
+      // plantilla activa por rol -- ver backend/README.md).
+      const templates = await evaluationService.getForm(role);
+      currentTemplate = templates[0];
+      if (!currentTemplate) {
+        qContainer.innerHTML = '<div class="text-red-500 py-4 text-center">No hay una plantilla activa para este rol.</div>';
+        return;
+      }
       renderQuestions(currentTemplate.questions);
 
       progressContainer.classList.remove("hidden");

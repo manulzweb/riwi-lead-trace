@@ -10,43 +10,48 @@ from app.services.question_service import _assert_no_active_period, WEIGHT_SUM_T
 EVALUABLE_ROLES = ("team_leader", "tutor")
 
 
-def get_form_template_by_role(role_name: str):
-    """Obtiene la plantilla de formulario activa para un rol específico, junto con sus preguntas."""
-    # 1. Obtener el ID del rol
+QUESTIONS_SELECT = """
+    SELECT q.id, q.template_id, q.text, q.category_id, c.name AS category, q.input_type, q.sort_order
+    FROM questions q
+    JOIN categories c ON q.category_id = c.id
+    WHERE q.template_id = :template_id AND q.is_active = TRUE
+    ORDER BY q.sort_order ASC
+"""
+
+
+def get_form_templates_by_role(role_name: str):
+    """Lista las plantillas activas para un rol especifico, con sus preguntas.
+
+    En la practica devuelve 0 o 1 -- solo puede haber una plantilla activa
+    por rol a la vez (ver create_template) -- pero se modela como lista para
+    ser consistente con el resto de la API al filtrar una coleccion.
+    """
     role_query = text("SELECT id FROM roles WHERE name = :name")
     role_id = conn.execute(role_query, {"name": role_name}).scalar()
     if not role_id:
-        return None
+        return []
 
-    # 2. Obtener la plantilla activa para ese rol
     template_query = text("""
         SELECT id, title, description, target_role_id, is_active
         FROM form_templates
         WHERE target_role_id = :role_id AND is_active = TRUE
     """)
-    template_row = conn.execute(template_query, {"role_id": role_id}).mappings().first()
-    if not template_row:
-        return None
+    template_rows = conn.execute(template_query, {"role_id": role_id}).mappings().all()
 
-    template_dict = dict(template_row)
+    templates = []
+    for row in template_rows:
+        template_dict = dict(row)
+        questions_result = conn.execute(text(QUESTIONS_SELECT), {"template_id": template_dict["id"]})
+        template_dict["questions"] = [dict(q) for q in questions_result.mappings()]
+        templates.append(template_dict)
 
-    # 3. Obtener las preguntas asociadas a esa plantilla
-    questions_query = text("""
-        SELECT id, template_id, text, category, input_type, sort_order
-        FROM questions
-        WHERE template_id = :template_id AND is_active = TRUE
-        ORDER BY sort_order ASC
-    """)
-    questions_result = conn.execute(questions_query, {"template_id": template_dict["id"]})
-    template_dict["questions"] = [dict(row) for row in questions_result.mappings()]
-
-    return template_dict
+    return templates
 
 
 def get_template(template_id: int):
     """Obtiene una plantilla por id (activa o no) junto con sus preguntas activas.
 
-    A diferencia de get_form_template_by_role, esta no filtra por is_active
+    A diferencia de get_form_templates_by_role, esta no filtra por is_active
     en la plantilla misma -- la usan PUT/DELETE /forms/{id}, que necesitan
     poder encontrar la plantilla para operar sobre ella sin importar su estado.
     """
@@ -60,13 +65,7 @@ def get_template(template_id: int):
         return None
 
     template_dict = dict(template_row)
-    questions_query = text("""
-        SELECT id, template_id, text, category, input_type, sort_order
-        FROM questions
-        WHERE template_id = :template_id AND is_active = TRUE
-        ORDER BY sort_order ASC
-    """)
-    questions_result = conn.execute(questions_query, {"template_id": template_id})
+    questions_result = conn.execute(text(QUESTIONS_SELECT), {"template_id": template_id})
     template_dict["questions"] = [dict(row) for row in questions_result.mappings()]
     return template_dict
 
@@ -114,15 +113,20 @@ def create_template(payload: TemplateCreate):
     })
     template_id = result.lastrowid
 
+    for category_id in {q.category_id for q in payload.questions}:
+        exists = conn.execute(text("SELECT id FROM categories WHERE id = :id"), {"id": category_id}).scalar()
+        if not exists:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Categoria {category_id} no encontrada.")
+
     insert_question = text("""
-        INSERT INTO questions (template_id, text, category, input_type, sort_order, weight_percent, is_active)
-        VALUES (:template_id, :text, :category, :input_type, :sort_order, :weight_percent, TRUE)
+        INSERT INTO questions (template_id, text, category_id, input_type, sort_order, weight_percent, is_active)
+        VALUES (:template_id, :text, :category_id, :input_type, :sort_order, :weight_percent, TRUE)
     """)
     for index, q in enumerate(payload.questions):
         conn.execute(insert_question, {
             "template_id": template_id,
             "text": q.text,
-            "category": q.category,
+            "category_id": q.category_id,
             "input_type": q.input_type,
             "sort_order": index,
             "weight_percent": q.weight_percent if q.input_type == "scale" else 0,

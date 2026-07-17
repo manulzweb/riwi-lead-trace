@@ -21,6 +21,7 @@ Justificacion ampliada en [`06-arquitectura.md`](./06-arquitectura.md).
 | `users` | Usuarios de la plataforma; cada uno tiene un rol y (segun el rol) un clan |
 | `periods` | Periodos/ciclos de evaluacion (p.ej. trimestre, cohorte) |
 | `form_templates` | Plantilla de formulario segun el rol evaluado (TL / Tutor) |
+| `categories` | Categoria/tema de una pregunta (ej. "Comunicacion efectiva"); el Admin la administra aparte de las plantillas |
 | `questions` | Preguntas/criterios que componen una plantilla |
 | `evaluations` | Una evaluacion de un evaluador hacia un evaluado, en un periodo |
 | `evaluation_answers` | Respuestas (puntaje + comentario) por pregunta de una evaluacion |
@@ -81,13 +82,19 @@ Justificacion ampliada en [`06-arquitectura.md`](./06-arquitectura.md).
 | target_role_id | INT FK -> roles.id | rol que se evalua (team_leader/tutor) |
 | is_active | BOOLEAN | una sola plantilla activa por rol a la vez: crear una nueva (`POST /forms`) desactiva cualquier otra del mismo `target_role_id` |
 
+### `categories`
+| Atributo | Tipo | Notas |
+|----------|------|-------|
+| id | INT PK | |
+| name | VARCHAR(60) UNIQUE | el Admin la crea/renombra libremente (`POST`/`PATCH /categories`); borrarla (`DELETE /categories/{id}`) esta **restringido**: se rechaza con `409` mientras alguna pregunta (activa o de una evaluacion historica) tenga `category_id` apuntando a ella -- lo aplica la FK `fk_question_category` (`ON DELETE RESTRICT`), no una validacion aparte |
+
 ### `questions`
 | Atributo | Tipo | Notas |
 |----------|------|-------|
 | id | INT PK | |
 | template_id | INT FK -> form_templates.id | |
 | text | VARCHAR(255) | editable por el Admin **solo con periodo cerrado** y via **versionado** (fila nueva + desactivar la anterior) |
-| category | VARCHAR(60) | categoria tematica de la pregunta (organiza el formulario); **no editable** desde la UI en preguntas existentes (si se define al crearla) |
+| category_id | INT FK -> categories.id | categoria tematica de la pregunta (organiza el formulario y permite listar/rankear por categoria en el dashboard); **no editable** en preguntas existentes (se fija al crearla) |
 | input_type | VARCHAR(20) | 'scale' \| 'text' \| 'yes_no'; **no editable** desde la UI en preguntas existentes (si se define al crearla) |
 | sort_order | INT | orden de despliegue; **no editable** desde la UI |
 | weight_percent | DECIMAL(5,2) | peso de la pregunta en el ICP ponderado (solo aplica a 'scale'; 'text' queda en 0). Las preguntas de escala **activas** de un mismo `template_id` deben sumar exactamente 100 — se valida en `question_service.update_weights` antes de guardar. Editable por el Admin via `PUT /questions/weights`, solo con periodo cerrado |
@@ -136,6 +143,7 @@ No es dato relacional duplicado, sino el **resultado materializado de un servici
 - `clanes` 1—N `users` *(un Coder/Tutor pertenece a un clan; FK nullable para team_leader/admin)*
 - `roles` 1—N `form_templates` (rol evaluado)
 - `form_templates` 1—N `questions`
+- `categories` 1—N `questions` *(borrar una categoria esta restringido mientras tenga preguntas)*
 - `users` (evaluador) 1—N `evaluations` *(opcional: NULL en anonimas)*
 - `users` (evaluado) 1—N `evaluations`
 - `periods` 1—N `evaluations`
@@ -159,7 +167,9 @@ roles (id PK, name)
    │                          │                     │
    └──< form_templates (id PK, title, target_role_id FK, is_active)
             │1
-            └──< questions (id PK, template_id FK, text, category, input_type, sort_order)
+            └──< questions (id PK, template_id FK, text, category_id FK, input_type, sort_order)
+                      │N
+categories (id PK, name) ──────────────────────────< questions.category_id
                       │1
                       └──< evaluation_answers (id PK, evaluation_id FK, question_id FK, score, comment)
                                    │N
@@ -184,8 +194,9 @@ clanes(id, cohorte_id->cohortes, numero, nombre)   -- UNIQUE(cohorte_id, numero)
 users(id, full_name, email, password_hash, role_id->roles, clan_id->clanes?,
       is_active, created_at)
 periods(id, name, starts_at, ends_at, is_active)
-form_templates(id, title, target_role_id->roles, is_active)
-questions(id, template_id->form_templates, text, category, input_type, sort_order)
+form_templates(id, title, description, target_role_id->roles, is_active)
+categories(id, name)
+questions(id, template_id->form_templates, text, category_id->categories, input_type, sort_order)
 evaluations(id, evaluator_id->users?, evaluatee_id->users, template_id->form_templates,
             period_id->periods, is_anonymous, status, submitted_at, created_at)
 evaluation_answers(id, evaluation_id->evaluations, question_id->questions, score, comment)

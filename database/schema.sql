@@ -14,6 +14,7 @@ DROP TABLE IF EXISTS ai_feedback_cache;
 DROP TABLE IF EXISTS evaluation_answers;
 DROP TABLE IF EXISTS evaluations;
 DROP TABLE IF EXISTS questions;
+DROP TABLE IF EXISTS categories;
 DROP TABLE IF EXISTS form_templates;
 DROP TABLE IF EXISTS periods;
 DROP TABLE IF EXISTS users;
@@ -86,6 +87,18 @@ CREATE TABLE periods (
 );
 
 -- ---------------------------------------------------------------------
+-- Categorias de pregunta (tema/competencia que agrupa preguntas dentro de
+-- una plantilla, ej. "Comunicación efectiva"). El Admin las administra
+-- (crear/renombrar/borrar) independientemente de las plantillas: no se
+-- puede borrar una categoria mientras alguna pregunta -activa o historica-
+-- la use (fk_question_category, ON DELETE RESTRICT mas abajo).
+-- ---------------------------------------------------------------------
+CREATE TABLE categories (
+    id   INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(60) NOT NULL UNIQUE
+);
+
+-- ---------------------------------------------------------------------
 -- Plantillas de formulario (por rol evaluado)
 -- ---------------------------------------------------------------------
 CREATE TABLE form_templates (
@@ -106,7 +119,7 @@ CREATE TABLE questions (
     id            INT AUTO_INCREMENT PRIMARY KEY,
     template_id   INT NOT NULL,
     text          VARCHAR(255) NOT NULL,
-    category      VARCHAR(60) NOT NULL,
+    category_id   INT NOT NULL,
     input_type    VARCHAR(20) NOT NULL DEFAULT 'scale', -- 'scale' | 'text' | 'yes_no'
     sort_order    INT NOT NULL DEFAULT 0,
     -- Peso de la pregunta en el ICP ponderado (ADMIN-02). Solo aplica a
@@ -119,6 +132,12 @@ CREATE TABLE questions (
     -- las respuestas históricas conservan su pregunta y su peso original.
     is_active     BOOLEAN NOT NULL DEFAULT TRUE,
     CONSTRAINT fk_question_template FOREIGN KEY (template_id) REFERENCES form_templates(id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+    -- RESTRICT a proposito: el Admin no puede borrar una categoria mientras
+    -- una pregunta (activa o historica, para no perder el criterio que
+    -- realmente se respondio en evaluaciones pasadas) siga apuntando a ella.
+    CONSTRAINT fk_question_category FOREIGN KEY (category_id) REFERENCES categories(id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
     CONSTRAINT chk_input_type CHECK (input_type IN ('scale','text','yes_no')),
@@ -221,6 +240,21 @@ INSERT INTO users (full_name, email, password_hash, role_id, clan_id) VALUES
     ('Tutor Demo',       'tutor@riwi.edu',       '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 3, 1),
     ('Admin Demo',       'admin@riwi.edu',       '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 4, NULL);
 
+-- Categorias usadas por las plantillas semilla (el Admin puede agregar mas
+-- desde /categories). Se referencian por nombre via subquery mas abajo para
+-- no depender del orden de insercion (AUTO_INCREMENT).
+INSERT INTO categories (name) VALUES
+    ('Comunicación efectiva'),
+    ('Alineación de expectativas'),
+    ('Verificación de comprensión'),
+    ('Fomento de la independencia'),
+    ('Desarrollo profesional'),
+    ('Valor del aprendizaje'),
+    ('Claridad y organización'),
+    ('Cercanía individual'),
+    ('Disponibilidad e interacción'),
+    ('General');
+
 -- Plantillas: una para Team Leader, una para Tutor
 INSERT INTO form_templates (title, target_role_id) VALUES
     ('Evaluación de Team Leader', 2),
@@ -231,30 +265,30 @@ INSERT INTO form_templates (title, target_role_id) VALUES
 -- Deben coincidir EXACTAMENTE con las categorías/pesos de docs/06-arquitectura.md.
 -- 10 preguntas de escala con peso igual (10.00 cada una = 100.00); la de
 -- texto no pondera (weight_percent queda en su default 0).
-INSERT INTO questions (template_id, text, category, input_type, sort_order, weight_percent) VALUES
-    (1, '¿Tu Team Leader se comunica de forma clara y oportuna contigo?',                   'Comunicación efectiva',       'scale', 1,  10.00),
-    (1, '¿Sientes que puedes hablar con tu Team Leader cuando algo no va bien?',            'Comunicación efectiva',       'scale', 2,  10.00),
-    (1, '¿Tu Team Leader deja claro qué se espera de ti en cada sprint o entrega?',         'Alineación de expectativas',  'scale', 3,  10.00),
-    (1, '¿Los objetivos que acuerda contigo son alcanzables y se revisan a tiempo?',        'Alineación de expectativas',  'scale', 4,  10.00),
-    (1, '¿Tu Team Leader verifica que realmente entendiste antes de seguir avanzando?',     'Verificación de comprensión', 'scale', 5,  10.00),
-    (1, '¿Adapta sus explicaciones cuando nota que algo no quedó claro?',                   'Verificación de comprensión', 'scale', 6,  10.00),
-    (1, '¿Te impulsa a resolver problemas por tu cuenta antes de darte la solución?',       'Fomento de la independencia', 'scale', 7,  10.00),
-    (1, '¿Sientes que hoy dependes menos de él/ella que al inicio del módulo?',             'Fomento de la independencia', 'scale', 8,  10.00),
-    (1, '¿Te da retroalimentación que te ayuda a crecer como desarrollador/a?',             'Desarrollo profesional',      'scale', 9,  10.00),
-    (1, '¿Te orienta sobre cómo mejorar tu perfil profesional (hábitos, portafolio, rol)?', 'Desarrollo profesional',      'scale', 10, 10.00),
-    (1, 'Comentarios adicionales (¿qué debería mantener y qué debería cambiar?)',           'General',                     'text',  11, 0);
+INSERT INTO questions (template_id, text, category_id, input_type, sort_order, weight_percent) VALUES
+    (1, '¿Tu Team Leader se comunica de forma clara y oportuna contigo?',                   (SELECT id FROM categories WHERE name = 'Comunicación efectiva'),       'scale', 1,  10.00),
+    (1, '¿Sientes que puedes hablar con tu Team Leader cuando algo no va bien?',            (SELECT id FROM categories WHERE name = 'Comunicación efectiva'),       'scale', 2,  10.00),
+    (1, '¿Tu Team Leader deja claro qué se espera de ti en cada sprint o entrega?',         (SELECT id FROM categories WHERE name = 'Alineación de expectativas'),  'scale', 3,  10.00),
+    (1, '¿Los objetivos que acuerda contigo son alcanzables y se revisan a tiempo?',        (SELECT id FROM categories WHERE name = 'Alineación de expectativas'),  'scale', 4,  10.00),
+    (1, '¿Tu Team Leader verifica que realmente entendiste antes de seguir avanzando?',     (SELECT id FROM categories WHERE name = 'Verificación de comprensión'), 'scale', 5,  10.00),
+    (1, '¿Adapta sus explicaciones cuando nota que algo no quedó claro?',                   (SELECT id FROM categories WHERE name = 'Verificación de comprensión'), 'scale', 6,  10.00),
+    (1, '¿Te impulsa a resolver problemas por tu cuenta antes de darte la solución?',       (SELECT id FROM categories WHERE name = 'Fomento de la independencia'), 'scale', 7,  10.00),
+    (1, '¿Sientes que hoy dependes menos de él/ella que al inicio del módulo?',             (SELECT id FROM categories WHERE name = 'Fomento de la independencia'), 'scale', 8,  10.00),
+    (1, '¿Te da retroalimentación que te ayuda a crecer como desarrollador/a?',             (SELECT id FROM categories WHERE name = 'Desarrollo profesional'),      'scale', 9,  10.00),
+    (1, '¿Te orienta sobre cómo mejorar tu perfil profesional (hábitos, portafolio, rol)?', (SELECT id FROM categories WHERE name = 'Desarrollo profesional'),      'scale', 10, 10.00),
+    (1, 'Comentarios adicionales (¿qué debería mantener y qué debería cambiar?)',           (SELECT id FROM categories WHERE name = 'General'),                     'text',  11, 0);
 
 -- Preguntas de la plantilla de Tutor (id=2)
 -- Categorías del ICP para Tutor, basadas en el SEEQ (Marsh, 1982).
 -- Deben coincidir EXACTAMENTE con las categorías/pesos de docs/06-arquitectura.md.
 -- 8 preguntas de escala con peso igual (12.50 cada una = 100.00).
-INSERT INTO questions (template_id, text, category, input_type, sort_order, weight_percent) VALUES
-    (2, '¿Lo que aprendes con tu Tutor te sirve para resolver los retos del módulo?',       'Valor del aprendizaje',        'scale', 1, 12.50),
-    (2, '¿Las sesiones con tu Tutor te aportan algo que no lograrías solo/a?',              'Valor del aprendizaje',        'scale', 2, 12.50),
-    (2, '¿Tu Tutor explica los temas técnicos de forma clara y ordenada?',                  'Claridad y organización',      'scale', 3, 12.50),
-    (2, '¿Sus ejemplos y ejercicios están bien preparados para tu nivel?',                  'Claridad y organización',      'scale', 4, 12.50),
-    (2, '¿Tu Tutor te trata con respeto y se interesa por tu proceso individual?',          'Cercanía individual',          'scale', 5, 12.50),
-    (2, '¿Te sientes en confianza para preguntarle sin temor a ser juzgado/a?',             'Cercanía individual',          'scale', 6, 12.50),
-    (2, '¿Tu Tutor está disponible en los espacios acordados cuando lo necesitas?',         'Disponibilidad e interacción', 'scale', 7, 12.50),
-    (2, '¿Responde tus dudas en un tiempo razonable?',                                      'Disponibilidad e interacción', 'scale', 8, 12.50),
-    (2, 'Comentarios adicionales (¿qué debería mantener y qué debería cambiar?)',           'General',                      'text',  9, 0);
+INSERT INTO questions (template_id, text, category_id, input_type, sort_order, weight_percent) VALUES
+    (2, '¿Lo que aprendes con tu Tutor te sirve para resolver los retos del módulo?',       (SELECT id FROM categories WHERE name = 'Valor del aprendizaje'),        'scale', 1, 12.50),
+    (2, '¿Las sesiones con tu Tutor te aportan algo que no lograrías solo/a?',              (SELECT id FROM categories WHERE name = 'Valor del aprendizaje'),        'scale', 2, 12.50),
+    (2, '¿Tu Tutor explica los temas técnicos de forma clara y ordenada?',                  (SELECT id FROM categories WHERE name = 'Claridad y organización'),      'scale', 3, 12.50),
+    (2, '¿Sus ejemplos y ejercicios están bien preparados para tu nivel?',                  (SELECT id FROM categories WHERE name = 'Claridad y organización'),      'scale', 4, 12.50),
+    (2, '¿Tu Tutor te trata con respeto y se interesa por tu proceso individual?',          (SELECT id FROM categories WHERE name = 'Cercanía individual'),          'scale', 5, 12.50),
+    (2, '¿Te sientes en confianza para preguntarle sin temor a ser juzgado/a?',             (SELECT id FROM categories WHERE name = 'Cercanía individual'),          'scale', 6, 12.50),
+    (2, '¿Tu Tutor está disponible en los espacios acordados cuando lo necesitas?',         (SELECT id FROM categories WHERE name = 'Disponibilidad e interacción'), 'scale', 7, 12.50),
+    (2, '¿Responde tus dudas en un tiempo razonable?',                                      (SELECT id FROM categories WHERE name = 'Disponibilidad e interacción'), 'scale', 8, 12.50),
+    (2, 'Comentarios adicionales (¿qué debería mantener y qué debería cambiar?)',           (SELECT id FROM categories WHERE name = 'General'),                      'text',  9, 0);

@@ -4,7 +4,8 @@ from typing import List, Optional
 class QuestionOut(BaseModel):
     id: int
     text: str
-    category: str
+    category_id: int
+    category: str  # nombre de la categoria (join contra categories)
     input_type: str
     sort_order: int
 
@@ -26,7 +27,7 @@ class FormTemplateOut(BaseModel):
 class QuestionCreateItem(BaseModel):
     """Una pregunta dentro del payload de creacion de una plantilla nueva."""
     text: str = Field(min_length=3, max_length=255)
-    category: str = Field(min_length=1, max_length=60)
+    category_id: int
     input_type: str = Field(pattern="^(scale|text|yes_no)$")
     # Solo aplica a 'scale' (ver weight_percent en questions); en 'text'/'yes_no' se ignora y queda en 0.
     weight_percent: float = Field(default=0, ge=0, le=100)

@@ -6,7 +6,8 @@ class QuestionOut(BaseModel):
     id: int
     template_id: int
     text: str
-    category: str
+    category_id: int
+    category: str  # nombre de la categoria (join contra categories), no editable directo
     input_type: str
     sort_order: int
     weight_percent: float
@@ -26,7 +27,7 @@ class QuestionCreate(BaseModel):
     """
     template_id: int
     text: str = Field(min_length=3, max_length=255)
-    category: str = Field(min_length=1, max_length=60)
+    category_id: int
     input_type: str = Field(pattern="^(scale|text|yes_no)$")
     weight_percent: float = Field(default=0, ge=0, le=100)
 
