@@ -5,12 +5,31 @@ from typing import Optional
 from app.config.database import conn
 from app.schemas.evaluation import EvaluationCreate
 
-def create_evaluation(eval_data: EvaluationCreate, evaluator_id: int):
+def create_evaluation(eval_data: EvaluationCreate):
     """Crea una evaluación y sus respuestas correspondientes.
 
-    evaluator_id viene del usuario autenticado (token), nunca del body del
-    cliente, para que la validación de "no duplicado" no se pueda saltar.
+    evaluator_id viene del body (sin JWT, el backend no puede confirmar
+    quien es realmente el que llama).
     """
+    evaluator_id = eval_data.evaluator_id
+
+    # Regla de negocio (ADMIN-01): sin periodo activo no se crean ni se
+    # envian evaluaciones. La SPA oculta el formulario cuando no hay periodo
+    # activo, pero eso es solo UX -- el backend es quien de verdad lo hace
+    # cumplir, para que nadie lo salte llamando a la API directo.
+    period_query = text("SELECT is_active FROM periods WHERE id = :period_id")
+    period_row = conn.execute(period_query, {"period_id": eval_data.period_id}).first()
+    if period_row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="El periodo indicado no existe."
+        )
+    if not period_row[0]:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="No se pueden crear ni enviar evaluaciones: el periodo no esta activo."
+        )
+
     # Regla de negocio: un evaluador no puede evaluar dos veces a la misma
     # persona en el mismo periodo. Esto corre siempre, sea anónima o no,
     # porque el registro se identifica por el evaluador real, no por lo
@@ -34,6 +53,43 @@ def create_evaluation(eval_data: EvaluationCreate, evaluator_id: int):
 
     # Si es anónima, no persistimos el evaluator_id (Anonimato real)
     db_evaluator_id = None if eval_data.is_anonymous else evaluator_id
+
+    # === Lógica de Validación de Clanes ===
+    if evaluator_id is not None:
+        evaluatee_query = text("""
+            SELECT u.clan_id, GROUP_CONCAT(r.name) as roles
+            FROM users u
+            LEFT JOIN user_roles ur ON u.id = ur.user_id
+            LEFT JOIN roles r ON ur.role_id = r.id
+            WHERE u.id = :evaluatee_id
+            GROUP BY u.id
+        """)
+        evaluatee_row = conn.execute(evaluatee_query, {"evaluatee_id": eval_data.evaluatee_id}).mappings().first()
+        
+        if not evaluatee_row:
+            raise HTTPException(status_code=404, detail="Evaluado no encontrado")
+            
+        evaluatee_roles = evaluatee_row["roles"].split(",") if evaluatee_row["roles"] else []
+        
+        if "tutor" not in evaluatee_roles and "team_leader" not in evaluatee_roles:
+            raise HTTPException(status_code=403, detail="El usuario a evaluar debe tener rol de Tutor o Team Leader.")
+        
+        evaluator_query = text("SELECT clan_id FROM users WHERE id = :evaluator_id")
+        evaluator_row = conn.execute(evaluator_query, {"evaluator_id": evaluator_id}).mappings().first()
+        evaluator_clan = evaluator_row["clan_id"] if evaluator_row else None
+
+        # Si el evaluado es Team Leader, buscar en team_leader_clans
+        if "team_leader" in evaluatee_roles:
+            tl_clans_query = text("SELECT clan_id FROM team_leader_clans WHERE user_id = :tl_id")
+            tl_clans_rows = conn.execute(tl_clans_query, {"tl_id": eval_data.evaluatee_id}).all()
+            tl_clans = [r.clan_id for r in tl_clans_rows]
+            if evaluator_clan not in tl_clans:
+                raise HTTPException(status_code=403, detail="No puedes evaluar a un Team Leader que no tiene a cargo tu clan.")
+        else:
+            # Para tutor o coder, el clan_id principal debe coincidir
+            if evaluator_clan != evaluatee_row["clan_id"]:
+                raise HTTPException(status_code=403, detail="Solo puedes evaluar a usuarios de tu mismo clan.")
+    # ======================================
 
     # Insertar evaluación
     insert_eval_query = text("""

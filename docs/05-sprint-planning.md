@@ -7,7 +7,7 @@ Las historias se organizan en 7 epicas. `CORE` es transversal (habilitadora); la
 | Epica | Objetivo | Historias |
 |---|---|---|
 | **CORE** | Estructura base del monorepo: SPA modular + API FastAPI + MySQL. | CORE-01/02/03 |
-| **AUTH** | Login con JWT y autorizacion por rol en cliente y servidor. | AUTH-01/02/03 |
+| **AUTH** | Login y autorizacion por rol en cliente (ver `CLAUDE.md`, "Sin JWT"). | AUTH-01/02/03 |
 | **EVALUACIONES** | Nucleo del producto: Coders evaluan TL/Tutores (con opcion anonima), persistido con sus reglas de negocio. | EVAL-01..05 |
 | **HISTORIAL** | Trazabilidad: consultar evaluaciones pasadas y su evolucion. | HIST-01/02 |
 | **DASHBOARD** | Transformar evaluaciones en informacion accionable: **ICP** e indicadores. | DASH-01/02 |
@@ -37,7 +37,7 @@ Las historias se organizan en 7 epicas. `CORE` es transversal (habilitadora); la
 |---|-----------|-----------|------|
 | 1 | Manuel Vasquez (@manulzweb) | Scrum Master / Lider | Coordinacion + Backend (FastAPI + MySQL) |
 | 2 | Carlos Charris (@karl26chy) | Product Owner | Backlog + Frontend |
-| 3 | Yamit Garcia (@YamitGC) | Backend Developer | FastAPI — Auth / JWT / RBAC |
+| 3 | Yamit Garcia (@YamitGC) | Backend Developer | FastAPI — Auth / RBAC |
 | 4 | Sebastian Mendoza (@smendozab097) | Frontend Developer | SPA Vanilla JS |
 | 5 | Saeb Garcia (@SaebGC) | Frontend Developer | SPA Vanilla JS |
 
@@ -83,7 +83,7 @@ Las historias se organizan en 7 epicas. `CORE` es transversal (habilitadora); la
 
 | ID | Historia | SP | Responsable sugerido |
 |----|----------|:--:|----------------------|
-| AUTH-01 | Inicio de sesion (UI + API + JWT) | 3 | SM/Fullstack |
+| AUTH-01 | Inicio de sesion (UI + API) | 3 | SM/Fullstack |
 | AUTH-02 | Sesion y rutas protegidas (front + back) | 5 | Backend Dev |
 | AUTH-03 | Roles / autorizacion (RBAC front + back) | 3 | Backend Dev |
 | EVAL-01 | Listar evaluables | 3 | PO/Frontend |
@@ -92,7 +92,7 @@ Las historias se organizan en 7 epicas. `CORE` es transversal (habilitadora); la
 | EVAL-04 | Feedback anonimo opcional | 2 | Backend Dev |
 | EVAL-05 | Registrar evaluacion (API + reglas de negocio) | 5 | Backend Dev |
 
-**Sprint Backlog (clave):** shell responsive y navegacion por rol; login con hash + JWT; guards de ruta y `require_role`; motor de formularios reutilizable; plantillas TL/Tutor desde API; toggle anonimo; persistencia con validacion Pydantic, **no-duplicado por periodo** y **anonimato real**.
+**Sprint Backlog (clave):** shell responsive y navegacion por rol; login con hash bcrypt (**sin JWT**, ver `CLAUDE.md`); guards de ruta en frontend; motor de formularios reutilizable; plantillas TL/Tutor desde API; toggle anonimo; persistencia con validacion Pydantic, **no-duplicado por periodo** y **anonimato real**.
 
 **Justificacion:** concentra el **corazon del producto** (feedback ascendente) en el periodo de desarrollo. Con 5 personas el trabajo se paraleliza: backend (AUTH/EVAL) y frontend (EVAL-01/02/03) avanzan en simultaneo contra el contrato REST.
 

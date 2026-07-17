@@ -4,6 +4,19 @@ Este documento es material de estudio personal (no es parte de `/docs` oficial d
 que puedas recrear cualquier endpoint de esta API vos mismo, entendiendo cada pieza, sin depender de que
 alguien más te dé el código.
 
+> **Aviso importante — esta guía enseña un patrón genérico, no la estructura real de este repo.**
+> Las secciones 1, 3, 4, 5, 6.1, 6.2, 9 y 10 usan un ejemplo clásico de FastAPI + SQLAlchemy **ORM**
+> con capas `models/` y `repositories/` (clases `Period`, `Session`, `db.query(...)`, etc.) porque es
+> la forma más didáctica de explicar el patrón `Depends()` y el flujo request → respuesta. **El
+> backend real de Riwi LeadTrace no está armado así:** no existen las carpetas `app/models/` ni
+> `app/repositories/`; las queries son SQL plano con SQLAlchemy `text()` + `conn.execute(...)`,
+> escritas directo en `app/services/*.py` (ver `app/config/database.py` y cualquier archivo de
+> `app/services/`). El equipo eliminó esas dos capas a propósito por ser indirección sin beneficio
+> en un MVP de este tamaño (detalle y motivo en `CLAUDE.md` y `README.md`). Usá esta guía para
+> entender los **conceptos** (ORM, `Depends`, capas, Pydantic vs. SQLAlchemy), pero para ver cómo
+> luce el código **real** de este proyecto, mirá `app/services/period_service.py` o
+> `app/routes/period_routes.py` directamente.
+
 ---
 
 ## 1. Panorama general: la arquitectura en capas
@@ -112,7 +125,7 @@ class Period(Base):
 - `__tablename__` conecta la clase con la tabla real.
 - Cada `Column(...)` es una columna: el primer argumento es el tipo SQL (`Integer`, `String(60)`,
   `Date`, `Boolean`...), y los argumentos con nombre (`nullable`, `primary_key`, `default`) son las
-  mismas reglas que verías en un `CREATE TABLE` de `database/schema.sql`.
+  mismas reglas que verías en un `CREATE TABLE` de `database/01_ddl.sql`.
 - `relationship("Clan")` (lo ves en `models/user.py`) no crea una columna nueva: le dice a SQLAlchemy
   "cuando accedas a `user.clan`, andá a buscar la fila relacionada usando la foreign key". Es azúcar
   sintáctico para no escribir el `JOIN` a mano.
@@ -306,6 +319,13 @@ def require_role(*roles: str):
   (`checker`). Así podés escribir `Depends(require_role("admin"))` en un endpoint y `Depends(require_role("coder", "tutor"))`
   en otro, reutilizando la misma lógica de verificación con distintos roles permitidos — DRY en acción.
 
+> **Nota:** `get_current_user`/`require_role` es un ejemplo genérico de cómo funciona el patrón
+> `Depends()` encadenado para auth. **Riwi LeadTrace no usa este patrón**: el backend no maneja
+> JWT, por lo que `app/deps.py` no existe en este repo. El rol/ID de quien llama se confía al valor
+> que manda el propio front (ver "Endpoints" en `README.md`) — no hay verificación de sesión en el
+> servidor. El ejemplo sirve para entender `Depends()`, pero no lo agregues al proyecto sin
+> aprobación del equipo (ver `CLAUDE.md`).
+
 ### 6.4 CORS
 
 ```python
@@ -339,7 +359,6 @@ sqlalchemy==2.0.30          # el ORM (sección 3)
 pymysql==1.1.1              # el driver que le permite a SQLAlchemy hablar con MySQL
 pydantic==2.7.1             # validación de datos y tipos (los BaseModel, como PeriodOut)
 pydantic-settings==2.2.1    # extensión de Pydantic para leer configuración desde variables de entorno / .env
-python-jose[cryptography]==3.3.0  # crear y decodificar tokens JWT (login)
 passlib[bcrypt]==1.7.4      # hashear y verificar contraseñas de forma segura
 python-dotenv==1.0.1        # carga el archivo .env para que esté disponible como variables de entorno
 anthropic==0.28.0           # SDK oficial para llamar a la API de Claude (resúmenes de feedback con IA)
@@ -378,7 +397,10 @@ uvicorn app.main:app --reload
 
 ## 9. Caso de estudio completo: `GET /periods` de punta a punta
 
-Este es el ejemplo real que ya está armado en el repo — servite de receta para las próximas entidades.
+Este es el flujo genérico ORM+repositorio explicado arriba (no el código real de este repo — ver
+el aviso al inicio del documento); sirve como receta didáctica para razonar sobre cualquier
+entidad. Para ver el flujo **real** de `GET /periods` en Riwi LeadTrace (sin `models/` ni
+`repositories/`), compará con `app/routes/period_routes.py` + `app/services/period_service.py`.
 
 1. **`models/period.py`** — define la tabla (`Period`, SQLAlchemy) y la forma de salida (`PeriodOut`,
    Pydantic).
@@ -406,7 +428,7 @@ SQLAlchemy arma y ejecuta el `SELECT` → devuelve objetos `Period` → FastAPI 
 
 ## 10. Ejercicio guiado: repetí el patrón con otra entidad
 
-Para practicar sin ayuda, elegí una tabla simple que ya existe en `database/schema.sql` (por ejemplo
+Para practicar sin ayuda, elegí una tabla simple que ya existe en `database/01_ddl.sql` (por ejemplo
 `cohorts`) y recreá los 5 archivos siguiendo exactamente el mismo orden que en la sección 9:
 
 1. ¿Ya existe la clase SQLAlchemy en `models/`? Si no, creala primero (columnas = columnas del `CREATE

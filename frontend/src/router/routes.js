@@ -4,6 +4,7 @@ import { renderLogin, setupLogin } from "../views/auth/login.js";
 import { renderNotFound, setupNotFound } from "../views/notFound.js";
 import { renderEvaluate, setupEvaluate } from "../views/coder/evaluate.view.js";
 import { renderMyEvaluations, setupMyEvaluations } from "../views/coder/my-evaluations.view.js";
+import { renderEvaluables, setupEvaluables } from "../views/coder/evaluables.view.js";
 import { renderMyResults, setupMyResults } from "../views/team-leader/my-results.view.js";
 import { renderMetrics, setupMetrics } from "../views/admin/metrics.view.js";
 import { renderAiSummary, setupAiSummary } from "../views/admin/ai-summary.view.js";
@@ -34,6 +35,13 @@ export const ROUTES = {
   },
 
   // ── Coder ──────────────────────────────────────────────────────────────────
+  "/evaluables": {
+    title: "Elegir evaluado | LeadTrace",
+    renderView: renderEvaluables,
+    initSetup: setupEvaluables,
+    requireAuth: true,
+    allowedRoles: ["coder"],
+  },
   "/evaluations": {
     title: "Mis evaluaciones | LeadTrace",
     renderView: renderMyEvaluations,

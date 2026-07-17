@@ -15,7 +15,6 @@ from sqlalchemy import text
 
 from app.main import app
 from app.config.database import conn
-from app.config.security import create_access_token
 
 # IDs de los usuarios semilla de database/schema.sql
 CODER_ID = 1
@@ -28,38 +27,11 @@ ADMIN_ID = 4
 def client():
     return TestClient(app)
 
-
-@pytest.fixture
-def coder_headers():
-    token = create_access_token({"sub": str(CODER_ID), "role": "coder"})
-    return {"Authorization": f"Bearer {token}"}
-
-
-@pytest.fixture
-def team_leader_headers():
-    token = create_access_token({"sub": str(TEAM_LEADER_ID), "role": "team_leader"})
-    return {"Authorization": f"Bearer {token}"}
-
-
-@pytest.fixture
-def tutor_headers():
-    token = create_access_token({"sub": str(TUTOR_ID), "role": "tutor"})
-    return {"Authorization": f"Bearer {token}"}
-
-
-@pytest.fixture
-def admin_headers():
-    token = create_access_token({"sub": str(ADMIN_ID), "role": "admin"})
-    return {"Authorization": f"Bearer {token}"}
-
-
-@pytest.fixture
-def temp_period():
-    """Crea un periodo de prueba y lo borra al final, para no tocar datos reales."""
+def _make_temp_period(is_active: bool):
     result = conn.execute(text("""
         INSERT INTO periods (name, starts_at, ends_at, is_active)
-        VALUES ('TEST-pytest', '2030-01-01', '2030-02-01', FALSE)
-    """))
+        VALUES ('TEST-pytest', '2030-01-01', '2030-02-01', :is_active)
+    """), {"is_active": is_active})
     conn.commit()
     period_id = result.lastrowid
 
@@ -73,3 +45,15 @@ def temp_period():
     conn.execute(text("DELETE FROM evaluations WHERE period_id = :id"), {"id": period_id})
     conn.execute(text("DELETE FROM periods WHERE id = :id"), {"id": period_id})
     conn.commit()
+
+
+@pytest.fixture
+def temp_period():
+    """Periodo de prueba ACTIVO (para probar reglas que requieren poder crear evaluaciones)."""
+    yield from _make_temp_period(is_active=True)
+
+
+@pytest.fixture
+def temp_inactive_period():
+    """Periodo de prueba CERRADO (para probar que el backend rechaza evaluaciones sin periodo activo)."""
+    yield from _make_temp_period(is_active=False)

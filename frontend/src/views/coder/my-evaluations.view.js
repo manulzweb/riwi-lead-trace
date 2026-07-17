@@ -15,6 +15,10 @@ export const renderMyEvaluations = () => `
         <p class="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--brand-bg)]">Coder</p>
         <h1 class="mt-1 text-4xl font-black tracking-tight text-[var(--text-main)]">Mis evaluaciones</h1>
       </div>
+      <a href="/evaluables"
+        class="inline-flex items-center justify-center rounded-2xl bg-[var(--brand-bg)] px-5 py-3 text-sm font-bold text-[var(--brand-text)] transition-all duration-300 ease-in-out hover:bg-[var(--brand-hover)] hover:shadow-md">
+        Nueva evaluación
+      </a>
     </section>
 
     <section id="evaluations-list" class="mt-8 grid gap-4">
@@ -57,7 +61,9 @@ export const setupMyEvaluations = async () => {
       const evaluatee = usersMap.get(ev.evaluatee_id);
       const period = periodsMap.get(ev.period_id);
       const evaluateeName = evaluatee ? evaluatee.name : `Usuario #${ev.evaluatee_id}`;
-      const evaluateeRole = evaluatee ? evaluatee.role.replace('_', ' ') : 'Colaborador';
+      const evaluateeRole = evaluatee?.roles?.length
+        ? evaluatee.roles.map(r => r.replace('_', ' ')).join(' / ')
+        : 'Colaborador';
       const periodName = period ? period.name : `Periodo #${ev.period_id}`;
 
       const formattedDate = ev.submitted_at

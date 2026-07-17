@@ -57,10 +57,10 @@ export const setupAiSummary = async () => {
 
   try {
     const [users, periods] = await Promise.all([userService.get(), periodService.get()]);
-    const evaluables = users.filter(u => u.role === "team_leader" || u.role === "tutor");
+    const evaluables = users.filter(u => u.roles?.includes("team_leader") || u.roles?.includes("tutor"));
 
     targetUserSelect.innerHTML = '<option value="">Selecciona una persona...</option>' +
-      evaluables.map(u => `<option value="${u.id}">${u.name} (${u.role.replace('_', ' ')})</option>`).join("");
+      evaluables.map(u => `<option value="${u.id}">${u.name} (${u.roles.map(r => r.replace('_', ' ')).join(' / ')})</option>`).join("");
 
     periodSelect.innerHTML = '<option value="">Selecciona un periodo...</option>' +
       periods.map(p => `<option value="${p.id}" ${p.is_active ? "selected" : ""}>${p.name}</option>`).join("");

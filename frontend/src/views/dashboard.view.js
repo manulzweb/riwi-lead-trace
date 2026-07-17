@@ -25,17 +25,11 @@ export const renderDashboard = () => {
     ],
   };
 
-  const allLinks = [];
-  roles.forEach(role => {
-    if (quickLinks[role]) {
-      allLinks.push(...quickLinks[role]);
-    }
-  });
-
-  // Deduplicate by href
-  const uniqueLinksMap = new Map();
-  allLinks.forEach(link => uniqueLinksMap.set(link.href, link));
-  const links = Array.from(uniqueLinksMap.values());
+  // Un usuario puede tener varios roles a la vez (user_roles N:M): se combinan
+  // los accesos rápidos de todos sus roles, sin duplicar por href.
+  const linksByHref = new Map();
+  roles.forEach(r => (quickLinks[r] ?? []).forEach(link => linksByHref.set(link.href, link)));
+  const links = [...linksByHref.values()];
 
   const linksHtml = links.map(({ href, label, title }) => `
     <a class="rounded-3xl bg-[var(--bg-base)] p-5 transition-all duration-300 ease-in-out hover:bg-[var(--border-main)] hover:shadow-md hover:-translate-y-0.5" href="${href}">

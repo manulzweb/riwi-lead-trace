@@ -126,7 +126,8 @@ export const setupEvaluate = async () => {
     console.error(err);
   }
 
-  targetRole.addEventListener("change", async () => {
+  // Manejador de cambio de rol (funcion nombrada: se reutiliza para la preseleccion via query params)
+  const handleRoleChange = async () => {
     const role = targetRole.value;
     qContainer.innerHTML = "";
     currentTemplate = null;
@@ -140,10 +141,12 @@ export const setupEvaluate = async () => {
 
     try {
       qContainer.innerHTML = '<div class="text-center py-4 text-[var(--text-muted)] animate-pulse">Cargando datos...</div>';
-      
-      const evaluatorRole = currentUser.roles[0];
+
+      // evaluationService.getForm ya unicamente acepta target_role (ver
+      // backend/app/routes/form_routes.py); devuelve la plantilla o lanza
+      // si no hay ninguna activa para ese rol.
       const [template, previousEvaluations] = await Promise.all([
-        evaluationService.getForm(evaluatorRole, role),
+        evaluationService.getForm(role),
         evaluationService.getByEvaluator(currentUser.id)
       ]);
       currentTemplate = template;
@@ -152,7 +155,7 @@ export const setupEvaluate = async () => {
         .filter(e => e.period_id === activePeriod.id && e.template_id === currentTemplate.id)
         .map(e => String(e.evaluatee_id));
 
-      const filtered = allUsers.filter(u => u.roles && u.roles.includes(role) && u.id !== currentUser.id && !evaluatedIds.includes(String(u.id)));
+      const filtered = allUsers.filter(u => u.roles?.includes(role) && u.id !== currentUser.id && !evaluatedIds.includes(String(u.id)));
 
       if (filtered.length === 0) {
         evaluatee.innerHTML = '<option value="">Ya has evaluado a todos para este rol</option>';
@@ -174,7 +177,20 @@ export const setupEvaluate = async () => {
       qContainer.innerHTML = '<div class="text-red-500 py-4 text-center">Error al cargar preguntas de la plantilla.</div>';
       console.error(err);
     }
-  });
+  };
+
+  targetRole.addEventListener("change", handleRoleChange);
+
+  // 2.5 Preselección por parámetros de consulta (query params)
+  const params = new URLSearchParams(window.location.search);
+  const preselectedRole = params.get("role");
+  const preselectedId = params.get("evaluatee_id");
+
+  if (preselectedRole && preselectedId) {
+    targetRole.value = preselectedRole;
+    await handleRoleChange();
+    evaluatee.value = preselectedId;
+  }
 
   const renderQuestions = (questions) => {
     qContainer.innerHTML = "";

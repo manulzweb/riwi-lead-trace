@@ -117,14 +117,13 @@ export const setupMetrics = async () => {
 
   try {
     periods = await periodService.get();
-    
+
     if (periods.length === 0) {
       periodContainer.innerHTML = '<p class="text-sm text-[var(--text-muted)]">No hay periodos</p>';
       gridContainer.innerHTML = '<p class="text-[var(--text-muted)]">No hay periodos registrados.</p>';
       return;
     }
 
-    // 1. Mapear datos de la DB al formato de tu componente
     const periodOptions = periods.map(p => ({
       value: p.id,
       label: p.name
@@ -133,7 +132,6 @@ export const setupMetrics = async () => {
     const activePeriod = periods.find(p => p.is_active) || periods[0];
     currentPeriodId = activePeriod.id;
 
-    // 2. Inyectar tu componente con los datos listos
     periodContainer.innerHTML = dropdownComponent('filter-period', periodOptions, activePeriod.id);
     
     // 3. Inicializar el componente dinámico

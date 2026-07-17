@@ -1,9 +1,7 @@
 import { getEmailRules, getPasswordRules } from "../../utils/validators";
 import { authService } from "../../services/auth.service";
 import { renderRoute } from "../../router/router";
-import { userService } from "../../services/users.service";
 import { showToast } from "../../components/alerts";
-import { hashPassword } from "../../utils/crypto";
 import { setButtonLoadingState, createDebouncedValidator, validateSync, showFieldError } from "../../utils/formUtils";
 import { backgroundComponent } from "../../components/background.js";
 import { langSwitcherComponent, setupLangSwitcher } from "../../components/lang-switcher.js";
@@ -93,31 +91,13 @@ const handleLoginSubmit = (elements) => async (event) => {
   setButtonLoadingState(elements.submitBtn, true, "Validando...", "Entrar al dashboard");
 
   try {
-    // const users = await userService.get();
-    // const hashedPassword = hashPassword(password);
+    const { user } = await authService.login(email, password);
 
-    // const user = users.find((user) => user.email.toLowerCase() === email.toLowerCase() && user.password === hashedPassword);
-
-    // if (!user) {
-    //   showToast("Falló el inicio de sesión", "error", "Credenciales incorrectas");
-    //   setButtonLoadingState(elements.submitBtn, false, "", "Entrar al dashboard");
-    //   return showFieldError(elements.emailInput, "Credenciales incorrectas", elements.emailError);
-    // }
-
-
-    // --- INICIO CÓDIGO CON BACKEND (AHORA FUNCIONA CON JSON-SERVER-AUTH) ---
-    const { user: loggedUser, access_token } = await authService.login(email, password);
-    authService.setSession(loggedUser, access_token);
-    // --- FIN CÓDIGO CON BACKEND ---
-
-    // --- MOCK LOGIN (Comentado) ---
-    // authService.setSession(user, "mock-token-123");
-    
-    showToast(`Bienvenido ${loggedUser.name}!`, "success"); // Usamos el nombre real de la base de datos
+    authService.setSession(user);
+    showToast(`Bienvenido ${user.name}!`, "success");
 
     window.history.pushState({}, "", "/dashboard");
     renderRoute();
-
   } catch (error) {
     showToast("Falló el inicio de sesión", "error", "Credenciales incorrectas");
     setButtonLoadingState(elements.submitBtn, false, "", "Entrar al dashboard");

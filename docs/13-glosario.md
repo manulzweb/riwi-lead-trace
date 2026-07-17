@@ -51,17 +51,20 @@ El backend está organizado en **capas**: cada una tiene **un solo trabajo**. Un
 ellas en orden (como una fábrica en línea):
 
 ```
-router  →  service  →  repository  →  model  →  (MySQL)
+router  →  service  →  (MySQL)
 ```
+
+En este proyecto son **2 capas** de código propio (no 4): no hay `repository` ni `model` separados
+— el `service` escribe el SQL directo y lo ejecuta él mismo.
 
 | Capa / término | En simple |
 |----------------|-----------|
 | **FastAPI** | El framework de Python que usamos para construir la API. |
 | **Route** | La "puerta de entrada" (carpeta `routes/`). Define los endpoints, valida lo que llega y devuelve la respuesta. **No** tiene reglas de negocio. |
 | **Service** | El **cerebro**: aquí viven las **reglas de negocio** (calcular métricas, revisar anonimato, evitar duplicados) **y** las consultas a la BD. Es la parte "que no es solo CRUD". |
-| **Model** | No hay una capa `models/` en Python: la forma de cada tabla vive en `database/schema.sql` y los `services/` escriben SQL directo contra ella. |
+| **Model** | No hay una capa `models/` en Python: la forma de cada tabla vive en `database/01_ddl.sql` y los `services/` escriben SQL directo contra ella. |
+| **Repository** | Tampoco hay una capa `repositories/`: es una capa extra sin beneficio real en un MVP de este tamaño; sus queries viven en `services/`. |
 | **Schema (Pydantic)** | El "molde" que define **qué forma** deben tener los datos que entran y salen. Si no cumplen, se rechazan. |
-| **`deps.py`** | Funciones reutilizables que FastAPI "inyecta": saber quién es el usuario (`get_current_user`), exigir un rol (`require_role`). |
 | **CRUD** | Create, Read, Update, Delete = crear, leer, actualizar, borrar. Lo básico de una BD. La rúbrica pide **más que CRUD** (por eso las métricas y la lógica de negocio). |
 
 > **¿Por qué separar en capas?** Para que cada archivo sea pequeño y fácil de entender, no repetir
@@ -76,11 +79,11 @@ router  →  service  →  repository  →  model  →  (MySQL)
 |---------|-----------|
 | **Autenticación** | Comprobar **quién eres** (login con correo y contraseña). |
 | **Autorización** | Comprobar **qué puedes hacer** (tu rol). Autenticado ≠ autorizado. |
-| **JWT** (JSON Web Token) | Un "carnet" digital firmado que el backend te da al iniciar sesión. En cada petición lo muestras para probar quién eres, sin volver a poner la contraseña. |
-| **Token** | El texto de ese carnet. Se guarda en el navegador y viaja en cada petición. |
+| **JWT** (JSON Web Token) | Un "carnet" digital firmado que un backend con sesión te daría al iniciar sesión, para probar quién eres en cada petición sin repetir la contraseña. **Riwi LeadTrace no lo usa**: no se emiten tokens (ver `CLAUDE.md`, "Sin JWT"). |
+| **Token** | El texto de ese carnet. En este proyecto no existe: el login devuelve `{ user }`, sin token que guardar. |
 | **Hash / bcrypt** | Convertir la contraseña en un texto irreversible antes de guardarla. Así, **nunca** guardamos la contraseña real. `bcrypt` es el algoritmo que usamos. |
-| **RBAC** (Role-Based Access Control) | Control de acceso **según el rol**. Ej: solo `admin` ve el dashboard. Se aplica de verdad en el backend. |
-| **Rol** | El "tipo" de usuario: `coder`, `tutor`, `team_leader`, `admin`. Define qué ve y hace. |
+| **RBAC** (Role-Based Access Control) | Control de acceso **según el rol**. Ej: solo `admin` debería ver el dashboard. **En este proyecto NO se aplica de verdad en el backend** (no hay JWT ni sesión para verificar el rol): el backend confía en el rol/ID que manda el propio front (`viewer_role`, `?role=`, etc.) y solo lo usa para filtrar datos. La única barrera real hoy es la del **frontend** (oculta rutas/opciones), que es UX, no seguridad. |
+| **Rol** | El "tipo" de usuario: `coder`, `tutor`, `team_leader`, `admin`. Un usuario puede tener **más de uno a la vez** (tabla `user_roles`, N:M) — por ejemplo, ser `tutor` y `team_leader` al mismo tiempo. Define qué ve y hace. |
 | **`401` / `403`** | `401` = no has iniciado sesión (o el carnet venció). `403` = estás logueado pero **no tienes permiso**. |
 | **CORS** | Permiso que el backend da para que el frontend (que corre en otra dirección) pueda llamarlo. |
 
@@ -97,7 +100,7 @@ router  →  service  →  repository  →  model  →  (MySQL)
 | **PyMySQL** | El "cable" que conecta SQLAlchemy con MySQL. |
 | **FK (Foreign Key / llave foránea)** | Una columna que **apunta** a otra tabla. Ej: una evaluación guarda el `id` del usuario evaluado. Mantiene los datos conectados y consistentes. |
 | **3FN (Tercera Forma Normal)** | Regla de diseño para **no repetir datos** y evitar inconsistencias. En resumen: cada dato vive en un solo lugar. |
-| **Índice único** | Regla en la BD que impide filas repetidas. Ej: evita que un coder evalúe dos veces a la misma persona en el mismo periodo. |
+| **Índice único** | Regla en la BD que impide filas repetidas. Ej: evitaría que un coder evalúe dos veces a la misma persona en el mismo periodo (`uq_eval_once`). En este proyecto ese índice está **comentado a propósito** en `database/01_ddl.sql`; la regla de "no-duplicado" se valida solo en el backend (`services/evaluation_service.py`), sin ese respaldo de la BD. |
 | **Seed** | Datos iniciales de ejemplo que se cargan en la BD para poder probar (usuarios, formularios). |
 
 ---
