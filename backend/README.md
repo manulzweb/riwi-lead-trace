@@ -101,7 +101,10 @@ para filtrar datos, sin poder confirmar que sea real. No lo trates como control 
 | POST | `/evaluations` | Registrar evaluación (borrador o enviada) — valida anonimato, no-duplicado por periodo y periodo activo | cualquiera |
 | GET | `/evaluations?evaluator_id=` | Historial de evaluaciones hechas por un Coder | cualquiera |
 | GET | `/evaluations?evaluatee_id=&period_id=&viewer_role=` | Histórico de evaluaciones recibidas; `viewer_role=admin` revela al evaluador en no-anónimas | cualquiera |
-| GET | `/metrics/summary?period_id=` | KPIs globales + ICP por persona en un periodo | admin, team_leader, tutor |
+| GET | `/questions?template_id=` | Preguntas activas de un template (texto + peso) | admin |
+| PATCH | `/questions/{id}` | Reformular el texto de una pregunta — siempre versiona, solo con periodo cerrado | admin |
+| PUT | `/questions/weights` | Actualizar los pesos de las preguntas de escala de un template — deben sumar 100, solo con periodo cerrado | admin |
+| GET | `/metrics/summary?period_id=` | KPIs globales + ICP ponderado por persona en un periodo | admin, team_leader, tutor |
 | GET | `/metrics/ai-summary?evaluatee_id=&period_id=` | Resumen de feedback generado con Claude (cacheado) | admin |
 
 ## Estructura del proyecto
@@ -128,9 +131,16 @@ Reglas de negocio clave (no romper sin acordarlo con el equipo):
 - Solo puede haber **un periodo activo a la vez**: activar uno (al crearlo o al actualizarlo)
   desactiva automaticamente cualquier otro (`period_service._deactivate_other_periods`).
 - El ICP (`average_score` + `status`) se calcula on-read en `metrics_service.py`, no se persiste.
-  Con menos de `MIN_EVALUATIONS` (3) respuestas, no se publica (`average_score: null`). El estado
+  Es un **promedio ponderado**: cada pregunta de escala pesa lo que diga su `weight_percent`
+  (`questions.weight_percent`, que las preguntas de escala activas de un template deben sumar
+  exactamente 100 — se valida en `question_service.update_weights`). Con menos de
+  `MIN_EVALUATIONS` (3) respuestas, no se publica (`average_score: null`). El estado
   (`Sólido` / `Estable` / `En riesgo` / `Datos insuficientes`) sale de comparar contra dos umbrales
   fijos en código, no hay tendencia contra el periodo anterior.
+- Las preguntas (texto o pesos) solo se editan con el periodo cerrado. Editar el texto **versiona**
+  (fila nueva + `is_active=FALSE` en la anterior); `category`/`input_type`/`sort_order`/
+  `weight_percent` se heredan sin tocar. Al guardar, la IA revisa que el texto siga encajando en la
+  categoria (`ai_service.check_question_category_coherence`); si no, hace falta `confirm: true`.
 - A Claude API solo se le envían agregados anonimizados (nunca `evaluator_id` ni identidades).
 
 Detalle completo en [`CLAUDE.md`](../CLAUDE.md) y [`docs/`](../docs).
@@ -141,5 +151,6 @@ Detalle completo en [`CLAUDE.md`](../CLAUDE.md) y [`docs/`](../docs).
 pytest
 ```
 
-Suite en [`backend/tests/`](./tests): `test_auth.py`, `test_evaluations.py`, `test_metrics.py`.
-También podés probar a mano en `http://localhost:8000/docs` (Swagger).
+Suite en [`backend/tests/`](./tests): `test_auth.py`, `test_evaluations.py`, `test_metrics.py`,
+`test_periods.py`, `test_questions.py`. También podés probar a mano en `http://localhost:8000/docs`
+(Swagger).
