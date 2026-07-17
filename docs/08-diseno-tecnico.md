@@ -19,7 +19,7 @@
 - **Módulos y paquetes:** `snake_case` (`evaluation_service.py`, `metrics.py`).
 - **Funciones y variables:** `snake_case` (`build_summary`, `current_user`).
 - **Clases** (modelos SQLAlchemy, schemas Pydantic): `PascalCase` (`Evaluation`, `EvaluationCreate`).
-- **Constantes:** `UPPER_SNAKE_CASE` (`JWT_SECRET`, `ACCESS_TOKEN_EXPIRE_MINUTES`).
+- **Constantes:** `UPPER_SNAKE_CASE` (`MIN_EVALUATIONS`, `ANTHROPIC_API_KEY`).
 - Schemas Pydantic con sufijo de intención: `EvaluationCreate`, `EvaluationOut`.
 - Type hints obligatorios; formateo con **Black** + lint con **Ruff/Flake8**.
 
@@ -104,7 +104,8 @@ riwi-lead-trace/
 │   ├── requirements.txt
 │   └── .env.example
 ├── database/
-│   └── schema.sql
+│   ├── 01_ddl.sql             # estructura (DDL)
+│   └── 02_dml.sql             # datos semilla (DML)
 ├── docs/                     # documentación Scrum + técnica (01..12)
 └── mockups/                  # exports/enlaces Figma
 ```

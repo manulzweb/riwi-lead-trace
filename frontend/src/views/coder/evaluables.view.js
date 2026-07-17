@@ -69,7 +69,7 @@ const renderEvaluablesList = () => {
   let filtered = evaluables.filter(u => u.id !== currentUser?.id);
 
   if (currentFilter !== "all") {
-    filtered = filtered.filter(u => u.role === currentFilter);
+    filtered = filtered.filter(u => u.roles?.includes(currentFilter));
   }
 
   if (filtered.length === 0) {
@@ -96,7 +96,14 @@ const renderEvaluablesList = () => {
       ev.status === "submitted"
     );
 
-    const roleBadge = user.role === "team_leader"
+    // Un usuario puede tener ambos roles (team_leader y tutor) a la vez: si el
+    // filtro activo coincide con uno de sus roles se usa ese; si no, se prioriza
+    // team_leader (mismo criterio binario que ya tenía el badge).
+    const evaluableRole = currentFilter !== "all" && user.roles?.includes(currentFilter)
+      ? currentFilter
+      : (user.roles?.includes("team_leader") ? "team_leader" : "tutor");
+
+    const roleBadge = evaluableRole === "team_leader"
       ? `<span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600 dark:bg-blue-950/20 dark:text-blue-400">Team Leader</span>`
       : `<span class="rounded-full bg-purple-50 px-3 py-1 text-xs font-semibold text-purple-600 dark:bg-purple-950/20 dark:text-purple-400">Tutor</span>`;
 
@@ -111,7 +118,7 @@ const renderEvaluablesList = () => {
       ? `<button disabled class="w-full rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] px-4 py-3 text-sm font-bold text-[var(--text-muted)] cursor-not-allowed">
           Ya evaluado
          </button>`
-      : `<a href="/evaluations/new?evaluatee_id=${user.id}&role=${user.role}" 
+      : `<a href="/evaluations/new?evaluatee_id=${user.id}&role=${evaluableRole}"
           class="w-full text-center rounded-2xl bg-[var(--brand-bg)] px-4 py-3 text-sm font-bold text-white hover:bg-[var(--brand-hover)] hover:shadow-md transition duration-300">
           Evaluar
          </a>`;

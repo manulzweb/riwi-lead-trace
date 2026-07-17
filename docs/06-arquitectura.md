@@ -26,7 +26,7 @@ corto. Horizontal es mas facil de explicar y de encontrar codigo ("¿donde esta 
 > ambas cosas a proposito: las queries se escriben como SQL plano con `text()` (la misma sintaxis
 > que ya usan en MySQL Workbench y que explica `docs/13-glosario.md`), directo en el archivo de
 > `services/` de cada entidad — sin aprender el mini-lenguaje de `select()/insert()/join()` de
-> SQLAlchemy, y sin una capa de `models/` que solo repetiria lo que ya dice `database/schema.sql`.
+> SQLAlchemy, y sin una capa de `models/` que solo repetiria lo que ya dice `database/01_ddl.sql`.
 > Menos "profesional" en el sentido de perder el constructor de queries tipado, pero mas facil de
 > leer para alguien que recien esta aprendiendo SQL.
 
@@ -43,7 +43,7 @@ funcion pura hace lo mismo con menos codigo.
 |---|---|---|
 | **Layered Architecture** | `routes/ -> services/ -> MySQL` | Cada capa tiene una responsabilidad; los cambios quedan localizados |
 | **Service Layer** | `services/` (ej. `evaluation_service`, `metrics_service`, `ai_service`) | Concentra la logica de negocio (anonimato, no-duplicado, calculo de metricas) y las queries SQL, fuera de los routes |
-| **Dependency Injection** | `Depends(get_current_user)`, `Depends(require_role(...))` | FastAPI inyecta dependencias en vez de que cada endpoint las construya; facilita testear |
+| **Dependency Injection** | `Depends(...)` en `routes/` (ej. `Query(...)` para filtros como `role`, `viewer_role`) | FastAPI inyecta dependencias en vez de que cada endpoint las construya; facilita testear. `app/deps.py` define `get_current_user`/`require_role` (patron JWT) pero **hoy no estan conectados a ningun router** — ver nota en "Manejo de autenticacion" |
 | **DTO (Data Transfer Object)** | `schemas/` (Pydantic) | Define exactamente que entra/sale de la API, distinto de las columnas de la BD |
 
 ### Frontend (funciones + un poco de OOP donde importa)
@@ -69,9 +69,9 @@ sitio con estado que varias partes necesitan compartir y observar.
 │          Store (pub/sub: auth, ui)                           │
 │             │                                                 │
 │             v                                                 │
-│          Services ─> http.js (fetch: baseURL, JWT, errores) │
+│          Services ─> http.js (fetch: baseURL, errores)       │
 └───────────────────────────┬─────────────────────────────────┘
-                            │ HTTPS · REST (JSON) · JWT
+                            │ HTTPS · REST (JSON) · sin JWT (ver nota mas abajo)
                             v
 ┌──────────────────── Backend (backend/ · FastAPI) ───────────┐
 │  Routes (endpoints, validacion I/O con Pydantic)             │
@@ -108,7 +108,7 @@ riwi-lead-trace/
 │       │   ├── auth.store.js
 │       │   └── ui.store.js
 │       ├── services/
-│       │   ├── http.js         # wrapper fetch (baseURL, JWT, errores)
+│       │   ├── http.js         # wrapper fetch (baseURL, errores; sin JWT, ver nota)
 │       │   ├── auth.service.js
 │       │   ├── evaluation.service.js
 │       │   ├── user.service.js
@@ -126,17 +126,19 @@ riwi-lead-trace/
 │   │   ├── config/
 │   │   │   ├── config.py       # settings (DATABASE_URL, SECRET_KEY...) desde .env
 │   │   │   ├── database.py     # engine + conexion SQLAlchemy
-│   │   │   └── security.py     # hash de contrasenas + crear/verificar JWT
+│   │   │   └── security.py     # hash de contrasenas (bcrypt); ya NO crea/verifica JWT
 │   │   ├── schemas/            # Pydantic: request/response por dominio
 │   │   ├── services/           # LOGICA DE NEGOCIO + acceso a datos por entidad:
-│   │   │                       # auth, user, period, form, evaluation, metrics, ai
-│   │   ├── routes/              # auth, users, forms, evaluations, periods, metrics
-│   │   └── deps.py             # get_current_user, require_role
+│   │   │                       # auth, user, period, form, question, evaluation, metrics, ai
+│   │   ├── routes/              # auth, users, forms, evaluations, periods, questions, metrics
+│   │   └── deps.py             # get_current_user/require_role (JWT) -- existe en el repo pero
+│   │                           # NINGUN router lo usa hoy; no reintroducir sin decision de equipo
 │   ├── requirements.txt
 │   └── .env.example
 │
 ├── database/
-│   └── schema.sql              # DDL + seed (MySQL, 3FN)
+│   ├── 01_ddl.sql              # DDL (estructura, MySQL 3FN)
+│   └── 02_dml.sql              # DML (seed de datos)
 ├── docs/                       # documentacion Scrum + tecnica (01..12)
 └── mockups/                    # exports/enlaces Figma
 ```
@@ -163,7 +165,7 @@ export const routes = [
 ## Gestion de estado (frontend)
 
 - Store **pub/sub** sin librerias: `getState()`, `setState(patch)`, `subscribe(fn)`.
-- Slices por dominio: `auth.store` (usuario, token, rol), `ui.store` (loading, toasts).
+- Slices por dominio: `auth.store` (usuario, rol — sin token, ver "Manejo de autenticacion"), `ui.store` (loading, toasts).
 - La sesion se **hidrata** desde `localStorage` al arrancar (`main.js`).
 
 ## Backend — arquitectura por capas (FastAPI)
@@ -173,29 +175,23 @@ export const routes = [
 | `routes/` | Definir endpoints, validar I/O con Pydantic, codigos HTTP | No contiene logica de negocio |
 | `services/` | **Logica de negocio** (reglas, calculos, orquestacion) y las queries SQL (`text()`) | No conoce detalles HTTP |
 | `schemas/` | Contratos Pydantic (validacion/serializacion) | Frontera de datos; nunca exponen campos sensibles (ej. `password_hash`) |
-| `deps.py` | Dependencias: `get_current_user`, `require_role` | Inyeccion/seguridad |
+| `deps.py` | Define `get_current_user`/`require_role` (patron JWT) | **No esta conectado a ningun router hoy** — ver nota abajo |
 
-Ejemplo de RBAC con dependencias (real, `app/deps.py` + `app/routes/metrics_routes.py`):
+> **`deps.py` existe pero esta huerfano:** el archivo define el patron clasico de FastAPI para
+> autenticacion con JWT (`get_current_user` decodifica un token, `require_role` lo envuelve para
+> exigir un rol), pero **ningun endpoint real lo usa como dependencia** — no hay
+> `Depends(get_current_user)` ni `Depends(require_role(...))` en ningun archivo de `routes/`
+> (podes verificarlo: `metrics_routes.py`, por ejemplo, no declara ninguna dependencia de auth).
+> Es codigo muerto que no debe reactivarse sin que el equipo lo decida explicitamente (ver
+> "Manejo de autenticacion" y `CLAUDE.md`).
 
-```python
-# app/deps.py
-def require_role(*roles: str):
-    def checker(current_user: dict = Depends(get_current_user)) -> dict:
-        if current_user["role"] not in roles:
-            raise HTTPException(status_code=403, detail="Sin permiso")
-        return current_user
-    return checker
-
-# app/routes/metrics_routes.py
-@router.get("/metrics/summary")
-def get_metrics_summary(period_id: int, current_user: dict = Depends(require_role("admin"))):
-    return metrics_service.get_metrics_summary(period_id)
-```
-
-> **evaluator_id nunca viene del body:** en `POST /evaluations`, el id del evaluador se toma de
-> `Depends(get_current_user)` (el JWT), nunca del JSON que manda el cliente. Si se aceptara del
-> body, cualquiera podria enviar evaluaciones haciendose pasar por otro coder y saltarse la regla
-> de "no evaluar dos veces" (ver `services/evaluation_service.py`).
+> **evaluator_id SI viene del body:** en `POST /evaluations`, `evaluator_id` es un campo mas del
+> JSON que manda el cliente (`EvaluationCreate.evaluator_id`, leido en
+> `evaluation_service.create_evaluation`) — no se deriva de ningun token ni sesion verificada,
+> porque no hay JWT. Esto es una **decision de equipo consciente** para simplificar el MVP, no un
+> descuido: cualquiera que llame la API directo (sin pasar por la SPA) podria, en teoria, mandar
+> el `evaluator_id` de otro coder. El mismo tradeoff aplica a `viewer_role` en
+> `GET /evaluations?evaluatee_id=`. Ver el detalle completo en `CLAUDE.md` ("Sin JWT").
 
 ## Logica de negocio destacada (ICP · IA)
 
@@ -212,7 +208,7 @@ percepcion, no aprendizaje real — por eso "percibida".
 1. Cuenta cuantas evaluaciones `submitted` tiene esa persona en ese periodo (`n_evals`).
 2. Si `n_evals < MIN_EVALUATIONS` (3), no calcula nada: devuelve "datos insuficientes". Evita
    mostrar un puntaje basado en muy pocas respuestas.
-3. Si hay suficientes, calcula el promedio ponderado usando los puntajes (1-5) y el **peso (`weight`)** de **todas** las preguntas tipo `scale`
+3. Si hay suficientes, calcula el promedio ponderado usando los puntajes (1-5) y el **peso (`weight_percent`)** de **todas** las preguntas tipo `scale`
    (las de tipo `text` no entran al calculo; alimentan el resumen de IA). Fórmula: `sum(score * weight) / sum(weight)`.
 4. Normaliza ese promedio de la escala 1-5 a 0-100: `score = round((promedio_ponderado - 1) / 4 * 100)`.
 
@@ -232,8 +228,8 @@ extensiones puntuales sobre `calculate_average_score`, no un rediseno.
 ### Resumen por IA — `ai_service`
 - Construye un prompt con **agregados anonimizados** (promedios por categoria, conteos, comentarios
   sin autor) y llama a **Claude API** (SDK `anthropic`).
-- Modelo: `claude-sonnet-4-6` (calidad) o `claude-haiku-4-5-20251001` (economico). Clave en
-  `core/config.py` (`ANTHROPIC_API_KEY`).
+- Modelo en uso: `claude-haiku-4-5-20251001` (economico) — constante `AI_MODEL` en `ai_service.py`.
+  Clave en `config/config.py` (`ANTHROPIC_API_KEY`).
 - **Destinatario: solo el Admin** (Jefe de TL/tutores). Resumen ejecutivo del feedback por
   persona/periodo.
 - **Privacidad:** nunca se envian identidades ni `evaluator_id`. El texto resultante se guarda en
@@ -247,21 +243,22 @@ extensiones puntuales sobre `calculate_average_score`, no un rediseno.
 
 ## Comunicacion con la API
 
-- En frontend, **toda** llamada pasa por `services/http.js`: prefija `API_BASE_URL`, inyecta `Authorization: Bearer <token>`, serializa/parsea JSON y **normaliza errores** a `{ status, message }`.
+- En frontend, **toda** llamada pasa por `services/http.js`: prefija `API_BASE_URL`, serializa/parsea JSON y **normaliza errores** a `{ status, message }`. No inyecta ningun header `Authorization` — no hay token que mandar (ver "Manejo de autenticacion").
 - Cada `*.service.js` expone funciones de dominio; nunca `fetch` directo en vistas.
 - **Contrato REST del MVP:**
 
 | Metodo | Endpoint | Descripcion |
 |--------|----------|-------------|
-| POST | `/auth/login` | Autenticacion -> `{ token, user }` |
+| POST | `/auth/login` | Autenticacion -> `{ user }` (**sin token** — ver "Manejo de autenticacion") |
 | GET | `/users?role=team_leader` | Evaluables por rol |
 | GET | `/forms?target_role=team_leader` | Plantilla de formulario por rol |
 | POST | `/evaluations` | Registrar evaluacion (anonimato + no-duplicado por periodo + **requiere periodo activo**, si no `409`) |
 | GET | `/evaluations?evaluator_id=:id` | Historial del Coder |
-| GET | `/evaluations?evaluatee_id=:id` | Historico por evaluado (respeta anonimato) |
+| GET | `/evaluations?evaluatee_id=:id&viewer_role=` | Historico por evaluado (respeta anonimato; `viewer_role` lo manda el cliente, sin verificar) |
 | GET | `/periods` | Listar periodos (el activo define si hay formularios disponibles) |
-| PATCH | `/periods/:id` | **Admin:** activar/cerrar el periodo de evaluacion (solo uno activo a la vez) |
-| PATCH | `/questions/:id` | **Admin:** editar texto o activar/desactivar una pregunta (solo con periodo cerrado, si no `409`) |
+| PUT | `/periods/:id` | **Admin:** activar/cerrar el periodo de evaluacion (solo uno activo a la vez) |
+| PATCH | `/questions/:id` | **Admin:** editar (versionar) el texto de una pregunta (solo con periodo cerrado, si no `409`) |
+| PUT | `/questions/weights` | **Admin:** actualizar los pesos (`weight_percent`) de las preguntas de escala de un template (deben sumar 100, solo con periodo cerrado) |
 | GET | `/metrics/summary?period_id=:p` | KPIs + **ICP** |
 | GET | `/metrics/ai-summary?evaluatee_id=:e&period_id=:p` | Resumen IA (Claude, anonimizado) — admin |
 
@@ -269,10 +266,25 @@ extensiones puntuales sobre `calculate_average_score`, no un rediseno.
 
 ## Manejo de autenticacion
 
-- Login -> `POST /auth/login`: backend verifica hash, emite **JWT** firmado. Frontend guarda `token` y `user` en `localStorage` + `auth.store`.
-- El token viaja en cada peticion (`http.js`); el backend lo valida en `get_current_user`.
-- `401` global en frontend -> limpiar sesion + redirigir a `/login`. Logout -> limpiar storage + store.
-- **Autorizacion por rol** en backend (`require_role`) — autoridad real — y en frontend (guards) — solo UX.
+> **Decision de equipo vigente (MVP): sin JWT.** El backend original preveia JWT (por eso existen
+> `security.py`/`deps.py` con funciones para crear/decodificar tokens y exigir rol), pero el
+> equipo decidio **no emitir ni verificar ningun token** para simplificar el MVP. Esta seccion
+> describe el comportamiento **real** hoy; para el detalle y el porque, ver `CLAUDE.md` ("Sin JWT").
+
+- Login -> `POST /auth/login`: el backend solo verifica el hash bcrypt (`auth_service.login`) y
+  devuelve `{ user }`. **No emite token.** Frontend guarda `user` en `localStorage` + `auth.store`
+  (no hay `token` que guardar).
+- Cada peticion que necesita saber "quien soy" o "que rol tengo" manda ese dato **en el propio
+  request** — como parametro de query (`viewer_role`) o campo del body (`evaluator_id`) — y el
+  backend lo usa **tal cual, sin verificarlo criptograficamente**.
+- No hay `401` por sesion expirada (no hay sesion que expire en el backend); el frontend solo
+  redirige a `/login` si no hay `user` hidratado en el store.
+- **Autorizacion por rol:** en **frontend** (guards de `router.js`) es la unica capa que oculta
+  rutas/opciones por rol — es **solo UX**. En **backend** no hay verificacion de rol real: los
+  filtros por rol (`?role=`, `viewer_role`) son conveniencia sobre el dato que manda el cliente,
+  **no una barrera de seguridad**. `deps.py` (`get_current_user`/`require_role`) existe en el
+  repo como ejemplo del patron JWT, pero no esta conectado a ningun router — no lo reintroduzcas
+  sin que el equipo lo decida explicitamente.
 - **Visibilidad de evaluadores (regla de negocio):** una persona evaluada (**TL/Tutor**) **nunca ve
   quien la evaluo**. Solo el **Admin** ve la identidad del evaluador en evaluaciones **no anonimas**;
   las **anonimas permanecen anonimas para todos** (incluido el Admin).
@@ -300,9 +312,9 @@ La rubrica exige justificar las decisiones tecnicas. Todas las elecciones estan 
 | Frontend | HTML5 + CSS3 + **JS Vanilla (SPA)** | (obligatorio; sin frameworks) | Requisito del proyecto |
 | Backend | **Python + FastAPI** | Flask, Express.js | Python alineado a la Ruta Basica; validacion y docs integradas |
 | Base de datos | **MySQL** | PostgreSQL, MongoDB | Datos relacionales, integridad, consultas agregadas |
-| Auth | **JWT** | sesiones server-side | Sin estado, encaja con SPA + API REST |
+| Auth | **Sin JWT** (decision de equipo) | JWT, sesiones server-side | El login valida hash bcrypt pero no emite token; el rol/ID lo manda el propio front y el backend lo confia. Simplifica el MVP a costa de no tener verificacion criptografica real (ver "Manejo de autenticacion") |
 | IA (resumenes) | **Claude API** (`anthropic`) | otros LLM, sin IA | Calidad de redaccion + privacidad por diseno (solo agregados anonimos) |
 
-**FastAPI** trae validacion (Pydantic), tipado y documentacion automatica (Swagger/`/docs`) sin librerias extra — util para la sustentacion. **MySQL** encaja porque el dominio es naturalmente relacional (usuarios<->roles, evaluaciones<->respuestas) y el dashboard vive de consultas agregadas. **JWT** es la opcion natural para una SPA sin estado. **Claude API** resume el feedback en lenguaje natural para el Admin — es el diferenciador, pero la IA complementa la logica de negocio propia (el ICP), que es lo que evalua la rubrica como "no-CRUD".
+**FastAPI** trae validacion (Pydantic), tipado y documentacion automatica (Swagger/`/docs`) sin librerias extra — util para la sustentacion. **MySQL** encaja porque el dominio es naturalmente relacional (usuarios<->roles, evaluaciones<->respuestas) y el dashboard vive de consultas agregadas. El equipo decidio **no usar JWT** para simplificar el MVP (ver "Manejo de autenticacion"); es un tradeoff de seguridad consciente, no la opcion "ideal" para una SPA sin estado (JWT lo seria), pero reduce alcance para el tiempo disponible. **Claude API** resume el feedback en lenguaje natural para el Admin — es el diferenciador, pero la IA complementa la logica de negocio propia (el ICP), que es lo que evalua la rubrica como "no-CRUD".
 
-**Decisiones que evitan sobreingenieria:** sin frameworks de frontend ni estado externo; ORM simple (SQLAlchemy) sobre un esquema 3FN sin complejidad extra; `database/schema.sql` versionado en vez de migraciones (Alembic queda como mejora futura); tests enfocados en la logica de negocio, no en cobertura total.
+**Decisiones que evitan sobreingenieria:** sin frameworks de frontend ni estado externo; SQL plano (`text()`) sobre un esquema 3FN sin complejidad extra; `database/01_ddl.sql` + `database/02_dml.sql` versionados en vez de migraciones (Alembic queda como mejora futura); tests enfocados en la logica de negocio, no en cobertura total.

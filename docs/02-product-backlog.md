@@ -2,10 +2,17 @@
 
 Backlog **full-stack** del MVP (frontend SPA + backend FastAPI + MySQL). Estimacion en **Story Points (SP)**, escala Fibonacci (1, 2, 3, 5, 8). Prioridad **MoSCoW** (Must / Should / Could). Cada SP refleja el esfuerzo completo (UI + endpoint + datos), salvo las historias de estructura base (CORE-01, CORE-02).
 
+> **Nota de actualizacion:** las filas de `AUTH` y la de `CORE-02` describen el plan **original**
+> (JWT, capas `repositories/`/`models/`). Durante el desarrollo el equipo decidio simplificar el
+> MVP: sin JWT (el rol/ID lo manda el front, sin verificacion criptografica) y sin capas
+> `repositories/`/`models/` separadas (queries SQL directo en `services/`). El comportamiento y la
+> justificacion vigentes estan en `CLAUDE.md` y `06-arquitectura.md`; esta tabla queda como
+> registro del backlog planificado.
+
 | ID | Nombre | Descripcion | Epica | Prioridad | SP | Dependencias |
 |----|--------|-------------|-------|-----------|:--:|--------------|
 | CORE-01 | Preparar repo + estructura base de la SPA | Monorepo, estructura `frontend/`, router, store y `http.js` | CORE | Must | 5 | — |
-| CORE-02 | Estructura base del backend + BD | FastAPI, capas (routers/services/repos/models), conexion MySQL, seed | CORE | Must | 5 | — |
+| CORE-02 | Estructura base del backend + BD | FastAPI, capas (routes/services, sin repos/models separados), conexion MySQL, seed | CORE | Must | 5 | — |
 | CORE-03 | Layout y navegacion responsive | Shell SPA, nav por rol, estilos base mobile-first | CORE | Must | 5 | CORE-01 |
 | AUTH-01 | Inicio de sesion | UI login + `POST /auth/login` con hash + emision de JWT | AUTH | Must | 3 | CORE-02, CORE-03 |
 | AUTH-02 | Sesion y rutas protegidas | JWT en `localStorage`, guards SPA, `get_current_user`, expiracion/logout | AUTH | Must | 5 | AUTH-01 |
@@ -15,7 +22,7 @@ Backlog **full-stack** del MVP (frontend SPA + backend FastAPI + MySQL). Estimac
 | EVAL-03 | Evaluar Tutor | Reutiliza motor de formularios con plantilla de Tutor | EVAL | Must | 3 | EVAL-02 |
 | EVAL-04 | Feedback anonimo opcional | Toggle + regla backend: no persistir `evaluator_id` | EVAL | Should | 2 | EVAL-02 |
 | EVAL-05 | Registrar evaluacion (API) | `POST /evaluations`: validacion Pydantic, estados, **no-duplicado por periodo**, **requiere periodo activo** | EVAL | Must | 5 | EVAL-02 |
-| ADMIN-01 | Gestion del periodo de evaluacion | Admin activa/cierra el periodo (`PATCH /periods/:id`, solo uno activo); sin periodo activo los Coders ven "No hay formularios por realizar" | ADMIN | Must | 3 | AUTH-03 |
+| ADMIN-01 | Gestion del periodo de evaluacion | Admin activa/cierra el periodo (`PUT /periods/:id`, solo uno activo); sin periodo activo los Coders ven "No hay formularios por realizar" | ADMIN | Must | 3 | AUTH-03 |
 | ADMIN-02 | Editar preguntas del formulario | Admin edita texto y activa/desactiva preguntas (`PATCH /questions/:id`), solo con periodo cerrado; edicion = versionado + **chequeo IA de coherencia** con la categoria | ADMIN | Should | 3 | ADMIN-01 |
 | HIST-01 | Historial del Coder | UI + `GET /evaluations?evaluator_id=` de evaluaciones propias | HIST | Should | 3 | EVAL-05 |
 | HIST-02 | Seguimiento historico | Admin: historico por evaluado/periodo, respeta anonimato | HIST | Should | 3 | EVAL-05 |

@@ -18,11 +18,22 @@ INSERT INTO periods (name, starts_at, ends_at, is_active) VALUES
 -- '$2y$placeholder', que no es un hash bcrypt valido y no dejaba loguear
 -- a ningun usuario semilla.
 -- clan_id: NULL para team_leader/admin; asignado para coder/tutor
-INSERT INTO users (full_name, email, password_hash, role_id, clan_id) VALUES
-    ('Coder Demo',       'coder@riwi.edu',       '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1, 1),
-    ('Team Leader Demo', 'teamleader@riwi.edu',  '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 2, NULL),
-    ('Tutor Demo',       'tutor@riwi.edu',       '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 3, 1),
-    ('Admin Demo',       'admin@riwi.edu',       '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 4, NULL);
+INSERT INTO users (id, full_name, email, password_hash, clan_id) VALUES
+    (1, 'Coder Demo',       'coder@riwi.edu',       '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (2, 'Team Leader Demo', 'teamleader@riwi.edu',  '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', NULL),
+    (3, 'Tutor Demo',       'tutor@riwi.edu',       '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (4, 'Admin Demo',       'admin@riwi.edu',       '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', NULL);
+
+INSERT INTO user_roles (user_id, role_id) VALUES
+    (1, 1),
+    (2, 2),
+    (3, 3),
+    (4, 4);
+
+-- Team Leader Demo (id=2) queda asignado al Clan 10 (unico clan semilla).
+-- Un TL puede tener 2+ clanes; el seed solo cubre el caso minimo.
+INSERT INTO team_leader_clans (user_id, clan_id) VALUES
+    (2, 1);
 
 -- Plantillas: una para Team Leader, una para Tutor
 INSERT INTO form_templates (title, target_role_id) VALUES

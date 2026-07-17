@@ -21,8 +21,8 @@ Cada historia incluye criterios de aceptacion (CA), prioridad y Story Points.
 
 **Criterios de aceptacion**
 - [ ] `uvicorn app.main:app --reload` levanta la API y expone `/docs` (Swagger).
-- [ ] Estructura por capas: `routers/`, `services/`, `repositories/`, `models/`, `schemas/`, `deps.py`.
-- [ ] Conexion a MySQL configurable por `.env`; la BD se crea con `database/schema.sql` (seed incluido).
+- [ ] Estructura por capas: `routes/`, `services/` (logica de negocio + queries SQL, sin capa `repositories/` ni `models/` separadas), `schemas/`, `config/`.
+- [ ] Conexion a MySQL configurable por `.env`; la BD se crea con `database/01_ddl.sql` + `database/02_dml.sql` (seed incluido en el DML).
 - [ ] Endpoint de salud (`GET /health`) responde `200`.
 - [ ] CORS habilitado para el origen del frontend.
 
@@ -38,6 +38,13 @@ Cada historia incluye criterios de aceptacion (CA), prioridad y Story Points.
 ---
 
 ## AUTH
+
+> **Nota de actualizacion:** estas tres historias se escribieron pensando en JWT. Durante el
+> desarrollo el equipo decidio **quitar el JWT** del backend para simplificar el MVP (login solo
+> verifica hash bcrypt, sin emitir token; el rol/ID de quien llama se confia al valor que manda el
+> propio front). Los criterios de aceptacion de abajo quedan como **registro de lo planeado
+> originalmente**; el comportamiento real y el porque del cambio estan en `CLAUDE.md` ("Sin JWT")
+> y `06-arquitectura.md` ("Manejo de autenticacion") — esos dos son la fuente de verdad vigente.
 
 ### AUTH-01 — Inicio de sesion · `Must` · `3 SP`
 **Como** usuario registrado **quiero** iniciar sesion con mis credenciales **para** acceder a la plataforma de forma segura.
@@ -136,7 +143,8 @@ Coders pueden ver y responder los formularios.
 
 **Criterios de aceptacion**
 - [ ] Vista de admin con la lista de periodos y su estado (activo/cerrado), con accion de
-      activar/cerrar (`PATCH /periods/:id`, solo rol `admin` via `require_role`).
+      activar/cerrar (`PUT /periods/:id`; "solo rol `admin`" es una convencion de frontend — el
+      backend no verifica rol de forma criptografica, ver nota de la epica AUTH).
 - [ ] **Regla de negocio:** solo puede existir **un periodo activo a la vez**; al activar uno, el
       backend desactiva cualquier otro (transaccional).
 - [ ] Con el periodo **cerrado**, los Coders ven el estado vacio **"No hay formularios por
@@ -246,8 +254,9 @@ mejorar el formulario entre rondas sin depender del equipo tecnico.
 **Criterios de aceptacion**
 - [ ] Backend FastAPI desplegado (Render/Railway/Fly) y accesible por HTTPS.
 - [ ] Frontend SPA desplegado (Vercel/Netlify/GitHub Pages) y conectado al backend.
-- [ ] MySQL hospedado y poblado con el seed (`database/schema.sql`).
-- [ ] Variables de entorno configuradas en produccion (`DATABASE_URL`, `JWT_SECRET`, `ANTHROPIC_API_KEY`).
+- [ ] MySQL hospedado y poblado con el seed (`database/01_ddl.sql` + `database/02_dml.sql`).
+- [ ] Variables de entorno configuradas en produccion (`DATABASE_URL`, `ANTHROPIC_API_KEY`,
+      `FRONTEND_ORIGIN`; no hay `JWT_SECRET` — el proyecto no usa JWT, ver `06-arquitectura.md`).
 - [ ] README con la URL publica, credenciales de usuarios demo y pasos para correr en local.
 
 ### DELIV-02 — Pitch comercial (ingles) · `Must` · `3 SP`

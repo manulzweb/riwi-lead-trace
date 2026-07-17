@@ -20,7 +20,7 @@ la lista de endpoints.
 
 - Python 3.12+
 - MySQL corriendo localmente (o accesible por red) con la base ya creada a partir de
-  [`database/schema.sql`](../database/schema.sql)
+  [`database/01_ddl.sql`](../database/01_ddl.sql) + [`database/02_dml.sql`](../database/02_dml.sql)
 
 ## Instalación
 
@@ -52,15 +52,20 @@ cp .env.example .env
 
 ## Base de datos
 
-El esquema **no** se crea con SQLAlchemy — se ejecuta el script SQL directamente:
+El esquema **no** se crea con SQLAlchemy — se ejecutan los scripts SQL directamente (DDL primero,
+luego el seed):
 
 ```bash
-mysql -u root -p < ../database/schema.sql
+mysql -u root -p < ../database/01_ddl.sql
+mysql -u root -p riwi_lead_trace < ../database/02_dml.sql
 ```
 
-Esto crea las tablas normalizadas a 3FN (`roles`, `cohorts`, `clans`, `users`, `periods`,
-`form_templates`, `questions`, `evaluations`, `evaluation_answers`, `ai_feedback_cache`). Ver
-[`docs/07-base-de-datos.md`](../docs/07-base-de-datos.md) para el modelo entidad-relación completo.
+Esto crea las tablas normalizadas a 3FN (`roles`, `cohorts`, `clans`, `users`, `user_roles`,
+`team_leader_clans`, `periods`, `form_templates`, `questions`, `evaluations`,
+`evaluation_answers`, `ai_feedback_cache`). Los roles de cada usuario son N:M (`user_roles`): un
+usuario puede tener más de un rol a la vez, y un Team Leader puede tener varios clanes a cargo
+(`team_leader_clans`). Ver [`docs/07-base-de-datos.md`](../docs/07-base-de-datos.md) para el
+modelo entidad-relación completo.
 
 `app/config/database.py` expone un `conn` que cada `service` usa directo (`conn.execute(...)`,
 `conn.commit()`). Por dentro le da a **cada hilo su propia `Connection`** de SQLAlchemy (FastAPI
@@ -119,13 +124,22 @@ app/
 ```
 
 No hay carpeta `models/`: la forma de las tablas vive solo en
-[`database/schema.sql`](../database/schema.sql), y cada `service` arma su propio SQL con `text()`.
+[`database/01_ddl.sql`](../database/01_ddl.sql) (seed en
+[`database/02_dml.sql`](../database/02_dml.sql)), y cada `service` arma su propio SQL con `text()`.
 
 Reglas de negocio clave (no romper sin acordarlo con el equipo):
 
 - Evaluación anónima → nunca se persiste ni se expone `evaluator_id` (`hide_evaluator` en
   `evaluation_service.get_evaluations_by_evaluatee`).
-- Un Coder no puede evaluar dos veces a la misma persona en el mismo periodo.
+- Un Coder no puede evaluar dos veces a la misma persona en el mismo periodo — validado **solo en
+  `evaluation_service.create_evaluation`** (`SELECT` previo antes del `INSERT`, sin transacción).
+  El índice único `uq_eval_once` que reforzaría esto en la BD está **comentado a propósito** en
+  `database/01_ddl.sql` (decisión de equipo aceptada para el MVP, no un bug pendiente); queda una
+  condición de carrera teórica entre dos requests concurrentes del mismo evaluador.
+- Los evaluables tienen rol vía `user_roles` (N:M): un usuario puede tener varios roles a la vez.
+  Al evaluar a un Team Leader, `evaluation_service` valida el clan contra `team_leader_clans` (un
+  TL puede tener varios clanes a cargo); para tutor/coder valida contra el `clan_id` 1:1 de
+  `users`.
 - `POST /evaluations` rechaza con `409` si el `period_id` no corresponde a un periodo activo
   (`is_active=TRUE`) o con `404` si el periodo no existe.
 - Solo puede haber **un periodo activo a la vez**: activar uno (al crearlo o al actualizarlo)

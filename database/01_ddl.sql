@@ -16,6 +16,7 @@ DROP TABLE IF EXISTS evaluations;
 DROP TABLE IF EXISTS questions;
 DROP TABLE IF EXISTS form_templates;
 DROP TABLE IF EXISTS periods;
+DROP TABLE IF EXISTS team_leader_clans;
 DROP TABLE IF EXISTS user_roles;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS clans;

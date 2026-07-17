@@ -103,8 +103,8 @@ Justificacion ampliada en [`06-arquitectura.md`](./06-arquitectura.md).
 | category | VARCHAR(60) | categoria tematica de la pregunta (organiza el formulario); el calculo del ICP no la usa hoy — ver `06-arquitectura.md`); **no editable** desde la UI |
 | input_type | VARCHAR(20) | 'scale' \| 'text' |
 | sort_order | INT | orden de despliegue |
-| weight | INT | peso de la pregunta para los cálculos del ICP |
-| is_active | BOOLEAN | default TRUE; las evaluaciones nuevas cargan solo preguntas activas; las respuestas historicas conservan su pregunta original |
+| weight_percent | DECIMAL(5,2) | peso porcentual de la pregunta en el ICP (ADMIN-02); solo aplica a preguntas 'scale' (las 'text' quedan en 0 por default); los pesos de las preguntas de escala **activas** de un mismo `template_id` deben sumar exactamente 100 (validado en `question_service` antes de guardar, `PUT /questions/weights`) |
+| is_active | BOOLEAN | default TRUE; las evaluaciones nuevas cargan solo preguntas activas; las respuestas historicas conservan su pregunta y su peso original |
 
 ### `evaluations`
 | Atributo | Tipo | Notas |
@@ -204,7 +204,7 @@ user_roles(user_id->users, role_id->roles)         -- Relación N:M para multipl
 team_leader_clans(user_id->users, clan_id->clanes) -- Relación N:M exclusiva para TLs
 periods(id, name, starts_at, ends_at, is_active)
 form_templates(id, title, target_role_id->roles, is_active)
-questions(id, template_id->form_templates, text, category, input_type, sort_order, weight)
+questions(id, template_id->form_templates, text, category, input_type, sort_order, weight_percent)
 evaluations(id, evaluator_id->users?, evaluatee_id->users, template_id->form_templates,
             period_id->periods, is_anonymous, status, submitted_at, created_at)
 evaluation_answers(id, evaluation_id->evaluations, question_id->questions, score, comment)
@@ -218,8 +218,8 @@ ai_feedback_cache(id, evaluatee_id->users, period_id->periods, summary, model,
 - **Plantillas dinamicas:** `form_templates` + `questions` permiten cambiar criterios sin tocar codigo. En el MVP el Admin puede **editar texto y activar/desactivar** preguntas (`questions.is_active`), **solo con periodo cerrado** y **versionando** (fila nueva + desactivar la anterior): asi las respuestas historicas conservan el texto que realmente respondieron y el ICP no se contamina. El editor completo (crear plantillas/tipos) queda fuera del MVP.
 - **Ventana de evaluacion controlada:** `periods.is_active` define si hay formularios disponibles. Solo **un** periodo activo a la vez (regla en `services`, transaccional); sin periodo activo, no se aceptan evaluaciones nuevas ni envios.
 - **Una respuesta por pregunta** via `evaluation_answers` (normalizado), facilitando metricas por criterio/categoria.
-- **Integridad de unicidad** (recomendada en backend): un evaluador no deberia evaluar dos veces al mismo evaluado en el mismo periodo -> indice unico parcial sobre `(evaluator_id, evaluatee_id, period_id)` cuando no es anonima.
-- **Roles (4):** `roles` = coder, tutor, team_leader, admin (`admin` antes `coordinador`). **`tutor` es un rol de cuenta de pleno derecho** (no una bandera sobre coder): conserva `clan_id`.
+- **Integridad de unicidad (decision de equipo, no un pendiente):** un evaluador no deberia evaluar dos veces al mismo evaluado en el mismo periodo. Hoy esto se valida **solo en `evaluation_service`** (un `SELECT` por `evaluator_id`+`evaluatee_id`+`period_id` antes del `INSERT`, sin transaccion). El script trae, comentado a proposito, el indice `uq_eval_once ON evaluations (evaluator_id, evaluatee_id, period_id)` que cerraria la condicion de carrera a nivel de BD; el equipo decidio dejarlo deshabilitado para el MVP (ver `database/01_ddl.sql`) y asumir el riesgo residual de una doble evaluacion por dos requests concurrentes. No se debe reactivar ni "corregir" sin que el equipo lo decida explicitamente.
+- **Roles (4, N:M por usuario):** `roles` = coder, tutor, team_leader, admin (`admin` antes `coordinador`). Un usuario puede tener **mas de uno a la vez** (`user_roles`, N:M) — ya no hay un `role_id` unico en `users`. **`tutor` es un rol de cuenta de pleno derecho** (no una bandera sobre coder): conserva `clan_id`.
 - **Metricas derivadas, no persistidas:** el **ICP** (indice 0-100) y la **participacion** se calculan **on-read** en `services` desde `evaluation_answers`; no se guardan como columnas (evita redundancia/inconsistencia). Se persiste solo lo que **no** es derivacion: el `ai_feedback_cache` (resultado costoso de un servicio externo, con `UNIQUE(evaluatee_id, period_id)`).
 - **Privacidad de IA:** al modelo solo se envian agregados/comentarios **anonimizados**; nunca `evaluator_id`. El cache guarda el texto resultante, no las identidades de origen.
 - **Cohortes y clanes:** un Coder pertenece a **un** clan (`users.clan_id`, relacion 1—N), y cada clan vive dentro de **una** cohorte (`clanes.cohorte_id`). El numero de clan es unico **dentro** de su cohorte -> `UNIQUE(cohorte_id, numero)`.
