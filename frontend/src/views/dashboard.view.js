@@ -5,7 +5,7 @@ import { escapeHtml } from "../utils/validators";
 export const renderDashboard = () => {
   const user = authService.getSession();
   const name = user?.name ? escapeHtml(user.name) : "Usuario";
-  const role = user?.role ?? "";
+  const roles = user?.roles ?? [];
 
   const quickLinks = {
     coder: [
@@ -24,7 +24,11 @@ export const renderDashboard = () => {
     ],
   };
 
-  const links = quickLinks[role] ?? [];
+  // Un usuario puede tener varios roles a la vez (user_roles N:M): se combinan
+  // los accesos rápidos de todos sus roles, sin duplicar por href.
+  const linksByHref = new Map();
+  roles.forEach(r => (quickLinks[r] ?? []).forEach(link => linksByHref.set(link.href, link)));
+  const links = [...linksByHref.values()];
 
   const linksHtml = links.map(({ href, label, title }) => `
     <a class="rounded-3xl bg-[var(--bg-base)] p-5 transition-all duration-300 ease-in-out hover:bg-[var(--border-main)] hover:shadow-md hover:-translate-y-0.5" href="${href}">

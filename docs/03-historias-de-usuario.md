@@ -21,8 +21,8 @@ Cada historia incluye criterios de aceptacion (CA), prioridad y Story Points.
 
 **Criterios de aceptacion**
 - [ ] `uvicorn app.main:app --reload` levanta la API y expone `/docs` (Swagger).
-- [ ] Estructura por capas: `routers/`, `services/`, `repositories/`, `models/`, `schemas/`, `deps.py`.
-- [ ] Conexion a MySQL configurable por `.env`; la BD se crea con `database/schema.sql` (seed incluido).
+- [ ] Estructura por capas: `routes/`, `services/` (logica de negocio + queries SQL, sin capa `repositories/` ni `models/` separadas), `schemas/`, `config/`.
+- [ ] Conexion a MySQL configurable por `.env`; la BD se crea con `database/01_ddl.sql` + `database/02_dml.sql` (seed incluido en el DML).
 - [ ] Endpoint de salud (`GET /health`) responde `200`.
 - [ ] CORS habilitado para el origen del frontend.
 
@@ -40,33 +40,32 @@ Cada historia incluye criterios de aceptacion (CA), prioridad y Story Points.
 ## AUTH
 
 ### AUTH-01 — Inicio de sesion · `Must` · `3 SP`
-**Como** usuario registrado **quiero** iniciar sesion con mis credenciales **para** acceder a la plataforma de forma segura.
+**Como** usuario registrado **quiero** iniciar sesion con mis credenciales **para** acceder a la plataforma.
 
 **Criterios de aceptacion**
 - [ ] Formulario con email y contrasena validados en cliente.
-- [ ] `POST /auth/login` verifica la contrasena con **hash** (passlib/bcrypt) y emite un **JWT**.
+- [ ] `POST /auth/login` verifica la contrasena con **hash** (passlib/bcrypt) y devuelve los datos del usuario, sin emitir token.
 - [ ] Mensaje de error claro ante credenciales invalidas (`401`).
 - [ ] Al autenticar, se redirige a la vista inicial segun el rol.
 - [ ] Boton deshabilitado y feedback de carga durante la peticion.
 
-### AUTH-02 — Sesion y rutas protegidas · `Must` · `5 SP`
-**Como** usuario autenticado **quiero** mantener mi sesion y que las rutas privadas esten protegidas **para** no tener que reingresar y proteger mi informacion.
+### AUTH-02 — Sesion en cliente · `Must` · `5 SP`
+**Como** usuario autenticado **quiero** mantener mi sesion y que las rutas privadas esten protegidas **para** no tener que reingresar.
 
 **Criterios de aceptacion**
-- [ ] El token (JWT) se persiste en `localStorage` y se envia en cada peticion.
-- [ ] El backend valida el token (`get_current_user`) y rechaza peticiones sin token o expirado (`401`).
+- [ ] El usuario y sus roles se persisten en `localStorage` tras el login.
 - [ ] Acceder a una ruta privada sin sesion redirige a login.
 - [ ] Existe accion de logout que limpia la sesion.
-- [ ] Si el token expira (401), se cierra sesion y se redirige a login.
+- [ ] Las peticiones a la API llevan el rol/ID del usuario segun corresponda al endpoint.
 
-### AUTH-03 — Gestion de roles / autorizacion · `Must` · `3 SP`
+### AUTH-03 — Gestion de roles / autorizacion (frontend) · `Must` · `3 SP`
 **Como** sistema **quiero** mostrar funcionalidades segun el rol **para** que cada usuario vea solo lo que le corresponde.
 
 **Criterios de aceptacion**
 - [ ] El Coder ve evaluaciones e historial propio; no ve el dashboard.
 - [ ] El Admin ve dashboard, ICP, resumenes IA e historico.
 - [ ] Las rutas no autorizadas redirigen o muestran "no autorizado" (front).
-- [ ] El backend aplica `require_role` y responde `403` ante accesos no autorizados (autoridad real).
+- [ ] El backend filtra los datos por el rol/ID que manda el propio front (sin verificacion criptografica, ver `06-arquitectura.md`).
 - [ ] La navegacion se construye dinamicamente segun los permisos del rol.
 
 ---
@@ -136,7 +135,8 @@ Coders pueden ver y responder los formularios.
 
 **Criterios de aceptacion**
 - [ ] Vista de admin con la lista de periodos y su estado (activo/cerrado), con accion de
-      activar/cerrar (`PATCH /periods/:id`, solo rol `admin` via `require_role`).
+      activar/cerrar (`PUT /periods/:id`; "solo rol `admin`" es una convencion de frontend — el
+      backend no verifica rol de forma criptografica, ver nota de la epica AUTH).
 - [ ] **Regla de negocio:** solo puede existir **un periodo activo a la vez**; al activar uno, el
       backend desactiva cualquier otro (transaccional).
 - [ ] Con el periodo **cerrado**, los Coders ven el estado vacio **"No hay formularios por
@@ -246,8 +246,9 @@ mejorar el formulario entre rondas sin depender del equipo tecnico.
 **Criterios de aceptacion**
 - [ ] Backend FastAPI desplegado (Render/Railway/Fly) y accesible por HTTPS.
 - [ ] Frontend SPA desplegado (Vercel/Netlify/GitHub Pages) y conectado al backend.
-- [ ] MySQL hospedado y poblado con el seed (`database/schema.sql`).
-- [ ] Variables de entorno configuradas en produccion (`DATABASE_URL`, `JWT_SECRET`, `ANTHROPIC_API_KEY`).
+- [ ] MySQL hospedado y poblado con el seed (`database/01_ddl.sql` + `database/02_dml.sql`).
+- [ ] Variables de entorno configuradas en produccion (`DATABASE_URL`, `ANTHROPIC_API_KEY`,
+      `FRONTEND_ORIGIN`; no hay `JWT_SECRET` — el proyecto no usa JWT, ver `06-arquitectura.md`).
 - [ ] README con la URL publica, credenciales de usuarios demo y pasos para correr en local.
 
 ### DELIV-02 — Pitch comercial (ingles) · `Must` · `3 SP`

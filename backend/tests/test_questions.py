@@ -63,7 +63,7 @@ def test_editar_texto_versiona_sin_sobrescribir(client):
         assert float(body["weight_percent"]) == 10.0          # se hereda, no se toca
 
         original = question_service.get_question(FIRST_TL_SCALE_QUESTION_ID)
-        assert original["is_active"] is False  # la version vieja queda desactivada, no borrada
+        assert not original["is_active"]  # la version vieja queda desactivada, no borrada
 
         activas = question_service.get_questions_by_template(TL_TEMPLATE_ID, only_active=True)
         active_ids = {q["id"] for q in activas}
@@ -166,6 +166,10 @@ def test_actualizar_pesos_ok_y_se_reflejan(client):
 
         response = client.put("/questions/weights", json={"template_id": TL_TEMPLATE_ID, "weights": weights})
         assert response.status_code == 200
+
+        # Terminar la transaccion abierta en el hilo principal del test para ver los cambios
+        # hechos por el hilo de FastAPI en MySQL (por el nivel de aislamiento Repeatable Read).
+        conn.commit()
 
         actualizadas = question_service.get_questions_by_template(TL_TEMPLATE_ID, only_active=True)
         nuevo_peso = next(q["weight_percent"] for q in actualizadas if q["id"] == scale_ids[0])

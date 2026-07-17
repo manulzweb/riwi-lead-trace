@@ -8,6 +8,7 @@ class QuestionOut(BaseModel):
     category: str  # nombre de la categoria (join contra categories)
     input_type: str
     sort_order: int
+    weight: int
 
     class Config:
         from_attributes = True

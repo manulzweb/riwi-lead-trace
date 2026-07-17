@@ -8,6 +8,13 @@ const jsonHeaders = {
   "Content-Type": "application/json"
 }
 
+
+export const jsonOptions = (method, data) => ({
+  method,
+  headers: jsonHeaders,
+  body: JSON.stringify(data)
+})
+
 export const request = async (path, options) => {
   const response = await fetch(BASE_URL + path, options)
   if (!response.ok) {

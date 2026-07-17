@@ -26,7 +26,7 @@ corto. Horizontal es mas facil de explicar y de encontrar codigo ("¿donde esta 
 > ambas cosas a proposito: las queries se escriben como SQL plano con `text()` (la misma sintaxis
 > que ya usan en MySQL Workbench y que explica `docs/13-glosario.md`), directo en el archivo de
 > `services/` de cada entidad — sin aprender el mini-lenguaje de `select()/insert()/join()` de
-> SQLAlchemy, y sin una capa de `models/` que solo repetiria lo que ya dice `database/schema.sql`.
+> SQLAlchemy, y sin una capa de `models/` que solo repetiria lo que ya dice `database/01_ddl.sql`.
 > Menos "profesional" en el sentido de perder el constructor de queries tipado, pero mas facil de
 > leer para alguien que recien esta aprendiendo SQL.
 
@@ -43,7 +43,7 @@ funcion pura hace lo mismo con menos codigo.
 |---|---|---|
 | **Layered Architecture** | `routes/ -> services/ -> MySQL` | Cada capa tiene una responsabilidad; los cambios quedan localizados |
 | **Service Layer** | `services/` (ej. `evaluation_service`, `metrics_service`, `ai_service`) | Concentra la logica de negocio (anonimato, no-duplicado, calculo de metricas) y las queries SQL, fuera de los routes |
-| **Dependency Injection** | `Depends(get_current_user)`, `Depends(require_role(...))` | FastAPI inyecta dependencias en vez de que cada endpoint las construya; facilita testear |
+| **Dependency Injection** | `Depends(...)` en `routes/` (ej. `Query(...)` para filtros como `role`, `viewer_role`) | FastAPI inyecta dependencias en vez de que cada endpoint las construya; facilita testear |
 | **DTO (Data Transfer Object)** | `schemas/` (Pydantic) | Define exactamente que entra/sale de la API, distinto de las columnas de la BD |
 
 ### Frontend (funciones + un poco de OOP donde importa)
@@ -69,9 +69,9 @@ sitio con estado que varias partes necesitan compartir y observar.
 │          Store (pub/sub: auth, ui)                           │
 │             │                                                 │
 │             v                                                 │
-│          Services ─> http.js (fetch: baseURL, JWT, errores) │
+│          Services ─> http.js (fetch: baseURL, errores)       │
 └───────────────────────────┬─────────────────────────────────┘
-                            │ HTTPS · REST (JSON) · JWT
+                            │ HTTPS · REST (JSON) · sin JWT (ver nota mas abajo)
                             v
 ┌──────────────────── Backend (backend/ · FastAPI) ───────────┐
 │  Routes (endpoints, validacion I/O con Pydantic)             │
@@ -108,7 +108,7 @@ riwi-lead-trace/
 │       │   ├── auth.store.js
 │       │   └── ui.store.js
 │       ├── services/
-│       │   ├── http.js         # wrapper fetch (baseURL, JWT, errores)
+│       │   ├── http.js         # wrapper fetch (baseURL, errores; sin JWT, ver nota)
 │       │   ├── auth.service.js
 │       │   ├── evaluation.service.js
 │       │   ├── user.service.js
@@ -126,17 +126,17 @@ riwi-lead-trace/
 │   │   ├── config/
 │   │   │   ├── config.py       # settings (DATABASE_URL, SECRET_KEY...) desde .env
 │   │   │   ├── database.py     # engine + conexion SQLAlchemy
-│   │   │   └── security.py     # hash de contrasenas + crear/verificar JWT
+│   │   │   └── security.py     # hash de contrasenas (bcrypt); ya NO crea/verifica JWT
 │   │   ├── schemas/            # Pydantic: request/response por dominio
 │   │   ├── services/           # LOGICA DE NEGOCIO + acceso a datos por entidad:
-│   │   │                       # auth, user, period, form, evaluation, metrics, ai
-│   │   ├── routes/              # auth, users, forms, evaluations, periods, metrics
-│   │   └── deps.py             # get_current_user, require_role
+│   │   │                       # auth, user, period, form, question, evaluation, metrics, ai
+│   │   └── routes/              # auth, users, forms, evaluations, periods, questions, metrics
 │   ├── requirements.txt
 │   └── .env.example
 │
 ├── database/
-│   └── schema.sql              # DDL + seed (MySQL, 3FN)
+│   ├── 01_ddl.sql              # DDL (estructura, MySQL 3FN)
+│   └── 02_dml.sql              # DML (seed de datos)
 ├── docs/                       # documentacion Scrum + tecnica (01..12)
 └── mockups/                    # exports/enlaces Figma
 ```
@@ -163,7 +163,7 @@ export const routes = [
 ## Gestion de estado (frontend)
 
 - Store **pub/sub** sin librerias: `getState()`, `setState(patch)`, `subscribe(fn)`.
-- Slices por dominio: `auth.store` (usuario, token, rol), `ui.store` (loading, toasts).
+- Slices por dominio: `auth.store` (usuario, rol — sin token, ver "Manejo de autenticacion"), `ui.store` (loading, toasts).
 - La sesion se **hidrata** desde `localStorage` al arrancar (`main.js`).
 
 ## Backend — arquitectura por capas (FastAPI)
@@ -173,29 +173,20 @@ export const routes = [
 | `routes/` | Definir endpoints, validar I/O con Pydantic, codigos HTTP | No contiene logica de negocio |
 | `services/` | **Logica de negocio** (reglas, calculos, orquestacion) y las queries SQL (`text()`) | No conoce detalles HTTP |
 | `schemas/` | Contratos Pydantic (validacion/serializacion) | Frontera de datos; nunca exponen campos sensibles (ej. `password_hash`) |
-| `deps.py` | Dependencias: `get_current_user`, `require_role` | Inyeccion/seguridad |
 
-Ejemplo de RBAC con dependencias (real, `app/deps.py` + `app/routes/metrics_routes.py`):
+> **No hay capa de autenticacion en el backend.** El proyecto no usa JWT ni ningun otro mecanismo
+> de sesion verificable en servidor — no existe un `deps.py` con `get_current_user`/`require_role`,
+> ni `Depends(...)` de auth en ningun archivo de `routes/` (podes verificarlo: `metrics_routes.py`,
+> por ejemplo, no declara ninguna dependencia de este tipo). Detalle en "Manejo de autenticacion"
+> y `CLAUDE.md`.
 
-```python
-# app/deps.py
-def require_role(*roles: str):
-    def checker(current_user: dict = Depends(get_current_user)) -> dict:
-        if current_user["role"] not in roles:
-            raise HTTPException(status_code=403, detail="Sin permiso")
-        return current_user
-    return checker
-
-# app/routes/metrics_routes.py
-@router.get("/metrics/summary")
-def get_metrics_summary(period_id: int, current_user: dict = Depends(require_role("admin"))):
-    return metrics_service.get_metrics_summary(period_id)
-```
-
-> **evaluator_id nunca viene del body:** en `POST /evaluations`, el id del evaluador se toma de
-> `Depends(get_current_user)` (el JWT), nunca del JSON que manda el cliente. Si se aceptara del
-> body, cualquiera podria enviar evaluaciones haciendose pasar por otro coder y saltarse la regla
-> de "no evaluar dos veces" (ver `services/evaluation_service.py`).
+> **evaluator_id viene del body:** en `POST /evaluations`, `evaluator_id` es un campo mas del
+> JSON que manda el cliente (`EvaluationCreate.evaluator_id`, leido en
+> `evaluation_service.create_evaluation`) — no se deriva de ningun token ni sesion verificada,
+> porque no hay JWT. Es un tradeoff de seguridad para mantener el MVP simple: cualquiera que llame
+> la API directo (sin pasar por la SPA) podria, en teoria, mandar
+> el `evaluator_id` de otro coder. El mismo tradeoff aplica a `viewer_role` en
+> `GET /evaluations?evaluatee_id=`. Ver el detalle completo en `CLAUDE.md` ("Sin JWT").
 
 ## Logica de negocio destacada (ICP · IA)
 
@@ -207,59 +198,33 @@ Toda esta logica vive en `services/` (no en routers ni queries dispersas). Es la
 puntaje de 0 a 100 por persona y periodo, calculado a partir de sus evaluaciones. Mide
 percepcion, no aprendizaje real — por eso "percibida".
 
-**Calculo.** Es un **promedio ponderado por pregunta, con un filtro de tamano de muestra**. Por
-cada `(evaluatee_id, period_id)`, en `calculate_average_score`:
+**Calculo.** Es un **promedio ponderado con un filtro de tamaño de muestra**. Por cada `(evaluatee_id, period_id)`, en `calculate_average_score`:
 
 1. Cuenta cuantas evaluaciones `submitted` tiene esa persona en ese periodo (`n_evals`).
 2. Si `n_evals < MIN_EVALUATIONS` (3), no calcula nada: devuelve "datos insuficientes". Evita
    mostrar un puntaje basado en muy pocas respuestas.
-3. Si hay suficientes, agrupa las respuestas (1-5) de las preguntas tipo `scale` por
-   `question_id` y saca el promedio de cada pregunta (las de tipo `text` no entran al calculo;
-   alimentan el resumen de IA).
-4. Combina esos promedios por pregunta usando el `weight_percent` de cada una
-   (`questions.weight_percent`, ver `07-base-de-datos.md`) como promedio ponderado. Si ninguna
-   de las preguntas respondidas tiene peso asignado (dato viejo, de antes de que existiera
-   `weight_percent`), cae de vuelta a un promedio simple entre esos promedios por pregunta.
-5. Normaliza el resultado de la escala 1-5 a 0-100: `score = round((promedio_ponderado - 1) / 4 * 100)`.
+3. Si hay suficientes, calcula el promedio ponderado usando los puntajes (1-5) y el **peso (`weight_percent`)** de **todas** las preguntas tipo `scale`
+   (las de tipo `text` no entran al calculo; alimentan el resumen de IA). Fórmula: `sum(score * weight) / sum(weight)`.
+4. Normaliza ese promedio de la escala 1-5 a 0-100: `score = round((promedio_ponderado - 1) / 4 * 100)`.
 
 `get_metrics_summary` repite esto para cada Team Leader/Tutor del periodo y agrega: promedio
 global, total de evaluaciones enviadas, y tasa de participacion (evaluaciones enviadas ÷
-evaluaciones posibles, asumiendo 2 evaluaciones por coder activo). El resultado tambien se
-clasifica con `classify_status` en un estado fijo (`Solido` / `Estable` / `En riesgo` / `Datos
-insuficientes`) segun dos umbrales en codigo (60 y 80) — sin tendencia contra el periodo anterior.
+evaluaciones posibles, asumiendo 2 evaluaciones por coder activo).
 
-**Como se pondera (ADMIN-02).** El Admin ajusta el `weight_percent` de cada pregunta de escala
-via `PUT /questions/weights`; los pesos de las preguntas de escala **activas** de un mismo
-template deben sumar exactamente 100, y solo se pueden tocar con el periodo cerrado. Las
-preguntas sí tienen una `category` en la BD para organizar el formulario y para el chequeo de
-coherencia de la IA al editar texto, pero la ponderacion es **por pregunta**, no por categoria
-(una categoria con mas preguntas no domina el resultado por eso solo). El ICP sigue sin calcular
-tendencia contra el periodo anterior — eso queda fuera del MVP.
+**Lo que el ICP no hace (a proposito, para no sobre-construir en el MVP):** no pondera por
+categoría globalmente (usa los pesos individuales por pregunta, pero no agrupa matemáticamente por categoría), no calcula tendencia contra el periodo
+anterior, no clasifica en estados tipo "Solido"/"En riesgo". Las preguntas sí tienen una
+`category` en la BD (ver `07-base-de-datos.md`) para organizar el formulario, pero el calculo
+del ICP no la usa matemáticamente (más allá del peso de cada pregunta). Si el equipo decide agregar alguna de estas senales mas adelante, son
+extensiones puntuales sobre `calculate_average_score`, no un rediseno.
 
 > El ICP **no se persiste**: se calcula on-read en `metrics_service`.
-
-**Definicion de cada categoria** (usada para organizar el formulario y como contexto del chequeo
-de coherencia de la IA al editar una pregunta — ver "Resumen por IA" abajo). Vive en codigo, como
-constante de `ai_service` (`_CATEGORY_DEFINITIONS`), no en la BD:
-
-| Categoria | Definicion corta |
-|-----------|-------------------|
-| Comunicación efectiva | Que tan claro y oportuno se comunica el Team Leader con el Coder |
-| Alineación de expectativas | Que tan claro deja el Team Leader lo que espera del Coder en cada entrega |
-| Verificación de comprensión | Si el Team Leader confirma que el Coder realmente entendio antes de avanzar |
-| Fomento de la independencia | Si el Team Leader impulsa al Coder a resolver problemas por su cuenta |
-| Desarrollo profesional | Si el Team Leader ayuda al Coder a crecer como desarrollador/a |
-| Valor del aprendizaje | Si las sesiones del Tutor le aportan al Coder algo que no lograria solo |
-| Claridad y organización | Que tan clara y bien preparada esta la explicacion tecnica del Tutor |
-| Cercanía individual | Si el Tutor trata al Coder con respeto y se interesa por su proceso |
-| Disponibilidad e interacción | Si el Tutor esta disponible y responde a tiempo |
-| General | Comentarios abiertos, sin un eje tematico especifico |
 
 ### Resumen por IA — `ai_service`
 - Construye un prompt con **agregados anonimizados** (promedios por categoria, conteos, comentarios
   sin autor) y llama a **Claude API** (SDK `anthropic`).
-- Modelo: `claude-sonnet-4-6` (calidad) o `claude-haiku-4-5-20251001` (economico). Clave en
-  `core/config.py` (`ANTHROPIC_API_KEY`).
+- Modelo en uso: `claude-haiku-4-5-20251001` (economico) — constante `AI_MODEL` en `ai_service.py`.
+  Clave en `config/config.py` (`ANTHROPIC_API_KEY`).
 - **Destinatario: solo el Admin** (Jefe de TL/tutores). Resumen ejecutivo del feedback por
   persona/periodo.
 - **Privacidad:** nunca se envian identidades ni `evaluator_id`. El texto resultante se guarda en
@@ -273,23 +238,22 @@ constante de `ai_service` (`_CATEGORY_DEFINITIONS`), no en la BD:
 
 ## Comunicacion con la API
 
-- En frontend, **toda** llamada pasa por `services/http.js`: prefija `API_BASE_URL`, inyecta `Authorization: Bearer <token>`, serializa/parsea JSON y **normaliza errores** a `{ status, message }`.
+- En frontend, **toda** llamada pasa por `services/http.js`: prefija `API_BASE_URL`, serializa/parsea JSON y **normaliza errores** a `{ status, message }`. No inyecta ningun header `Authorization` — no hay token que mandar (ver "Manejo de autenticacion").
 - Cada `*.service.js` expone funciones de dominio; nunca `fetch` directo en vistas.
 - **Contrato REST del MVP:**
 
 | Metodo | Endpoint | Descripcion |
 |--------|----------|-------------|
-| POST | `/auth/login` | Autenticacion -> `{ token, user }` |
+| POST | `/auth/login` | Autenticacion -> `{ user }` (**sin token** — ver "Manejo de autenticacion") |
 | GET | `/users?role=team_leader` | Evaluables por rol |
 | GET | `/forms?target_role=team_leader` | Plantilla de formulario por rol |
 | POST | `/evaluations` | Registrar evaluacion (anonimato + no-duplicado por periodo + **requiere periodo activo**, si no `409`) |
 | GET | `/evaluations?evaluator_id=:id` | Historial del Coder |
-| GET | `/evaluations?evaluatee_id=:id` | Historico por evaluado (respeta anonimato) |
+| GET | `/evaluations?evaluatee_id=:id&viewer_role=` | Historico por evaluado (respeta anonimato; `viewer_role` lo manda el cliente, sin verificar) |
 | GET | `/periods` | Listar periodos (el activo define si hay formularios disponibles) |
-| PUT | `/periods/:id` | **Admin:** activar/cerrar el periodo de evaluacion (activar uno desactiva cualquier otro) |
-| GET | `/questions?template_id=` | **Admin:** preguntas activas de un template (texto + peso) |
-| PATCH | `/questions/:id` | **Admin:** reformular el texto de una pregunta -- siempre versiona (fila nueva + desactiva la anterior), solo con periodo cerrado (si no, `409`) |
-| PUT | `/questions/weights` | **Admin:** actualizar los pesos de las preguntas de escala de un template -- deben sumar 100, solo con periodo cerrado |
+| PUT | `/periods/:id` | **Admin:** activar/cerrar el periodo de evaluacion (solo uno activo a la vez) |
+| PATCH | `/questions/:id` | **Admin:** editar (versionar) el texto de una pregunta (solo con periodo cerrado, si no `409`) |
+| PUT | `/questions/weights` | **Admin:** actualizar los pesos (`weight_percent`) de las preguntas de escala de un template (deben sumar 100, solo con periodo cerrado) |
 | GET | `/metrics/summary?period_id=:p` | KPIs + **ICP** |
 | GET | `/metrics/ai-summary?evaluatee_id=:e&period_id=:p` | Resumen IA (Claude, anonimizado) — admin |
 
@@ -297,10 +261,21 @@ constante de `ai_service` (`_CATEGORY_DEFINITIONS`), no en la BD:
 
 ## Manejo de autenticacion
 
-- Login -> `POST /auth/login`: backend verifica hash, emite **JWT** firmado. Frontend guarda `token` y `user` en `localStorage` + `auth.store`.
-- El token viaja en cada peticion (`http.js`); el backend lo valida en `get_current_user`.
-- `401` global en frontend -> limpiar sesion + redirigir a `/login`. Logout -> limpiar storage + store.
-- **Autorizacion por rol** en backend (`require_role`) — autoridad real — y en frontend (guards) — solo UX.
+> **Sin JWT.** El backend no emite ni verifica ningun token de sesion. Para el detalle y el porque,
+> ver `CLAUDE.md` ("Sin JWT").
+
+- Login -> `POST /auth/login`: el backend solo verifica el hash bcrypt (`auth_service.login`) y
+  devuelve `{ user }`. **No emite token.** Frontend guarda `user` en `localStorage` + `auth.store`
+  (no hay `token` que guardar).
+- Cada peticion que necesita saber "quien soy" o "que rol tengo" manda ese dato **en el propio
+  request** — como parametro de query (`viewer_role`) o campo del body (`evaluator_id`) — y el
+  backend lo usa **tal cual, sin verificarlo criptograficamente**.
+- No hay `401` por sesion expirada (no hay sesion que expire en el backend); el frontend solo
+  redirige a `/login` si no hay `user` hidratado en el store.
+- **Autorizacion por rol:** en **frontend** (guards de `router.js`) es la unica capa que oculta
+  rutas/opciones por rol — es **solo UX**. En **backend** no hay verificacion de rol real: los
+  filtros por rol (`?role=`, `viewer_role`) son conveniencia sobre el dato que manda el cliente,
+  **no una barrera de seguridad**.
 - **Visibilidad de evaluadores (regla de negocio):** una persona evaluada (**TL/Tutor**) **nunca ve
   quien la evaluo**. Solo el **Admin** ve la identidad del evaluador en evaluaciones **no anonimas**;
   las **anonimas permanecen anonimas para todos** (incluido el Admin).
@@ -328,9 +303,9 @@ La rubrica exige justificar las decisiones tecnicas. Todas las elecciones estan 
 | Frontend | HTML5 + CSS3 + **JS Vanilla (SPA)** | (obligatorio; sin frameworks) | Requisito del proyecto |
 | Backend | **Python + FastAPI** | Flask, Express.js | Python alineado a la Ruta Basica; validacion y docs integradas |
 | Base de datos | **MySQL** | PostgreSQL, MongoDB | Datos relacionales, integridad, consultas agregadas |
-| Auth | **JWT** | sesiones server-side | Sin estado, encaja con SPA + API REST |
+| Auth | **Sin JWT** | JWT, sesiones server-side | El login valida hash bcrypt pero no emite token; el rol/ID lo manda el propio front y el backend lo confia. Reduce el alcance del MVP a costa de no tener verificacion criptografica real (ver "Manejo de autenticacion") |
 | IA (resumenes) | **Claude API** (`anthropic`) | otros LLM, sin IA | Calidad de redaccion + privacidad por diseno (solo agregados anonimos) |
 
-**FastAPI** trae validacion (Pydantic), tipado y documentacion automatica (Swagger/`/docs`) sin librerias extra — util para la sustentacion. **MySQL** encaja porque el dominio es naturalmente relacional (usuarios<->roles, evaluaciones<->respuestas) y el dashboard vive de consultas agregadas. **JWT** es la opcion natural para una SPA sin estado. **Claude API** resume el feedback en lenguaje natural para el Admin — es el diferenciador, pero la IA complementa la logica de negocio propia (el ICP), que es lo que evalua la rubrica como "no-CRUD".
+**FastAPI** trae validacion (Pydantic), tipado y documentacion automatica (Swagger/`/docs`) sin librerias extra, util para la sustentacion. **MySQL** encaja porque el dominio es naturalmente relacional (usuarios<->roles, evaluaciones<->respuestas) y el dashboard vive de consultas agregadas. No usar **JWT** es un tradeoff de seguridad consciente para reducir el alcance del MVP en el tiempo disponible; para una SPA sin estado, JWT seria la opcion mas robusta, pero no era necesaria para demostrar la logica de negocio del proyecto. **Claude API** resume el feedback en lenguaje natural para el Admin: complementa la logica de negocio propia (el ICP), que es lo que la rubrica evalua como "no-CRUD".
 
-**Decisiones que evitan sobreingenieria:** sin frameworks de frontend ni estado externo; ORM simple (SQLAlchemy) sobre un esquema 3FN sin complejidad extra; `database/schema.sql` versionado en vez de migraciones (Alembic queda como mejora futura); tests enfocados en la logica de negocio, no en cobertura total.
+**Decisiones que evitan sobreingenieria:** sin frameworks de frontend ni estado externo; SQL plano (`text()`) sobre un esquema 3FN sin complejidad extra; `database/01_ddl.sql` + `database/02_dml.sql` versionados en vez de migraciones (Alembic queda como mejora futura); tests enfocados en la logica de negocio, no en cobertura total.

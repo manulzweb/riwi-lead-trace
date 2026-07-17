@@ -18,7 +18,8 @@ Justificacion ampliada en [`06-arquitectura.md`](./06-arquitectura.md).
 | `roles` | Catalogo de roles del sistema (coder, tutor, team_leader, admin) |
 | `cohortes` | Cohortes de Riwi (p.ej. cohorte 5); agrupan clanes |
 | `clanes` | Clanes dentro de una cohorte; a ellos pertenecen los Coders y Tutores |
-| `users` | Usuarios de la plataforma; cada uno tiene un rol y (segun el rol) un clan |
+| `users` | Usuarios de la plataforma; cada uno tiene uno o varios roles, y (segun su rol) un clan |
+| `user_roles` | Tabla intermedia para asociar usuarios con multiples roles |
 | `periods` | Periodos/ciclos de evaluacion (p.ej. trimestre, cohorte) |
 | `form_templates` | Plantilla de formulario segun el rol evaluado (TL / Tutor) |
 | `categories` | Categoria/tema de una pregunta (ej. "Comunicacion efectiva"); el Admin la administra aparte de las plantillas |
@@ -59,10 +60,23 @@ Justificacion ampliada en [`06-arquitectura.md`](./06-arquitectura.md).
 | full_name | VARCHAR(120) | |
 | email | VARCHAR(150) | unico |
 | password_hash | VARCHAR(255) | nunca texto plano |
-| role_id | INT FK -> roles.id | coder / tutor / team_leader / admin |
-| clan_id | INT FK -> clanes.id (NULLABLE) | clan de coders y tutores; NULL para team_leader/admin |
+| clan_id | INT FK -> clanes.id (NULLABLE) | clan principal (1:1) usado por coders y tutores; NULL para TL/admin |
 | is_active | BOOLEAN | default true |
 | created_at | TIMESTAMP | |
+
+### `user_roles` (Tabla 1:N para multiples roles)
+| Atributo | Tipo | Notas |
+|----------|------|-------|
+| user_id | INT PK/FK -> users.id | |
+| role_id | INT PK/FK -> roles.id | |
+| | | Permite que un usuario tenga multiples roles (p.ej. Coder y Tutor) |
+
+### `team_leader_clans` (Nueva tabla 1:N para TLs)
+| Atributo | Tipo | Notas |
+|----------|------|-------|
+| user_id | INT PK/FK -> users.id | |
+| clan_id | INT PK/FK -> clanes.id | |
+| | | Permite que un TL imparta clases a varios clanes |
 
 ### `periods`
 | Atributo | Tipo | Notas |
@@ -138,9 +152,10 @@ No es dato relacional duplicado, sino el **resultado materializado de un servici
 
 ## Relaciones
 
-- `roles` 1—N `users`
+- `users` N—M `roles` *(mediante `user_roles`)*
 - `cohortes` 1—N `clanes`
-- `clanes` 1—N `users` *(un Coder/Tutor pertenece a un clan; FK nullable para team_leader/admin)*
+- `clanes` 1—N `users` *(un Coder/Tutor pertenece a **un** clan; FK nullable para TL/admin)*
+- `clanes` N—M `users` *(solo para TLs mediante tabla intermedia `team_leader_clans`)*
 - `roles` 1—N `form_templates` (rol evaluado)
 - `form_templates` 1—N `questions`
 - `categories` 1—N `questions` *(borrar una categoria esta restringido mientras tenga preguntas)*
@@ -156,16 +171,20 @@ No es dato relacional duplicado, sino el **resultado materializado de un servici
 ```
 cohortes (id PK, numero, nombre, ciudad)
    │1
-   └──< clanes (id PK, cohorte_id FK, numero, nombre)   UNIQUE(cohorte_id, numero)
-            │1
-            └──< (clan_id, NULL en staff)
-                   │
-roles (id PK, name)
-   │1
-   ├──< users (id PK, full_name, email, password_hash, role_id FK, clan_id FK?, is_active, created_at)
-   │1                         │1 (evaluatee)        │0..1 (evaluator, NULL si anonima)
-   │                          │                     │
-   └──< form_templates (id PK, title, target_role_id FK, is_active)
+           └──< clanes (id PK, cohorte_id FK, numero, nombre)   UNIQUE(cohorte_id, numero)
+                    │1                 │1
+                    │                  └──< (clan_id, NULL en TL/staff)
+                    └──< team_leader_clans (user_id FK, clan_id FK) >───┐
+                                                                        │1
+                                                                        │1
+roles (id PK, name)                                                     │
+   │1                                                                   │
+   └──< user_roles (user_id FK, role_id FK) >───┐                       │
+                                                │1                      │
+        users (id PK, full_name, email, password_hash, clan_id FK?, is_active, created_at) >──┘
+        │1                         │1 (evaluatee)        │0..1 (evaluator, NULL si anonima)
+        │                          │                     │
+        └──< form_templates (id PK, title, target_role_id FK, is_active)
             │1
             └──< questions (id PK, template_id FK, text, category_id FK, input_type, sort_order)
                       │N
@@ -191,12 +210,13 @@ Cardinalidades clave:
 roles(id, name)                                   -- coder, tutor, team_leader, admin
 cohortes(id, numero, nombre, ciudad)
 clanes(id, cohorte_id->cohortes, numero, nombre)   -- UNIQUE(cohorte_id, numero)
-users(id, full_name, email, password_hash, role_id->roles, clan_id->clanes?,
-      is_active, created_at)
+users(id, full_name, email, password_hash, clan_id->clanes?, is_active, created_at)
+user_roles(user_id->users, role_id->roles)         -- Relación N:M para multiples roles
+team_leader_clans(user_id->users, clan_id->clanes) -- Relación N:M exclusiva para TLs
 periods(id, name, starts_at, ends_at, is_active)
 form_templates(id, title, description, target_role_id->roles, is_active)
 categories(id, name)
-questions(id, template_id->form_templates, text, category_id->categories, input_type, sort_order)
+questions(id, template_id->form_templates, text, category_id->categories, input_type, sort_order, weight_percent)
 evaluations(id, evaluator_id->users?, evaluatee_id->users, template_id->form_templates,
             period_id->periods, is_anonymous, status, submitted_at, created_at)
 evaluation_answers(id, evaluation_id->evaluations, question_id->questions, score, comment)
@@ -210,13 +230,13 @@ ai_feedback_cache(id, evaluatee_id->users, period_id->periods, summary, model,
 - **Plantillas dinamicas:** `form_templates` + `questions` permiten cambiar criterios sin tocar codigo. El Admin puede **editar texto y activar/desactivar** preguntas (`questions.is_active`), **solo con periodo cerrado** y **versionando** (fila nueva + desactivar la anterior): asi las respuestas historicas conservan el texto que realmente respondieron y el ICP no se contamina. Ademas puede **crear plantillas nuevas** (`POST /forms`, con sus preguntas iniciales) y **agregar/quitar preguntas** de una plantilla existente (`POST`/`DELETE /questions`) — tambien solo con periodo cerrado; crear/quitar nunca versiona (no hay historial previo que preservar), solo desactiva. `target_role` esta restringido a `team_leader`/`tutor` (los unicos roles evaluables); `input_type` acepta `scale`\|`text`\|`yes_no` (`yes_no` se excluye del ICP igual que `text`).
 - **Ventana de evaluacion controlada:** `periods.is_active` define si hay formularios disponibles. Solo **un** periodo activo a la vez (regla en `services`, transaccional); sin periodo activo, no se aceptan evaluaciones nuevas ni envios.
 - **Una respuesta por pregunta** via `evaluation_answers` (normalizado), facilitando metricas por criterio/categoria.
-- **Integridad de unicidad** (recomendada en backend): un evaluador no deberia evaluar dos veces al mismo evaluado en el mismo periodo -> indice unico parcial sobre `(evaluator_id, evaluatee_id, period_id)` cuando no es anonima.
-- **Roles (4):** `roles` = coder, tutor, team_leader, admin (`admin` antes `coordinador`). **`tutor` es un rol de cuenta de pleno derecho** (no una bandera sobre coder): conserva `clan_id`.
+- **Integridad de unicidad:** un evaluador no deberia evaluar dos veces al mismo evaluado en el mismo periodo. Esto se valida **solo en `evaluation_service`** (un `SELECT` por `evaluator_id`+`evaluatee_id`+`period_id` antes del `INSERT`, sin transaccion). El script trae, comentado a proposito, el indice `uq_eval_once ON evaluations (evaluator_id, evaluatee_id, period_id)` que cerraria la condicion de carrera a nivel de BD; queda deshabilitado para el MVP (ver `database/01_ddl.sql`), asumiendo el riesgo residual de una doble evaluacion por dos requests concurrentes. No reactivarlo ni reescribir la validacion sin aprobacion del equipo.
+- **Roles (4, N:M por usuario):** `roles` = coder, tutor, team_leader, admin. Un usuario puede tener **mas de uno a la vez** via `user_roles` (N:M); no existe un `role_id` unico en `users`. **`tutor` es un rol de cuenta de pleno derecho** (no una bandera sobre coder): conserva `clan_id`.
 - **Metricas derivadas, no persistidas:** el **ICP** (indice 0-100) y la **participacion** se calculan **on-read** en `services` desde `evaluation_answers`; no se guardan como columnas (evita redundancia/inconsistencia). Se persiste solo lo que **no** es derivacion: el `ai_feedback_cache` (resultado costoso de un servicio externo, con `UNIQUE(evaluatee_id, period_id)`).
 - **Privacidad de IA:** al modelo solo se envian agregados/comentarios **anonimizados**; nunca `evaluator_id`. El cache guarda el texto resultante, no las identidades de origen.
 - **Cohortes y clanes:** un Coder pertenece a **un** clan (`users.clan_id`, relacion 1—N), y cada clan vive dentro de **una** cohorte (`clanes.cohorte_id`). El numero de clan es unico **dentro** de su cohorte -> `UNIQUE(cohorte_id, numero)`.
+- **Relación M:N exclusiva para Team Leaders:** se maneja mediante la tabla intermedia `team_leader_clans`. Esto permite que un Team Leader pueda impartir clases a dos o más clanes simultáneamente, mientras que los coders se mantienen estrictamente 1:1 con su clan en la tabla `users`.
 - **No guardamos `cohorte_id` en `users`:** la cohorte de un Coder se obtiene siguiendo `users.clan_id -> clanes.cohorte_id` (un JOIN). Duplicar la cohorte en `users` seria una **dependencia transitiva** (rompe 3FN).
-- **`clan_id` es NULLABLE:** lo usan Coders y Tutores; queda NULL para team_leaders y admin.
 
 ## Cumplimiento de la Tercera Forma Normal (3FN)
 
@@ -231,7 +251,7 @@ ai_feedback_cache(id, evaluatee_id->users, period_id->periods, summary, model,
 | users | seed/admin | login, listar evaluables | perfil (futuro) | baja logica (`is_active`) |
 | evaluations | Coder (POST) | historial, dashboard | borrador->enviada | borrador descartable |
 | evaluation_answers | con la evaluacion | en detalle/metricas | en borrador | cascada con evaluacion |
-| form_templates / questions | seed | render de formularios | admin: texto (versionado) + `weight_percent` (deben sumar 100 por template) + `is_active`, todo solo con periodo cerrado | baja logica (`is_active`) |
+| form_templates / questions | seed | render de formularios | admin: texto + `is_active` (versionado, periodo cerrado) | baja logica (`is_active`) |
 | periods | seed/admin | filtros | admin: activar/cerrar (uno activo) | — |
 | ai_feedback_cache | servicio IA | resumen del Admin | regenerar | invalidar |
 
@@ -242,7 +262,10 @@ ai_feedback_cache(id, evaluatee_id->users, period_id->periods, summary, model,
 
 - **Areas / multi-area:** agregar tabla `areas` y `area_id` a users/evaluations/form_templates para segmentar el ICP por area (Desarrollo, Ingles, HSE, BLS).
 - **Bitacora TL->Tutor:** tabla `tutor_feedback_log` para notas continuas del TL sobre tutores.
+- **Pesos del ICP configurables:** tabla `icp_weights` para que el Admin edite los pesos por categoria.
 - **Analitica de talento:** Talent Score derivado para ranking de futuros TL.
 - **N—N Coder-Clanes:** si un Coder puede estar en varias cohortes a la vez, migrar a tabla intermedia `coder_clanes(user_id, clan_id)`.
 
-El script ejecutable esta en [`/database/schema.sql`](../database/schema.sql).
+Los scripts ejecutables están divididos en dos archivos:
+- DDL (Estructura): [`/database/01_ddl.sql`](../database/01_ddl.sql)
+- DML (Datos semilla): [`/database/02_dml.sql`](../database/02_dml.sql)

@@ -5,17 +5,17 @@ Backlog **full-stack** del MVP (frontend SPA + backend FastAPI + MySQL). Estimac
 | ID | Nombre | Descripcion | Epica | Prioridad | SP | Dependencias |
 |----|--------|-------------|-------|-----------|:--:|--------------|
 | CORE-01 | Preparar repo + estructura base de la SPA | Monorepo, estructura `frontend/`, router, store y `http.js` | CORE | Must | 5 | — |
-| CORE-02 | Estructura base del backend + BD | FastAPI, capas (routers/services/repos/models), conexion MySQL, seed | CORE | Must | 5 | — |
+| CORE-02 | Estructura base del backend + BD | FastAPI, capas routes/services (sin `repositories/`/`models/` separados), conexion MySQL, seed | CORE | Must | 5 | — |
 | CORE-03 | Layout y navegacion responsive | Shell SPA, nav por rol, estilos base mobile-first | CORE | Must | 5 | CORE-01 |
-| AUTH-01 | Inicio de sesion | UI login + `POST /auth/login` con hash + emision de JWT | AUTH | Must | 3 | CORE-02, CORE-03 |
-| AUTH-02 | Sesion y rutas protegidas | JWT en `localStorage`, guards SPA, `get_current_user`, expiracion/logout | AUTH | Must | 5 | AUTH-01 |
-| AUTH-03 | Roles / autorizacion (RBAC) | Navegacion/acciones por rol (front) + `require_role` (back) | AUTH | Must | 3 | AUTH-02 |
+| AUTH-01 | Inicio de sesion | UI login + `POST /auth/login`: verifica hash bcrypt en servidor, sin emitir token | AUTH | Must | 3 | CORE-02, CORE-03 |
+| AUTH-02 | Sesion en cliente | Usuario y roles en `localStorage`, guards de la SPA para redirigir sin sesion | AUTH | Must | 5 | AUTH-01 |
+| AUTH-03 | Roles / autorizacion (RBAC en frontend) | Navegacion/acciones ocultas por rol en la SPA; el backend filtra datos por el rol/ID que manda el propio front | AUTH | Must | 3 | AUTH-02 |
 | EVAL-01 | Listar evaluables | UI + `GET /users?role=...` de Team Leaders/Tutores a evaluar | EVAL | Must | 3 | AUTH-03 |
 | EVAL-02 | Evaluar Team Leader | Formulario estructurado + `GET /forms?target_role=` plantilla | EVAL | Must | 5 | EVAL-01 |
 | EVAL-03 | Evaluar Tutor | Reutiliza motor de formularios con plantilla de Tutor | EVAL | Must | 3 | EVAL-02 |
 | EVAL-04 | Feedback anonimo opcional | Toggle + regla backend: no persistir `evaluator_id` | EVAL | Should | 2 | EVAL-02 |
 | EVAL-05 | Registrar evaluacion (API) | `POST /evaluations`: validacion Pydantic, estados, **no-duplicado por periodo**, **requiere periodo activo** | EVAL | Must | 5 | EVAL-02 |
-| ADMIN-01 | Gestion del periodo de evaluacion | Admin activa/cierra el periodo (`PATCH /periods/:id`, solo uno activo); sin periodo activo los Coders ven "No hay formularios por realizar" | ADMIN | Must | 3 | AUTH-03 |
+| ADMIN-01 | Gestion del periodo de evaluacion | Admin activa/cierra el periodo (`PUT /periods/:id`, solo uno activo); sin periodo activo los Coders ven "No hay formularios por realizar" | ADMIN | Must | 3 | AUTH-03 |
 | ADMIN-02 | Editar preguntas del formulario | Admin edita texto y activa/desactiva preguntas (`PATCH /questions/:id`), solo con periodo cerrado; edicion = versionado + **chequeo IA de coherencia** con la categoria | ADMIN | Should | 3 | ADMIN-01 |
 | HIST-01 | Historial del Coder | UI + `GET /evaluations?evaluator_id=` de evaluaciones propias | HIST | Should | 3 | EVAL-05 |
 | HIST-02 | Seguimiento historico | Admin: historico por evaluado/periodo, respeta anonimato | HIST | Should | 3 | EVAL-05 |

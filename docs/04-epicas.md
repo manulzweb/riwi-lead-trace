@@ -13,10 +13,13 @@ Las historias se organizan en epicas. `CORE` es transversal (habilitadora); las 
 ---
 
 ## AUTH — Autenticacion y roles
-**Objetivo:** login con JWT y autorizacion por rol en cliente y servidor.
+**Objetivo:** login y autorizacion por rol.
 **Valor:** seguridad y segmentacion de la experiencia.
 **Historias:** AUTH-01, AUTH-02, AUTH-03
-**Done:** un usuario se autentica, su sesion persiste, y rutas/acciones se restringen por rol (RBAC verificado en backend).
+**Done:** el usuario se autentica con hash bcrypt en el servidor, sin emitir token; las
+rutas/acciones se restringen por rol **solo en el frontend** (guards). El backend confia en el
+rol/ID que manda el propio front — no hay RBAC verificado criptograficamente en el servidor.
+Detalle y justificacion en `CLAUDE.md` y `06-arquitectura.md`.
 
 ---
 
