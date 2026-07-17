@@ -63,9 +63,8 @@ En este proyecto son **2 capas** de código propio (no 4): no hay `repository` n
 | **Route** | La "puerta de entrada" (carpeta `routes/`). Define los endpoints, valida lo que llega y devuelve la respuesta. **No** tiene reglas de negocio. |
 | **Service** | El **cerebro**: aquí viven las **reglas de negocio** (calcular métricas, revisar anonimato, evitar duplicados) **y** las consultas a la BD. Es la parte "que no es solo CRUD". |
 | **Model** | No hay una capa `models/` en Python: la forma de cada tabla vive en `database/01_ddl.sql` y los `services/` escriben SQL directo contra ella. |
-| **Repository** | Tampoco hay una capa `repositories/`: el equipo la sacó a propósito por ser una capa extra sin beneficio real en un MVP de este tamaño; sus queries viven en `services/`. |
+| **Repository** | Tampoco hay una capa `repositories/`: es una capa extra sin beneficio real en un MVP de este tamaño; sus queries viven en `services/`. |
 | **Schema (Pydantic)** | El "molde" que define **qué forma** deben tener los datos que entran y salen. Si no cumplen, se rechazan. |
-| **`deps.py`** | Archivo que define `get_current_user`/`require_role`, el patrón para que FastAPI "inyecte" quién es el usuario y exigir un rol. **Existe en el repo pero hoy ningún endpoint lo usa** (el proyecto no usa JWT — ver sección 4); no lo reactives sin que el equipo lo decida. |
 | **CRUD** | Create, Read, Update, Delete = crear, leer, actualizar, borrar. Lo básico de una BD. La rúbrica pide **más que CRUD** (por eso las métricas y la lógica de negocio). |
 
 > **¿Por qué separar en capas?** Para que cada archivo sea pequeño y fácil de entender, no repetir
@@ -80,7 +79,7 @@ En este proyecto son **2 capas** de código propio (no 4): no hay `repository` n
 |---------|-----------|
 | **Autenticación** | Comprobar **quién eres** (login con correo y contraseña). |
 | **Autorización** | Comprobar **qué puedes hacer** (tu rol). Autenticado ≠ autorizado. |
-| **JWT** (JSON Web Token) | Un "carnet" digital firmado que un backend con sesión te daría al iniciar sesión, para probar quién eres en cada petición sin repetir la contraseña. **Riwi LeadTrace no lo usa**: el equipo decidió no emitir tokens para simplificar el MVP (ver `CLAUDE.md`, "Sin JWT"). Se deja el término porque `app/deps.py` todavía lo ejemplifica en el código (sin usarse). |
+| **JWT** (JSON Web Token) | Un "carnet" digital firmado que un backend con sesión te daría al iniciar sesión, para probar quién eres en cada petición sin repetir la contraseña. **Riwi LeadTrace no lo usa**: no se emiten tokens (ver `CLAUDE.md`, "Sin JWT"). |
 | **Token** | El texto de ese carnet. En este proyecto no existe: el login devuelve `{ user }`, sin token que guardar. |
 | **Hash / bcrypt** | Convertir la contraseña en un texto irreversible antes de guardarla. Así, **nunca** guardamos la contraseña real. `bcrypt` es el algoritmo que usamos. |
 | **RBAC** (Role-Based Access Control) | Control de acceso **según el rol**. Ej: solo `admin` debería ver el dashboard. **En este proyecto NO se aplica de verdad en el backend** (no hay JWT ni sesión para verificar el rol): el backend confía en el rol/ID que manda el propio front (`viewer_role`, `?role=`, etc.) y solo lo usa para filtrar datos. La única barrera real hoy es la del **frontend** (oculta rutas/opciones), que es UX, no seguridad. |
@@ -101,7 +100,7 @@ En este proyecto son **2 capas** de código propio (no 4): no hay `repository` n
 | **PyMySQL** | El "cable" que conecta SQLAlchemy con MySQL. |
 | **FK (Foreign Key / llave foránea)** | Una columna que **apunta** a otra tabla. Ej: una evaluación guarda el `id` del usuario evaluado. Mantiene los datos conectados y consistentes. |
 | **3FN (Tercera Forma Normal)** | Regla de diseño para **no repetir datos** y evitar inconsistencias. En resumen: cada dato vive en un solo lugar. |
-| **Índice único** | Regla en la BD que impide filas repetidas. Ej: evitaría que un coder evalúe dos veces a la misma persona en el mismo periodo (`uq_eval_once`). En este proyecto ese índice está **comentado a propósito** en `database/01_ddl.sql` — es una decisión de equipo aceptada, no un olvido; la regla de "no-duplicado" se valida solo en el backend (`services/evaluation_service.py`), sin ese respaldo de la BD. |
+| **Índice único** | Regla en la BD que impide filas repetidas. Ej: evitaría que un coder evalúe dos veces a la misma persona en el mismo periodo (`uq_eval_once`). En este proyecto ese índice está **comentado a propósito** en `database/01_ddl.sql`; la regla de "no-duplicado" se valida solo en el backend (`services/evaluation_service.py`), sin ese respaldo de la BD. |
 | **Seed** | Datos iniciales de ejemplo que se cargan en la BD para poder probar (usuarios, formularios). |
 
 ---

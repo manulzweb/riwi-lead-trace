@@ -38,8 +38,8 @@ La idea en una frase: los Coders evalúan —con formularios, y si quieren de fo
 Leaders y Tutores. El sistema calcula una nota de 0 a 100 por persona (el ICP) y le arma al Admin un
 tablero más un resumen escrito por IA.
 
-**Dentro del MVP:** login (verificacion de contrasena con bcrypt, **sin JWT** — decision de equipo,
-ver `06-arquitectura.md`), 4 roles (coder/tutor/team_leader/admin; un usuario puede tener **mas de
+**Dentro del MVP:** login (verificacion de contrasena con bcrypt, **sin JWT**, ver
+`06-arquitectura.md`), 4 roles (coder/tutor/team_leader/admin; un usuario puede tener **mas de
 uno a la vez**, ver sección 8), listar evaluables, evaluar
 Team Leader y Tutor con formulario estructurado e interactivo (una pregunta a la vez), feedback anónimo
 opcional, historial del Coder, **gestión del periodo de evaluación por el Admin** (activa/cierra la
@@ -78,7 +78,7 @@ para que cada pieza tenga una sola responsabilidad y nadie mezcle reglas de nego
 beneficio en un MVP de este tamaño: las queries viven directo en `services/` y la forma de las
 tablas vive solo en `database/01_ddl.sql`). Tampoco hay JWT: el login solo verifica el hash con
 bcrypt, no emite token, y el rol/ID de quien llama se confía al valor que manda el propio front
-(decisión de equipo para simplificar el MVP, no un descuido — ver `06-arquitectura.md`).
+(tradeoff de seguridad para mantener el MVP simple, ver `06-arquitectura.md`).
 El detalle completo, con diagramas y el contrato REST, está en
 [`06-arquitectura.md`](./06-arquitectura.md).
 
@@ -105,7 +105,7 @@ script SQL ejecutable en [`07-base-de-datos.md`](./07-base-de-datos.md) y
 | Frontend | HTML5 + CSS3 + JS Vanilla (SPA) | Requisito del proyecto (sin frameworks) |
 | Backend | Python + FastAPI | Alineado a lo aprendido en la Ruta Básica; validación y docs automáticas |
 | Base de datos | MySQL | Dominio naturalmente relacional; consultas agregadas para el dashboard |
-| Auth | Sin JWT (decisión de equipo) | El rol/ID lo manda el propio front y el backend lo confía; simplifica el MVP a costa de no verificar identidad criptográficamente |
+| Auth | Sin JWT | El rol/ID lo manda el propio front y el backend lo confía; simplifica el MVP a costa de no verificar identidad criptográficamente |
 | IA | Claude API | Resume el feedback en lenguaje natural para el Admin |
 
 Justificación ampliada, comparación contra alternativas y las decisiones que evitan sobreingeniería en

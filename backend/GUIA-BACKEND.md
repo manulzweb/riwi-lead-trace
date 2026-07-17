@@ -319,14 +319,12 @@ def require_role(*roles: str):
   (`checker`). Así podés escribir `Depends(require_role("admin"))` en un endpoint y `Depends(require_role("coder", "tutor"))`
   en otro, reutilizando la misma lógica de verificación con distintos roles permitidos — DRY en acción.
 
-> **Nota:** este `get_current_user`/`require_role` es un ejemplo genérico de cómo funciona el patrón
-> `Depends()` encadenado para auth. **Riwi LeadTrace no lo usa en producción**: el equipo decidió
-> sacar el JWT del backend para simplificar el MVP. `app/deps.py` sigue existiendo en el repo con
-> exactamente estas dos funciones, pero **ningún router lo importa ni lo usa como dependencia** —
-> es código huérfano, no conectado. Hoy el rol/ID de quien llama se confía al valor que manda el
-> propio front (ver "Endpoints" en `README.md`) — no hay verificación de sesión en el servidor. El
-> patrón sigue siendo útil para entender `Depends()`, pero no reintroduzcas su uso sin que el
-> equipo lo decida explícitamente (ver `CLAUDE.md`).
+> **Nota:** `get_current_user`/`require_role` es un ejemplo genérico de cómo funciona el patrón
+> `Depends()` encadenado para auth. **Riwi LeadTrace no usa este patrón**: el backend no maneja
+> JWT, por lo que `app/deps.py` no existe en este repo. El rol/ID de quien llama se confía al valor
+> que manda el propio front (ver "Endpoints" en `README.md`) — no hay verificación de sesión en el
+> servidor. El ejemplo sirve para entender `Depends()`, pero no lo agregues al proyecto sin
+> aprobación del equipo (ver `CLAUDE.md`).
 
 ### 6.4 CORS
 

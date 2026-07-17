@@ -13,7 +13,7 @@ la lista de endpoints.
 - **Python 3.12 + FastAPI**
 - **SQL plano** vía SQLAlchemy `text()` + `conn.execute()` (sin ORM, sin capa `models/`) + **PyMySQL** sobre **MySQL**
 - **Pydantic** para validación de entrada/salida
-- **bcrypt** (`passlib`) para hashear contraseñas — login verifica en servidor, **sin JWT** (decisión de equipo para simplificar el MVP: el rol/ID de quien llama se confía al valor que manda el propio front, no hay verificación criptográfica de sesión en el backend)
+- **bcrypt** (`passlib`) para hashear contraseñas — login verifica en servidor, **sin JWT**: el rol/ID de quien llama se confía al valor que manda el propio front, sin verificación criptográfica de sesión en el backend
 - **Claude API** (`anthropic`) para el resumen de feedback
 
 ## Requisitos previos
@@ -134,8 +134,8 @@ Reglas de negocio clave (no romper sin acordarlo con el equipo):
 - Un Coder no puede evaluar dos veces a la misma persona en el mismo periodo — validado **solo en
   `evaluation_service.create_evaluation`** (`SELECT` previo antes del `INSERT`, sin transacción).
   El índice único `uq_eval_once` que reforzaría esto en la BD está **comentado a propósito** en
-  `database/01_ddl.sql` (decisión de equipo aceptada para el MVP, no un bug pendiente); queda una
-  condición de carrera teórica entre dos requests concurrentes del mismo evaluador.
+  `database/01_ddl.sql`; queda una condición de carrera teórica entre dos requests concurrentes
+  del mismo evaluador.
 - Los evaluables tienen rol vía `user_roles` (N:M): un usuario puede tener varios roles a la vez.
   Al evaluar a un Team Leader, `evaluation_service` valida el clan contra `team_leader_clans` (un
   TL puede tener varios clanes a cargo); para tutor/coder valida contra el `clan_id` 1:1 de

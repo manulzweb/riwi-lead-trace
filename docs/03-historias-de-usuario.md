@@ -39,41 +39,33 @@ Cada historia incluye criterios de aceptacion (CA), prioridad y Story Points.
 
 ## AUTH
 
-> **Nota de actualizacion:** estas tres historias se escribieron pensando en JWT. Durante el
-> desarrollo el equipo decidio **quitar el JWT** del backend para simplificar el MVP (login solo
-> verifica hash bcrypt, sin emitir token; el rol/ID de quien llama se confia al valor que manda el
-> propio front). Los criterios de aceptacion de abajo quedan como **registro de lo planeado
-> originalmente**; el comportamiento real y el porque del cambio estan en `CLAUDE.md` ("Sin JWT")
-> y `06-arquitectura.md` ("Manejo de autenticacion") — esos dos son la fuente de verdad vigente.
-
 ### AUTH-01 — Inicio de sesion · `Must` · `3 SP`
-**Como** usuario registrado **quiero** iniciar sesion con mis credenciales **para** acceder a la plataforma de forma segura.
+**Como** usuario registrado **quiero** iniciar sesion con mis credenciales **para** acceder a la plataforma.
 
 **Criterios de aceptacion**
 - [ ] Formulario con email y contrasena validados en cliente.
-- [ ] `POST /auth/login` verifica la contrasena con **hash** (passlib/bcrypt) y emite un **JWT**.
+- [ ] `POST /auth/login` verifica la contrasena con **hash** (passlib/bcrypt) y devuelve los datos del usuario, sin emitir token.
 - [ ] Mensaje de error claro ante credenciales invalidas (`401`).
 - [ ] Al autenticar, se redirige a la vista inicial segun el rol.
 - [ ] Boton deshabilitado y feedback de carga durante la peticion.
 
-### AUTH-02 — Sesion y rutas protegidas · `Must` · `5 SP`
-**Como** usuario autenticado **quiero** mantener mi sesion y que las rutas privadas esten protegidas **para** no tener que reingresar y proteger mi informacion.
+### AUTH-02 — Sesion en cliente · `Must` · `5 SP`
+**Como** usuario autenticado **quiero** mantener mi sesion y que las rutas privadas esten protegidas **para** no tener que reingresar.
 
 **Criterios de aceptacion**
-- [ ] El token (JWT) se persiste en `localStorage` y se envia en cada peticion.
-- [ ] El backend valida el token (`get_current_user`) y rechaza peticiones sin token o expirado (`401`).
+- [ ] El usuario y sus roles se persisten en `localStorage` tras el login.
 - [ ] Acceder a una ruta privada sin sesion redirige a login.
 - [ ] Existe accion de logout que limpia la sesion.
-- [ ] Si el token expira (401), se cierra sesion y se redirige a login.
+- [ ] Las peticiones a la API llevan el rol/ID del usuario segun corresponda al endpoint.
 
-### AUTH-03 — Gestion de roles / autorizacion · `Must` · `3 SP`
+### AUTH-03 — Gestion de roles / autorizacion (frontend) · `Must` · `3 SP`
 **Como** sistema **quiero** mostrar funcionalidades segun el rol **para** que cada usuario vea solo lo que le corresponde.
 
 **Criterios de aceptacion**
 - [ ] El Coder ve evaluaciones e historial propio; no ve el dashboard.
 - [ ] El Admin ve dashboard, ICP, resumenes IA e historico.
 - [ ] Las rutas no autorizadas redirigen o muestran "no autorizado" (front).
-- [ ] El backend aplica `require_role` y responde `403` ante accesos no autorizados (autoridad real).
+- [ ] El backend filtra los datos por el rol/ID que manda el propio front (sin verificacion criptografica, ver `06-arquitectura.md`).
 - [ ] La navegacion se construye dinamicamente segun los permisos del rol.
 
 ---

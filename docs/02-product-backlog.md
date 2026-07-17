@@ -2,21 +2,14 @@
 
 Backlog **full-stack** del MVP (frontend SPA + backend FastAPI + MySQL). Estimacion en **Story Points (SP)**, escala Fibonacci (1, 2, 3, 5, 8). Prioridad **MoSCoW** (Must / Should / Could). Cada SP refleja el esfuerzo completo (UI + endpoint + datos), salvo las historias de estructura base (CORE-01, CORE-02).
 
-> **Nota de actualizacion:** las filas de `AUTH` y la de `CORE-02` describen el plan **original**
-> (JWT, capas `repositories/`/`models/`). Durante el desarrollo el equipo decidio simplificar el
-> MVP: sin JWT (el rol/ID lo manda el front, sin verificacion criptografica) y sin capas
-> `repositories/`/`models/` separadas (queries SQL directo en `services/`). El comportamiento y la
-> justificacion vigentes estan en `CLAUDE.md` y `06-arquitectura.md`; esta tabla queda como
-> registro del backlog planificado.
-
 | ID | Nombre | Descripcion | Epica | Prioridad | SP | Dependencias |
 |----|--------|-------------|-------|-----------|:--:|--------------|
 | CORE-01 | Preparar repo + estructura base de la SPA | Monorepo, estructura `frontend/`, router, store y `http.js` | CORE | Must | 5 | — |
-| CORE-02 | Estructura base del backend + BD | FastAPI, capas (routes/services, sin repos/models separados), conexion MySQL, seed | CORE | Must | 5 | — |
+| CORE-02 | Estructura base del backend + BD | FastAPI, capas routes/services (sin `repositories/`/`models/` separados), conexion MySQL, seed | CORE | Must | 5 | — |
 | CORE-03 | Layout y navegacion responsive | Shell SPA, nav por rol, estilos base mobile-first | CORE | Must | 5 | CORE-01 |
-| AUTH-01 | Inicio de sesion | UI login + `POST /auth/login` con hash + emision de JWT | AUTH | Must | 3 | CORE-02, CORE-03 |
-| AUTH-02 | Sesion y rutas protegidas | JWT en `localStorage`, guards SPA, `get_current_user`, expiracion/logout | AUTH | Must | 5 | AUTH-01 |
-| AUTH-03 | Roles / autorizacion (RBAC) | Navegacion/acciones por rol (front) + `require_role` (back) | AUTH | Must | 3 | AUTH-02 |
+| AUTH-01 | Inicio de sesion | UI login + `POST /auth/login`: verifica hash bcrypt en servidor, sin emitir token | AUTH | Must | 3 | CORE-02, CORE-03 |
+| AUTH-02 | Sesion en cliente | Usuario y roles en `localStorage`, guards de la SPA para redirigir sin sesion | AUTH | Must | 5 | AUTH-01 |
+| AUTH-03 | Roles / autorizacion (RBAC en frontend) | Navegacion/acciones ocultas por rol en la SPA; el backend filtra datos por el rol/ID que manda el propio front | AUTH | Must | 3 | AUTH-02 |
 | EVAL-01 | Listar evaluables | UI + `GET /users?role=...` de Team Leaders/Tutores a evaluar | EVAL | Must | 3 | AUTH-03 |
 | EVAL-02 | Evaluar Team Leader | Formulario estructurado + `GET /forms?target_role=` plantilla | EVAL | Must | 5 | EVAL-01 |
 | EVAL-03 | Evaluar Tutor | Reutiliza motor de formularios con plantilla de Tutor | EVAL | Must | 3 | EVAL-02 |

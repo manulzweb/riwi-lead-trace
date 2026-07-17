@@ -65,22 +65,20 @@ skill `.claude/skills/guia-generativa/SKILL.md`.
 - Responsive (mobile-first), validacion de formularios, consumo de la API REST.
 
 ### Backend
-- **Python + FastAPI** (decision del equipo).
+- **Python + FastAPI**.
 - SQL plano con SQLAlchemy `text()` + `conn.execute` (no ORM declarativo, no `Table`) + PyMySQL
   para acceso a MySQL. Sin capa `models/`: el esquema de tablas vive solo en `database/01_ddl.sql`
   (+ seed en `database/02_dml.sql`).
 - Validacion con **Pydantic**.
-- **Sin JWT (decision de equipo, MVP):** el login verifica credenciales con bcrypt en el servidor,
-  pero **no emite ni verifica token**. El rol/identidad de quien hace cada peticion se **confia**
-  al valor que manda el propio front (ej. `viewer_role` en `GET /evaluations`, `evaluator_id` en
-  `POST /evaluations`). **No hay verificacion criptografica de identidad en el backend.** Es un
-  tradeoff de seguridad consciente para simplificar el MVP, no un descuido — hay que poder
-  sustentarlo si preguntan en la evaluacion. `backend/app/deps.py` y las funciones JWT de
-  `security.py` (`create_access_token`/`decode_access_token`) ya no se usan; no los reintroduzcas
-  sin que el equipo lo decida explicitamente.
-- Logica de negocio y acceso a datos en la capa `services` (no en los routes; no hay capa
-  `repositories/` separada — se elimino a proposito por ser indirection sin beneficio en un MVP
-  de este tamano).
+- **Sin JWT:** el login verifica credenciales con bcrypt en el servidor, pero no emite ni verifica
+  token. El rol/identidad de quien hace cada peticion se confia al valor que manda el propio front
+  (ej. `viewer_role` en `GET /evaluations`, `evaluator_id` en `POST /evaluations`). No hay
+  verificacion criptografica de identidad en el backend: es un tradeoff de seguridad para mantener
+  el MVP simple, y hay que poder sustentarlo en la evaluacion. No agregues `backend/app/deps.py` ni
+  las funciones JWT en `security.py` (`create_access_token`/`decode_access_token`) sin que el
+  equipo lo apruebe primero.
+- Logica de negocio y acceso a datos en la capa `services` (no en los routes). No hay capa
+  `repositories/` separada: para el tamano de este MVP agrega una indireccion sin beneficio real.
 - **IA:** integracion con **Claude API** (SDK `anthropic`) en `services/ai_service.py` para resumir
   feedback (solo para el Admin). Modelo en uso: `claude-haiku-4-5-20251001` (economico).
   `ANTHROPIC_API_KEY` via `config/config.py`. **Solo se envian agregados anonimizados.**
@@ -137,19 +135,18 @@ Detalle completo en `docs/06-arquitectura.md`.
 
 ## Roles del sistema
 
-Son **4 roles** en el catalogo `roles`, pero **un mismo usuario puede tener varios a la vez**: la
-relacion `users`<->`roles` es **N:M** via la tabla intermedia `user_roles` (ya **no** existe un
-`role_id` unico en `users`). Un usuario puede ser, por ejemplo, `tutor` y `team_leader`
-simultaneamente. **No hay rol "teacher"/"instructor"**:
+Son **4 roles** en el catalogo `roles`, y **un mismo usuario puede tener varios a la vez**: la
+relacion `users`<->`roles` es **N:M** via la tabla intermedia `user_roles`. Un usuario puede ser,
+por ejemplo, `tutor` y `team_leader` simultaneamente. **No hay rol "teacher"/"instructor"**:
 
-- **`coder`** — evalua a TL y Tutor; pertenece a un clan/cohorte (`clan_id`, sigue siendo 1:1).
+- **`coder`** — evalua a TL y Tutor; pertenece a un clan/cohorte (`clan_id`, relacion 1:1).
 - **`tutor`** — **rol propio** (no es una bandera sobre coder); es principalmente evaluable;
   conserva `clan_id`.
 - **`team_leader`** (staff) — es evaluable por coders; ve su feedback agregado. Un TL puede tener
-  **dos o mas clanes a cargo** (no solo uno): esa asignacion N:M vive en la tabla
-  `team_leader_clans`, separada de `users.clan_id` (que sigue siendo 1:1 y la usan coder/tutor).
-- **`admin`** (Jefe de TL y de tutores; antes `coordinador`) — dashboards, metricas/ICP, resumenes
-  IA. Acceso global, respetando anonimato.
+  **dos o mas clanes a cargo**: esa asignacion N:M vive en la tabla `team_leader_clans`, separada
+  de `users.clan_id` (relacion 1:1, que usan coder/tutor).
+- **`admin`** (Jefe de TL y de tutores) — dashboards, metricas/ICP, resumenes IA. Acceso global,
+  respetando anonimato.
 
 Al crear/actualizar un usuario (`POST`/`PUT /users`), los roles se mandan como `role_ids: number[]`
 (reemplaza la lista completa en `PUT`, no la incrementa) — ver `user_service.create_user` /
@@ -164,16 +161,14 @@ mecanismo de sesion verificable en servidor (JWT u otro), no maquillar el front.
 ## Reglas de negocio que NO debes romper
 
 1. **Anonimato real:** si `is_anonymous` es true, **no** persistas ni expongas `evaluator_id`. Imposible reconstruir la identidad del evaluador anonimo.
-2. **Un Coder no evalua dos veces** al mismo evaluado en el mismo **periodo**: se valida hoy
+2. **Un Coder no evalua dos veces** al mismo evaluado en el mismo **periodo**: se valida
    **solo en la capa de aplicacion** (`evaluation_service.create_evaluation` hace un `SELECT` por
-   `evaluator_id`+`evaluatee_id`+`period_id` antes del `INSERT`, sin transaccion explicita).
-   **Decision de equipo aceptada:** el indice unico `uq_eval_once` que reforzaria esto a nivel de
-   BD esta **comentado a proposito** en `database/01_ddl.sql` — no es un olvido ni un bug
-   pendiente de arreglar, es el diseno actual. Esto deja una condicion de carrera teorica (dos
-   requests concurrentes del mismo evaluador podrian colarse entre el `SELECT` y el `INSERT` y
-   crear dos evaluaciones) que el equipo acepto conscientemente para el MVP. No lo "arregles"
-   descomentando el indice ni reescribiendo la validacion por tu cuenta sin que el equipo lo pida
-   explicitamente.
+   `evaluator_id`+`evaluatee_id`+`period_id` antes del `INSERT`, sin transaccion explicita). El
+   indice unico `uq_eval_once` en `database/01_ddl.sql` esta comentado a proposito: la validacion
+   de no-duplicado vive solo a nivel de aplicacion, no como constraint de BD. Esto deja una
+   condicion de carrera teorica (dos requests concurrentes del mismo evaluador podrian colarse
+   entre el `SELECT` y el `INSERT` y crear dos evaluaciones), aceptada para el tamano del MVP. No
+   descomentes el indice ni reescribas la validacion sin que el equipo lo apruebe primero.
 3. **Validacion doble:** en cliente (UX) y en servidor con Pydantic (autoridad).
 4. **Logica de negocio identificable** (no solo CRUD): **ICP** (indice 0-100 por persona/periodo, ponderado por el peso de cada pregunta — ver regla 6 — y normalizado, solo si hay al menos `MIN_EVALUATIONS` respuestas), % participacion, estados de evaluacion (borrador/enviada), filtros por rol. No la degrades a CRUD plano. El ICP es **derivado, no se persiste** (se calcula on-read en `metrics_service.calculate_average_score`) y mide **calidad percibida**, no aprendizaje real. No calcula tendencia entre periodos (ver `docs/06-arquitectura.md` para el detalle exacto del calculo antes de asumir que existe algo mas elaborado).
 5. **Ventana de evaluacion controlada (ADMIN-01):** solo puede existir **un periodo activo** a la vez y solo el **admin** lo activa/cierra (activar uno desactiva cualquier otro). Sin periodo activo, la SPA muestra "No hay formularios por realizar" y el backend **rechaza** (`409`) crear/enviar evaluaciones — la SPA nunca es la autoridad.

@@ -43,7 +43,7 @@ funcion pura hace lo mismo con menos codigo.
 |---|---|---|
 | **Layered Architecture** | `routes/ -> services/ -> MySQL` | Cada capa tiene una responsabilidad; los cambios quedan localizados |
 | **Service Layer** | `services/` (ej. `evaluation_service`, `metrics_service`, `ai_service`) | Concentra la logica de negocio (anonimato, no-duplicado, calculo de metricas) y las queries SQL, fuera de los routes |
-| **Dependency Injection** | `Depends(...)` en `routes/` (ej. `Query(...)` para filtros como `role`, `viewer_role`) | FastAPI inyecta dependencias en vez de que cada endpoint las construya; facilita testear. `app/deps.py` define `get_current_user`/`require_role` (patron JWT) pero **hoy no estan conectados a ningun router** — ver nota en "Manejo de autenticacion" |
+| **Dependency Injection** | `Depends(...)` en `routes/` (ej. `Query(...)` para filtros como `role`, `viewer_role`) | FastAPI inyecta dependencias en vez de que cada endpoint las construya; facilita testear |
 | **DTO (Data Transfer Object)** | `schemas/` (Pydantic) | Define exactamente que entra/sale de la API, distinto de las columnas de la BD |
 
 ### Frontend (funciones + un poco de OOP donde importa)
@@ -130,9 +130,7 @@ riwi-lead-trace/
 │   │   ├── schemas/            # Pydantic: request/response por dominio
 │   │   ├── services/           # LOGICA DE NEGOCIO + acceso a datos por entidad:
 │   │   │                       # auth, user, period, form, question, evaluation, metrics, ai
-│   │   ├── routes/              # auth, users, forms, evaluations, periods, questions, metrics
-│   │   └── deps.py             # get_current_user/require_role (JWT) -- existe en el repo pero
-│   │                           # NINGUN router lo usa hoy; no reintroducir sin decision de equipo
+│   │   └── routes/              # auth, users, forms, evaluations, periods, questions, metrics
 │   ├── requirements.txt
 │   └── .env.example
 │
@@ -175,21 +173,18 @@ export const routes = [
 | `routes/` | Definir endpoints, validar I/O con Pydantic, codigos HTTP | No contiene logica de negocio |
 | `services/` | **Logica de negocio** (reglas, calculos, orquestacion) y las queries SQL (`text()`) | No conoce detalles HTTP |
 | `schemas/` | Contratos Pydantic (validacion/serializacion) | Frontera de datos; nunca exponen campos sensibles (ej. `password_hash`) |
-| `deps.py` | Define `get_current_user`/`require_role` (patron JWT) | **No esta conectado a ningun router hoy** — ver nota abajo |
 
-> **`deps.py` existe pero esta huerfano:** el archivo define el patron clasico de FastAPI para
-> autenticacion con JWT (`get_current_user` decodifica un token, `require_role` lo envuelve para
-> exigir un rol), pero **ningun endpoint real lo usa como dependencia** — no hay
-> `Depends(get_current_user)` ni `Depends(require_role(...))` en ningun archivo de `routes/`
-> (podes verificarlo: `metrics_routes.py`, por ejemplo, no declara ninguna dependencia de auth).
-> Es codigo muerto que no debe reactivarse sin que el equipo lo decida explicitamente (ver
-> "Manejo de autenticacion" y `CLAUDE.md`).
+> **No hay capa de autenticacion en el backend.** El proyecto no usa JWT ni ningun otro mecanismo
+> de sesion verificable en servidor — no existe un `deps.py` con `get_current_user`/`require_role`,
+> ni `Depends(...)` de auth en ningun archivo de `routes/` (podes verificarlo: `metrics_routes.py`,
+> por ejemplo, no declara ninguna dependencia de este tipo). Detalle en "Manejo de autenticacion"
+> y `CLAUDE.md`.
 
-> **evaluator_id SI viene del body:** en `POST /evaluations`, `evaluator_id` es un campo mas del
+> **evaluator_id viene del body:** en `POST /evaluations`, `evaluator_id` es un campo mas del
 > JSON que manda el cliente (`EvaluationCreate.evaluator_id`, leido en
 > `evaluation_service.create_evaluation`) — no se deriva de ningun token ni sesion verificada,
-> porque no hay JWT. Esto es una **decision de equipo consciente** para simplificar el MVP, no un
-> descuido: cualquiera que llame la API directo (sin pasar por la SPA) podria, en teoria, mandar
+> porque no hay JWT. Es un tradeoff de seguridad para mantener el MVP simple: cualquiera que llame
+> la API directo (sin pasar por la SPA) podria, en teoria, mandar
 > el `evaluator_id` de otro coder. El mismo tradeoff aplica a `viewer_role` en
 > `GET /evaluations?evaluatee_id=`. Ver el detalle completo en `CLAUDE.md` ("Sin JWT").
 
@@ -266,10 +261,8 @@ extensiones puntuales sobre `calculate_average_score`, no un rediseno.
 
 ## Manejo de autenticacion
 
-> **Decision de equipo vigente (MVP): sin JWT.** El backend original preveia JWT (por eso existen
-> `security.py`/`deps.py` con funciones para crear/decodificar tokens y exigir rol), pero el
-> equipo decidio **no emitir ni verificar ningun token** para simplificar el MVP. Esta seccion
-> describe el comportamiento **real** hoy; para el detalle y el porque, ver `CLAUDE.md` ("Sin JWT").
+> **Sin JWT.** El backend no emite ni verifica ningun token de sesion. Para el detalle y el porque,
+> ver `CLAUDE.md` ("Sin JWT").
 
 - Login -> `POST /auth/login`: el backend solo verifica el hash bcrypt (`auth_service.login`) y
   devuelve `{ user }`. **No emite token.** Frontend guarda `user` en `localStorage` + `auth.store`
@@ -282,9 +275,7 @@ extensiones puntuales sobre `calculate_average_score`, no un rediseno.
 - **Autorizacion por rol:** en **frontend** (guards de `router.js`) es la unica capa que oculta
   rutas/opciones por rol — es **solo UX**. En **backend** no hay verificacion de rol real: los
   filtros por rol (`?role=`, `viewer_role`) son conveniencia sobre el dato que manda el cliente,
-  **no una barrera de seguridad**. `deps.py` (`get_current_user`/`require_role`) existe en el
-  repo como ejemplo del patron JWT, pero no esta conectado a ningun router — no lo reintroduzcas
-  sin que el equipo lo decida explicitamente.
+  **no una barrera de seguridad**.
 - **Visibilidad de evaluadores (regla de negocio):** una persona evaluada (**TL/Tutor**) **nunca ve
   quien la evaluo**. Solo el **Admin** ve la identidad del evaluador en evaluaciones **no anonimas**;
   las **anonimas permanecen anonimas para todos** (incluido el Admin).
@@ -312,9 +303,9 @@ La rubrica exige justificar las decisiones tecnicas. Todas las elecciones estan 
 | Frontend | HTML5 + CSS3 + **JS Vanilla (SPA)** | (obligatorio; sin frameworks) | Requisito del proyecto |
 | Backend | **Python + FastAPI** | Flask, Express.js | Python alineado a la Ruta Basica; validacion y docs integradas |
 | Base de datos | **MySQL** | PostgreSQL, MongoDB | Datos relacionales, integridad, consultas agregadas |
-| Auth | **Sin JWT** (decision de equipo) | JWT, sesiones server-side | El login valida hash bcrypt pero no emite token; el rol/ID lo manda el propio front y el backend lo confia. Simplifica el MVP a costa de no tener verificacion criptografica real (ver "Manejo de autenticacion") |
+| Auth | **Sin JWT** | JWT, sesiones server-side | El login valida hash bcrypt pero no emite token; el rol/ID lo manda el propio front y el backend lo confia. Reduce el alcance del MVP a costa de no tener verificacion criptografica real (ver "Manejo de autenticacion") |
 | IA (resumenes) | **Claude API** (`anthropic`) | otros LLM, sin IA | Calidad de redaccion + privacidad por diseno (solo agregados anonimos) |
 
-**FastAPI** trae validacion (Pydantic), tipado y documentacion automatica (Swagger/`/docs`) sin librerias extra — util para la sustentacion. **MySQL** encaja porque el dominio es naturalmente relacional (usuarios<->roles, evaluaciones<->respuestas) y el dashboard vive de consultas agregadas. El equipo decidio **no usar JWT** para simplificar el MVP (ver "Manejo de autenticacion"); es un tradeoff de seguridad consciente, no la opcion "ideal" para una SPA sin estado (JWT lo seria), pero reduce alcance para el tiempo disponible. **Claude API** resume el feedback en lenguaje natural para el Admin — es el diferenciador, pero la IA complementa la logica de negocio propia (el ICP), que es lo que evalua la rubrica como "no-CRUD".
+**FastAPI** trae validacion (Pydantic), tipado y documentacion automatica (Swagger/`/docs`) sin librerias extra, util para la sustentacion. **MySQL** encaja porque el dominio es naturalmente relacional (usuarios<->roles, evaluaciones<->respuestas) y el dashboard vive de consultas agregadas. No usar **JWT** es un tradeoff de seguridad consciente para reducir el alcance del MVP en el tiempo disponible; para una SPA sin estado, JWT seria la opcion mas robusta, pero no era necesaria para demostrar la logica de negocio del proyecto. **Claude API** resume el feedback en lenguaje natural para el Admin: complementa la logica de negocio propia (el ICP), que es lo que la rubrica evalua como "no-CRUD".
 
 **Decisiones que evitan sobreingenieria:** sin frameworks de frontend ni estado externo; SQL plano (`text()`) sobre un esquema 3FN sin complejidad extra; `database/01_ddl.sql` + `database/02_dml.sql` versionados en vez de migraciones (Alembic queda como mejora futura); tests enfocados en la logica de negocio, no en cobertura total.
