@@ -8,7 +8,8 @@ const jsonHeaders = {
   "Content-Type": "application/json"
 }
 
-
+// Arma las options de fetch para un POST/PUT/PATCH con body JSON. Varios
+// services (auth, evaluation, users, templates) dependen de este helper.
 export const jsonOptions = (method, data) => ({
   method,
   headers: jsonHeaders,
@@ -22,11 +23,3 @@ export const request = async (path, options) => {
   }
   return await response.json()
 }
-
-// Arma las options de fetch para un POST/PUT/PATCH con body JSON. Varios
-// services (auth, evaluation, users, templates) dependen de este helper.
-export const jsonOptions = (method, data) => ({
-  method,
-  headers: jsonHeaders,
-  body: JSON.stringify(data)
-})
