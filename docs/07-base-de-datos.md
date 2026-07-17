@@ -86,10 +86,11 @@ Justificacion ampliada en [`06-arquitectura.md`](./06-arquitectura.md).
 | id | INT PK | |
 | template_id | INT FK -> form_templates.id | |
 | text | VARCHAR(255) | editable por el Admin **solo con periodo cerrado** y via **versionado** (fila nueva + desactivar la anterior) |
-| category | VARCHAR(60) | categoria tematica de la pregunta (organiza el formulario); el calculo del ICP no la usa hoy — ver `06-arquitectura.md`); **no editable** desde la UI |
-| input_type | VARCHAR(20) | 'scale' \| 'text' |
-| sort_order | INT | orden de despliegue |
-| is_active | BOOLEAN | default TRUE; las evaluaciones nuevas cargan solo preguntas activas; las respuestas historicas conservan su pregunta original |
+| category | VARCHAR(60) | categoria tematica de la pregunta (organiza el formulario); **no editable** desde la UI |
+| input_type | VARCHAR(20) | 'scale' \| 'text'; **no editable** desde la UI |
+| sort_order | INT | orden de despliegue; **no editable** desde la UI |
+| weight_percent | DECIMAL(5,2) | peso de la pregunta en el ICP ponderado (solo aplica a 'scale'; 'text' queda en 0). Las preguntas de escala **activas** de un mismo `template_id` deben sumar exactamente 100 — se valida en `question_service.update_weights` antes de guardar. Editable por el Admin via `PUT /questions/weights`, solo con periodo cerrado |
+| is_active | BOOLEAN | default TRUE; las evaluaciones nuevas cargan solo preguntas activas; las respuestas historicas conservan su pregunta y su peso original |
 
 ### `evaluations`
 | Atributo | Tipo | Notas |
@@ -218,7 +219,7 @@ ai_feedback_cache(id, evaluatee_id->users, period_id->periods, summary, model,
 | users | seed/admin | login, listar evaluables | perfil (futuro) | baja logica (`is_active`) |
 | evaluations | Coder (POST) | historial, dashboard | borrador->enviada | borrador descartable |
 | evaluation_answers | con la evaluacion | en detalle/metricas | en borrador | cascada con evaluacion |
-| form_templates / questions | seed | render de formularios | admin: texto + `is_active` (versionado, periodo cerrado) | baja logica (`is_active`) |
+| form_templates / questions | seed | render de formularios | admin: texto (versionado) + `weight_percent` (deben sumar 100 por template) + `is_active`, todo solo con periodo cerrado | baja logica (`is_active`) |
 | periods | seed/admin | filtros | admin: activar/cerrar (uno activo) | — |
 | ai_feedback_cache | servicio IA | resumen del Admin | regenerar | invalidar |
 
@@ -229,7 +230,6 @@ ai_feedback_cache(id, evaluatee_id->users, period_id->periods, summary, model,
 
 - **Areas / multi-area:** agregar tabla `areas` y `area_id` a users/evaluations/form_templates para segmentar el ICP por area (Desarrollo, Ingles, HSE, BLS).
 - **Bitacora TL->Tutor:** tabla `tutor_feedback_log` para notas continuas del TL sobre tutores.
-- **Pesos del ICP configurables:** tabla `icp_weights` para que el Admin edite los pesos por categoria.
 - **Analitica de talento:** Talent Score derivado para ranking de futuros TL.
 - **N—N Coder-Clanes:** si un Coder puede estar en varias cohortes a la vez, migrar a tabla intermedia `coder_clanes(user_id, clan_id)`.
 

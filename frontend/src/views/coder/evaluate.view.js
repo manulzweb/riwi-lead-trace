@@ -126,7 +126,8 @@ export const setupEvaluate = async () => {
     console.error(err);
   }
 
-  targetRole.addEventListener("change", async () => {
+  // Manejador de cambio de rol (funcion nombrada: se reutiliza para la preseleccion via query params)
+  const handleRoleChange = async () => {
     const role = targetRole.value;
     qContainer.innerHTML = "";
     currentTemplate = null;
@@ -155,7 +156,20 @@ export const setupEvaluate = async () => {
       qContainer.innerHTML = '<div class="text-red-500 py-4 text-center">Error al cargar preguntas de la plantilla.</div>';
       console.error(err);
     }
-  });
+  };
+
+  targetRole.addEventListener("change", handleRoleChange);
+
+  // 2.5 Preselección por parámetros de consulta (query params)
+  const params = new URLSearchParams(window.location.search);
+  const preselectedRole = params.get("role");
+  const preselectedId = params.get("evaluatee_id");
+
+  if (preselectedRole && preselectedId) {
+    targetRole.value = preselectedRole;
+    await handleRoleChange();
+    evaluatee.value = preselectedId;
+  }
 
   const renderQuestions = (questions) => {
     qContainer.innerHTML = "";
@@ -332,6 +346,7 @@ export const setupEvaluate = async () => {
     }
 
     const evaluationData = {
+      evaluator_id: currentUser.id,
       evaluatee_id: parseInt(evaluatee.value),
       template_id: currentTemplate.id,
       period_id: activePeriod.id,
