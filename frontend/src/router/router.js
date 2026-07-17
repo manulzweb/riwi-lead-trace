@@ -25,7 +25,19 @@ export async function renderRoute() {
     const currentPath = window.location.pathname;
     const route = ROUTES[currentPath] ?? ROUTES['/404'];
 
-    const userSession = authService.getSession();
+    let userSession = authService.getSession();
+    
+    // Si no hay sesión activa en localStorage, simulamos un usuario con todos los roles
+    if (!userSession) {
+        userSession = {
+            id: 0,
+            name: "Invitado de Desarrollo",
+            email: "invitado@riwi.edu",
+            roles: ["coder", "tutor", "team_leader", "admin"],
+            role: "admin"
+        };
+    }
+
     const userRole = userSession?.roles || [];
 
     // 1. Redirigir al login si es una ruta privada y no está autenticado
@@ -35,7 +47,8 @@ export async function renderRoute() {
     }
 
     // 2. Redirigir al dashboard si ya está autenticado e intenta ir a login/register o home (si configurado)
-    if (route.redirectIfAuth && userSession) {
+    // (excepto el usuario invitado de desarrollo, id === 0, que sí debe poder ver login)
+    if (route.redirectIfAuth && userSession && userSession.id !== 0) {
         window.history.replaceState({}, "", "/dashboard");
         return renderRoute();
     }
