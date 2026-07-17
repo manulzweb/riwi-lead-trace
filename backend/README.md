@@ -13,7 +13,7 @@ la lista de endpoints.
 - **Python 3.12 + FastAPI**
 - **SQL plano** vía SQLAlchemy `text()` + `conn.execute()` (sin ORM, sin capa `models/`) + **PyMySQL** sobre **MySQL**
 - **Pydantic** para validación de entrada/salida
-- **JWT** (`python-jose`) + **bcrypt** (`passlib`) para autenticación
+- **bcrypt** (`passlib`) para hashear contraseñas — login verifica en servidor, **sin JWT** (decisión de equipo para simplificar el MVP: el rol/ID de quien llama se confía al valor que manda el propio front, no hay verificación criptográfica de sesión en el backend)
 - **Claude API** (`anthropic`) para el resumen de feedback
 
 ## Requisitos previos
@@ -47,9 +47,6 @@ cp .env.example .env
 | Variable | Descripción | Ejemplo |
 |---|---|---|
 | `DATABASE_URL` | Cadena de conexión a MySQL (`dialecto+driver://usuario:password@host:puerto/bd`) | `mysql+pymysql://root:password@localhost:3306/riwi_lead_trace` |
-| `SECRET_KEY` | Clave para firmar los JWT. Generá una propia, no uses la de ejemplo. | `openssl rand -hex 32` |
-| `ALGORITHM` | Algoritmo de firma del JWT | `HS256` |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | Minutos de validez del token de sesión | `60` |
 | `ANTHROPIC_API_KEY` | API key de Claude, para `/metrics/ai-summary`. Si falta, ese endpoint responde un mensaje claro en vez de fallar. | `sk-ant-...` |
 | `FRONTEND_ORIGIN` | Origen permitido por CORS (la URL de la SPA) | `http://localhost:5173` |
 
@@ -65,6 +62,11 @@ Esto crea las tablas normalizadas a 3FN (`roles`, `cohorts`, `clans`, `users`, `
 `form_templates`, `questions`, `evaluations`, `evaluation_answers`, `ai_feedback_cache`). Ver
 [`docs/07-base-de-datos.md`](../docs/07-base-de-datos.md) para el modelo entidad-relación completo.
 
+`app/config/database.py` expone un `conn` que cada `service` usa directo (`conn.execute(...)`,
+`conn.commit()`). Por dentro le da a **cada hilo su propia `Connection`** de SQLAlchemy (FastAPI
+corre los endpoints sync de este proyecto en un threadpool) para que dos requests concurrentes no
+compartan el mismo objeto de conexion/transaccion.
+
 ## Correr el servidor
 
 ```bash
@@ -76,28 +78,29 @@ uvicorn app.main:app --reload
 
 ## Endpoints
 
-Todos los endpoints (salvo `/auth/login` y `/`) requieren `Authorization: Bearer <token>`. Los
-marcados con un rol específico además exigen ese rol (`403` si no coincide); los marcados
-"propio o admin" solo dejan ver/editar tus propios datos salvo que seas admin.
+**Ninguno de estos endpoints verifica sesión ni rol en el servidor** (no hay JWT — ver "Stack").
+La columna "Rol esperado" es solo lo que el *frontend* respeta al armar la UI y, en algunos casos,
+un parámetro (`viewer_role`, `evaluator_id`) que el propio cliente manda y el backend usa tal cual
+para filtrar datos, sin poder confirmar que sea real. No lo trates como control de acceso real.
 
-| Método | Endpoint | Uso | Quién |
+| Método | Endpoint | Uso | Rol esperado (front) |
 |---|---|---|---|
 | GET | `/` | Health check | público |
-| POST | `/auth/login` | Login → `{ user, access_token }` | público |
-| GET | `/users` | Listar usuarios | cualquier sesión |
-| GET | `/users/{id}` | Obtener un usuario | cualquier sesión |
+| POST | `/auth/login` | Login → `{ user }` (sin token) | público |
+| GET | `/users` | Listar usuarios | cualquiera |
+| GET | `/users/{id}` | Obtener un usuario | cualquiera |
 | POST | `/users` | Crear usuario | admin |
 | PUT | `/users/{id}` | Actualizar usuario | admin |
 | DELETE | `/users/{id}` | Eliminar usuario | admin |
-| GET | `/periods` | Listar periodos | cualquier sesión |
-| GET | `/periods/{id}` | Obtener un periodo | cualquier sesión |
+| GET | `/periods` | Listar periodos | cualquiera |
+| GET | `/periods/{id}` | Obtener un periodo | cualquiera |
 | POST | `/periods` | Crear periodo | admin |
 | PUT | `/periods/{id}` | Actualizar periodo (activarlo desactiva cualquier otro) | admin |
 | DELETE | `/periods/{id}` | Eliminar periodo | admin |
-| GET | `/forms?target_role=` | Plantilla de formulario para `team_leader` o `tutor` | cualquier sesión |
-| POST | `/evaluations` | Registrar evaluación (borrador o enviada) — valida anonimato y no-duplicado por periodo | cualquier sesión |
-| GET | `/evaluations?evaluator_id=` | Historial de evaluaciones hechas por un Coder | propio o admin |
-| GET | `/evaluations?evaluatee_id=&period_id=` | Histórico de evaluaciones recibidas | propio o admin |
+| GET | `/forms?target_role=` | Plantilla de formulario para `team_leader` o `tutor` | cualquiera |
+| POST | `/evaluations` | Registrar evaluación (borrador o enviada) — valida anonimato, no-duplicado por periodo y periodo activo | cualquiera |
+| GET | `/evaluations?evaluator_id=` | Historial de evaluaciones hechas por un Coder | cualquiera |
+| GET | `/evaluations?evaluatee_id=&period_id=&viewer_role=` | Histórico de evaluaciones recibidas; `viewer_role=admin` revela al evaluador en no-anónimas | cualquiera |
 | GET | `/metrics/summary?period_id=` | KPIs globales + ICP por persona en un periodo | admin, team_leader, tutor |
 | GET | `/metrics/ai-summary?evaluatee_id=&period_id=` | Resumen de feedback generado con Claude (cacheado) | admin |
 
@@ -106,11 +109,10 @@ marcados con un rol específico además exigen ese rol (`403` si no coincide); l
 ```
 app/
 ├── main.py       # arma la app FastAPI, CORS, registra los routers
-├── deps.py       # get_current_user, require_role(*roles) — auth/RBAC
-├── config/       # settings (.env), conexión a MySQL, hashing/JWT
+├── config/       # settings (.env), conexión a MySQL, hashing de contraseñas (bcrypt)
 ├── schemas/      # Pydantic — forma de entrada/salida de cada endpoint
 ├── routes/       # un router por recurso; valida y delega a services
-└── services/     # lógica de negocio + queries SQL (auth, user, period, form, evaluation, metrics, ai)
+└── services/     # lógica de negocio + queries SQL (auth, user, period, form, question, evaluation, metrics, ai)
 ```
 
 No hay carpeta `models/`: la forma de las tablas vive solo en
@@ -137,5 +139,5 @@ Detalle completo en [`CLAUDE.md`](../CLAUDE.md) y [`docs/`](../docs).
 pytest
 ```
 
-Suite en [`backend/tests/`](./tests): `test_auth.py`, `test_rbac.py`, `test_evaluations.py`,
-`test_metrics.py`. También podés probar a mano en `http://localhost:8000/docs` (Swagger).
+Suite en [`backend/tests/`](./tests): `test_auth.py`, `test_evaluations.py`, `test_metrics.py`.
+También podés probar a mano en `http://localhost:8000/docs` (Swagger).

@@ -306,6 +306,12 @@ def require_role(*roles: str):
   (`checker`). Así podés escribir `Depends(require_role("admin"))` en un endpoint y `Depends(require_role("coder", "tutor"))`
   en otro, reutilizando la misma lógica de verificación con distintos roles permitidos — DRY en acción.
 
+> **Nota:** este `get_current_user`/`require_role` es un ejemplo genérico de cómo funciona el patrón
+> `Depends()` encadenado para auth. **Riwi LeadTrace ya no lo usa**: el equipo decidió sacar el JWT
+> del backend para simplificar el MVP (`deps.py` se borró). Hoy el rol/ID de quien llama se confía al
+> valor que manda el propio front (ver "Endpoints" en `README.md`) — no hay verificación de sesión
+> en el servidor. El patrón sigue siendo útil para entender `Depends()`, pero no está en el código.
+
 ### 6.4 CORS
 
 ```python
@@ -339,7 +345,6 @@ sqlalchemy==2.0.30          # el ORM (sección 3)
 pymysql==1.1.1              # el driver que le permite a SQLAlchemy hablar con MySQL
 pydantic==2.7.1             # validación de datos y tipos (los BaseModel, como PeriodOut)
 pydantic-settings==2.2.1    # extensión de Pydantic para leer configuración desde variables de entorno / .env
-python-jose[cryptography]==3.3.0  # crear y decodificar tokens JWT (login)
 passlib[bcrypt]==1.7.4      # hashear y verificar contraseñas de forma segura
 python-dotenv==1.0.1        # carga el archivo .env para que esté disponible como variables de entorno
 anthropic==0.28.0           # SDK oficial para llamar a la API de Claude (resúmenes de feedback con IA)
