@@ -65,6 +65,11 @@ Esto crea las tablas normalizadas a 3FN (`roles`, `cohorts`, `clans`, `users`, `
 `form_templates`, `questions`, `evaluations`, `evaluation_answers`, `ai_feedback_cache`). Ver
 [`docs/07-base-de-datos.md`](../docs/07-base-de-datos.md) para el modelo entidad-relación completo.
 
+`app/config/database.py` expone un `conn` que cada `service` usa directo (`conn.execute(...)`,
+`conn.commit()`). Por dentro le da a **cada hilo su propia `Connection`** de SQLAlchemy (FastAPI
+corre los endpoints sync de este proyecto en un threadpool) para que dos requests concurrentes no
+compartan el mismo objeto de conexion/transaccion.
+
 ## Correr el servidor
 
 ```bash
