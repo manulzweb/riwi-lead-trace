@@ -98,11 +98,16 @@ para filtrar datos, sin poder confirmar que sea real. No lo trates como control 
 | PUT | `/periods/{id}` | Actualizar periodo (activarlo desactiva cualquier otro) | admin |
 | DELETE | `/periods/{id}` | Eliminar periodo | admin |
 | GET | `/forms?target_role=` | Plantilla de formulario para `team_leader` o `tutor` | cualquiera |
+| POST | `/forms` | Crear una plantilla nueva con sus preguntas iniciales (constructor del Admin) — solo con periodo cerrado, desactiva cualquier otra plantilla activa del mismo rol | admin |
+| PUT | `/forms/{id}` | Actualizar título/descripción de una plantilla (las preguntas se manejan con `/questions`) — solo con periodo cerrado | admin |
+| DELETE | `/forms/{id}` | Desactivar una plantilla — solo con periodo cerrado | admin |
 | POST | `/evaluations` | Registrar evaluación (borrador o enviada) — valida anonimato, no-duplicado por periodo y periodo activo | cualquiera |
 | GET | `/evaluations?evaluator_id=` | Historial de evaluaciones hechas por un Coder | cualquiera |
 | GET | `/evaluations?evaluatee_id=&period_id=&viewer_role=` | Histórico de evaluaciones recibidas; `viewer_role=admin` revela al evaluador en no-anónimas | cualquiera |
 | GET | `/questions?template_id=` | Preguntas activas de un template (texto + peso) | admin |
+| POST | `/questions` | Agregar una pregunta nueva a una plantilla existente — solo con periodo cerrado, no exige que los pesos sumen 100 en el momento | admin |
 | PATCH | `/questions/{id}` | Reformular el texto de una pregunta — siempre versiona, solo con periodo cerrado | admin |
+| DELETE | `/questions/{id}` | Desactivar una pregunta — solo con periodo cerrado, idempotente | admin |
 | PUT | `/questions/weights` | Actualizar los pesos de las preguntas de escala de un template — deben sumar 100, solo con periodo cerrado | admin |
 | GET | `/metrics/summary?period_id=` | KPIs globales + ICP ponderado por persona en un periodo | admin, team_leader, tutor |
 | GET | `/metrics/ai-summary?evaluatee_id=&period_id=` | Resumen de feedback generado con Claude (cacheado) | admin |
@@ -141,6 +146,15 @@ Reglas de negocio clave (no romper sin acordarlo con el equipo):
   (fila nueva + `is_active=FALSE` en la anterior); `category`/`input_type`/`sort_order`/
   `weight_percent` se heredan sin tocar. Al guardar, la IA revisa que el texto siga encajando en la
   categoria (`ai_service.check_question_category_coherence`); si no, hace falta `confirm: true`.
+- El constructor de plantillas (`POST /forms`, `POST /questions`) también exige periodo cerrado.
+  Solo `team_leader`/`tutor` son roles evaluables (`form_service.EVALUABLE_ROLES`) — un `target_role`
+  distinto (ej. `coder`, que evalúa pero nunca es evaluado) se rechaza con `422`. Crear una plantilla
+  nueva para un rol desactiva cualquier otra plantilla activa de ese mismo rol (una sola activa por
+  rol, igual que los periodos). Ni `POST /forms` ni `POST /questions` ni `DELETE` borran filas
+  físicamente: siempre desactivan (`is_active=FALSE`), porque `evaluations.template_id` y
+  `evaluation_answers.question_id` pueden referenciarlas desde evaluaciones históricas. Los tipos de
+  pregunta válidos son `scale` \| `text` \| `yes_no`; `yes_no` se trata como `text` para el ICP (se
+  excluye del promedio ponderado, igual que `text`, ver `metrics_service.calculate_average_score`).
 - A Claude API solo se le envían agregados anonimizados (nunca `evaluator_id` ni identidades).
 
 Detalle completo en [`CLAUDE.md`](../CLAUDE.md) y [`docs/`](../docs).
@@ -152,5 +166,5 @@ pytest
 ```
 
 Suite en [`backend/tests/`](./tests): `test_auth.py`, `test_evaluations.py`, `test_metrics.py`,
-`test_periods.py`, `test_questions.py`. También podés probar a mano en `http://localhost:8000/docs`
+`test_periods.py`, `test_questions.py`, `test_form_templates.py`. También podés probar a mano en `http://localhost:8000/docs`
 (Swagger).
