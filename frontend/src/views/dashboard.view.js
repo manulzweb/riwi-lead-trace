@@ -10,16 +10,16 @@ export const renderDashboard = () => {
   const quickLinks = {
     coder: [
       { href: "/evaluations/new", label: "Evaluar", title: "Nueva evaluación" },
-      { href: "/evaluations",     label: "Historial", title: "Mis evaluaciones" },
+      { href: "/evaluations", label: "Historial", title: "Mis evaluaciones" },
     ],
     team_leader: [
-      { href: "/my-results",    label: "Resultados", title: "Mi retroalimentación" },
+      { href: "/my-results", label: "Resultados", title: "Mi retroalimentación" },
     ],
     tutor: [
       { href: "/my-results", label: "Resultados", title: "Mi retroalimentación" },
     ],
     admin: [
-      { href: "/admin/metrics",    label: "Métricas",  title: "ICP por área" },
+      { href: "/admin/metrics", label: "Métricas", title: "ICA por área" },
       { href: "/admin/ai-summary", label: "Resumen IA", title: "Feedback con IA" },
     ],
   };
@@ -36,9 +36,9 @@ export const renderDashboard = () => {
   return `
     ${navBarComponent()}
     <main class="mx-auto max-w-6xl px-6 py-10">
-      <section class="rounded-[2rem] bg-[var(--brand-bg)] px-8 py-10 text-[var(--brand-text)] shadow-xl">
+      <section class="rounded-[2rem] bg-[var(--brand-bg)] px-8 py-10 text-white shadow-xl transition-colors duration-300">
         <p class="text-sm font-semibold uppercase tracking-[0.3em] opacity-80">Dashboard</p>
-        <h1 class="mt-3 text-4xl font-black tracking-tight">Bienvenido, ${name}</h1>
+        <h1 class="mt-3 text-5xl font-black  tracking-tight">Bienvenido, ${name}</h1>
         <p class="mt-4 max-w-2xl opacity-90">Accede a tus herramientas según tu rol en el proceso de evaluación 360°.</p>
       </section>
 
@@ -57,4 +57,4 @@ export const renderDashboard = () => {
   `;
 };
 
-export const setupDashboard = () => {};
+export const setupDashboard = () => { };

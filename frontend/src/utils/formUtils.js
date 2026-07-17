@@ -1,3 +1,8 @@
+/**
+ * Marca visualmente un campo como inválido y muestra el mensaje de error.
+ * Asume que el contenedor del error es el siguiente elemento hermano del input, 
+ * o se pasa explícitamente el elemento de mensaje.
+ */
 export const showFieldError = (input, message, errorElement = null) => {
   if (!input) return;
   input.classList.remove("border-[var(--border-main)]", "focus:border-[var(--brand-hover)]");
@@ -11,6 +16,9 @@ export const showFieldError = (input, message, errorElement = null) => {
   }
 };
 
+/**
+ * Limpia el estado de error de un input.
+ */
 export const clearFieldError = (input, errorElement = null) => {
   if (!input) return;
   input.classList.remove("border-[var(--danger-text)]", "focus:border-[var(--danger-text)]", "focus:ring-4", "focus:ring-[var(--danger-border)]");
@@ -56,13 +64,16 @@ export const validateSync = (input, errorElement, rules) => {
   for (const rule of rules) {
     if (rule.validate(inputValue)) {
       showFieldError(input, rule.errorMessage, errorElement);
-      return false;
+      return false; // has error
     }
   }
   clearFieldError(input, errorElement);
-  return true;
+  return true; // no error
 };
 
+/**
+ * Gestiona el estado visual de carga de un botón.
+ */
 export const setButtonLoadingState = (button, isLoading, loadingText = "Guardando...", originalText = "Guardar") => {
   if (!button) return
   

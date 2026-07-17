@@ -145,23 +145,28 @@ CREATE TABLE form_templates (
 -- Preguntas / criterios de una plantilla
 -- ---------------------------------------------------------------------
 CREATE TABLE questions (
-    id          INT AUTO_INCREMENT PRIMARY KEY,
-    template_id INT NOT NULL,
-    text        VARCHAR(255) NOT NULL,
-    category    VARCHAR(60) NOT NULL,
-    input_type  ENUM('scale', 'text') NOT NULL DEFAULT 'scale',
-    sort_order  INT NOT NULL DEFAULT 0,
-    weight      INT NOT NULL,
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    template_id   INT NOT NULL,
+    text          VARCHAR(255) NOT NULL,
+    category      VARCHAR(60) NOT NULL,
+    input_type    VARCHAR(20) NOT NULL DEFAULT 'scale', -- 'scale' | 'text'
+    sort_order    INT NOT NULL DEFAULT 0,
+    -- Peso de la pregunta en el ICP ponderado (ADMIN-02). Solo aplica a
+    -- preguntas 'scale'; las 'text' quedan en 0. Los pesos de las preguntas
+    -- de escala ACTIVAS de un mismo template deben sumar exactamente 100
+    -- (se valida en question_service antes de guardar, ver PUT /questions/weights).
+    weight_percent DECIMAL(5,2) NOT NULL DEFAULT 0,
     -- Edición del Admin (ADMIN-02): editar texto = versionar (fila nueva +
     -- desactivar la anterior). Las evaluaciones nuevas cargan solo activas;
-    -- las respuestas históricas conservan su pregunta original.
-    is_active   BOOLEAN NOT NULL DEFAULT TRUE,
+    -- las respuestas históricas conservan su pregunta y su peso original.
+    is_active     BOOLEAN NOT NULL DEFAULT TRUE,
     CONSTRAINT fk_question_template
         FOREIGN KEY (template_id)
         REFERENCES form_templates(id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
-    CONSTRAINT chk_input_type CHECK (input_type IN ('scale','text'))
+    CONSTRAINT chk_input_type CHECK (input_type IN ('scale','text')),
+    CONSTRAINT chk_weight_percent_range CHECK (weight_percent >= 0 AND weight_percent <= 100)
 );
 
 -- ---------------------------------------------------------------------

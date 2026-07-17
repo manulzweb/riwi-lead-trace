@@ -1,6 +1,6 @@
 from fastapi import HTTPException, status
 
-from app.config.security import create_access_token, verify_password
+from app.config.security import verify_password
 from app.schemas.auth import LoginResponse
 from app.schemas.user import UserOut
 from app.services.user_service import get_user_by_email
@@ -13,5 +13,4 @@ def login(email: str, password: str) -> LoginResponse:
     if not user["is_active"]:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuario inactivo")
 
-    token = create_access_token({"sub": str(user["id"]), "roles": user["roles"]})
-    return LoginResponse(access_token=token, user=UserOut(**user))
+    return LoginResponse(user=UserOut(**user))

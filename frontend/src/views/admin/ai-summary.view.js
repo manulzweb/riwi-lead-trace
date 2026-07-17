@@ -1,4 +1,5 @@
 import { navBarComponent } from "../../components/navbar";
+import { dropdownComponent, setupDropdown } from "../../components/dropdown";
 import { userService } from "../../services/users.service";
 import { periodService } from "../../services/periods.service";
 import { metricsService } from "../../services/metrics.service";
@@ -17,17 +18,15 @@ export const renderAiSummary = () => `
       <div class="grid gap-5">
         <div>
           <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="target-user">Persona evaluada</label>
-          <select id="target-user"
-            class="w-full rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] px-4 py-3 text-[var(--text-main)] focus:border-[var(--brand-hover)] focus:outline-none">
-            <option value="">Selecciona una persona...</option>
-          </select>
+          ${dropdownComponent('target-user', [
+  { value: '', label: 'Selecciona una persona...' }
+], '')}
         </div>
         <div>
           <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="period">Periodo</label>
-          <select id="period"
-            class="w-full rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] px-4 py-3 text-[var(--text-main)] focus:border-[var(--brand-hover)] focus:outline-none">
-            <option value="">Selecciona un periodo...</option>
-          </select>
+          ${dropdownComponent('period', [
+  { value: '', label: 'Selecciona un periodo...' }
+], '')}
         </div>
         <button id="generate-btn"
           class="inline-flex items-center justify-center rounded-2xl bg-[var(--brand-bg)] px-5 py-3 text-sm font-bold text-[var(--brand-text)] transition-all duration-300 ease-in-out hover:bg-[var(--brand-hover)] hover:shadow-md hover:cursor-pointer focus:ring-4 focus:ring-[var(--border-main)]">
@@ -45,6 +44,9 @@ export const renderAiSummary = () => `
 `;
 
 export const setupAiSummary = async () => {
+  setupDropdown('target-user');
+  setupDropdown('period');
+
   const generateBtn = document.getElementById("generate-btn");
   const targetUserSelect = document.getElementById("target-user");
   const periodSelect = document.getElementById("period");

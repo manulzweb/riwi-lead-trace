@@ -5,12 +5,31 @@ from typing import Optional
 from app.config.database import conn
 from app.schemas.evaluation import EvaluationCreate
 
-def create_evaluation(eval_data: EvaluationCreate, evaluator_id: int):
+def create_evaluation(eval_data: EvaluationCreate):
     """Crea una evaluación y sus respuestas correspondientes.
 
-    evaluator_id viene del usuario autenticado (token), nunca del body del
-    cliente, para que la validación de "no duplicado" no se pueda saltar.
+    evaluator_id viene del body (sin JWT, el backend no puede confirmar
+    quien es realmente el que llama).
     """
+    evaluator_id = eval_data.evaluator_id
+
+    # Regla de negocio (ADMIN-01): sin periodo activo no se crean ni se
+    # envian evaluaciones. La SPA oculta el formulario cuando no hay periodo
+    # activo, pero eso es solo UX -- el backend es quien de verdad lo hace
+    # cumplir, para que nadie lo salte llamando a la API directo.
+    period_query = text("SELECT is_active FROM periods WHERE id = :period_id")
+    period_row = conn.execute(period_query, {"period_id": eval_data.period_id}).first()
+    if period_row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="El periodo indicado no existe."
+        )
+    if not period_row[0]:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="No se pueden crear ni enviar evaluaciones: el periodo no esta activo."
+        )
+
     # Regla de negocio: un evaluador no puede evaluar dos veces a la misma
     # persona en el mismo periodo. Esto corre siempre, sea anónima o no,
     # porque el registro se identifica por el evaluador real, no por lo

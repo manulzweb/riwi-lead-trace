@@ -1,3 +1,5 @@
+from typing import Optional
+
 from sqlalchemy import text
 from app.config.database import conn
 from app.config.security import hash_password
@@ -9,12 +11,36 @@ def _format_user(row):
     user_dict["roles"] = user_dict["roles"].split(",") if user_dict["roles"] else []
     return user_dict
 
-def get_users():
+def get_users(role: Optional[str] = None):
+    """Obtiene los usuarios de la base de datos (sin el hash de contraseña).
+
+    role filtra por nombre de rol (ej. "team_leader", "tutor") -- se usa
+    para listar solo los evaluables al armar el formulario de evaluacion.
+    """
+    query_str = """
+        SELECT u.id, u.full_name AS name, u.email, u.is_active, u.clan_id, GROUP_CONCAT(r.name) as roles
+        FROM users u
+        LEFT JOIN user_roles ur ON u.id = ur.user_id
+        LEFT JOIN roles r ON ur.role_id = r.id
+    """
+    params = {}
+    if role is not None:
+        query_str += " WHERE r.name = :role"
+        params["role"] = role
+
+    query_str += " GROUP BY u.id"
+    
+    result = conn.execute(text(query_str), params)
+    return [_format_user(row) for row in result.mappings()]
+
+def get_evaluables():
+    """Obtiene todos los usuarios evaluables (Team Leaders y Tutores)."""
     query = text("""
         SELECT u.id, u.full_name AS name, u.email, u.is_active, u.clan_id, GROUP_CONCAT(r.name) as roles
         FROM users u
         LEFT JOIN user_roles ur ON u.id = ur.user_id
         LEFT JOIN roles r ON ur.role_id = r.id
+        WHERE r.name IN ('team_leader', 'tutor') AND u.is_active = 1
         GROUP BY u.id
     """)
     result = conn.execute(query)
