@@ -1,13 +1,9 @@
 import { getEmailRules, getPasswordRules } from "../../utils/validators";
 import { authService } from "../../services/auth.service";
 import { renderRoute } from "../../router/router";
-<<<<<<< HEAD
 import { userService } from "../../services/users.service";
 import { showToast } from "../../components/alerts";
 import { hashPassword } from "../../utils/crypto";
-=======
-import { showToast } from "../../components/alerts";
->>>>>>> upstream/develop
 import { setButtonLoadingState, createDebouncedValidator, validateSync, showFieldError } from "../../utils/formUtils";
 import { backgroundComponent } from "../../components/background.js";
 import { langSwitcherComponent, setupLangSwitcher } from "../../components/lang-switcher.js";
@@ -108,37 +104,20 @@ const handleLoginSubmit = (elements) => async (event) => {
     //   return showFieldError(elements.emailInput, "Credenciales incorrectas", elements.emailError);
     // }
 
-    // Mock user for testing: asignar rol basado en el email
-    let userRole = "admin";
-    let userName = "Admin User";
+
+    // --- INICIO CÓDIGO CON BACKEND (AHORA FUNCIONA CON JSON-SERVER-AUTH) ---
+    const { user: loggedUser, access_token } = await authService.login(email, password);
+    authService.setSession(loggedUser, access_token);
+    // --- FIN CÓDIGO CON BACKEND ---
+
+    // --- MOCK LOGIN (Comentado) ---
+    // authService.setSession(user, "mock-token-123");
     
-    const emailLower = email.toLowerCase();
-    if (emailLower.includes("coder")) {
-      userRole = "coder";
-      userName = "Coder User";
-    } else if (emailLower.includes("team")) {
-      userRole = "team_leader";
-      userName = "Team Leader";
-    } else if (emailLower.includes("tutor")) {
-      userRole = "tutor";
-      userName = "Tutor User";
-    }
-
-    const user = {
-      id: "1",
-      name: userName,
-      email: emailLower,
-      roles: [userRole]
-    };
-
-    /*authService.setSession(user);
-    const { user, access_token } = await authService.login(email, password);
-
-    authService.setSession(user, access_token);
-    showToast(`Bienvenido ${user.name}!`, "success");
+    showToast(`Bienvenido ${loggedUser.name}!`, "success"); // Usamos el nombre real de la base de datos
 
     window.history.pushState({}, "", "/dashboard");
-    renderRoute();*/
+    renderRoute();
+
   } catch (error) {
     showToast("Falló el inicio de sesión", "error", "Credenciales incorrectas");
     setButtonLoadingState(elements.submitBtn, false, "", "Entrar al dashboard");

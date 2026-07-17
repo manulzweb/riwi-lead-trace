@@ -1,49 +1,13 @@
-<<<<<<< HEAD
-import { navBarComponent } from "../../components/navbar";
-import { dropdownComponent, setupDropdown } from "../../components/dropdown";
-=======
 import html2pdf from "html2pdf.js";
 import { navBarComponent } from "../../components/navbar";
+import { dropdownComponent, setupDropdown } from "../../components/dropdown";
 import { metricsService } from "../../services/metrics.service";
 import { periodService } from "../../services/periods.service";
 import { showToast } from "../../components/alerts";
->>>>>>> upstream/develop
 
 export const renderMetrics = () => `
   ${navBarComponent()}
   <main class="mx-auto max-w-6xl px-6 py-10">
-<<<<<<< HEAD
-    <section>
-      <p class="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--brand-bg)]">Admin</p>
-      <h1 class="mt-1 text-4xl font-black tracking-tight text-[var(--text-main)]">Métricas ICA</h1>
-      <p class="mt-4 text-[var(--text-muted)]">Índice de Calidad de Acompañamiento por área y periodo.</p>
-    </section>
-
-    <section class="mt-6 flex gap-4 flex-wrap">
-      <div class="w-48">
-        ${dropdownComponent('filter-area', [
-          { value: '', label: 'Todas las áreas' }
-        ], '')}
-      </div>
-      <div class="w-48">
-        ${dropdownComponent('filter-period', [
-          { value: '', label: 'Todos los periodos' }
-        ], '')}
-      </div>
-    </section>
-
-    <section id="metrics-grid" class="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      <div class="h-32 animate-pulse rounded-3xl bg-[var(--bg-panel)]"></div>
-      <div class="h-32 animate-pulse rounded-3xl bg-[var(--bg-panel)]"></div>
-      <div class="h-32 animate-pulse rounded-3xl bg-[var(--bg-panel)]"></div>
-    </section>
-  </main>
-`;
-
-export const setupMetrics = () => {
-  setupDropdown('filter-area');
-  setupDropdown('filter-period');
-=======
     <section class="flex items-start justify-between gap-4">
       <div>
         <p class="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--brand-bg)]">Admin</p>
@@ -51,32 +15,29 @@ export const setupMetrics = () => {
         <p class="mt-4 text-[var(--text-muted)]">Índice de Calidad Percibida general por líder, tutor y periodo.</p>
       </div>
       <button id="download-pdf-btn" type="button"
-        class="shrink-0 rounded-2xl border border-[var(--border-main)] bg-[var(--bg-panel)] px-4 py-2 text-sm font-semibold text-[var(--text-main)] transition-all hover:bg-[var(--brand-hover)] hover:text-white">
+        class="shrink-0 rounded-2xl border border-[var(--border-main)] bg-[var(--brand-bg)] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[var(--brand-hover)]">
         Descargar PDF
       </button>
     </section>
 
     <section class="mt-6 flex gap-4 flex-wrap items-center">
-      <div class="flex items-center gap-2">
-        <label for="filter-period" class="text-sm font-semibold text-[var(--text-muted)]">Periodo:</label>
-        <select id="filter-period"
-          class="rounded-2xl border border-[var(--border-main)] bg-[var(--bg-panel)] px-4 py-2 text-sm text-[var(--text-main)] focus:border-[var(--brand-hover)] focus:outline-none">
-          <option value="">Cargando periodos...</option>
-        </select>
+      <div class="flex flex-col gap-1 w-48">
+        <label class="text-sm font-semibold text-[var(--text-muted)]">Periodo:</label>
+        <div id="period-dropdown-container">
+          <div class="h-10 animate-pulse rounded-2xl bg-[var(--bg-panel)]"></div>
+        </div>
       </div>
 
-      <div class="flex items-center gap-2">
-        <label for="filter-role" class="text-sm font-semibold text-[var(--text-muted)]">Filtrar por rol:</label>
-        <select id="filter-role"
-          class="rounded-2xl border border-[var(--border-main)] bg-[var(--bg-panel)] px-4 py-2 text-sm text-[var(--text-main)] focus:border-[var(--brand-hover)] focus:outline-none">
-          <option value="all">Todos</option>
-          <option value="team_leader">Team Leaders</option>
-          <option value="tutor">Tutores</option>
-        </select>
+      <div class="flex flex-col gap-1 w-48">
+        <label class="text-sm font-semibold text-[var(--text-muted)]">Filtrar por rol:</label>
+        ${dropdownComponent('filter-role', [
+          { value: 'all', label: 'Todos' },
+          { value: 'team_leader', label: 'Team Leaders' },
+          { value: 'tutor', label: 'Tutores' }
+        ], 'all')}
       </div>
     </section>
 
-    <!-- Todo lo de aca adentro (id="metrics-report") es lo que se exporta a PDF -->
     <div id="metrics-report" class="mt-8 bg-[var(--bg-base)]">
       <p id="report-period-label" class="mb-4 text-sm text-[var(--text-muted)]"></p>
 
@@ -94,9 +55,11 @@ export const setupMetrics = () => {
           <div id="kpi-participation" class="mt-3 text-3xl font-black text-[var(--text-main)]">--</div>
         </article>
       </section>
-
+      
+      <!-- ----- Highlights ----- -->
       <section id="highlights-section" class="mt-10 grid gap-4 sm:grid-cols-2"></section>
 
+      <!-- ----- Resultados detallados ----- -->
       <section class="mt-10">
         <h2 class="text-2xl font-bold text-[var(--text-main)] mb-6">Resultados Detallados</h2>
         <div id="metrics-grid" class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -110,8 +73,6 @@ export const setupMetrics = () => {
 `;
 
 export const setupMetrics = async () => {
-  const periodSelector = document.getElementById("filter-period");
-  const roleSelector = document.getElementById("filter-role");
   const kpiEvals = document.getElementById("kpi-total-evals");
   const kpiIcp = document.getElementById("kpi-avg-icp");
   const kpiPart = document.getElementById("kpi-participation");
@@ -120,8 +81,13 @@ export const setupMetrics = async () => {
   const downloadBtn = document.getElementById("download-pdf-btn");
   const reportPeriodLabel = document.getElementById("report-period-label");
   const reportElement = document.getElementById("metrics-report");
+  const periodContainer = document.getElementById("period-dropdown-container");
 
-  if (!periodSelector || !roleSelector || !kpiEvals || !kpiIcp || !kpiPart || !gridContainer) return;
+  // Inicializar componente de roles (ya existe en el HTML estático)
+  setupDropdown('filter-role');
+  const roleSelector = document.getElementById("filter-role");
+
+  if (!kpiEvals || !kpiIcp || !kpiPart || !gridContainer || !periodContainer) return;
 
   downloadBtn?.addEventListener("click", async () => {
     downloadBtn.disabled = true;
@@ -153,38 +119,49 @@ export const setupMetrics = async () => {
     periods = await periodService.get();
     
     if (periods.length === 0) {
-      periodSelector.innerHTML = '<option value="">No hay periodos</option>';
+      periodContainer.innerHTML = '<p class="text-sm text-[var(--text-muted)]">No hay periodos</p>';
       gridContainer.innerHTML = '<p class="text-[var(--text-muted)]">No hay periodos registrados.</p>';
       return;
     }
 
-    periodSelector.innerHTML = periods.map(p => 
-      `<option value="${p.id}" ${p.is_active ? 'selected' : ''}>${p.name}</option>`
-    ).join("");
+    // 1. Mapear datos de la DB al formato de tu componente
+    const periodOptions = periods.map(p => ({
+      value: p.id,
+      label: p.name
+    }));
 
     const activePeriod = periods.find(p => p.is_active) || periods[0];
     currentPeriodId = activePeriod.id;
 
+    // 2. Inyectar tu componente con los datos listos
+    periodContainer.innerHTML = dropdownComponent('filter-period', periodOptions, activePeriod.id);
+    
+    // 3. Inicializar el componente dinámico
+    setupDropdown('filter-period');
+    const periodSelector = document.getElementById("filter-period");
+
     await loadMetrics(currentPeriodId, currentRoleFilter);
 
-    periodSelector.addEventListener("change", async () => {
-      currentPeriodId = parseInt(periodSelector.value);
-      await loadMetrics(currentPeriodId, currentRoleFilter);
-    });
+    // Eventos de filtrado
+    if (periodSelector) {
+      periodSelector.addEventListener("change", async (e) => {
+        currentPeriodId = parseInt(e.target.value);
+        await loadMetrics(currentPeriodId, currentRoleFilter);
+      });
+    }
 
-    roleSelector.addEventListener("change", async () => {
-      currentRoleFilter = roleSelector.value;
-      await loadMetrics(currentPeriodId, currentRoleFilter);
-    });
+    if (roleSelector) {
+      roleSelector.addEventListener("change", async (e) => {
+        currentRoleFilter = e.target.value;
+        await loadMetrics(currentPeriodId, currentRoleFilter);
+      });
+    }
 
   } catch (err) {
     showToast("Error", "error", "No se pudieron obtener las métricas.");
     console.error(err);
   }
 
-  // Destaca al mejor evaluado y, en tono constructivo, a quien mas se
-  // beneficiaria de apoyo ("oportunidad de mejora", no "el peor").
-  // Reutiliza los datos que ya trae /metrics/summary, sin endpoints nuevos.
   function renderHighlights(list) {
     if (!highlightsContainer) return;
 
@@ -199,7 +176,7 @@ export const setupMetrics = async () => {
     const needsSupport = sorted[sorted.length - 1];
 
     const highlightCard = (label, person, colorClasses) => `
-      <article class="rounded-3xl border p-6 ${colorClasses.border} ${colorClasses.bg}">
+      <article class="rounded-3xl border p-6 ${colorClasses.border}  ${colorClasses.bg}">
         <p class="text-xs font-semibold uppercase tracking-wider ${colorClasses.text}">${label}</p>
         <h3 class="mt-2 text-lg font-bold text-[var(--text-main)]">${person.name}</h3>
         <p class="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">${person.role.replace('_', ' ')}</p>
@@ -209,15 +186,14 @@ export const setupMetrics = async () => {
 
     const bestCard = highlightCard("Mejor evaluado", best, {
       border: "border-emerald-200 dark:border-emerald-900/50",
-      bg: "bg-emerald-50/50 dark:bg-emerald-950/20",
+      bg: "bg-red-100 dark:bg-emerald-950/20",
       text: "text-emerald-600 dark:text-emerald-400"
     });
 
-    // Si solo hay una persona con datos, no tiene sentido mostrarla dos veces.
     const opportunityCard = withScore.length > 1
       ? highlightCard("Oportunidad de mejora", needsSupport, {
           border: "border-amber-200 dark:border-amber-900/50",
-          bg: "bg-amber-50/50 dark:bg-amber-950/20",
+          bg: "bg-red-100 dark:bg-amber-950/20",
           text: "text-amber-600 dark:text-amber-400"
         })
       : "";
@@ -235,17 +211,15 @@ export const setupMetrics = async () => {
 
       const summary = await metricsService.getSummary(periodId);
 
-      // Actualizar KPIs
       kpiEvals.textContent = summary.kpis.total_evaluations;
       kpiIcp.textContent = `${summary.kpis.average_score}/100`;
       kpiPart.textContent = `${summary.kpis.participation_rate}%`;
 
       if (reportPeriodLabel) {
         const periodName = periods.find(p => p.id === periodId)?.name ?? "";
-        reportPeriodLabel.textContent = `Periodo: ${periodName} — generado el ${new Date().toLocaleDateString()}`;
+        reportPeriodLabel.textContent = `Periodo: ${periodName} - generado el ${new Date().toLocaleDateString()}`;
       }
 
-      // Filtrar evaluados
       let list = summary.evaluatees;
       if (roleFilter !== "all") {
         list = list.filter(e => e.role === roleFilter);
@@ -299,5 +273,4 @@ export const setupMetrics = async () => {
       console.error(err);
     }
   }
->>>>>>> upstream/develop
 };
