@@ -47,14 +47,14 @@ export const ROUTES = {
     renderView: renderMyEvaluations,
     initSetup: setupMyEvaluations,
     requireAuth: true,
-    allowedRoles: ["coder"],
+    allowedRoles: ["coder", "tutor"],
   },
   "/evaluations/new": {
     title: "Nueva evaluación | LeadTrace",
     renderView: renderEvaluate,
     initSetup: setupEvaluate,
     requireAuth: true,
-    allowedRoles: ["coder"],
+    allowedRoles: ["coder", "tutor"],
   },
 
   // ── Team Leader ────────────────────────────────────────────────────────────

@@ -139,21 +139,35 @@ export const setupEvaluate = async () => {
       return;
     }
 
-    const filtered = allUsers.filter(u => u.roles?.includes(role) && u.id !== currentUser.id);
-    evaluatee.disabled = false;
-    evaluatee.innerHTML = '<option value="">Selecciona una persona...</option>' +
-      filtered.map(u => `<option value="${u.id}">${u.name} (${u.email})</option>`).join("");
-
     try {
-      qContainer.innerHTML = '<div class="text-center py-4 text-[var(--text-muted)] animate-pulse">Cargando preguntas...</div>';
-      // GET /forms?target_role= devuelve un arreglo (en la practica, 0 o 1
-      // plantilla activa por rol -- ver backend/README.md).
-      const templates = await evaluationService.getForm(role);
-      currentTemplate = templates[0];
-      if (!currentTemplate) {
-        qContainer.innerHTML = '<div class="text-red-500 py-4 text-center">No hay una plantilla activa para este rol.</div>';
+      qContainer.innerHTML = '<div class="text-center py-4 text-[var(--text-muted)] animate-pulse">Cargando datos...</div>';
+
+      // evaluationService.getForm ya unicamente acepta target_role (ver
+      // backend/app/routes/form_routes.py); devuelve la plantilla o lanza
+      // si no hay ninguna activa para ese rol.
+      const [template, previousEvaluations] = await Promise.all([
+        evaluationService.getForm(role),
+        evaluationService.getByEvaluator(currentUser.id)
+      ]);
+      currentTemplate = template;
+
+      const evaluatedIds = previousEvaluations
+        .filter(e => e.period_id === activePeriod.id && e.template_id === currentTemplate.id)
+        .map(e => String(e.evaluatee_id));
+
+      const filtered = allUsers.filter(u => u.roles?.includes(role) && u.id !== currentUser.id && !evaluatedIds.includes(String(u.id)));
+
+      if (filtered.length === 0) {
+        evaluatee.innerHTML = '<option value="">Ya has evaluado a todos para este rol</option>';
+        evaluatee.disabled = true;
+        qContainer.innerHTML = '<div class="text-center py-4 text-[var(--brand-bg)] font-bold">¡Has completado todas las evaluaciones para este rol en el periodo actual!</div>';
         return;
       }
+
+      evaluatee.disabled = false;
+      evaluatee.innerHTML = '<option value="">Selecciona una persona...</option>' +
+        filtered.map(u => `<option value="${u.id}">${u.name} (${u.email})</option>`).join("");
+
       renderQuestions(currentTemplate.questions);
 
       progressContainer.classList.remove("hidden");
@@ -207,7 +221,7 @@ export const setupEvaluate = async () => {
         qLabel.textContent = q.text;
         qDiv.appendChild(qLabel);
 
-        if (q.input_type === "scale") {
+        if (q.input_type === "scale" || q.input_type === "scale_1_5") {
           const scaleDiv = document.createElement("div");
           scaleDiv.className = "grid grid-cols-5 gap-3";
 
@@ -220,9 +234,9 @@ export const setupEvaluate = async () => {
 
             btn.addEventListener("click", () => {
               scaleDiv.querySelectorAll("button").forEach(b => {
-                b.classList.remove("border-[var(--brand-bg)]", "text-[var(--brand-bg)]", "shadow-sm");
+                b.classList.remove("border-[var(--brand-bg)]", "text-[var(--brand-bg)]", "shadow-sm", "bg-[var(--brand-bg)]/10");
               });
-              btn.classList.add("border-[var(--brand-bg)]", "text-[var(--brand-bg)]", "shadow-sm");
+              btn.classList.add("border-[var(--brand-bg)]", "text-[var(--brand-bg)]", "shadow-sm", "bg-[var(--brand-bg)]/10");
               qDiv.dataset.selectedValue = i;
 
               const errorMsg = qDiv.querySelector(".error-msg");
@@ -240,10 +254,43 @@ export const setupEvaluate = async () => {
           errorMsg.textContent = "Por favor selecciona una opción.";
           qDiv.appendChild(errorMsg);
 
+        } else if (q.input_type === "yes_no") {
+          const yesNoDiv = document.createElement("div");
+          yesNoDiv.className = "flex gap-4";
+
+          ['Sí', 'No'].forEach(val => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "flex h-12 flex-1 items-center justify-center rounded-xl border border-[var(--border-main)] bg-transparent font-bold text-[var(--text-muted)] transition-all hover:border-[var(--brand-hover)] focus:outline-none";
+            btn.textContent = val;
+            btn.dataset.value = val;
+
+            btn.addEventListener("click", () => {
+              yesNoDiv.querySelectorAll("button").forEach(b => {
+                b.classList.remove("border-[var(--brand-bg)]", "text-[var(--brand-bg)]", "shadow-sm", "bg-[var(--brand-bg)]/10");
+              });
+              btn.classList.add("border-[var(--brand-bg)]", "text-[var(--brand-bg)]", "shadow-sm", "bg-[var(--brand-bg)]/10");
+              qDiv.dataset.selectedValue = val;
+
+              const errorMsg = qDiv.querySelector(".error-msg");
+              if (errorMsg) errorMsg.classList.add("hidden");
+
+              updateProgress();
+            });
+
+            yesNoDiv.appendChild(btn);
+          });
+          qDiv.appendChild(yesNoDiv);
+
+          const errorMsg = document.createElement("p");
+          errorMsg.className = "error-msg mt-2 hidden text-sm text-red-500";
+          errorMsg.textContent = "Por favor selecciona una opción.";
+          qDiv.appendChild(errorMsg);
+
         } else {
           const textarea = document.createElement("textarea");
           textarea.className = "w-full resize-none rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] p-4 text-[var(--text-main)] focus:border-[var(--brand-hover)] focus:outline-none focus:ring-1 focus:ring-[var(--brand-hover)]";
-          textarea.placeholder = "Escribe tu comentario opcional...";
+          textarea.placeholder = "Escribe tu respuesta...";
           textarea.rows = 4;
 
           textarea.addEventListener("input", (e) => {
@@ -299,9 +346,9 @@ export const setupEvaluate = async () => {
 
             if (savedVal) {
               el.dataset.selectedValue = savedVal;
-              if (el.dataset.inputType === "scale") {
+              if (el.dataset.inputType === "scale" || el.dataset.inputType === "scale_1_5" || el.dataset.inputType === "yes_no") {
                 const btn = el.querySelector(`button[data-value="${savedVal}"]`);
-                if (btn) btn.classList.add("border-[var(--brand-bg)]", "text-[var(--brand-bg)]", "shadow-sm");
+                if (btn) btn.classList.add("border-[var(--brand-bg)]", "text-[var(--brand-bg)]", "shadow-sm", "bg-[var(--brand-bg)]/10");
               } else {
                 const textarea = el.querySelector("textarea");
                 if (textarea) textarea.value = savedVal;
@@ -335,15 +382,15 @@ export const setupEvaluate = async () => {
       const val = el.dataset.selectedValue;
       const errorMsg = el.querySelector(".error-msg");
 
-      if (type === "scale" && !val) {
+      if ((type === "scale" || type === "scale_1_5" || type === "yes_no") && !val) {
         allValid = false;
         if (errorMsg) errorMsg.classList.remove("hidden");
       }
 
       answers.push({
         question_id: qId,
-        score: type === "scale" ? parseInt(val) : null,
-        comment: type === "text" ? val || "" : null
+        score: (type === "scale" || type === "scale_1_5") ? parseInt(val) : null,
+        comment: (type === "open_text" || type === "yes_no") ? val || "" : null
       });
     });
 
@@ -359,6 +406,7 @@ export const setupEvaluate = async () => {
       period_id: activePeriod.id,
       is_anonymous: anonCheck.checked,
       status: "submitted",
+      submitted_at: new Date().toISOString(),
       answers
     };
 

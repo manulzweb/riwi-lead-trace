@@ -2,6 +2,7 @@ import { navBarComponent } from "../../components/navbar";
 import { showToast } from "../../components/alerts";
 import { escapeHtml } from "../../utils/validators";
 import { dropdownComponent, setupDropdown } from "../../components/dropdown";
+import { templatesService } from "../../services/templates.service.js";
 
 export const renderAdminEvaluations = () => `
   ${navBarComponent()}
@@ -36,7 +37,10 @@ export const renderAdminEvaluations = () => `
           </button>
           <h1 class="text-3xl font-black font-heading tracking-tight text-[var(--text-main)]">Constructor de Formulario</h1>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-4">
+          <div id="weight-counter" class="text-sm font-bold text-[var(--text-muted)] bg-[var(--bg-base)] px-4 py-2 rounded-2xl border border-[var(--border-main)]">
+            Puntos: <span id="total-weight-value" class="text-lg">0</span> / 100
+          </div>
           <button id="btn-save-template" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--brand-bg)] px-6 py-3 text-sm font-bold text-[var(--brand-text)] transition-all duration-300 ease-in-out hover:bg-[var(--brand-hover)] hover:shadow-md cursor-pointer">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
             Guardar Plantilla
@@ -55,13 +59,25 @@ export const renderAdminEvaluations = () => `
             <label class="mb-2 block text-sm font-bold text-[var(--text-main)]">Descripción / Instrucciones (Opcional)</label>
             <textarea id="template-desc" rows="2" placeholder="Instrucciones para quien llena el formulario..." class="w-full resize-none rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] p-4 text-[var(--text-main)] focus:border-[var(--brand-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-hover)]/20"></textarea>
           </div>
-          <div>
-            <label class="mb-2 block text-sm font-bold text-[var(--text-main)]">Dirigido a (Rol destino)</label>
-            <div class="md:w-1/2">
-              ${dropdownComponent('template-role', [
-                { value: 'coder', label: 'Coders' },
-                { value: 'tutor', label: 'Tutores' }
-              ], 'coder')}
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="mb-2 block text-sm font-bold text-[var(--text-main)]">Rol Evaluador (Quién llena la encuesta)</label>
+              <div>
+                ${dropdownComponent('evaluator-role', [
+                  { value: 'coder', label: 'Coders' },
+                  { value: 'team_leader', label: 'Team Leaders' },
+                  { value: 'tutor', label: 'Tutores' }
+                ], 'coder')}
+              </div>
+            </div>
+            <div>
+              <label class="mb-2 block text-sm font-bold text-[var(--text-main)]">Rol a Evaluar (A quién se evalúa)</label>
+              <div>
+                ${dropdownComponent('template-role', [
+                  { value: 'tutor', label: 'Tutores' },
+                  { value: 'team_leader', label: 'Team Leaders' }
+                ], 'tutor')}
+              </div>
             </div>
           </div>
         </div>
@@ -107,12 +123,14 @@ export const setupAdminEvaluations = () => {
     viewList.classList.add("hidden");
     viewBuilder.classList.remove("hidden");
     setupDropdown('template-role');
+    setupDropdown('evaluator-role');
+    updateWeightCounter();
   };
 
-  const showList = () => {
+  const showList = async () => {
     viewBuilder.classList.add("hidden");
     viewList.classList.remove("hidden");
-    renderTemplatesList();
+    await renderTemplatesList();
   };
 
   btnCreate.addEventListener("click", () => {
@@ -120,13 +138,29 @@ export const setupAdminEvaluations = () => {
     editId = null;
     inputTitle.value = "";
     inputDesc.value = "";
-    selectRole.value = "coder";
-    questions = [{ id: Date.now().toString(), text: "", type: "scale_1_5" }];
+    selectRole.value = "tutor";
+    document.getElementById("evaluator-role").value = "coder";
+    questions = [{ id: Date.now().toString(), text: "", input_type: "scale_1_5", category: "General", weight: 0 }];
     renderQuestions();
     showBuilder();
   });
 
   btnBack.addEventListener("click", showList);
+
+  const updateWeightCounter = () => {
+    const total = questions.reduce((sum, q) => sum + (parseInt(q.weight) || 0), 0);
+    const counterSpan = document.getElementById("total-weight-value");
+    if(counterSpan) {
+      counterSpan.textContent = total;
+      if (total === 100) {
+        counterSpan.className = "text-lg text-emerald-500";
+      } else if (total > 100) {
+        counterSpan.className = "text-lg text-[var(--danger-text)]";
+      } else {
+        counterSpan.className = "text-lg text-[var(--text-main)]";
+      }
+    }
+  };
 
   // --- LÓGICA DEL CONSTRUCTOR (Preguntas) ---
   const getQuestionIcon = (type) => {
@@ -168,21 +202,31 @@ export const setupAdminEvaluations = () => {
           <div class="flex-1">
             <input type="text" class="q-text-input w-full bg-transparent text-lg font-bold text-[var(--text-main)] focus:outline-none placeholder-[var(--text-muted)]" placeholder="Escribe tu pregunta aquí..." value="${escapeHtml(q.text)}" data-id="${q.id}">
             
-            <div class="mt-4">
+            <div class="mt-4 flex flex-wrap gap-4 items-center">
               <div class="w-64 relative">
                 ${dropdownComponent(`q-type-${q.id}`, [
                   {value: 'scale_1_5', label: 'Escala (1-5)'},
                   {value: 'yes_no', label: 'Sí / No'},
                   {value: 'open_text', label: 'Texto Abierto'}
-                ], q.type)}
+                ], q.input_type)}
                 <div class="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none z-10">
-                  ${getQuestionIcon(q.type)}
+                  ${getQuestionIcon(q.input_type)}
                 </div>
+              </div>
+              
+              <div class="flex items-center gap-2">
+                <label class="text-sm font-bold text-[var(--text-muted)]">Categoría:</label>
+                <input type="text" class="q-category-input w-48 rounded-xl border border-[var(--border-main)] bg-[var(--bg-base)] px-3 py-2 text-[var(--text-main)] text-sm focus:border-[var(--brand-bg)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-bg)]/20" placeholder="Ej. Comunicación" value="${escapeHtml(q.category || '')}" data-id="${q.id}">
+              </div>
+
+              <div class="flex items-center gap-2">
+                <label class="text-sm font-bold text-[var(--text-muted)]">Puntos:</label>
+                <input type="number" min="0" max="100" class="q-weight-input w-24 rounded-xl border border-[var(--border-main)] bg-[var(--bg-base)] px-3 py-2 text-[var(--text-main)] font-bold focus:border-[var(--brand-bg)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-bg)]/20" placeholder="0-100" value="${q.weight || ''}" data-id="${q.id}">
               </div>
             </div>
             
             <!-- Vista Previa Visual -->
-            ${getQuestionPreview(q.type)}
+            ${getQuestionPreview(q.input_type)}
           </div>
           
           <button class="btn-delete-q p-2 text-[var(--text-muted)] hover:bg-[var(--danger-bg)] hover:text-[var(--danger-text)] rounded-xl transition-colors cursor-pointer" data-id="${q.id}" title="Eliminar pregunta">
@@ -203,10 +247,34 @@ export const setupAdminEvaluations = () => {
       });
     });
 
+    document.querySelectorAll(".q-weight-input").forEach(input => {
+      input.addEventListener("input", (e) => {
+        const id = e.target.dataset.id;
+        const q = questions.find(item => item.id === id);
+        if (q) {
+          let val = parseInt(e.target.value) || 0;
+          if (val < 0) {
+            val = 0;
+            e.target.value = 0;
+          }
+          q.weight = val;
+          updateWeightCounter();
+        }
+      });
+    });
+
+    document.querySelectorAll(".q-category-input").forEach(input => {
+      input.addEventListener("input", (e) => {
+        const id = e.target.dataset.id;
+        const q = questions.find(item => item.id === id);
+        if (q) q.category = e.target.value;
+      });
+    });
+
     // Configurar dropdowns dinámicos para el tipo de pregunta
     questions.forEach(q => {
       setupDropdown(`q-type-${q.id}`, (val) => {
-        q.type = val;
+        q.input_type = val;
         renderQuestions();
       });
       // Ajustar el padding izquierdo del botón del dropdown generado para que no tape el ícono
@@ -224,12 +292,13 @@ export const setupAdminEvaluations = () => {
   };
 
   btnAddQuestion.addEventListener("click", () => {
-    questions.push({ id: Date.now().toString(), text: "", type: "scale_1_5" });
+    questions.push({ id: Date.now().toString(), text: "", type: "scale_1_5", weight: 0 });
     renderQuestions();
+    updateWeightCounter();
   });
 
   // --- GUARDADO ---
-  btnSave.addEventListener("click", () => {
+  btnSave.addEventListener("click", async () => {
     const title = inputTitle.value.trim();
     if (!title) {
       showToast("Falta el título", "error", "Debes darle un título a la plantilla.");
@@ -248,33 +317,62 @@ export const setupAdminEvaluations = () => {
       return;
     }
 
+    // Validar suma de puntos (100)
+    const totalWeight = questions.reduce((sum, q) => sum + (parseInt(q.weight) || 0), 0);
+    if (totalWeight !== 100) {
+      if (totalWeight < 100) {
+        showToast("Faltan puntos", "warning", `La suma total es ${totalWeight}. Debes sumar exactamente 100.`);
+      } else {
+        showToast("Sobran puntos", "warning", `La suma total es ${totalWeight}. Has superado el límite de 100.`);
+      }
+      return;
+    }
+
+    // Preparar objeto para enviar a la BD (el ID se generará automáticamente en creación si usamos json-server)
     const templateData = {
-      id: editId || Date.now().toString(),
       title,
       description: inputDesc.value.trim(),
+      evaluatorRole: document.getElementById("evaluator-role").value,
       targetRole: document.getElementById("template-role").value,
       questions,
       createdAt: new Date().toISOString()
     };
-
-    // Guardar en localStorage
-    let templates = JSON.parse(localStorage.getItem("evaluation_templates") || "[]");
-    
     if (editId) {
-      templates = templates.map(t => t.id === editId ? templateData : t);
-    } else {
-      templates.push(templateData);
+      templateData.id = editId;
     }
 
-    localStorage.setItem("evaluation_templates", JSON.stringify(templates));
-    showToast("Plantilla Guardada", "success");
-    showList();
+    try {
+      btnSave.disabled = true;
+      btnSave.innerHTML = "Guardando...";
+      
+      if (editId) {
+        await templatesService.updateTemplate(editId, templateData);
+      } else {
+        await templatesService.createTemplate(templateData);
+      }
+
+      showToast("Plantilla Guardada", "success");
+      await showList();
+    } catch (error) {
+      showToast("Error", "error", "No se pudo guardar la plantilla.");
+      console.error(error);
+    } finally {
+      btnSave.disabled = false;
+      btnSave.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Guardar Plantilla`;
+    }
   });
 
 
   // --- RENDERIZADO DE LA LISTA ---
-  const renderTemplatesList = () => {
-    const templates = JSON.parse(localStorage.getItem("evaluation_templates") || "[]");
+  const renderTemplatesList = async () => {
+    let templates = [];
+    try {
+      templates = await templatesService.getTemplates();
+    } catch (error) {
+      showToast("Error", "error", "No se pudieron cargar las plantillas.");
+      console.error(error);
+      return;
+    }
     
     if (templates.length === 0) {
       templatesContainer.innerHTML = `
@@ -296,7 +394,7 @@ export const setupAdminEvaluations = () => {
             <div>
               <div class="flex items-center justify-between mb-4">
                 <span class="inline-flex items-center rounded-full bg-[var(--brand-bg)]/10 px-3 py-1 text-xs font-bold text-[var(--brand-bg)] capitalize">
-                  Para: ${escapeHtml(t.targetRole)}
+                  Evaluador: ${escapeHtml(t.evaluatorRole || 'Cualquiera')} ➔ Evalúa a: ${escapeHtml(t.targetRole)}
                 </span>
                 <span class="text-xs text-[var(--text-muted)] font-medium">
                   ${t.questions.length} preg.
@@ -321,37 +419,52 @@ export const setupAdminEvaluations = () => {
 
     // Eventos para editar
     document.querySelectorAll(".btn-edit-template").forEach(card => {
-      card.addEventListener("click", (e) => {
+      card.addEventListener("click", async (e) => {
         // Evitar que el click en el botón de borrar active la edición
         if (e.target.closest('.btn-delete-template')) return;
         
         const id = card.dataset.id;
-        const templates = JSON.parse(localStorage.getItem("evaluation_templates") || "[]");
-        const template = templates.find(t => t.id === id);
-        
-        if (template) {
-          editId = template.id;
-          inputTitle.value = template.title;
-          inputDesc.value = template.description || "";
-          selectRole.value = template.targetRole || "coder";
-          questions = JSON.parse(JSON.stringify(template.questions));
-          renderQuestions();
-          showBuilder();
+        try {
+          const templates = await templatesService.getTemplates();
+          const template = templates.find(t => t.id === id || t.id === parseInt(id));
+          
+          if (template) {
+            editId = template.id;
+            inputTitle.value = template.title;
+            inputDesc.value = template.description || "";
+            document.getElementById("evaluator-role").value = template.evaluatorRole || "coder";
+            selectRole.value = template.targetRole || "tutor";
+            
+            // Asegurarse de que al editar tengan los campos correctos
+            questions = JSON.parse(JSON.stringify(template.questions)).map(q => ({
+              ...q,
+              weight: q.weight || 0,
+              input_type: q.input_type || q.type || "scale_1_5",
+              category: q.category || "General"
+            }));
+            
+            renderQuestions();
+            showBuilder();
+          }
+        } catch (error) {
+          showToast("Error", "error", "Error al cargar la plantilla para editar.");
         }
       });
     });
 
     // Eventos para borrar
     document.querySelectorAll(".btn-delete-template").forEach(btn => {
-      btn.addEventListener("click", (e) => {
+      btn.addEventListener("click", async (e) => {
         e.stopPropagation();
         const id = e.target.dataset.id;
         if (confirm("¿Estás seguro de que deseas eliminar esta plantilla?")) {
-          let templates = JSON.parse(localStorage.getItem("evaluation_templates") || "[]");
-          templates = templates.filter(t => t.id !== id);
-          localStorage.setItem("evaluation_templates", JSON.stringify(templates));
-          renderTemplatesList();
-          showToast("Plantilla eliminada", "success");
+          try {
+            await templatesService.deleteTemplate(id);
+            showToast("Plantilla eliminada", "success");
+            renderTemplatesList();
+          } catch (error) {
+            showToast("Error", "error", "No se pudo eliminar la plantilla.");
+          }
         }
       });
     });

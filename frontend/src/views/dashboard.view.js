@@ -6,7 +6,6 @@ export const renderDashboard = () => {
   const user = authService.getSession();
   const name = user?.name ? escapeHtml(user.name) : "Usuario";
   const roles = user?.roles ?? [];
-
   const quickLinks = {
     coder: [
       { href: "/evaluations/new", label: "Evaluar", title: "Nueva evaluación" },
@@ -16,6 +15,8 @@ export const renderDashboard = () => {
       { href: "/my-results", label: "Resultados", title: "Mi retroalimentación" },
     ],
     tutor: [
+      { href: "/evaluations/new", label: "Evaluar", title: "Nueva evaluación" },
+      { href: "/evaluations", label: "Historial", title: "Mis evaluaciones" },
       { href: "/my-results", label: "Resultados", title: "Mi retroalimentación" },
     ],
     admin: [

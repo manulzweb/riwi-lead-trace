@@ -1,6 +1,12 @@
 import { request, jsonOptions } from './api.service.js'
 
-const getForm = async (targetRole) => await request(`/forms?target_role=${targetRole}`)
+const getForm = async (targetRole) => {
+    const templates = await request(`/forms?target_role=${targetRole}`);
+    if (templates && templates.length > 0) {
+        return templates[0];
+    }
+    throw new Error("No hay un formulario activo para este rol.");
+}
 
 const create = async (evaluationData) => await request('/evaluations', jsonOptions('POST', evaluationData))
 
