@@ -6,11 +6,7 @@ from app.config.database import conn
 from app.schemas.evaluation import EvaluationCreate
 
 def create_evaluation(eval_data: EvaluationCreate):
-    """Crea una evaluación y sus respuestas correspondientes.
-
-    evaluator_id viene del body (sin JWT, el backend no puede confirmar
-    quien es realmente el que llama).
-    """
+    """Transacción compuesta: inserta cabecera en `evaluations` e hijos en `answers`."""
     evaluator_id = eval_data.evaluator_id
 
     # Regla de negocio (ADMIN-01): sin periodo activo no se crean ni se
@@ -133,7 +129,7 @@ def _get_answers(evaluation_id: int):
     return [dict(row) for row in result.mappings()]
 
 def get_evaluation_detail(evaluation_id: int):
-    """Obtiene el detalle completo de una evaluación con sus respuestas."""
+    """Resolución de entidades con JOIN múltiple. Retorna `evaluations` y arreglo anidado de `answers`."""
     query = text("""
         SELECT id, evaluator_id, evaluatee_id, template_id, period_id, is_anonymous, status, submitted_at
         FROM evaluations WHERE id = :id
@@ -147,7 +143,7 @@ def get_evaluation_detail(evaluation_id: int):
     return eval_dict
 
 def get_evaluations_by_evaluator(evaluator_id: int, skip: int = 0, limit: int = 100):
-    """Obtiene las evaluaciones realizadas por un evaluador (solo las no anónimas o borradores)."""
+    """Filtrado de `evaluations` basado en el originador de la mutación."""
     query = text("""
         SELECT id, evaluator_id, evaluatee_id, template_id, period_id, is_anonymous, status, submitted_at
         FROM evaluations WHERE evaluator_id = :evaluator_id
@@ -164,12 +160,7 @@ def get_evaluations_by_evaluator(evaluator_id: int, skip: int = 0, limit: int = 
     return evaluations
 
 def get_evaluations_by_evaluatee(evaluatee_id: int, period_id: Optional[int] = None, hide_evaluator: bool = False, skip: int = 0, limit: int = 100):
-    """Obtiene el historial de evaluaciones recibidas por un evaluado, opcionalmente filtrado por periodo.
-
-    hide_evaluator=True se usa cuando quien pide los datos es el propio
-    evaluado (no un admin): nunca debe ver quien lo evaluo, ni siquiera en
-    evaluaciones no anonimas (esa identidad es solo para el Admin).
-    """
+    """Búsqueda particionada por `evaluatee_id`. Si `hide_evaluator` es TRUE, anonimiza el originador nuleando su referencia antes del retorno."""
     query_str = """
         SELECT id, evaluator_id, evaluatee_id, template_id, period_id, is_anonymous, status, submitted_at
         FROM evaluations WHERE evaluatee_id = :evaluatee_id

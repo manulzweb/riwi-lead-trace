@@ -7,7 +7,7 @@ router = APIRouter()
 
 @router.post("/evaluations", response_model=EvaluationDetailOut, status_code=status.HTTP_201_CREATED)
 def create_evaluation(evaluation: EvaluationCreate):
-    """Registra una nueva evaluación (borrador o enviada)."""
+    """Ejecuta una inserción transaccional de una evaluación (estado draft/submitted). Fallará si viola el constraint `uq_eval_once`."""
     return evaluation_service.create_evaluation(evaluation)
 
 @router.get("/evaluations", response_model=List[EvaluationDetailOut])
@@ -19,7 +19,7 @@ def get_evaluations(
     skip: int = Query(0, ge=0, description="Número de registros a omitir (para paginación)"),
     limit: int = Query(100, ge=1, le=1000, description="Número máximo de registros a devolver")
 ):
-    """Obtiene el historial de evaluaciones filtrado por evaluador o evaluado."""
+    """Consulta evaluaciones con soporte de paginación (`skip`, `limit`) y filtrado por entidad. Provee enmascaramiento de identidad (anonimato) basado en el rol de la petición."""
     if evaluator_id is not None:
         return evaluation_service.get_evaluations_by_evaluator(evaluator_id, skip=skip, limit=limit)
     elif evaluatee_id is not None:

@@ -9,10 +9,7 @@ WEIGHT_SUM_TOLERANCE = 0.01  # margen por redondeo de DECIMAL(5,2)
 
 
 def _assert_no_active_period():
-    """Regla ADMIN-02: las preguntas (texto o pesos) solo se editan con el
-    periodo cerrado -- editarlas mientras hay evaluaciones en curso podria
-    cambiar el instrumento debajo de evaluadores a mitad de respuesta.
-    """
+    """Check Lógico (Pre-ejecución). Aborta con HTTP 409 si la bandera `is_active` del periodo global es TRUE."""
     active = conn.execute(text("SELECT id FROM periods WHERE is_active = TRUE")).first()
     if active:
         raise HTTPException(
@@ -45,11 +42,7 @@ def get_questions_by_template(template_id: int, only_active: bool = True):
 
 
 def version_question_text(question_id: int, new_text: str, confirm: bool):
-    """Edita el texto de una pregunta versionandola (ADMIN-02): nunca
-    sobrescribe la fila -- desactiva la anterior y crea una nueva con el
-    mismo template/category/input_type/weight_percent/sort_order, para que
-    las respuestas historicas conserven su pregunta y su peso originales.
-    """
+    """Soft-delete (`is_active = False`) sobre el registro anterior e inserción de la nueva variante. Ejecución atómica controlada."""
     _assert_no_active_period()
 
     original = get_question(question_id)
@@ -103,15 +96,7 @@ def version_question_text(question_id: int, new_text: str, confirm: bool):
 
 
 def create_question(payload: QuestionCreate):
-    """POST /questions: agrega una pregunta nueva a una plantilla existente
-    (para el constructor de plantillas del Admin). A diferencia de editar
-    texto, esto no versiona nada porque la fila es nueva -- no hay historial
-    previo que preservar.
-
-    No exige que los pesos sumen 100 en este momento (agregar una pregunta
-    suelta normalmente descuadra el total); el admin reequilibra despues
-    con PUT /questions/weights.
-    """
+    """Inserta registro hijo en `questions` con valor por defecto de 0 para pre-computar esquemas parciales sin violar sumatoria."""
     _assert_no_active_period()
 
     template_exists = conn.execute(

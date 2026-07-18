@@ -8,5 +8,5 @@ router = APIRouter()
 
 @router.post("/auth/login", response_model=LoginResponse)
 def login(credentials: LoginRequest):
-    """Autentica al usuario y devuelve un JWT."""
+    """Verifica credenciales contra el hash bcrypt de la base de datos. Retorna el payload del usuario (stateless). No implementa JWT."""
     return auth_service.login(credentials.email, credentials.password)

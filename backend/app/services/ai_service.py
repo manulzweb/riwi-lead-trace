@@ -27,7 +27,7 @@ _CATEGORY_DEFINITIONS = {
 
 
 def get_or_generate_ai_summary(evaluatee_id: int, period_id: int):
-    """Genera u obtiene de cache el resumen ejecutivo por IA para un evaluado."""
+    """Controlador de caché y proxy inverso hacia el proveedor de LLM. Resuelve hitos preexistentes en `ai_feedback_cache`."""
     cache_query = text("""
         SELECT summary FROM ai_feedback_cache
         WHERE evaluatee_id = :evaluatee_id AND period_id = :period_id
@@ -137,12 +137,7 @@ def _ask_gemini(prompt: str) -> str:
 
 
 def check_question_category_coherence(question_text: str, category: str) -> bool:
-    """Regla de negocio ADMIN-02: al editar el texto de una pregunta, la IA
-    comprueba que siga hablando del mismo tema que su categoria (anti deriva
-    semantica). Devuelve True si son coherentes (o si no se pudo consultar a
-    la IA -- "fail open": esto es una ayuda para que el admin decida, no un
-    bloqueo duro, asi que un error de red no debe impedir editar preguntas).
-    """
+    """Pipeline NLP para clasificación de intención y distancia semántica de un string modificado (Regla ADMIN-02)."""
     if not settings.GEMINI_API_KEY:
         return True
 
