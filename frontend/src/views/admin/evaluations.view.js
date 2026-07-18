@@ -59,25 +59,13 @@ export const renderAdminEvaluations = () => `
             <label class="mb-2 block text-sm font-bold text-[var(--text-main)]">Descripción / Instrucciones (Opcional)</label>
             <textarea id="template-desc" rows="2" placeholder="Instrucciones para quien llena el formulario..." class="w-full resize-none rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] p-4 text-[var(--text-main)] focus:border-[var(--brand-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-hover)]/20"></textarea>
           </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label class="mb-2 block text-sm font-bold text-[var(--text-main)]">Rol Evaluador (Quién llena la encuesta)</label>
-              <div>
-                ${dropdownComponent('evaluator-role', [
-                  { value: 'coder', label: 'Coders' },
-                  { value: 'team_leader', label: 'Team Leaders' },
-                  { value: 'tutor', label: 'Tutores' }
-                ], 'coder')}
-              </div>
-            </div>
-            <div>
-              <label class="mb-2 block text-sm font-bold text-[var(--text-main)]">Rol a Evaluar (A quién se evalúa)</label>
-              <div>
-                ${dropdownComponent('template-role', [
-                  { value: 'tutor', label: 'Tutores' },
-                  { value: 'team_leader', label: 'Team Leaders' }
-                ], 'tutor')}
-              </div>
+          <div>
+            <label class="mb-2 block text-sm font-bold text-[var(--text-main)]">Dirigido a (Rol destino)</label>
+            <div class="md:w-1/2">
+              ${dropdownComponent('template-role', [
+                { value: 'team_leader', label: 'Team Leaders' },
+                { value: 'tutor', label: 'Tutores' }
+              ], 'team_leader')}
             </div>
           </div>
         </div>
@@ -116,7 +104,9 @@ export const setupAdminEvaluations = () => {
 
   // --- ESTADO (Memoria) ---
   let questions = [];
+  let originalQuestions = []; // snapshot al entrar a editar, para saber que cambio al guardar
   let editId = null;
+  let editTargetRole = null;
 
   // --- LÓGICA DE VISTAS ---
   const showBuilder = () => {
@@ -136,11 +126,12 @@ export const setupAdminEvaluations = () => {
   btnCreate.addEventListener("click", () => {
     // Resetear constructor para nueva plantilla
     editId = null;
+    editTargetRole = null;
+    originalQuestions = [];
     inputTitle.value = "";
     inputDesc.value = "";
-    selectRole.value = "tutor";
-    document.getElementById("evaluator-role").value = "coder";
-    questions = [{ id: Date.now().toString(), text: "", input_type: "scale_1_5", category: "General", weight: 0 }];
+    selectRole.value = "team_leader";
+    questions = [{ id: Date.now().toString(), text: "", type: "scale_1_5", weight: 0 }];
     renderQuestions();
     showBuilder();
   });
@@ -328,23 +319,19 @@ export const setupAdminEvaluations = () => {
       return;
     }
 
-    // Preparar objeto para enviar a la BD (el ID se generará automáticamente en creación si usamos json-server)
     const templateData = {
       title,
       description: inputDesc.value.trim(),
       evaluatorRole: document.getElementById("evaluator-role").value,
       targetRole: document.getElementById("template-role").value,
       questions,
-      createdAt: new Date().toISOString()
+      originalQuestions
     };
-    if (editId) {
-      templateData.id = editId;
-    }
 
     try {
       btnSave.disabled = true;
       btnSave.innerHTML = "Guardando...";
-      
+
       if (editId) {
         await templatesService.updateTemplate(editId, templateData);
       } else {
@@ -354,7 +341,11 @@ export const setupAdminEvaluations = () => {
       showToast("Plantilla Guardada", "success");
       await showList();
     } catch (error) {
-      showToast("Error", "error", "No se pudo guardar la plantilla.");
+      if (error.message && error.message.includes("409")) {
+        showToast("Periodo activo", "error", "No se pueden editar plantillas mientras haya un periodo activo. Cierra el periodo primero.");
+      } else {
+        showToast("Error", "error", "No se pudo guardar la plantilla.");
+      }
       console.error(error);
     } finally {
       btnSave.disabled = false;
@@ -404,10 +395,7 @@ export const setupAdminEvaluations = () => {
               <p class="mt-2 text-sm text-[var(--text-muted)] line-clamp-2">${escapeHtml(t.description || 'Sin descripción')}</p>
             </div>
             
-            <div class="mt-6 pt-4 border-t border-[var(--border-main)] flex items-center justify-between">
-              <span class="text-xs text-[var(--text-muted)]">
-                ${new Date(t.createdAt).toLocaleDateString()}
-              </span>
+            <div class="mt-6 pt-4 border-t border-[var(--border-main)] flex items-center justify-end">
               <button class="btn-delete-template text-[var(--text-muted)] hover:text-[var(--danger-text)] transition-colors p-2 -mr-2" data-id="${t.id}" title="Eliminar">
                 <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
               </button>
@@ -426,28 +414,26 @@ export const setupAdminEvaluations = () => {
         const id = card.dataset.id;
         try {
           const templates = await templatesService.getTemplates();
-          const template = templates.find(t => t.id === id || t.id === parseInt(id));
-          
+          const template = templates.find(t => t.id === parseInt(id));
+
           if (template) {
-            editId = template.id;
-            inputTitle.value = template.title;
-            inputDesc.value = template.description || "";
-            document.getElementById("evaluator-role").value = template.evaluatorRole || "coder";
-            selectRole.value = template.targetRole || "tutor";
-            
-            // Asegurarse de que al editar tengan los campos correctos
-            questions = JSON.parse(JSON.stringify(template.questions)).map(q => ({
-              ...q,
-              weight: q.weight || 0,
-              input_type: q.input_type || q.type || "scale_1_5",
-              category: q.category || "General"
-            }));
-            
+            const full = await templatesService.getTemplateForEdit(template);
+
+            editId = full.id;
+            editTargetRole = full.targetRole;
+            inputTitle.value = full.title;
+            inputDesc.value = full.description || "";
+            selectRole.value = full.targetRole;
+
+            questions = full.questions;
+            originalQuestions = JSON.parse(JSON.stringify(full.questions));
+
             renderQuestions();
             showBuilder();
           }
         } catch (error) {
           showToast("Error", "error", "Error al cargar la plantilla para editar.");
+          console.error(error);
         }
       });
     });
@@ -463,7 +449,11 @@ export const setupAdminEvaluations = () => {
             showToast("Plantilla eliminada", "success");
             renderTemplatesList();
           } catch (error) {
-            showToast("Error", "error", "No se pudo eliminar la plantilla.");
+            if (error.message && error.message.includes("409")) {
+              showToast("Periodo activo", "error", "No se pueden eliminar plantillas mientras haya un periodo activo.");
+            } else {
+              showToast("Error", "error", "No se pudo eliminar la plantilla.");
+            }
           }
         }
       });
