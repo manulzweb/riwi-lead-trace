@@ -2,7 +2,7 @@
 
 API REST del proyecto **Riwi LeadTrace**: evaluación ascendente de Coders hacia Team Leaders y
 Tutores, con anonimato opcional, un Índice de Calidad Percibida (ICP) por periodo y resúmenes de
-feedback generados con IA (Claude API).
+feedback generados con IA (Google Gemini API).
 
 Para entender *cómo* funciona cada capa del código (con ejemplos guiados), ver
 [`GUIA-BACKEND.md`](./GUIA-BACKEND.md). Este README es para poner el proyecto a correr y consultar
@@ -14,7 +14,7 @@ la lista de endpoints.
 - **SQL plano** vía SQLAlchemy `text()` + `conn.execute()` (sin ORM, sin capa `models/`) + **PyMySQL** sobre **MySQL**
 - **Pydantic** para validación de entrada/salida
 - **bcrypt** (`passlib`) para hashear contraseñas — login verifica en servidor, **sin JWT**: el rol/ID de quien llama se confía al valor que manda el propio front, sin verificación criptográfica de sesión en el backend
-- **Claude API** (`anthropic`) para el resumen de feedback
+- **Gemini API** (`google-generativeai`) para validaciones NLP y resúmenes de feedback
 
 ## Requisitos previos
 
@@ -47,7 +47,7 @@ cp .env.example .env
 | Variable | Descripción | Ejemplo |
 |---|---|---|
 | `DATABASE_URL` | Cadena de conexión a MySQL (`dialecto+driver://usuario:password@host:puerto/bd`) | `mysql+pymysql://root:password@localhost:3306/riwi_lead_trace` |
-| `ANTHROPIC_API_KEY` | API key de Claude, para `/metrics/ai-summary`. Si falta, ese endpoint responde un mensaje claro en vez de fallar. | `sk-ant-...` |
+| `GEMINI_API_KEY` | API key de Google AI Studio, para IA. Si falta, el endpoint responde un mensaje claro. | `AIzaSy...` |
 | `FRONTEND_ORIGIN` | Origen permitido por CORS (la URL de la SPA) | `http://localhost:5173` |
 
 ## Base de datos
@@ -119,7 +119,7 @@ para filtrar datos, sin poder confirmar que sea real. No lo trates como control 
 | PATCH | `/categories/{id}` | Renombrar una categoría | admin |
 | DELETE | `/categories/{id}` | Eliminar una categoría — `409` si alguna pregunta (activa o histórica) la usa (FK `ON DELETE RESTRICT`) | admin |
 | GET | `/metrics/summary?period_id=` | KPIs globales + ICP ponderado por persona en un periodo | admin, team_leader, tutor |
-| GET | `/metrics/ai-summary?evaluatee_id=&period_id=` | Resumen de feedback generado con Claude (cacheado) | admin |
+| GET | `/metrics/ai-summary?evaluatee_id=&period_id=` | Resumen de feedback generado con Gemini (cacheado) | admin |
 
 ## Estructura del proyecto
 
@@ -179,7 +179,7 @@ Reglas de negocio clave (no romper sin acordarlo con el equipo):
   `evaluation_answers.question_id` pueden referenciarlas desde evaluaciones históricas. Los tipos de
   pregunta válidos son `scale` \| `text` \| `yes_no`; `yes_no` se trata como `text` para el ICP (se
   excluye del promedio ponderado, igual que `text`, ver `metrics_service.calculate_average_score`).
-- A Claude API solo se le envían agregados anonimizados (nunca `evaluator_id` ni identidades).
+- A la API de Gemini solo se le envían agregados anonimizados (nunca `evaluator_id` ni identidades).
 
 Detalle completo en [`CLAUDE.md`](../CLAUDE.md) y [`docs/`](../docs).
 

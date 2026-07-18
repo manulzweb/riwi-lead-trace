@@ -1,7 +1,7 @@
 from typing import Optional
 
 from sqlalchemy import text
-from app.config.database import conn
+from app.config.database import engine
 from app.config.security import hash_password
 from app.schemas.user import UserCreate, UserUpdate
 
@@ -12,11 +12,6 @@ def _format_user(row):
     return user_dict
 
 def get_users(role: Optional[str] = None):
-    """Obtiene los usuarios de la base de datos (sin el hash de contraseña).
-
-    role filtra por nombre de rol (ej. "team_leader", "tutor") -- se usa
-    para listar solo los evaluables al armar el formulario de evaluacion.
-    """
     query_str = """
         SELECT u.id, u.full_name AS name, u.email, u.is_active, u.clan_id, GROUP_CONCAT(r.name) as roles
         FROM users u
@@ -30,11 +25,11 @@ def get_users(role: Optional[str] = None):
 
     query_str += " GROUP BY u.id"
     
-    result = conn.execute(text(query_str), params)
-    return [_format_user(row) for row in result.mappings()]
+    with engine.connect() as conn:
+        result = conn.execute(text(query_str), params)
+        return [_format_user(row) for row in result.mappings()]
 
 def get_evaluables():
-    """Obtiene todos los usuarios evaluables (Team Leaders y Tutores)."""
     query = text("""
         SELECT u.id, u.full_name AS name, u.email, u.is_active, u.clan_id, GROUP_CONCAT(r.name) as roles
         FROM users u
@@ -43,8 +38,9 @@ def get_evaluables():
         WHERE r.name IN ('team_leader', 'tutor') AND u.is_active = 1
         GROUP BY u.id
     """)
-    result = conn.execute(query)
-    return [_format_user(row) for row in result.mappings()]
+    with engine.connect() as conn:
+        result = conn.execute(query)
+        return [_format_user(row) for row in result.mappings()]
 
 def get_user(user_id: int):
     query = text("""
@@ -55,10 +51,11 @@ def get_user(user_id: int):
         WHERE u.id = :id
         GROUP BY u.id
     """)
-    result = conn.execute(query, {"id": user_id}).mappings().first()
-    if not result:
-        return None
-    return _format_user(result)
+    with engine.connect() as conn:
+        result = conn.execute(query, {"id": user_id}).mappings().first()
+        if not result:
+            return None
+        return _format_user(result)
 
 def get_user_by_email(email: str):
     query = text("""
@@ -69,13 +66,14 @@ def get_user_by_email(email: str):
         WHERE u.email = :email
         GROUP BY u.id
     """)
-    result = conn.execute(query, {"email": email}).mappings().first()
-    if not result:
-        return None
-    return _format_user(result)
+    with engine.connect() as conn:
+        result = conn.execute(query, {"email": email}).mappings().first()
+        if not result:
+            return None
+        return _format_user(result)
 
 def create_user(user: UserCreate):
-    try:
+    with engine.begin() as conn:
         query = text("""
             INSERT INTO users (full_name, email, password_hash, clan_id, is_active)
             VALUES (:full_name, :email, :password_hash, :clan_id, :is_active)
@@ -94,14 +92,10 @@ def create_user(user: UserCreate):
             for rid in user.role_ids:
                 conn.execute(role_query, {"user_id": new_user_id, "role_id": rid})
                 
-        conn.commit()
-        return get_user(new_user_id)
-    except Exception as e:
-        conn.rollback()
-        raise
+    return get_user(new_user_id)
 
 def update_user(user_id: int, user: UserUpdate):
-    try:
+    with engine.begin() as conn:
         values = {}
         if user.name is not None:
             values["full_name"] = user.name
@@ -125,17 +119,12 @@ def update_user(user_id: int, user: UserUpdate):
             for rid in user.role_ids:
                 conn.execute(role_query, {"user_id": user_id, "role_id": rid})
 
-        conn.commit()
-        return get_user(user_id)
-    except Exception as e:
-        conn.rollback()
-        raise
+    return get_user(user_id)
 
 def delete_user(user_id: int):
-    user = get_user(user_id)
-    if not user:
-        return False
-    query = text("DELETE FROM users WHERE id = :id")
-    conn.execute(query, {"id": user_id})
-    conn.commit()
+    with engine.begin() as conn:
+        query = text("DELETE FROM users WHERE id = :id")
+        result = conn.execute(query, {"id": user_id})
+        if result.rowcount == 0:
+            return False
     return True

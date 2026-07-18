@@ -34,38 +34,7 @@ app = FastAPI(
     openapi_tags=tags_metadata
 )
 
-# Middleware para limpiar conexiones "envenenadas" al final de cada petición
-from fastapi import Request
-from app.config.database import _local
-
-@app.middleware("http")
-async def db_session_middleware(request: Request, call_next):
-    try:
-        response = await call_next(request)
-        return response
-    finally:
-        # Aseguramos que al terminar la peticion (falle o no), si hay una
-        # conexión abierta en este hilo, la cerramos o hacemos rollback.
-        conn = getattr(_local, "conn", None)
-        if conn and not conn.closed:
-            try:
-                # Si quedó una transacción a medias (ej. hubo un error 500 no capturado)
-                in_trans = conn.in_transaction()
-                if in_trans:
-                    try:
-                        conn.rollback()
-                    except Exception:
-                        # Si falla el rollback (ej. MySQL cerró la conexión), invalidamos
-                        conn.invalidate()
-            except Exception:
-                pass
-            finally:
-                # Siempre debemos cerrar para devolverla al pool limpiamente
-                try:
-                    conn.close()
-                except Exception:
-                    pass
-                _local.conn = None
+# Middleware de sesión eliminado porque la auto-sanación se hace ahora a nivel de SQLAlchemy en database.py.
 
 # Configuración de CORS
 app.add_middleware(
