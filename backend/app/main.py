@@ -52,11 +52,19 @@ async def db_session_middleware(request: Request, call_next):
                 # Si quedó una transacción a medias (ej. hubo un error 500 no capturado)
                 in_trans = conn.in_transaction()
                 if in_trans:
-                    conn.rollback()
-                conn.close()
+                    try:
+                        conn.rollback()
+                    except Exception:
+                        # Si falla el rollback (ej. MySQL cerró la conexión), invalidamos
+                        conn.invalidate()
             except Exception:
                 pass
             finally:
+                # Siempre debemos cerrar para devolverla al pool limpiamente
+                try:
+                    conn.close()
+                except Exception:
+                    pass
                 _local.conn = None
 
 # Configuración de CORS
