@@ -1,3 +1,5 @@
+import logging
+
 from sqlalchemy import text
 from fastapi import HTTPException, status
 import anthropic
@@ -5,6 +7,8 @@ import anthropic
 from app.config.database import conn
 from app.config.config import settings
 from app.services.metrics_service import calculate_average_score, MIN_EVALUATIONS
+
+logger = logging.getLogger(__name__)
 
 AI_MODEL = "claude-haiku-4-5-20251001"
 
@@ -126,10 +130,11 @@ def _ask_claude(prompt: str) -> str:
             messages=[{"role": "user", "content": prompt}]
         )
         return message.content[0].text
-    except Exception as e:
+    except Exception:
+        logger.exception("Error al conectar con el servicio de IA de Claude")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Error al conectar con el servicio de IA de Claude: {str(e)}"
+            detail="Error al conectar con el servicio de IA de Claude. Intenta de nuevo mas tarde."
         )
 
 
