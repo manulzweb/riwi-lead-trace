@@ -75,53 +75,61 @@ def get_user_by_email(email: str):
     return _format_user(result)
 
 def create_user(user: UserCreate):
-    query = text("""
-        INSERT INTO users (full_name, email, password_hash, clan_id, is_active)
-        VALUES (:full_name, :email, :password_hash, :clan_id, :is_active)
-    """)
-    result = conn.execute(query, {
-        "full_name": user.name,
-        "email": user.email,
-        "password_hash": hash_password(user.password),
-        "clan_id": user.clan_id,
-        "is_active": user.is_active
-    })
-    new_user_id = result.lastrowid
-    
-    if user.role_ids:
-        role_query = text("INSERT INTO user_roles (user_id, role_id) VALUES (:user_id, :role_id)")
-        for rid in user.role_ids:
-            conn.execute(role_query, {"user_id": new_user_id, "role_id": rid})
-            
-    conn.commit()
-    return get_user(new_user_id)
+    try:
+        query = text("""
+            INSERT INTO users (full_name, email, password_hash, clan_id, is_active)
+            VALUES (:full_name, :email, :password_hash, :clan_id, :is_active)
+        """)
+        result = conn.execute(query, {
+            "full_name": user.name,
+            "email": user.email,
+            "password_hash": hash_password(user.password),
+            "clan_id": user.clan_id,
+            "is_active": user.is_active
+        })
+        new_user_id = result.lastrowid
+        
+        if user.role_ids:
+            role_query = text("INSERT INTO user_roles (user_id, role_id) VALUES (:user_id, :role_id)")
+            for rid in user.role_ids:
+                conn.execute(role_query, {"user_id": new_user_id, "role_id": rid})
+                
+        conn.commit()
+        return get_user(new_user_id)
+    except Exception as e:
+        conn.rollback()
+        raise
 
 def update_user(user_id: int, user: UserUpdate):
-    values = {}
-    if user.name is not None:
-        values["full_name"] = user.name
-    if user.email is not None:
-        values["email"] = user.email
-    if user.password is not None:
-        values["password_hash"] = hash_password(user.password)
-    if user.clan_id is not None:
-        values["clan_id"] = user.clan_id
-    if user.is_active is not None:
-        values["is_active"] = user.is_active
+    try:
+        values = {}
+        if user.name is not None:
+            values["full_name"] = user.name
+        if user.email is not None:
+            values["email"] = user.email
+        if user.password is not None:
+            values["password_hash"] = hash_password(user.password)
+        if user.clan_id is not None:
+            values["clan_id"] = user.clan_id
+        if user.is_active is not None:
+            values["is_active"] = user.is_active
 
-    if values:
-        set_clause = ", ".join(f"{column} = :{column}" for column in values)
-        query = text(f"UPDATE users SET {set_clause} WHERE id = :id")
-        conn.execute(query, {**values, "id": user_id})
-        
-    if user.role_ids is not None:
-        conn.execute(text("DELETE FROM user_roles WHERE user_id = :id"), {"id": user_id})
-        role_query = text("INSERT INTO user_roles (user_id, role_id) VALUES (:user_id, :role_id)")
-        for rid in user.role_ids:
-            conn.execute(role_query, {"user_id": user_id, "role_id": rid})
+        if values:
+            set_clause = ", ".join(f"{column} = :{column}" for column in values)
+            query = text(f"UPDATE users SET {set_clause} WHERE id = :id")
+            conn.execute(query, {**values, "id": user_id})
+            
+        if user.role_ids is not None:
+            conn.execute(text("DELETE FROM user_roles WHERE user_id = :id"), {"id": user_id})
+            role_query = text("INSERT INTO user_roles (user_id, role_id) VALUES (:user_id, :role_id)")
+            for rid in user.role_ids:
+                conn.execute(role_query, {"user_id": user_id, "role_id": rid})
 
-    conn.commit()
-    return get_user(user_id)
+        conn.commit()
+        return get_user(user_id)
+    except Exception as e:
+        conn.rollback()
+        raise
 
 def delete_user(user_id: int):
     user = get_user(user_id)

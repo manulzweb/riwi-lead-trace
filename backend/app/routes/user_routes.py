@@ -36,6 +36,14 @@ def update_user(user_id: int, user: UserUpdate):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
     return updated
 
+@router.patch("/users/{user_id}", response_model=UserOut)
+def patch_user(user_id: int, user: UserUpdate):
+    """Actualiza parcialmente un usuario por ID (solo Admin)."""
+    updated = user_service.update_user(user_id, user)
+    if not updated:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+    return updated
+
 @router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_user(user_id: int):
     """Elimina un usuario por ID (solo Admin)."""

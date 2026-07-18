@@ -95,45 +95,49 @@ def create_template(payload: TemplateCreate):
                 detail=f"Los pesos de las preguntas de escala deben sumar 100 (suma actual: {total})."
             )
 
-    # Solo una plantilla activa por rol a la vez (mismo criterio que
-    # periodos: crear/activar una desactiva cualquier otra de ese rol).
-    conn.execute(
-        text("UPDATE form_templates SET is_active = FALSE WHERE target_role_id = :role_id"),
-        {"role_id": role_id}
-    )
+    try:
+        # Solo una plantilla activa por rol a la vez (mismo criterio que
+        # periodos: crear/activar una desactiva cualquier otra de ese rol).
+        conn.execute(
+            text("UPDATE form_templates SET is_active = FALSE WHERE target_role_id = :role_id"),
+            {"role_id": role_id}
+        )
 
-    insert_template = text("""
-        INSERT INTO form_templates (title, description, target_role_id, is_active)
-        VALUES (:title, :description, :target_role_id, TRUE)
-    """)
-    result = conn.execute(insert_template, {
-        "title": payload.title,
-        "description": payload.description,
-        "target_role_id": role_id,
-    })
-    template_id = result.lastrowid
-
-    for category_id in {q.category_id for q in payload.questions}:
-        exists = conn.execute(text("SELECT id FROM categories WHERE id = :id"), {"id": category_id}).scalar()
-        if not exists:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Categoria {category_id} no encontrada.")
-
-    insert_question = text("""
-        INSERT INTO questions (template_id, text, category_id, input_type, sort_order, weight_percent, is_active)
-        VALUES (:template_id, :text, :category_id, :input_type, :sort_order, :weight_percent, TRUE)
-    """)
-    for index, q in enumerate(payload.questions):
-        conn.execute(insert_question, {
-            "template_id": template_id,
-            "text": q.text,
-            "category_id": q.category_id,
-            "input_type": q.input_type,
-            "sort_order": index,
-            "weight_percent": q.weight_percent if q.input_type == "scale" else 0,
+        insert_template = text("""
+            INSERT INTO form_templates (title, description, target_role_id, is_active)
+            VALUES (:title, :description, :target_role_id, TRUE)
+        """)
+        result = conn.execute(insert_template, {
+            "title": payload.title,
+            "description": payload.description,
+            "target_role_id": role_id,
         })
+        template_id = result.lastrowid
 
-    conn.commit()
-    return get_template(template_id)
+        for category_id in {q.category_id for q in payload.questions}:
+            exists = conn.execute(text("SELECT id FROM categories WHERE id = :id"), {"id": category_id}).scalar()
+            if not exists:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Categoria {category_id} no encontrada.")
+
+        insert_question = text("""
+            INSERT INTO questions (template_id, text, category_id, input_type, sort_order, weight_percent, is_active)
+            VALUES (:template_id, :text, :category_id, :input_type, :sort_order, :weight_percent, TRUE)
+        """)
+        for index, q in enumerate(payload.questions):
+            conn.execute(insert_question, {
+                "template_id": template_id,
+                "text": q.text,
+                "category_id": q.category_id,
+                "input_type": q.input_type,
+                "sort_order": index,
+                "weight_percent": q.weight_percent if q.input_type == "scale" else 0,
+            })
+
+        conn.commit()
+        return get_template(template_id)
+    except Exception as e:
+        conn.rollback()
+        raise e
 
 
 def update_template(template_id: int, payload: TemplateUpdate):

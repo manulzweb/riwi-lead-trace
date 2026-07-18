@@ -228,9 +228,9 @@ CREATE TABLE evaluations (
 );
 
 -- Evita doble evaluación del mismo evaluado en el mismo periodo (solo no anónimas)
--- (Comentado temporalmente por solicitud: el backend ya realiza esta validación)
--- CREATE UNIQUE INDEX uq_eval_once
---     ON evaluations (evaluator_id, evaluatee_id, period_id);
+CREATE UNIQUE INDEX uq_eval_once
+    ON evaluations (evaluator_id, evaluatee_id, period_id);
+
 
 -- ---------------------------------------------------------------------
 -- Respuestas por pregunta

@@ -1,12 +1,12 @@
 from sqlalchemy import text
 from fastapi import HTTPException, status
-import anthropic
+import google.generativeai as genai
 
 from app.config.database import conn
 from app.config.config import settings
 from app.services.metrics_service import calculate_average_score, MIN_EVALUATIONS
 
-AI_MODEL = "claude-haiku-4-5-20251001"
+AI_MODEL = "gemini-1.5-flash"
 
 # Definiciones cortas de categoria para el chequeo de coherencia (regla
 # ADMIN-02). Si una categoria no esta aca (p. ej. una nueva que el equipo
@@ -56,7 +56,7 @@ def get_or_generate_ai_summary(evaluatee_id: int, period_id: int):
         comments=comments,
     )
 
-    summary = _ask_claude(prompt)
+    summary = _ask_gemini(prompt)
     _cache_summary(evaluatee_id, period_id, summary)
     return summary
 
@@ -99,7 +99,12 @@ def _get_period_name(period_id: int) -> str:
 
 def _build_prompt(name, role, period_name, average_score, n_evals, comments: list[str]) -> str:
     comments_str = chr(10).join([f"- {c}" for c in comments]) if comments else "No hay comentarios de texto."
-    return f"""Eres un asistente de IA para Riwi LeadTrace. Tu tarea es generar un resumen ejecutivo constructivo y profesional del feedback recibido por {name} ({role}) en el periodo {period_name}.
+    return f"""Eres un asistente de IA para Riwi LeadTrace. Tu tarea es generar un resumen ejecutivo constructivo y profesional del feedback recibido por {name}, quien tiene el rol de {role}, en el periodo {period_name}.
+
+IMPORTANTE: Debes enfocar claramente tu análisis y tus recomendaciones en el contexto específico de su rol como {role}. 
+- Si es un Team Leader, enfócate en liderazgo, comunicación y gestión de equipo.
+- Si es un Tutor, enfócate en pedagogía, claridad técnica y acompañamiento del aprendizaje.
+- Si es un Admin, enfócate en administración, gestión operativa y soporte.
 
 Aqui tienes las metricas agregadas:
 - Puntaje promedio de las evaluaciones: {average_score}/100
@@ -108,29 +113,27 @@ Aqui tienes las metricas agregadas:
 Comentarios de los evaluadores:
 {comments_str}
 
-Por favor, proporciona un resumen estructurado con un tono constructivo y profesional, estructurado en las siguientes secciones:
-1. Fortalezas (que hace bien)
-2. Areas de oportunidad (que puede mejorar)
-3. Recomendaciones de accion (pasos practicos para el evaluado)"""
+Por favor, proporciona un resumen estructurado con un tono constructivo y profesional, en las siguientes secciones:
+1. Fortalezas (qué hace bien en su rol de {role})
+2. Areas de oportunidad (qué puede mejorar en su rol de {role})
+3. Recomendaciones de accion (pasos prácticos enfocados a su rol de {role})"""
 
 
-def _ask_claude(prompt: str) -> str:
-    if not settings.ANTHROPIC_API_KEY:
-        return "[Servicio de IA deshabilitado: ANTHROPIC_API_KEY no configurado en el archivo .env]"
+def _ask_gemini(prompt: str) -> str:
+    if not settings.GEMINI_API_KEY:
+        return "[Servicio de IA deshabilitado: GEMINI_API_KEY no configurado en el archivo .env]"
 
     try:
-        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-        message = client.messages.create(
-            model=AI_MODEL,
-            max_tokens=1000,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        return message.content[0].text
+        genai.configure(api_key=settings.GEMINI_API_KEY)
+        model = genai.GenerativeModel(AI_MODEL)
+        response = model.generate_content(prompt)
+        return response.text
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Error al conectar con el servicio de IA de Claude: {str(e)}"
+            detail=f"Error al conectar con el servicio de IA de Gemini: {str(e)}"
         )
+
 
 
 def check_question_category_coherence(question_text: str, category: str) -> bool:
@@ -140,7 +143,7 @@ def check_question_category_coherence(question_text: str, category: str) -> bool
     la IA -- "fail open": esto es una ayuda para que el admin decida, no un
     bloqueo duro, asi que un error de red no debe impedir editar preguntas).
     """
-    if not settings.ANTHROPIC_API_KEY:
+    if not settings.GEMINI_API_KEY:
         return True
 
     definition = _CATEGORY_DEFINITIONS.get(category, category)
@@ -152,13 +155,10 @@ def check_question_category_coherence(question_text: str, category: str) -> bool
     )
 
     try:
-        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-        message = client.messages.create(
-            model=AI_MODEL,
-            max_tokens=5,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        answer = message.content[0].text.strip().upper()
+        genai.configure(api_key=settings.GEMINI_API_KEY)
+        model = genai.GenerativeModel(AI_MODEL)
+        response = model.generate_content(prompt)
+        answer = response.text.strip().upper()
         return answer.startswith("S")
     except Exception:
         # No tumbamos la edicion de la pregunta por un problema de red/API:

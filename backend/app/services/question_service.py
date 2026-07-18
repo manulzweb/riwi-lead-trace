@@ -79,23 +79,27 @@ def version_question_text(question_id: int, new_text: str, confirm: bool):
     # operacion -- el admin no puede tocarlos al "editar el texto" (regla
     # ADMIN-02). Si se quiere reponderar, es un paso aparte (PUT /questions/weights);
     # si se quiere mover a otra categoria, eso tampoco es "editar el texto".
-    deactivate_query = text("UPDATE questions SET is_active = FALSE WHERE id = :id")
-    conn.execute(deactivate_query, {"id": question_id})
+    try:
+        deactivate_query = text("UPDATE questions SET is_active = FALSE WHERE id = :id")
+        conn.execute(deactivate_query, {"id": question_id})
 
-    insert_query = text("""
-        INSERT INTO questions (template_id, text, category_id, input_type, sort_order, weight_percent, is_active)
-        VALUES (:template_id, :text, :category_id, :input_type, :sort_order, :weight_percent, TRUE)
-    """)
-    result = conn.execute(insert_query, {
-        "template_id": original["template_id"],
-        "text": new_text,
-        "category_id": original["category_id"],
-        "input_type": original["input_type"],
-        "sort_order": original["sort_order"],
-        "weight_percent": original["weight_percent"],
-    })
-    conn.commit()
-    return get_question(result.lastrowid)
+        insert_query = text("""
+            INSERT INTO questions (template_id, text, category_id, input_type, sort_order, weight_percent, is_active)
+            VALUES (:template_id, :text, :category_id, :input_type, :sort_order, :weight_percent, TRUE)
+        """)
+        result = conn.execute(insert_query, {
+            "template_id": original["template_id"],
+            "text": new_text,
+            "category_id": original["category_id"],
+            "input_type": original["input_type"],
+            "sort_order": original["sort_order"],
+            "weight_percent": original["weight_percent"],
+        })
+        conn.commit()
+        return get_question(result.lastrowid)
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail="Error interno al versionar la pregunta.")
 
 
 def create_question(payload: QuestionCreate):
@@ -190,9 +194,13 @@ def update_weights(payload: WeightsUpdate):
             detail=f"Los pesos deben sumar 100 (suma actual: {total})."
         )
 
-    update_query = text("UPDATE questions SET weight_percent = :weight_percent WHERE id = :id")
-    for item in payload.weights:
-        conn.execute(update_query, {"weight_percent": item.weight_percent, "id": item.question_id})
-    conn.commit()
+    try:
+        update_query = text("UPDATE questions SET weight_percent = :weight_percent WHERE id = :id")
+        for item in payload.weights:
+            conn.execute(update_query, {"weight_percent": item.weight_percent, "id": item.question_id})
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail="Error interno al actualizar los pesos.")
 
     return get_questions_by_template(payload.template_id, only_active=True)
