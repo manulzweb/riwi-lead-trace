@@ -2,13 +2,8 @@ import { request, jsonOptions } from './api.service.js'
 
 const SESSION_KEY = "SESSION_ACTUAL"
 
-const login = async (email, password) => {
-    const response = await request('/auth/login', jsonOptions('POST', { email, password }));
-    return {
-        user: response.user,
-        access_token: response.accessToken || response.access_token
-    };
-}
+const login = async (email, password) =>
+    await request('/auth/login', jsonOptions('POST', { email, password }))
 
 const setSession = (user) => {
     localStorage.setItem(SESSION_KEY, JSON.stringify(user))
