@@ -4,7 +4,14 @@ from sqlalchemy import create_engine
 
 from app.config.config import settings
 
-engine = create_engine(settings.DATABASE_URL)
+engine = create_engine(
+    settings.DATABASE_URL,
+    pool_pre_ping=True,      # Protege de desconexiones
+    pool_recycle=1800,       # Recicla cada 30 minutos (recomendado en Railway)
+    pool_size=10,            # Soporta 10 peticiones concurrentes a la vez
+    max_overflow=20,         # Soporta picos de hasta 30 peticiones concurrentes
+    echo=False               # Sin logs de SQL para ahorrar recursos
+)
 
 _local = threading.local()
 
