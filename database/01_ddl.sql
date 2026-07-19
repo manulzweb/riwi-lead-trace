@@ -149,6 +149,7 @@ CREATE TABLE form_templates (
     description    VARCHAR(255) NULL,
     target_role_id INT NOT NULL,
     is_active      BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_template_role
         FOREIGN KEY (target_role_id)
         REFERENCES roles(id)
