@@ -3,6 +3,8 @@ import { statusBadgeComponent } from "../../components/statusBadge.js";
 import { showToast } from "../../components/alerts";
 import { periodService } from "../../services/periods.service.js";
 import { escapeHtml } from "../../utils/validators";
+import { setupModalA11y } from "../../utils/modalA11y";
+import { authService } from "../../services/auth.service";
 
 export const renderAdminPeriods = () => `
   ${navBarComponent()}
@@ -64,9 +66,12 @@ export const setupAdminPeriods = () => {
 
   let editPeriodId = null;
 
+  const modalA11y = setupModalA11y(modal, () => closeModal());
+
   // Funciones del Modal
-  const openModal = () => {
+  const openModal = (triggerEl) => {
     modal.classList.remove("hidden");
+    modalA11y.onOpen(triggerEl);
     // timeout for transitions
     setTimeout(() => {
       modal.classList.remove("opacity-0");
@@ -74,22 +79,22 @@ export const setupAdminPeriods = () => {
     }, 10);
   };
 
-  const openCreateModal = () => {
+  const openCreateModal = (e) => {
     editPeriodId = null;
     modalTitle.textContent = "Abrir Nuevo Ciclo";
     submitBtn.textContent = "Guardar";
     form.reset();
-    openModal();
+    openModal(e?.currentTarget);
   };
 
-  const openEditModal = (period) => {
+  const openEditModal = (period, triggerEl) => {
     editPeriodId = period.id;
     modalTitle.textContent = "Editar Ciclo";
     submitBtn.textContent = "Guardar Cambios";
     document.getElementById("period-name").value = period.name;
     document.getElementById("period-start").value = period.starts_at;
     document.getElementById("period-end").value = period.ends_at;
-    openModal();
+    openModal(triggerEl);
   };
 
   const closeModal = () => {
@@ -100,6 +105,7 @@ export const setupAdminPeriods = () => {
       form.reset();
       editPeriodId = null;
     }, 300);
+    modalA11y.onClose();
   };
 
   if (btnCreate) btnCreate.addEventListener("click", openCreateModal);
@@ -164,7 +170,7 @@ export const setupAdminPeriods = () => {
           const newStatus = action === "open" ? true : false;
 
           try {
-            await periodService.update(id, { is_active: newStatus });
+            await periodService.update(id, { is_active: newStatus, admin_id: authService.getSession()?.id });
             showToast(newStatus ? "Ciclo Abierto Exitosamente" : "Ciclo Cerrado", "success");
             loadPeriods(); // Recargar la lista
           } catch (error) {
@@ -178,7 +184,7 @@ export const setupAdminPeriods = () => {
         btn.addEventListener("click", () => {
           const id = parseInt(btn.dataset.id);
           const period = periods.find(p => p.id === id);
-          if (period) openEditModal(period);
+          if (period) openEditModal(period, btn);
         });
       });
 

@@ -2,6 +2,8 @@ import { navBarComponent } from "../../components/navbar";
 import { showToast } from "../../components/alerts";
 import { categoryService } from "../../services/categories.service.js";
 import { escapeHtml } from "../../utils/validators";
+import { setupModalA11y } from "../../utils/modalA11y";
+import { authService } from "../../services/auth.service";
 
 export const renderAdminCategories = () => `
   ${navBarComponent()}
@@ -57,28 +59,31 @@ export const setupAdminCategories = () => {
 
   let editCategoryId = null;
 
-  const openModal = () => {
+  const modalA11y = setupModalA11y(modal, () => closeModal());
+
+  const openModal = (triggerEl) => {
     modal.classList.remove("hidden");
+    modalA11y.onOpen(triggerEl);
     setTimeout(() => {
       modal.classList.remove("opacity-0");
       modal.firstElementChild.classList.remove("scale-95");
     }, 10);
   };
 
-  const openCreateModal = () => {
+  const openCreateModal = (e) => {
     editCategoryId = null;
     modalTitle.textContent = "Nueva Categoría";
     submitBtn.textContent = "Guardar";
     form.reset();
-    openModal();
+    openModal(e?.currentTarget);
   };
 
-  const openEditModal = (category) => {
+  const openEditModal = (category, triggerEl) => {
     editCategoryId = category.id;
     modalTitle.textContent = "Editar Categoría";
     submitBtn.textContent = "Guardar Cambios";
     nameInput.value = category.name;
-    openModal();
+    openModal(triggerEl);
   };
 
   const closeModal = () => {
@@ -89,6 +94,7 @@ export const setupAdminCategories = () => {
       form.reset();
       editCategoryId = null;
     }, 300);
+    modalA11y.onClose();
   };
 
   btnCreate.addEventListener("click", openCreateModal);
@@ -139,7 +145,7 @@ export const setupAdminCategories = () => {
       btn.addEventListener("click", () => {
         const id = parseInt(btn.dataset.id);
         const category = categories.find(c => c.id === id);
-        if (category) openEditModal(category);
+        if (category) openEditModal(category, btn);
       });
     });
 
@@ -149,7 +155,7 @@ export const setupAdminCategories = () => {
         if (!confirm("¿Estás seguro de que deseas eliminar esta categoría?")) return;
 
         try {
-          await categoryService.remove(id);
+          await categoryService.remove(id, authService.getSession()?.id);
           showToast("Categoría eliminada", "success");
           loadCategories();
         } catch (error) {
