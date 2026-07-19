@@ -5,7 +5,17 @@ from app.services import evaluation_service
 
 router = APIRouter()
 
-@router.post("/evaluations", response_model=EvaluationDetailOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/evaluations", 
+    response_model=EvaluationDetailOut, 
+    status_code=status.HTTP_201_CREATED,
+    summary="Crear evaluación",
+    response_description="La evaluación recién enviada",
+    responses={
+        201: {"description": "Evaluación guardada con éxito"},
+        409: {"description": "El evaluador ya evaluó a este usuario en este periodo"}
+    }
+)
 def create_evaluation(evaluation: EvaluationCreate):
     """Ejecuta una inserción transaccional de una evaluación (estado draft/submitted). Fallará si viola el constraint `uq_eval_once`."""
     return evaluation_service.create_evaluation(evaluation)

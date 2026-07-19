@@ -18,7 +18,7 @@ def _assert_no_active_period():
             )
 
 
-QUESTION_SELECT = """
+QUESTION_QUERY = """
     SELECT q.id, q.template_id, q.text, q.category_id, c.name AS category,
            q.input_type, q.sort_order, q.weight_percent, q.is_active
     FROM questions q
@@ -28,14 +28,14 @@ QUESTION_SELECT = """
 
 def get_question(question_id: int):
     with engine.connect() as conn:
-        query = text(f"{QUESTION_SELECT} WHERE q.id = :id")
+        query = text(f"{QUESTION_QUERY} WHERE q.id = :id")
         row = conn.execute(query, {"id": question_id}).mappings().first()
         return dict(row) if row else None
 
 
 def get_questions_by_template(template_id: int, only_active: bool = True):
     with engine.connect() as conn:
-        query_str = f"{QUESTION_SELECT} WHERE q.template_id = :template_id"
+        query_str = f"{QUESTION_QUERY} WHERE q.template_id = :template_id"
         if only_active:
             query_str += " AND q.is_active = TRUE"
         query_str += " ORDER BY q.sort_order ASC"

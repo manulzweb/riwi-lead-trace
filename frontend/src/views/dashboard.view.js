@@ -2,14 +2,197 @@ import { authService } from "../services/auth.service";
 import { navBarComponent, setupNavBar } from "../components/navbar";
 import { showToast } from "../components/alerts";
 import { escapeHtml } from "../utils/validators";
-import { periodService } from "../services/periods.service";
 import { metricsService } from "../services/metrics.service";
+import { periodService } from "../services/periods.service";
+import { evaluationService } from "../services/evaluation.service";
+import { templatesService } from "../services/templates.service";
+import { request } from "../services/api.service";
 
 export const renderDashboard = () => {
   const user = authService.getSession();
   const name = user?.name ? escapeHtml(user.name) : "Usuario";
   const roles = user?.roles ?? [];
-  
+
+  if (roles.includes("admin")) {
+    return renderAdminDashboard(name);
+  } else {
+    return renderUserDashboard(name, roles);
+  }
+};
+
+const renderAdminDashboard = (name) => {
+  return `
+    ${navBarComponent()}
+    <main class="mx-auto max-w-7xl px-6 py-10">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- Contenido Central / Izquierda -->
+        <div id="left-column-wrapper" class="col-span-12 transition-all duration-300 space-y-8">
+          
+          <!-- Encabezado de la página -->
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 class="text-3xl font-black text-[var(--text-main)] tracking-tight">Dashboard Overview</h1>
+              <p class="text-sm text-[var(--text-muted)] mt-1">High-level insights and performance metrics.</p>
+            </div>
+            <div class="text-xs text-[var(--text-muted)] font-bold bg-[var(--bg-panel)] px-4 py-2 border border-[var(--border-main)] rounded-2xl shadow-sm" id="dashboard-period-label">
+              Cargando periodo activo...
+            </div>
+          </div>
+
+          <!-- Fila de Tarjetas de Métricas (Círculos de Porcentaje SVG dinámicos) -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <!-- Tarjeta 1: Total Evaluations -->
+            <div class="rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm flex flex-col items-center justify-between text-center min-h-[240px] transition-all hover:shadow-md">
+              <div class="bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 rounded-2xl p-3 w-12 h-12 flex items-center justify-center">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+              </div>
+              <div class="relative flex items-center justify-center my-4">
+                <svg class="w-28 h-28 transform -rotate-90" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="38" stroke="var(--border-main)" stroke-width="6" fill="transparent" class="opacity-20" />
+                  <circle id="total-evals-circle" cx="50" cy="50" r="38" stroke="#4f46e5" stroke-width="6" fill="transparent"
+                    stroke-dasharray="238.76" stroke-dashoffset="238.76" style="transition: stroke-dashoffset 0.8s ease-in-out;" />
+                </svg>
+                <span id="total-evals-value" class="absolute text-2xl font-black text-[var(--text-main)]">--</span>
+              </div>
+              <p class="text-[10px] font-extrabold text-[var(--text-muted)] uppercase tracking-widest">Total Evaluations</p>
+            </div>
+
+            <!-- Tarjeta 2: Average Score -->
+            <div class="rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm flex flex-col items-center justify-between text-center min-h-[240px] transition-all hover:shadow-md">
+              <div class="bg-purple-50 text-purple-600 dark:bg-purple-950/20 dark:text-purple-400 rounded-2xl p-3 w-12 h-12 flex items-center justify-center">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.907c.961 0 1.36 1.246.588 1.81l-3.97 2.883a1 1 0 00-.364 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.971-2.883a1 1 0 00-1.175 0l-3.97 2.883c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.364-1.118l-3.97-2.883c-.773-.565-.373-1.81.587-1.81h4.908a1 1 0 00.95-.69l1.519-4.674z"/>
+                </svg>
+              </div>
+              <div class="relative flex items-center justify-center my-4">
+                <svg class="w-28 h-28 transform -rotate-90" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="38" stroke="var(--border-main)" stroke-width="6" fill="transparent" class="opacity-20" />
+                  <circle id="avg-score-circle" cx="50" cy="50" r="38" stroke="#a855f7" stroke-width="6" fill="transparent"
+                    stroke-dasharray="238.76" stroke-dashoffset="238.76" style="transition: stroke-dashoffset 0.8s ease-in-out;" />
+                </svg>
+                <span id="avg-score-value" class="absolute text-2xl font-black text-[var(--text-main)]">--</span>
+              </div>
+              <p class="text-[10px] font-extrabold text-[var(--text-muted)] uppercase tracking-widest">Average Score</p>
+            </div>
+
+            <!-- Tarjeta 3: Participation -->
+            <div class="rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm flex flex-col items-center justify-between text-center min-h-[240px] transition-all hover:shadow-md">
+              <div class="bg-orange-50 text-orange-600 dark:bg-orange-950/20 dark:text-orange-400 rounded-2xl p-3 w-12 h-12 flex items-center justify-center">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>
+              </div>
+              <div class="relative flex items-center justify-center my-4">
+                <svg class="w-28 h-28 transform -rotate-90" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="38" stroke="var(--border-main)" stroke-width="6" fill="transparent" class="opacity-20" />
+                  <circle id="participation-circle" cx="50" cy="50" r="38" stroke="#f97316" stroke-width="6" fill="transparent"
+                    stroke-dasharray="238.76" stroke-dashoffset="238.76" style="transition: stroke-dashoffset 0.8s ease-in-out;" />
+                </svg>
+                <span id="participation-value" class="absolute text-2xl font-black text-[var(--text-main)]">--</span>
+              </div>
+              <p class="text-[10px] font-extrabold text-[var(--text-muted)] uppercase tracking-widest">Participation</p>
+            </div>
+
+          </div>
+
+          <!-- Tabla de Desempeño Leader Performance (ICA) -->
+          <div class="rounded-3xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-6">
+              <div>
+                <h2 class="text-lg font-bold text-[var(--text-main)]">Leader Performance (ICA)</h2>
+                <p class="text-xs text-[var(--text-muted)] mt-0.5">Instructor Competency Assessment scores.</p>
+              </div>
+              <button id="filter-btn" class="flex items-center gap-1.5 rounded-xl border border-[var(--border-main)] bg-[var(--bg-panel)] px-3 py-1.5 text-xs font-semibold text-[var(--text-main)] hover:bg-[var(--bg-base)] transition-colors cursor-pointer">
+                <svg class="w-4 h-4 text-[var(--text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                </svg>
+                <span id="filter-label">Todos</span>
+              </button>
+            </div>
+
+            <!-- Cabecera de la Tabla -->
+            <div class="grid grid-cols-12 text-[10px] font-extrabold text-[var(--text-muted)] uppercase tracking-widest px-4 py-2 border-b border-[var(--border-main)]">
+              <span class="col-span-5">Leader / Tutor</span>
+              <span class="col-span-3">Department</span>
+              <span class="col-span-2">ICA Score</span>
+              <span class="col-span-2">Status</span>
+            </div>
+
+            <!-- Cuerpo de la Tabla -->
+            <div id="leaders-list" class="divide-y divide-[var(--border-main)] mt-2">
+              <div class="text-center py-8 text-[var(--text-muted)] animate-pulse text-sm">Cargando líderes y tutores...</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Panel Lateral de Detalles (Se muestra al hacer clic en un evaluable) -->
+        <aside id="detail-panel" class="hidden lg:col-span-4 rounded-3xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm h-fit sticky top-24 transition-all duration-300">
+          <div class="flex items-start justify-between border-b border-[var(--border-main)] pb-4 mb-6">
+            <div class="flex items-center gap-3">
+              <div class="h-12 w-12 rounded-full bg-[var(--brand-bg)] text-white flex items-center justify-center border border-[var(--border-main)] text-sm font-bold shadow-inner" id="detail-avatar">
+                --
+              </div>
+              <div>
+                <h3 class="text-base font-bold text-[var(--text-main)]" id="detail-name">Sarah Jenkins</h3>
+                <p class="text-xs text-[var(--text-muted)] font-semibold uppercase tracking-wider" id="detail-dept">Engineering Dept.</p>
+              </div>
+            </div>
+            <button id="close-detail-btn" class="p-1.5 rounded-full hover:bg-[var(--bg-base)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+
+          <div>
+            <p class="text-[10px] font-extrabold text-[var(--text-muted)] uppercase tracking-widest">OVERALL ICA</p>
+            <div class="flex items-baseline gap-3 mt-1 mb-6">
+              <span class="text-4xl font-black text-[var(--text-main)]" id="detail-overall-score">--</span>
+              <span class="rounded-full px-2.5 py-0.5 text-xs font-bold" id="detail-overall-status">--</span>
+            </div>
+
+            <div class="mb-6">
+              <h4 class="text-[10px] font-extrabold text-[var(--text-muted)] uppercase tracking-widest mb-4">Category Breakdown</h4>
+              <div class="space-y-4" id="detail-categories">
+                <!-- Se llena dinámicamente -->
+              </div>
+            </div>
+
+            <!-- Bloque de Resumen de IA -->
+            <div class="rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] p-4 mb-6" id="detail-ai-summary-box">
+              <div class="flex items-center gap-2 text-[var(--brand-bg)] mb-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                </svg>
+                <span class="text-xs font-bold uppercase tracking-wider">AI Summary</span>
+              </div>
+              <p class="text-xs text-[var(--text-muted)] leading-relaxed italic" id="detail-ai-summary-text">
+                Selecciona un líder para generar su resumen por Inteligencia Artificial.
+              </p>
+            </div>
+
+            <div class="flex items-center justify-between text-xs text-[var(--text-muted)] mb-6 border-t border-[var(--border-main)] pt-4">
+              <span>Evaluaciones recibidas</span>
+              <span class="font-bold text-[var(--text-main)]" id="detail-participation-text">--</span>
+            </div>
+
+            <a href="/admin/metrics" class="block w-full py-3 rounded-2xl bg-[var(--bg-base)] text-[var(--text-main)] hover:bg-[var(--border-main)] text-center text-xs font-bold transition-colors">
+              Ver Reporte Completo
+            </a>
+          </div>
+        </aside>
+
+      </div>
+    </main>
+  `;
+};
+
+const renderUserDashboard = (name, roles) => {
   const quickLinks = {
     coder: [
       { href: "/evaluations/new", label: "Evaluar", title: "Nueva evaluación" },
@@ -23,10 +206,6 @@ export const renderDashboard = () => {
       { href: "/evaluations", label: "Historial", title: "Mis evaluaciones" },
       { href: "/my-results", label: "Resultados", title: "Mi retroalimentación" },
     ],
-    admin: [
-      { href: "/admin/metrics", label: "Métricas", title: "ICA por área" },
-      { href: "/admin/ai-summary", label: "Resumen IA", title: "Feedback con IA" },
-    ],
   };
 
   const linksByHref = new Map();
@@ -34,174 +213,328 @@ export const renderDashboard = () => {
   const links = [...linksByHref.values()];
 
   const linksHtml = links.map(({ href, label, title }) => `
-    <a class="rounded-2xl bg-[var(--bg-panel)] p-6 shadow-md border border-[var(--border-main)] transition-all duration-300 ease-in-out hover:border-indigo-500/50 hover:shadow-lg hover:-translate-y-1" href="${href}">
-      <p class="text-xs font-bold text-indigo-500 uppercase tracking-wider mb-2">${label}</p>
-      <h3 class="text-xl font-bold text-[var(--text-main)]">${title}</h3>
+    <a class="rounded-3xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm transition-all duration-300 ease-in-out hover:shadow-md hover:-translate-y-0.5 hover:border-[var(--brand-bg)] group" href="${href}">
+      <p class="text-xs font-bold uppercase tracking-wider text-[var(--brand-bg)]">${label}</p>
+      <h3 class="mt-2 text-lg font-bold text-[var(--text-main)] group-hover:text-[var(--brand-hover)] transition-colors">${title}</h3>
+      <div class="mt-4 flex items-center text-xs text-[var(--text-muted)] group-hover:text-[var(--text-main)] transition-colors">
+        <span>Acceder ahora</span>
+        <svg class="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </div>
     </a>
   `).join("");
 
   return `
     ${navBarComponent()}
-    
-    <main class="min-h-screen bg-[var(--bg-base)] text-[var(--text-main)] p-6 sm:p-8 lg:p-10 transition-all duration-300 overflow-x-hidden">
-      <div class="mx-auto max-w-7xl">
-        
-        <!-- Saludo -->
-        <header class="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 class="text-4xl font-black tracking-tight mb-2">Bienvenido de vuelta, ${name.split(' ')[0]}</h1>
-            <p class="text-[var(--text-muted)] text-sm font-medium">Este es tu panel de control y accesos rápidos de hoy.</p>
-          </div>
-          ${roles.includes("admin") ? `
-          <button id="btn-close-period" class="hidden inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--danger-bg)] px-4 py-2 text-sm font-bold text-[var(--danger-text)] transition-all duration-300 hover:bg-red-500 hover:text-white cursor-pointer">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
-            Cerrar Periodo Activo
-          </button>
-          ` : ''}
-        </header>
+    <main class="mx-auto max-w-6xl px-6 py-10 space-y-8">
+      <section class="rounded-3xl bg-gradient-to-r from-[var(--topbar-grad-mid)] to-[var(--topbar-grad-end)] p-8 text-white shadow-lg transition-colors duration-300">
+        <p class="text-[10px] font-bold uppercase tracking-[0.3em] opacity-80">Dashboard</p>
+        <h1 class="mt-2 text-4xl font-black tracking-tight">Bienvenido, ${name}</h1>
+        <p class="mt-2 max-w-2xl text-sm opacity-90">Accede a tus herramientas de evaluación y consulta tus resultados en la plataforma.</p>
+      </section>
 
-        <!-- Accesos rápidos (Estilo Proyecto) -->
-        <section class="mb-12">
-          <h2 class="text-lg font-bold mb-4">Tus Herramientas</h2>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            ${linksHtml || '<p class="text-[var(--text-muted)] text-sm">No hay accesos configurados para tu rol.</p>'}
-          </div>
-        </section>
-
-        <!-- KPI Premium Dashboard (Carga asíncrona) -->
-        <section id="metrics-dashboard" class="hidden">
-          <div class="flex items-center justify-between mb-6">
-            <h2 class="text-lg font-bold">Métricas del Periodo Activo <span id="period-name" class="text-indigo-500 ml-2">...</span></h2>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            
-            <!-- Card 1 -->
-            <div class="bg-[var(--bg-panel)] rounded-2xl p-6 shadow-lg border border-[var(--border-main)] hover:border-indigo-500/30 transition-colors">
-              <div class="flex justify-between items-start mb-4">
-                <div>
-                  <p class="text-xs text-[var(--text-muted)] font-semibold uppercase tracking-wider mb-1">Evaluados</p>
-                  <h3 id="kpi-evaluated" class="text-3xl font-black">--</h3>
-                </div>
-                <div class="bg-indigo-500/10 p-3 rounded-xl">
-                  <svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                </div>
-              </div>
-            </div>
-
-            <!-- Card 2 -->
-            <div class="bg-[var(--bg-panel)] rounded-2xl p-6 shadow-lg border border-[var(--border-main)] hover:border-orange-500/30 transition-colors">
-              <div class="flex justify-between items-start mb-4">
-                <div>
-                  <p class="text-xs text-[var(--text-muted)] font-semibold uppercase tracking-wider mb-1">Evaluadores</p>
-                  <h3 id="kpi-evaluators" class="text-3xl font-black">--</h3>
-                </div>
-                <div class="bg-orange-500/10 p-3 rounded-xl">
-                  <svg class="w-6 h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                </div>
-              </div>
-            </div>
-
-            <!-- Card 3 -->
-            <div class="bg-[var(--bg-panel)] rounded-2xl p-6 shadow-lg border border-[var(--border-main)] hover:border-emerald-500/30 transition-colors">
-              <div class="flex justify-between items-start mb-4">
-                <div>
-                  <p class="text-xs text-[var(--text-muted)] font-semibold uppercase tracking-wider mb-1">Total Respuestas</p>
-                  <h3 id="kpi-responses" class="text-3xl font-black">--</h3>
-                </div>
-                <div class="bg-emerald-500/10 p-3 rounded-xl">
-                  <svg class="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                </div>
-              </div>
-            </div>
-
-            <!-- Card 4 -->
-            <div class="bg-[var(--bg-panel)] rounded-2xl p-6 shadow-lg border border-[var(--border-main)] hover:border-purple-500/30 transition-colors">
-              <div class="flex justify-between items-start mb-4">
-                <div>
-                  <p class="text-xs text-[var(--text-muted)] font-semibold uppercase tracking-wider mb-1">ICP Promedio</p>
-                  <h3 id="kpi-icp" class="text-3xl font-black">--</h3>
-                </div>
-                <div class="bg-purple-500/10 p-3 rounded-xl">
-                  <svg class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </section>
-
-      </div>
+      <section class="space-y-6">
+        <h2 class="text-xl font-bold text-[var(--text-main)]">Accesos rápidos</h2>
+        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          ${linksHtml || '<p class="text-[var(--text-muted)] text-sm">No hay accesos configurados para tu rol.</p>'}
+        </div>
+      </section>
     </main>
   `;
 };
 
 export const setupDashboard = async () => {
-  
   const user = authService.getSession();
-  const isAdmin = user?.roles?.includes("admin");
+  const roles = user?.roles ?? [];
 
-  if (!isAdmin) return; // Solo admins ven las KPIs globales en el Home
+  if (!roles.includes("admin")) return;
 
-  const metricsDashboard = document.getElementById("metrics-dashboard");
-  metricsDashboard.classList.remove("hidden");
+  const periodLabel = document.getElementById("dashboard-period-label");
+  const leadersList = document.getElementById("leaders-list");
+  const filterBtn = document.getElementById("filter-btn");
+  const filterLabel = document.getElementById("filter-label");
 
-  try {
-    const periods = await periodService.get();
-    const activePeriod = periods.find(p => p.is_active);
+  let activePeriod = null;
+  let evaluatees = [];
+  let currentFilter = "all";
 
-    if (!activePeriod) {
-      document.getElementById("period-name").textContent = "(Ningún periodo activo)";
+  const updateCircle = (circleId, valueId, value, percentage) => {
+    const circle = document.getElementById(circleId);
+    const valueSpan = document.getElementById(valueId);
+    if (circle) {
+      const circumference = 238.76;
+      const offset = circumference - (Math.min(percentage, 100) / 100) * circumference;
+      circle.style.strokeDashoffset = offset;
+    }
+    if (valueSpan) {
+      valueSpan.textContent = value;
+    }
+  };
+
+  const getDepartment = (name, role) => {
+    if (name.includes("Jenkins") || name.includes("Javier")) return "Engineering";
+    if (name.includes("Chen") || name.includes("Abraham")) return "Design";
+    if (name.includes("Thorne") || name.includes("Ariza")) return "Data Science";
+    if (name.includes("Vásquez")) return "Frontend Dept.";
+    if (name.includes("Giraldo")) return "Backend Dept.";
+    if (name.includes("Reniz")) return "Soft Skills";
+    return role === "team_leader" ? "Liderazgo" : "Tutoría";
+  };
+
+  const getInitials = (name) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .substring(0, 2)
+      .toUpperCase();
+  };
+
+  const renderTable = () => {
+    if (!leadersList) return;
+
+    let filtered = evaluatees;
+    if (currentFilter !== "all") {
+      filtered = evaluatees.filter((e) => e.role === currentFilter);
+    }
+
+    if (filtered.length === 0) {
+      leadersList.innerHTML = `
+        <div class="text-center py-8 text-[var(--text-muted)] text-sm">
+          No hay líderes o tutores registrados para este filtro.
+        </div>
+      `;
       return;
     }
 
-    const btnClose = document.getElementById("btn-close-period");
-    if (btnClose) {
-      btnClose.classList.remove("hidden");
-      btnClose.addEventListener("click", async () => {
-        if (confirm("¿Estás seguro de cerrar el periodo activo? Esto permitirá crear/editar formularios, pero detendrá las evaluaciones en curso.")) {
-          try {
-            btnClose.disabled = true;
-            btnClose.innerText = "Cerrando...";
-            await periodService.update(activePeriod.id, {
-              name: activePeriod.name,
-              starts_at: activePeriod.starts_at,
-              ends_at: activePeriod.ends_at,
-              is_active: false
-            });
-            showToast("Periodo cerrado exitosamente", "success");
-            setTimeout(() => window.location.reload(), 1500);
-          } catch (err) {
-            showToast("Error al cerrar periodo", "error");
-            btnClose.disabled = false;
-            btnClose.innerText = "Cerrar Periodo Activo";
-          }
+    leadersList.innerHTML = filtered.map((ev) => {
+      const scoreText = ev.average_score !== null ? `${ev.average_score}` : "--";
+      const initials = getInitials(ev.name);
+      const department = getDepartment(ev.name, ev.role);
+
+      let badgeClass = "bg-gray-100 text-gray-800 dark:bg-gray-900/50 dark:text-gray-400";
+      let displayStatus = ev.status;
+      if (ev.status === "Sólido") {
+        badgeClass = "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400";
+        displayStatus = "SOLID";
+      } else if (ev.status === "Estable") {
+        badgeClass = "bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400";
+        displayStatus = "STABLE";
+      } else if (ev.status === "En riesgo") {
+        badgeClass = "bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400";
+        displayStatus = "AT RISK";
+      } else if (ev.status === "Datos insuficientes") {
+        badgeClass = "bg-gray-100 text-gray-500 dark:bg-gray-900/50 dark:text-gray-400";
+        displayStatus = "NO DATA";
+      }
+
+      return `
+        <div data-id="${ev.id}" class="leader-row grid grid-cols-12 items-center px-4 py-3 rounded-2xl hover:bg-[var(--bg-base)] transition-all cursor-pointer">
+          <div class="col-span-5 flex items-center gap-3">
+            <div class="h-10 w-10 rounded-full bg-[var(--border-main)] text-[var(--text-main)] flex items-center justify-center overflow-hidden border border-[var(--border-main)] font-bold text-xs shadow-inner">
+              <span>${initials}</span>
+            </div>
+            <div>
+              <p class="text-sm font-bold text-[var(--text-main)]">${ev.name}</p>
+              <p class="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">${ev.role.replace('_', ' ')}</p>
+            </div>
+          </div>
+          <div class="col-span-3 text-sm text-[var(--text-muted)]">
+            ${department}
+          </div>
+          <div class="col-span-2 text-sm font-extrabold text-[var(--text-main)]">
+            ${scoreText}
+          </div>
+          <div class="col-span-2 flex items-center justify-between">
+            <span class="rounded-full px-2.5 py-0.5 text-xs font-bold ${badgeClass}">${displayStatus}</span>
+            <svg class="w-4 h-4 text-[var(--text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    const rows = document.querySelectorAll(".leader-row");
+    rows.forEach((row) => {
+      row.addEventListener("click", () => {
+        const id = parseInt(row.getAttribute("data-id"));
+        showLeaderDetails(id);
+      });
+    });
+  };
+
+  const getCategoryBreakdown = async (evaluateeId, periodId) => {
+    try {
+      const templates = await templatesService.getTemplates();
+      const questionsMap = new Map();
+
+      for (const temp of templates) {
+        try {
+          const questions = await request(`/questions?template_id=${temp.id}`);
+          questions.forEach((q) => questionsMap.set(q.id, q));
+        } catch (e) {
+          console.error(e);
         }
+      }
+
+      const evaluations = await evaluationService.getByEvaluatee(evaluateeId);
+      const periodEvals = evaluations.filter((e) => e.period_id === periodId && e.status === "submitted");
+
+      const categoryScores = {};
+      periodEvals.forEach((ev) => {
+        ev.answers.forEach((ans) => {
+          if (ans.score !== null && questionsMap.has(ans.question_id)) {
+            const q = questionsMap.get(ans.question_id);
+            if (q.input_type === "scale") {
+              if (!categoryScores[q.category]) {
+                categoryScores[q.category] = { sum: 0, count: 0 };
+              }
+              categoryScores[q.category].sum += ans.score;
+              categoryScores[q.category].count += 1;
+            }
+          }
+        });
+      });
+
+      const breakdown = [];
+      for (const [catName, data] of Object.entries(categoryScores)) {
+        const avg_1_5 = data.sum / data.count;
+        const score_100 = Math.round((avg_1_5 - 1) / 4 * 100);
+        breakdown.push({ category: catName, score: score_100 });
+      }
+      return breakdown;
+    } catch (e) {
+      console.error(e);
+      return [];
+    }
+  };
+
+  const showLeaderDetails = async (leaderId) => {
+    const ev = evaluatees.find((e) => e.id === leaderId);
+    if (!ev) return;
+
+    const detailPanel = document.getElementById("detail-panel");
+    const leftColumnWrapper = document.getElementById("left-column-wrapper");
+
+    if (detailPanel && leftColumnWrapper) {
+      detailPanel.classList.remove("hidden");
+      leftColumnWrapper.classList.remove("col-span-12");
+      leftColumnWrapper.classList.add("lg:col-span-8");
+    }
+
+    document.getElementById("detail-avatar").textContent = getInitials(ev.name);
+    document.getElementById("detail-name").textContent = ev.name;
+    document.getElementById("detail-dept").textContent = getDepartment(ev.name, ev.role) + " Dept.";
+    document.getElementById("detail-overall-score").textContent = ev.average_score !== null ? ev.average_score : "--";
+    document.getElementById("detail-participation-text").textContent = `${ev.n_evals} evaluaciones`;
+
+    const statusBadge = document.getElementById("detail-overall-status");
+    if (statusBadge) {
+      let badgeClass = "bg-gray-100 text-gray-800 dark:bg-gray-900/50 dark:text-gray-400";
+      let displayStatus = ev.status;
+      if (ev.status === "Sólido") {
+        badgeClass = "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400";
+        displayStatus = "SOLID";
+      } else if (ev.status === "Estable") {
+        badgeClass = "bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400";
+        displayStatus = "STABLE";
+      } else if (ev.status === "En riesgo") {
+        badgeClass = "bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400";
+        displayStatus = "AT RISK";
+      } else if (ev.status === "Datos insuficientes") {
+        badgeClass = "bg-gray-100 text-gray-500 dark:bg-gray-900/50 dark:text-gray-400";
+        displayStatus = "NO DATA";
+      }
+      statusBadge.className = `rounded-full px-2.5 py-0.5 text-xs font-bold ${badgeClass}`;
+      statusBadge.textContent = displayStatus;
+    }
+
+    const categoriesContainer = document.getElementById("detail-categories");
+    if (categoriesContainer) {
+      categoriesContainer.innerHTML = `<div class="text-center text-xs text-[var(--text-muted)] py-4 animate-pulse">Cargando desglose...</div>`;
+      const breakdown = await getCategoryBreakdown(leaderId, activePeriod.id);
+
+      if (breakdown.length === 0) {
+        categoriesContainer.innerHTML = `<div class="text-xs text-[var(--text-muted)] py-2">No hay puntajes por categorías disponibles.</div>`;
+      } else {
+        categoriesContainer.innerHTML = breakdown.map((cat) => `
+          <div class="flex flex-col gap-1">
+            <div class="flex justify-between items-center text-xs">
+              <span class="font-semibold text-[var(--text-main)]">${cat.category}</span>
+              <span class="font-extrabold text-[var(--text-main)]">${cat.score}/100</span>
+            </div>
+            <div class="w-full bg-[var(--border-main)] h-2 rounded-full overflow-hidden">
+              <div class="bg-[var(--brand-bg)] h-full rounded-full transition-all duration-500 ease-out" style="width: ${cat.score}%"></div>
+            </div>
+          </div>
+        `).join("");
+      }
+    }
+
+    const aiSummaryText = document.getElementById("detail-ai-summary-text");
+    if (aiSummaryText) {
+      aiSummaryText.innerHTML = `<span class="animate-pulse">Generando resumen con IA...</span>`;
+      try {
+        const aiRes = await metricsService.getAiSummary(leaderId, activePeriod.id);
+        aiSummaryText.textContent = aiRes.summary || "No hay comentarios suficientes para generar un resumen.";
+      } catch (err) {
+        console.error(err);
+        aiSummaryText.textContent = "Error al conectar con la IA.";
+      }
+    }
+  };
+
+  const closeDetailBtn = document.getElementById("close-detail-btn");
+  if (closeDetailBtn) {
+    closeDetailBtn.addEventListener("click", () => {
+      const detailPanel = document.getElementById("detail-panel");
+      const leftColumnWrapper = document.getElementById("left-column-wrapper");
+      if (detailPanel && leftColumnWrapper) {
+        detailPanel.classList.add("hidden");
+        leftColumnWrapper.classList.remove("lg:col-span-8");
+        leftColumnWrapper.classList.add("col-span-12");
+      }
+    });
+  }
+
+  try {
+    const periods = await periodService.get();
+    if (periods.length === 0) {
+      if (periodLabel) periodLabel.textContent = "No hay periodos registrados.";
+      return;
+    }
+
+    activePeriod = periods.find((p) => p.is_active) || periods[0];
+    if (periodLabel) periodLabel.textContent = `Periodo: ${activePeriod.name}`;
+
+    const summary = await metricsService.getSummary(activePeriod.id);
+    evaluatees = summary.evaluatees;
+
+    updateCircle("total-evals-circle", "total-evals-value", summary.kpis.total_evaluations, summary.kpis.participation_rate);
+    updateCircle("avg-score-circle", "avg-score-value", summary.kpis.average_score, summary.kpis.average_score);
+    updateCircle("participation-circle", "participation-value", `${summary.kpis.participation_rate}%`, summary.kpis.participation_rate);
+
+    renderTable();
+
+    if (filterBtn && filterLabel) {
+      filterBtn.addEventListener("click", () => {
+        if (currentFilter === "all") {
+          currentFilter = "team_leader";
+          filterLabel.textContent = "Team Leaders";
+        } else if (currentFilter === "team_leader") {
+          currentFilter = "tutor";
+          filterLabel.textContent = "Tutores";
+        } else {
+          currentFilter = "all";
+          filterLabel.textContent = "Todos";
+        }
+        renderTable();
       });
     }
 
-    document.getElementById("period-name").textContent = `(${activePeriod.name})`;
-
-    const data = await metricsService.getSummary(activePeriod.id);
-    if (!data || !data.kpis) return;
-
-    document.getElementById("kpi-evaluated").textContent = data.kpis.total_evaluated || 0;
-    document.getElementById("kpi-evaluators").textContent = data.kpis.total_evaluators || 0;
-    document.getElementById("kpi-responses").textContent = data.kpis.total_responses || 0;
-
-    // Calcular promedio ICP general
-    let avgIcp = 0;
-    let icps = data.evaluatee_icps || [];
-    let validIcps = icps.filter(i => i.average_score !== null);
-    
-    if (validIcps.length > 0) {
-      let sum = validIcps.reduce((acc, curr) => acc + curr.average_score, 0);
-      avgIcp = (sum / validIcps.length).toFixed(1);
-    }
-    
-    document.getElementById("kpi-icp").textContent = validIcps.length > 0 ? avgIcp : "N/A";
-
   } catch (err) {
-    console.error("Error fetching dashboard metrics:", err);
+    console.error(err);
   }
 };

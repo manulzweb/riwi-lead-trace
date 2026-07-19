@@ -1,12 +1,29 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import date
 from typing import Optional
 
 class PeriodBase(BaseModel):
-    name: str
-    starts_at: date
-    ends_at: date
-    is_active: bool = False
+    name: str = Field(
+        title="Nombre del Período",
+        description="Nombre identificador para el período de evaluación",
+        examples=["Q3 2026"]
+    )
+    starts_at: date = Field(
+        title="Fecha de Inicio",
+        description="Fecha en la que inicia el período",
+        examples=["2026-07-01"]
+    )
+    ends_at: date = Field(
+        title="Fecha de Fin",
+        description="Fecha en la que termina el período",
+        examples=["2026-09-30"]
+    )
+    is_active: bool = Field(
+        default=False,
+        title="Está Activo",
+        description="Indica si el período está actualmente abierto para recibir evaluaciones",
+        examples=[True]
+    )
 
 class PeriodCreate(PeriodBase):
     pass

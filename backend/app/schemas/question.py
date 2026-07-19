@@ -25,11 +25,37 @@ class QuestionCreate(BaseModel):
     una pregunta sola es normal que el total quede descuadrado; el admin
     lo reequilibra despues con PUT /questions/weights.
     """
-    template_id: int
-    text: str = Field(min_length=3, max_length=255)
-    category_id: int
-    input_type: str = Field(pattern="^(scale|text|yes_no)$")
-    weight_percent: float = Field(default=0, ge=0, le=100)
+    template_id: int = Field(
+        title="ID de la Plantilla",
+        description="ID de la plantilla a la que se agregará la pregunta",
+        examples=[1]
+    )
+    text: str = Field(
+        min_length=3, 
+        max_length=255,
+        title="Texto de la Pregunta",
+        description="Enunciado de la pregunta",
+        examples=["¿El líder es comunicativo?"]
+    )
+    category_id: int = Field(
+        title="ID de la Categoría",
+        description="Categoría a la que pertenece",
+        examples=[1]
+    )
+    input_type: str = Field(
+        pattern="^(scale|text|yes_no)$",
+        title="Tipo de Entrada",
+        description="Tipo de respuesta esperada",
+        examples=["scale"]
+    )
+    weight_percent: float = Field(
+        default=0, 
+        ge=0, 
+        le=100,
+        title="Peso Porcentual",
+        description="Peso de la pregunta (solo si es scale)",
+        examples=[20.0]
+    )
 
 
 class QuestionTextPatch(BaseModel):
