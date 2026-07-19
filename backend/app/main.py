@@ -1,5 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+import traceback
 
 from app.config.config import settings
 from app.routes import auth_routes, category_routes, check, period_routes, user_routes, form_routes, evaluation_routes, metrics_routes, question_routes
@@ -24,13 +26,20 @@ Backend monolítico diseñado en FastAPI para el procesamiento de evaluaciones d
 *   **Base de Datos:** MySQL relacional (3FN). Acceso a datos mediante SQL plano (`sqlalchemy.text()`) sobre pool de conexiones; sin abstracción ORM para queries complejas.
 *   **Autenticación & Autorización:** MVP Stateless. Autenticación contra hash Bcrypt. **No implementa JWT ni manejo de sesiones en servidor.** El control de acceso basado en roles (RBAC) está delegado al cliente (SPA); la API confía en los identificadores de sesión proporcionados en el payload (`evaluator_id`).
 *   **Integridad Transaccional:** Control de concurrencia a nivel de base de datos (`UNIQUE INDEX` compuesto) para prevenir race conditions en el envío de evaluaciones. Las mutaciones de esquemas (preguntas) operan bajo lógica de append-only (versionado).
-*   **NLP & IA:** Acoplamiento con `gemini-1.5-flash` (Google AI) para la validación semántica de varianza en actualizaciones de preguntas y generación de resúmenes agregados on-fly (cacheado vía `ai_feedback_cache`).
+*   **IA:** Acoplamiento con `gemini-1.5-flash` (Google AI) para la validación semántica de varianza en actualizaciones de preguntas y generación de resúmenes agregados on-fly (cacheado vía `ai_feedback_cache`).
 """
 
 app = FastAPI(
     title="Riwi LeadTrace API",
     description=description_text,
     version="1.0.0",
+    contact={
+        "name": "Manuel Vasquez",
+        "email": "manuelandresvasquezm21@gmail.com",
+    },
+    license_info={
+        "name": "MIT",
+    },
     openapi_tags=tags_metadata
 )
 
@@ -51,6 +60,19 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Manejador Global de Errores (Evita que el backend se caiga feo y oculta el CORS)
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    print(f"ERROR NO CONTROLADO: {exc}")
+    traceback.print_exc()
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "Ha ocurrido un error interno en el servidor.",
+            "error_hint": str(exc)
+        },
+    )
 
 # Incluir enrutadores
 app.include_router(auth_routes.router, tags=["auth"])
