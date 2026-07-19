@@ -1,9 +1,16 @@
-import { request } from './api.service.js';
+import { request, jsonOptions } from './api.service.js';
 
 const getCategories = async () => {
   return await request('/categories');
 };
 
+const create = async (name) => await request('/categories', jsonOptions('POST', { name }));
+const update = async (id, name) => await request(`/categories/${id}`, jsonOptions('PUT', { name }));
+const remove = async (id) => await request(`/categories/${id}`, { method: 'DELETE' });
+
 export const categoryService = {
-  getCategories
+  getCategories,
+  create,
+  update,
+  remove
 };
