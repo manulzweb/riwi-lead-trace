@@ -6,6 +6,7 @@ import { dropdownComponent, setupDropdown } from "../../components/dropdown";
 import { templatesService } from "../../services/templates.service.js";
 import { categoryService } from "../../services/categories.service.js";
 import { periodService } from "../../services/periods.service.js";
+import { authService } from "../../services/auth.service";
 
 export const renderAdminEvaluations = () => `
   ${navBarComponent()}
@@ -409,7 +410,8 @@ export const setupAdminEvaluations = () => {
       title,
       description: inputDesc.value.trim(),
       targetRole: document.getElementById("template-role").value,
-      questions: formattedQuestions
+      questions: formattedQuestions,
+      adminId: authService.getSession()?.id,
     };
     if (editId) {
       templateData.id = editId;
@@ -434,9 +436,16 @@ export const setupAdminEvaluations = () => {
     try {
       btnSave.disabled = true;
       btnSave.innerHTML = "Guardando...";
-      
+
       if (editId) {
-        await templatesService.updateTemplate(editId, templateData);
+        // Se llama solo si la IA objeta la coherencia texto<->categoria de
+        // una pregunta puntual (ver templates.service.js.updateTemplate) --
+        // muestra su razon real, no un aviso generico.
+        const onCoherenceConfirm = async (question, aiMessage) => confirm(
+          `${aiMessage || "La IA no está segura de que el nuevo texto siga encajando en su categoría."}\n\n` +
+          `¿Guardar de todas formas?`
+        );
+        await templatesService.updateTemplate(editId, templateData, onCoherenceConfirm);
       } else {
         await templatesService.createTemplate(templateData);
       }
@@ -444,7 +453,11 @@ export const setupAdminEvaluations = () => {
       showToast("Plantilla Guardada", "success");
       await showList();
     } catch (error) {
-      showToast("Error", "error", "No se pudo guardar la plantilla.");
+      if (error.message?.startsWith("Guardado cancelado")) {
+        showToast("Guardado cancelado", "warning", "No se confirmó el cambio de texto; no se guardó nada.");
+      } else {
+        showToast("Error", "error", "No se pudo guardar la plantilla.");
+      }
       console.error(error);
     } finally {
       btnSave.disabled = false;
@@ -507,6 +520,11 @@ export const setupAdminEvaluations = () => {
                   ${t.questions ? t.questions.length : 0} preg.
                 </span>
               </div>
+              ${t.is_template ? `
+                <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-950/20 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400 mb-2" title="Es una plantilla base: no recibe respuestas hasta que se use para crear un formulario activo.">
+                  📋 Plantilla base
+                </span>
+              ` : ''}
               <h3 class="text-xl font-bold text-[var(--text-main)] font-heading leading-tight">${escapeHtml(t.title)}</h3>
               <p class="mt-2 text-sm text-[var(--text-muted)] line-clamp-2">${escapeHtml(t.description || 'Sin descripción')}</p>
             </div>

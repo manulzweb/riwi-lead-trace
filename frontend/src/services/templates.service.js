@@ -92,7 +92,7 @@ const createTemplate = async (templateData) => {
 // asi que se compara el estado actual del builder contra lo que estaba
 // cargado al abrirlo y se manda solo lo que cambio -- agregar, quitar,
 // reformular texto (versiona) y por ultimo reequilibrar los pesos.
-const updateTemplate = async (id, templateData) => {
+const updateTemplate = async (id, templateData, onCoherenceConfirm) => {
   await request(`/forms/${id}`, jsonOptions('PUT', {
     title: templateData.title,
     description: templateData.description || null,
@@ -123,7 +123,22 @@ const updateTemplate = async (id, templateData) => {
   for (const q of kept) {
     const original = before.find((b) => b.id === q.id);
     if (original && original.text !== q.text) {
-      await request(`/questions/${q.id}`, jsonOptions('PATCH', { text: q.text, confirm: true }));
+      // Primer intento SIN forzar: si la IA ve coherente el nuevo texto con
+      // la categoria de la pregunta, el backend lo guarda directo. Si no,
+      // responde 409 con su razon puntual -- recien ahi se pide confirmar.
+      try {
+        await request(`/questions/${q.id}`, jsonOptions('PATCH', { text: q.text, confirm: false, admin_id: templateData.adminId }));
+      } catch (err) {
+        if (err.status === 409 && onCoherenceConfirm) {
+          const confirmed = await onCoherenceConfirm(q, err.detail);
+          if (!confirmed) {
+            throw new Error(`Guardado cancelado: no se confirmo el cambio de texto de "${original.text}".`);
+          }
+          await request(`/questions/${q.id}`, jsonOptions('PATCH', { text: q.text, confirm: true, admin_id: templateData.adminId }));
+        } else {
+          throw err;
+        }
+      }
     }
   }
 
@@ -136,6 +151,7 @@ const updateTemplate = async (id, templateData) => {
     await request('/questions/weights', jsonOptions('PUT', {
       form_id: id,
       weights: scaleWeights,
+      admin_id: templateData.adminId,
     }));
   }
 
