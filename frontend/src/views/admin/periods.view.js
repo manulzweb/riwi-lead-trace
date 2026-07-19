@@ -23,7 +23,7 @@ export const renderAdminPeriods = () => `
     <!-- Modal Form for New Period -->
     <div id="period-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300">
       <div class="w-full max-w-md scale-95 transform rounded-3xl bg-white p-8 shadow-2xl transition-transform duration-300 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800">
-        <h2 class="mb-6 text-2xl font-bold font-heading text-[var(--text-main)]">Abrir Nuevo Ciclo</h2>
+        <h2 id="period-modal-title" class="mb-6 text-2xl font-bold font-heading text-[var(--text-main)]">Abrir Nuevo Ciclo</h2>
         <form id="form-period">
           <div class="mb-4">
             <label class="mb-2 block text-sm font-semibold text-[var(--text-main)]">Nombre del Ciclo</label>
@@ -55,10 +55,14 @@ export const renderAdminPeriods = () => `
 
 export const setupAdminPeriods = () => {
   const modal = document.getElementById("period-modal");
+  const modalTitle = document.getElementById("period-modal-title");
   const btnCreate = document.getElementById("btn-create-template") || document.getElementById("btn-create-period");
   const btnCancel = document.getElementById("btn-cancel-period");
   const form = document.getElementById("form-period");
   const listContainer = document.getElementById("periods-list");
+  const submitBtn = form.querySelector("button[type='submit']");
+
+  let editPeriodId = null;
 
   // Funciones del Modal
   const openModal = () => {
@@ -70,16 +74,35 @@ export const setupAdminPeriods = () => {
     }, 10);
   };
 
+  const openCreateModal = () => {
+    editPeriodId = null;
+    modalTitle.textContent = "Abrir Nuevo Ciclo";
+    submitBtn.textContent = "Guardar";
+    form.reset();
+    openModal();
+  };
+
+  const openEditModal = (period) => {
+    editPeriodId = period.id;
+    modalTitle.textContent = "Editar Ciclo";
+    submitBtn.textContent = "Guardar Cambios";
+    document.getElementById("period-name").value = period.name;
+    document.getElementById("period-start").value = period.starts_at;
+    document.getElementById("period-end").value = period.ends_at;
+    openModal();
+  };
+
   const closeModal = () => {
     modal.classList.add("opacity-0");
     modal.firstElementChild.classList.add("scale-95");
     setTimeout(() => {
       modal.classList.add("hidden");
       form.reset();
+      editPeriodId = null;
     }, 300);
   };
 
-  if (btnCreate) btnCreate.addEventListener("click", openModal);
+  if (btnCreate) btnCreate.addEventListener("click", openCreateModal);
   if (btnCancel) btnCancel.addEventListener("click", closeModal);
 
   // Renderizar Ciclos
@@ -120,8 +143,14 @@ export const setupAdminPeriods = () => {
                 <span class="inline-block"><strong>Fin:</strong> ${p.ends_at}</span>
               </p>
             </div>
-            <div>
+            <div class="flex items-center gap-2">
+              <button class="btn-edit-period rounded-lg px-4 py-2 text-xs font-bold text-[var(--text-muted)] bg-[var(--bg-base)] hover:bg-[var(--border-main)] transition-colors cursor-pointer" data-id="${p.id}" title="Editar ciclo">
+                Editar
+              </button>
               ${actionBtn}
+              <button class="btn-delete-period p-2 text-[var(--text-muted)] hover:bg-[var(--danger-bg)] hover:text-[var(--danger-text)] rounded-lg transition-colors cursor-pointer" data-id="${p.id}" title="Eliminar ciclo">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              </button>
             </div>
           </div>
         `;
@@ -133,13 +162,41 @@ export const setupAdminPeriods = () => {
           const id = e.target.dataset.id;
           const action = e.target.dataset.action;
           const newStatus = action === "open" ? true : false;
-          
+
           try {
             await periodService.update(id, { is_active: newStatus });
             showToast(newStatus ? "Ciclo Abierto Exitosamente" : "Ciclo Cerrado", "success");
             loadPeriods(); // Recargar la lista
           } catch (error) {
             showToast("Error al cambiar estado", "error");
+          }
+        });
+      });
+
+      // Lógica del botón Editar
+      document.querySelectorAll(".btn-edit-period").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = parseInt(btn.dataset.id);
+          const period = periods.find(p => p.id === id);
+          if (period) openEditModal(period);
+        });
+      });
+
+      // Lógica del botón Eliminar
+      document.querySelectorAll(".btn-delete-period").forEach(btn => {
+        btn.addEventListener("click", async (e) => {
+          const id = e.currentTarget.dataset.id;
+          if (!confirm("¿Estás seguro de que deseas eliminar este ciclo? Esta acción no se puede deshacer.")) return;
+
+          try {
+            await periodService.remove(id);
+            showToast("Ciclo eliminado", "success");
+            loadPeriods();
+          } catch (error) {
+            const msg = error?.message?.includes("409")
+              ? "No se puede eliminar: ya hay evaluaciones registradas en este ciclo."
+              : "Error al eliminar el ciclo.";
+            showToast(msg, "error");
           }
         });
       });
@@ -155,23 +212,33 @@ export const setupAdminPeriods = () => {
     }
   };
 
-  // Crear Periodo
+  // Crear o editar Periodo
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const data = {
-      name: document.getElementById("period-name").value,
-      starts_at: document.getElementById("period-start").value,
-      ends_at: document.getElementById("period-end").value,
-      is_active: true // Por defecto lo creamos activo
-    };
 
     try {
-      await periodService.create(data);
-      showToast("Ciclo Creado Exitosamente", "success");
+      if (editPeriodId) {
+        const data = {
+          name: document.getElementById("period-name").value,
+          starts_at: document.getElementById("period-start").value,
+          ends_at: document.getElementById("period-end").value,
+        };
+        await periodService.update(editPeriodId, data);
+        showToast("Ciclo Actualizado Exitosamente", "success");
+      } else {
+        const data = {
+          name: document.getElementById("period-name").value,
+          starts_at: document.getElementById("period-start").value,
+          ends_at: document.getElementById("period-end").value,
+          is_active: true // Por defecto lo creamos activo
+        };
+        await periodService.create(data);
+        showToast("Ciclo Creado Exitosamente", "success");
+      }
       closeModal();
       loadPeriods();
     } catch (error) {
-      showToast("Error al crear ciclo", "error");
+      showToast(editPeriodId ? "Error al actualizar ciclo" : "Error al crear ciclo", "error");
     }
   });
 

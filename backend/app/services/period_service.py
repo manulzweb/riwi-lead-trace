@@ -1,4 +1,6 @@
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
+from fastapi import HTTPException, status
 from app.config.database import engine
 from app.schemas.period import PeriodCreate, PeriodUpdate
 
@@ -61,8 +63,14 @@ def update_period(period_id: int, period: PeriodUpdate):
 
 def delete_period(period_id: int):
     with engine.begin() as conn:
-        query = text("DELETE FROM periods WHERE id = :id")
-        result = conn.execute(query, {"id": period_id})
+        try:
+            query = text("DELETE FROM periods WHERE id = :id")
+            result = conn.execute(query, {"id": period_id})
+        except IntegrityError:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="No se puede eliminar: ya existen evaluaciones registradas en este periodo."
+            )
         if result.rowcount == 0:
             return False
     return True
