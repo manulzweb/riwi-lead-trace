@@ -61,6 +61,7 @@ class EvaluationOut(BaseModel):
     period_id: int
     is_anonymous: bool
     status: str
+    created_at: datetime
     submitted_at: Optional[datetime] = None
 
     class Config:

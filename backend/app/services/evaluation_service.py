@@ -114,7 +114,7 @@ def _get_answers(conn, evaluation_id: int):
 def get_evaluation_detail(evaluation_id: int):
     with engine.connect() as conn:
         query = text("""
-            SELECT id, evaluator_id, evaluatee_id, template_id, period_id, is_anonymous, status, submitted_at
+            SELECT id, evaluator_id, evaluatee_id, template_id, period_id, is_anonymous, status, created_at, submitted_at
             FROM evaluations WHERE id = :id
         """)
         eval_row = conn.execute(query, {"id": evaluation_id}).mappings().first()
@@ -128,7 +128,7 @@ def get_evaluation_detail(evaluation_id: int):
 def get_evaluations_by_evaluator(evaluator_id: int, skip: int = 0, limit: int = 100):
     with engine.connect() as conn:
         query = text("""
-            SELECT id, evaluator_id, evaluatee_id, template_id, period_id, is_anonymous, status, submitted_at
+            SELECT id, evaluator_id, evaluatee_id, template_id, period_id, is_anonymous, status, created_at, submitted_at
             FROM evaluations WHERE evaluator_id = :evaluator_id
             LIMIT :limit OFFSET :skip
         """)
@@ -145,7 +145,7 @@ def get_evaluations_by_evaluator(evaluator_id: int, skip: int = 0, limit: int = 
 def get_evaluations_by_evaluatee(evaluatee_id: int, period_id: Optional[int] = None, hide_evaluator: bool = False, skip: int = 0, limit: int = 100):
     with engine.connect() as conn:
         query_str = """
-            SELECT id, evaluator_id, evaluatee_id, template_id, period_id, is_anonymous, status, submitted_at
+            SELECT id, evaluator_id, evaluatee_id, template_id, period_id, is_anonymous, status, created_at, submitted_at
             FROM evaluations WHERE evaluatee_id = :evaluatee_id
         """
         params = {"evaluatee_id": evaluatee_id, "limit": limit, "skip": skip}
