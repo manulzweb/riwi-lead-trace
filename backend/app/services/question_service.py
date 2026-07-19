@@ -19,7 +19,7 @@ def _assert_no_active_period():
 
 
 QUESTION_QUERY = """
-    SELECT q.id, q.template_id, q.text, q.category_id, c.name AS category,
+    SELECT q.id, q.form_id, q.text, q.category_id, c.name AS category,
            q.input_type, q.sort_order, q.weight_percent, q.is_active
     FROM questions q
     JOIN categories c ON q.category_id = c.id
@@ -33,13 +33,13 @@ def get_question(question_id: int):
         return dict(row) if row else None
 
 
-def get_questions_by_template(template_id: int, only_active: bool = True):
+def get_questions_by_template(form_id: int, only_active: bool = True):
     with engine.connect() as conn:
-        query_str = f"{QUESTION_QUERY} WHERE q.template_id = :template_id"
+        query_str = f"{QUESTION_QUERY} WHERE q.form_id = :form_id"
         if only_active:
             query_str += " AND q.is_active = TRUE"
         query_str += " ORDER BY q.sort_order ASC"
-        result = conn.execute(text(query_str), {"template_id": template_id})
+        result = conn.execute(text(query_str), {"form_id": form_id})
         return [dict(row) for row in result.mappings()]
 
 
@@ -74,11 +74,11 @@ def version_question_text(question_id: int, new_text: str, confirm: bool):
         conn.execute(deactivate_query, {"id": question_id})
 
         insert_query = text("""
-            INSERT INTO questions (template_id, text, category_id, input_type, sort_order, weight_percent, is_active)
-            VALUES (:template_id, :text, :category_id, :input_type, :sort_order, :weight_percent, TRUE)
+            INSERT INTO questions (form_id, text, category_id, input_type, sort_order, weight_percent, is_active)
+            VALUES (:form_id, :text, :category_id, :input_type, :sort_order, :weight_percent, TRUE)
         """)
         result = conn.execute(insert_query, {
-            "template_id": original["template_id"],
+            "form_id": original["form_id"],
             "text": new_text,
             "category_id": original["category_id"],
             "input_type": original["input_type"],
@@ -95,7 +95,7 @@ def create_question(payload: QuestionCreate):
 
     with engine.begin() as conn:
         template_exists = conn.execute(
-            text("SELECT id FROM form_templates WHERE id = :id"), {"id": payload.template_id}
+            text("SELECT id FROM forms WHERE id = :id"), {"id": payload.form_id}
         ).scalar()
         if not template_exists:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plantilla no encontrada.")
@@ -107,18 +107,18 @@ def create_question(payload: QuestionCreate):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Categoria no encontrada.")
 
         next_sort_order = conn.execute(
-            text("SELECT COALESCE(MAX(sort_order), -1) + 1 FROM questions WHERE template_id = :template_id"),
-            {"template_id": payload.template_id}
+            text("SELECT COALESCE(MAX(sort_order), -1) + 1 FROM questions WHERE form_id = :form_id"),
+            {"form_id": payload.form_id}
         ).scalar()
 
         weight = payload.weight_percent if payload.input_type == "scale" else 0
 
         insert_query = text("""
-            INSERT INTO questions (template_id, text, category_id, input_type, sort_order, weight_percent, is_active)
-            VALUES (:template_id, :text, :category_id, :input_type, :sort_order, :weight_percent, TRUE)
+            INSERT INTO questions (form_id, text, category_id, input_type, sort_order, weight_percent, is_active)
+            VALUES (:form_id, :text, :category_id, :input_type, :sort_order, :weight_percent, TRUE)
         """)
         result = conn.execute(insert_query, {
-            "template_id": payload.template_id,
+            "form_id": payload.form_id,
             "text": payload.text,
             "category_id": payload.category_id,
             "input_type": payload.input_type,
@@ -144,7 +144,7 @@ def delete_question(question_id: int):
 def update_weights(payload: WeightsUpdate):
     _assert_no_active_period()
 
-    current = get_questions_by_template(payload.template_id, only_active=True)
+    current = get_questions_by_template(payload.form_id, only_active=True)
     current_scale = {q["id"] for q in current if q["input_type"] == "scale"}
 
     sent_ids = {w.question_id for w in payload.weights}
@@ -169,4 +169,4 @@ def update_weights(payload: WeightsUpdate):
         for item in payload.weights:
             conn.execute(update_query, {"weight_percent": item.weight_percent, "id": item.question_id})
 
-    return get_questions_by_template(payload.template_id, only_active=True)
+    return get_questions_by_template(payload.form_id, only_active=True)

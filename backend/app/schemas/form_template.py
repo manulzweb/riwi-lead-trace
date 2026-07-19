@@ -20,6 +20,7 @@ class FormTemplateOut(BaseModel):
     description: Optional[str] = None
     target_role_id: int
     is_active: bool
+    is_template: bool = False
     created_at: Optional[datetime] = None
     questions: List[QuestionOut] = []
 
@@ -82,6 +83,11 @@ class TemplateCreate(BaseModel):
         title="Rol Objetivo",
         description="'team_leader' o 'tutor' -- los unicos roles evaluables",
         examples=["team_leader"]
+    )
+    is_template: bool = Field(
+        default=False,
+        title="Es Plantilla Base",
+        description="Indica si este formulario es solo una base (true) o un formulario activo para recibir respuestas (false)"
     )
     questions: List[QuestionCreateItem] = Field(
         min_length=1,

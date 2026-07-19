@@ -34,19 +34,19 @@ def create_form_template(payload: TemplateCreate):
     return form_service.create_template(payload)
 
 
-@router.put("/forms/{template_id}", response_model=FormTemplateOut)
-def update_form_template(template_id: int, payload: TemplateUpdate):
+@router.put("/forms/{form_id}", response_model=FormTemplateOut)
+def update_form_template(form_id: int, payload: TemplateUpdate):
     """Mutación parcial (PATCH) sobre `form_templates.title` o `description`. Exclusivo estado cerrado."""
-    updated = form_service.update_template(template_id, payload)
+    updated = form_service.update_template(form_id, payload)
     if not updated:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plantilla no encontrada.")
     return updated
 
 
-@router.delete("/forms/{template_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_form_template(template_id: int):
+@router.delete("/forms/{form_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_form_template(form_id: int):
     """Soft delete transaccional (`is_active = FALSE`) sobre la plantilla. Las referencias FK en evaluaciones pasadas persisten."""
-    deleted = form_service.delete_template(template_id)
+    deleted = form_service.delete_template(form_id)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plantilla no encontrada.")
     return None

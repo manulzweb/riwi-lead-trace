@@ -9,15 +9,15 @@ EVALUABLE_ROLES = ("team_leader", "tutor")
 
 
 QUESTIONS_QUERY = """
-    SELECT q.id, q.template_id, q.text, q.category_id, c.name AS category, q.input_type, q.sort_order, q.weight_percent
+    SELECT q.id, q.form_id, q.text, q.category_id, c.name AS category, q.input_type, q.sort_order, q.weight_percent
     FROM questions q
     JOIN categories c ON q.category_id = c.id
-    WHERE q.template_id = :template_id AND q.is_active = TRUE
+    WHERE q.form_id = :form_id AND q.is_active = TRUE
     ORDER BY q.sort_order ASC
 """
 
 
-def get_form_templates_by_role(role_name: str):
+def get_forms_by_role(role_name: str):
     with engine.connect() as conn:
         role_query = text("SELECT id FROM roles WHERE name = :name")
         role_id = conn.execute(role_query, {"name": role_name}).scalar()
@@ -25,8 +25,8 @@ def get_form_templates_by_role(role_name: str):
             return []
 
         template_query = text("""
-            SELECT id, title, description, target_role_id, is_active, created_at
-            FROM form_templates
+            SELECT id, title, description, target_role_id, is_active, is_template, created_at
+            FROM forms
             WHERE target_role_id = :role_id
             ORDER BY id DESC
         """)
@@ -35,26 +35,26 @@ def get_form_templates_by_role(role_name: str):
         templates = []
         for row in template_rows:
             template_dict = dict(row)
-            questions_result = conn.execute(text(QUESTIONS_QUERY), {"template_id": template_dict["id"]})
+            questions_result = conn.execute(text(QUESTIONS_QUERY), {"form_id": template_dict["id"]})
             template_dict["questions"] = [dict(q) for q in questions_result.mappings()]
             templates.append(template_dict)
 
         return templates
 
 
-def get_template(template_id: int):
+def get_template(form_id: int):
     with engine.connect() as conn:
         template_query = text("""
-            SELECT id, title, description, target_role_id, is_active, created_at
-            FROM form_templates
+            SELECT id, title, description, target_role_id, is_active, is_template, created_at
+            FROM forms
             WHERE id = :id
         """)
-        template_row = conn.execute(template_query, {"id": template_id}).mappings().first()
+        template_row = conn.execute(template_query, {"id": form_id}).mappings().first()
         if not template_row:
             return None
 
         template_dict = dict(template_row)
-        questions_result = conn.execute(text(QUESTIONS_QUERY), {"template_id": template_id})
+        questions_result = conn.execute(text(QUESTIONS_QUERY), {"form_id": form_id})
         template_dict["questions"] = [dict(row) for row in questions_result.mappings()]
         return template_dict
 
@@ -81,20 +81,21 @@ def create_template(payload: TemplateCreate):
         role_id = conn.execute(text("SELECT id FROM roles WHERE name = :name"), {"name": payload.target_role}).scalar()
         
         conn.execute(
-            text("UPDATE form_templates SET is_active = FALSE WHERE target_role_id = :role_id"),
+            text("UPDATE forms SET is_active = FALSE WHERE target_role_id = :role_id"),
             {"role_id": role_id}
         )
 
         insert_template_query = text("""
-            INSERT INTO form_templates (title, description, target_role_id, is_active)
-            VALUES (:title, :description, :target_role_id, TRUE)
+            INSERT INTO forms (title, description, target_role_id, is_active, is_template)
+            VALUES (:title, :description, :target_role_id, TRUE, :is_template)
         """)
         result = conn.execute(insert_template_query, {
             "title": payload.title,
             "description": payload.description,
             "target_role_id": role_id,
+            "is_template": payload.is_template,
         })
-        template_id = result.lastrowid
+        form_id = result.lastrowid
 
         for category_id in {q.category_id for q in payload.questions}:
             exists = conn.execute(text("SELECT id FROM categories WHERE id = :id"), {"id": category_id}).scalar()
@@ -102,12 +103,12 @@ def create_template(payload: TemplateCreate):
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Categoria {category_id} no encontrada.")
 
         insert_question_query = text("""
-            INSERT INTO questions (template_id, text, category_id, input_type, sort_order, weight_percent, is_active)
-            VALUES (:template_id, :text, :category_id, :input_type, :sort_order, :weight_percent, TRUE)
+            INSERT INTO questions (form_id, text, category_id, input_type, sort_order, weight_percent, is_active)
+            VALUES (:form_id, :text, :category_id, :input_type, :sort_order, :weight_percent, TRUE)
         """)
         for index, q in enumerate(payload.questions):
             conn.execute(insert_question_query, {
-                "template_id": template_id,
+                "form_id": form_id,
                 "text": q.text,
                 "category_id": q.category_id,
                 "input_type": q.input_type,
@@ -115,13 +116,13 @@ def create_template(payload: TemplateCreate):
                 "weight_percent": q.weight_percent if q.input_type == "scale" else 0,
             })
 
-    return get_template(template_id)
+    return get_template(form_id)
 
 
-def update_template(template_id: int, payload: TemplateUpdate):
+def update_template(form_id: int, payload: TemplateUpdate):
     _assert_no_active_period()
 
-    existing = get_template(template_id)
+    existing = get_template(form_id)
     if not existing:
         return None
 
@@ -135,18 +136,18 @@ def update_template(template_id: int, payload: TemplateUpdate):
 
     with engine.begin() as conn:
         set_clause = ", ".join(f"{column} = :{column}" for column in values)
-        conn.execute(text(f"UPDATE form_templates SET {set_clause} WHERE id = :id"), {**values, "id": template_id})
+        conn.execute(text(f"UPDATE forms SET {set_clause} WHERE id = :id"), {**values, "id": form_id})
         
-    return get_template(template_id)
+    return get_template(form_id)
 
 
-def delete_template(template_id: int):
+def delete_template(form_id: int):
     _assert_no_active_period()
 
-    existing = get_template(template_id)
+    existing = get_template(form_id)
     if not existing:
         return False
     if existing["is_active"]:
         with engine.begin() as conn:
-            conn.execute(text("UPDATE form_templates SET is_active = FALSE WHERE id = :id"), {"id": template_id})
+            conn.execute(text("UPDATE forms SET is_active = FALSE WHERE id = :id"), {"id": form_id})
     return True
