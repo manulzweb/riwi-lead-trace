@@ -25,9 +25,10 @@ def get_form_templates_by_role(role_name: str):
             return []
 
         template_query = text("""
-            SELECT id, title, description, target_role_id, is_active
+            SELECT id, title, description, target_role_id, is_active, created_at
             FROM form_templates
-            WHERE target_role_id = :role_id AND is_active = TRUE
+            WHERE target_role_id = :role_id
+            ORDER BY id DESC
         """)
         template_rows = conn.execute(template_query, {"role_id": role_id}).mappings().all()
 
@@ -44,7 +45,7 @@ def get_form_templates_by_role(role_name: str):
 def get_template(template_id: int):
     with engine.connect() as conn:
         template_query = text("""
-            SELECT id, title, description, target_role_id, is_active
+            SELECT id, title, description, target_role_id, is_active, created_at
             FROM form_templates
             WHERE id = :id
         """)
@@ -87,14 +88,13 @@ def create_template(payload: TemplateCreate):
         insert_template_query = text("""
             INSERT INTO form_templates (title, description, target_role_id, is_active)
             VALUES (:title, :description, :target_role_id, TRUE)
-            RETURNING id
         """)
         result = conn.execute(insert_template_query, {
             "title": payload.title,
             "description": payload.description,
             "target_role_id": role_id,
         })
-        template_id = result.scalar()
+        template_id = result.lastrowid
 
         for category_id in {q.category_id for q in payload.questions}:
             exists = conn.execute(text("SELECT id FROM categories WHERE id = :id"), {"id": category_id}).scalar()

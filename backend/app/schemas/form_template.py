@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
+from datetime import datetime
 
 class QuestionOut(BaseModel):
     id: int
@@ -19,6 +20,7 @@ class FormTemplateOut(BaseModel):
     description: Optional[str] = None
     target_role_id: int
     is_active: bool
+    created_at: Optional[datetime] = None
     questions: List[QuestionOut] = []
 
     class Config:
