@@ -5,6 +5,7 @@ import { periodService } from "../../services/periods.service.js";
 import { escapeHtml } from "../../utils/validators";
 import { setupModalA11y } from "../../utils/modalA11y";
 import { authService } from "../../services/auth.service";
+import { searchBoxComponent, setupSearch } from "../../components/searchBox";
 
 export const renderAdminPeriods = () => `
   ${navBarComponent()}
@@ -47,7 +48,9 @@ export const renderAdminPeriods = () => `
       </div>
     </div>
 
-    <section id="periods-list" class="mt-8 flex flex-col gap-4">
+    <div id="period-search-slot" class="mt-8 max-w-sm"></div>
+
+    <section id="periods-list" class="flex flex-col gap-4">
       <div class="h-24 animate-pulse rounded-3xl bg-[var(--bg-panel)]"></div>
       <div class="h-24 animate-pulse rounded-3xl bg-[var(--bg-panel)]"></div>
     </section>
@@ -112,23 +115,22 @@ export const setupAdminPeriods = () => {
   if (btnCancel) btnCancel.addEventListener("click", closeModal);
 
   // Renderizar Ciclos
-  const loadPeriods = async () => {
-    try {
-      const periods = await periodService.get();
-      
-      if (!periods || periods.length === 0) {
+  let allPeriods = [];
+
+  const renderPeriodsList = (list) => {
+      if (!list || list.length === 0) {
         listContainer.innerHTML = `
           <div class="flex flex-col items-center justify-center py-16 text-center">
             <div class="mb-4 rounded-full bg-gray-100 p-4 dark:bg-zinc-800">
               <svg class="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
             </div>
-            <h3 class="mb-2 font-heading text-xl font-bold text-[var(--text-main)]">No hay ciclos</h3>
-            <p class="text-sm text-[var(--text-muted)]">Abre un nuevo ciclo para que tu equipo empiece a evaluar.</p>
+            <h3 class="mb-2 font-heading text-xl font-bold text-[var(--text-main)]">${allPeriods.length === 0 ? "No hay ciclos" : "Sin resultados"}</h3>
+            <p class="text-sm text-[var(--text-muted)]">${allPeriods.length === 0 ? "Abre un nuevo ciclo para que tu equipo empiece a evaluar." : "Ningún ciclo coincide con la búsqueda."}</p>
           </div>`;
         return;
       }
 
-      listContainer.innerHTML = periods.map(p => {
+      listContainer.innerHTML = list.map(p => {
         const statusBadge = p.is_active 
           ? statusBadgeComponent({ variant: "dot", status: "Activa" }) 
           : statusBadgeComponent({ variant: "dot", status: "Cerrado" });
@@ -183,7 +185,7 @@ export const setupAdminPeriods = () => {
       document.querySelectorAll(".btn-edit-period").forEach(btn => {
         btn.addEventListener("click", () => {
           const id = parseInt(btn.dataset.id);
-          const period = periods.find(p => p.id === id);
+          const period = allPeriods.find(p => p.id === id);
           if (period) openEditModal(period, btn);
         });
       });
@@ -207,6 +209,22 @@ export const setupAdminPeriods = () => {
         });
       });
 
+  };
+
+  const searchSlot = document.getElementById("period-search-slot");
+
+  const loadPeriods = async () => {
+    try {
+      allPeriods = await periodService.get();
+      renderPeriodsList(allPeriods);
+      // Se regenera el input en cada carga para no acumular listeners de
+      // versiones anteriores (loadPeriods se vuelve a llamar tras crear/
+      // editar/borrar/activar un ciclo, pero el nodo del input persiste
+      // fuera de listContainer si no se reemplaza).
+      if (searchSlot) {
+        searchSlot.innerHTML = searchBoxComponent('period-search', 'Buscar ciclo por nombre...');
+        setupSearch('period-search', allPeriods, ['name'], renderPeriodsList);
+      }
     } catch (error) {
       console.error(error);
       showToast("No se pudieron cargar los ciclos", "error");

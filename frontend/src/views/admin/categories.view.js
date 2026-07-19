@@ -4,6 +4,7 @@ import { categoryService } from "../../services/categories.service.js";
 import { escapeHtml } from "../../utils/validators";
 import { setupModalA11y } from "../../utils/modalA11y";
 import { authService } from "../../services/auth.service";
+import { searchBoxComponent, setupSearch } from "../../components/searchBox";
 
 export const renderAdminCategories = () => `
   ${navBarComponent()}
@@ -38,7 +39,9 @@ export const renderAdminCategories = () => `
       </div>
     </div>
 
-    <section id="categories-list" class="mt-8 flex flex-col gap-3">
+    <div id="category-search-slot" class="mt-8 max-w-sm"></div>
+
+    <section id="categories-list" class="flex flex-col gap-3">
       <div class="h-16 animate-pulse rounded-2xl bg-[var(--bg-panel)]"></div>
       <div class="h-16 animate-pulse rounded-2xl bg-[var(--bg-panel)]"></div>
       <div class="h-16 animate-pulse rounded-2xl bg-[var(--bg-panel)]"></div>
@@ -100,29 +103,18 @@ export const setupAdminCategories = () => {
   btnCreate.addEventListener("click", openCreateModal);
   btnCancel.addEventListener("click", closeModal);
 
-  const loadCategories = async () => {
-    let categories = [];
-    try {
-      categories = await categoryService.getCategories();
-    } catch (error) {
-      console.error(error);
-      showToast("No se pudieron cargar las categorías", "error");
-      listContainer.innerHTML = `
-        <div class="text-center py-8 text-[var(--danger-text)] text-sm">
-          No se pudieron cargar las categorías. Recarga la página para reintentar.
-        </div>
-      `;
-      return;
-    }
+  let allCategories = [];
+  const searchSlot = document.getElementById("category-search-slot");
 
+  const renderCategoriesList = (categories) => {
     if (!categories || categories.length === 0) {
       listContainer.innerHTML = `
         <div class="flex flex-col items-center justify-center py-16 text-center">
           <div class="mb-4 rounded-full bg-gray-100 p-4 dark:bg-zinc-800">
             <svg class="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 11V6a3 3 0 013-3z"/></svg>
           </div>
-          <h3 class="mb-2 font-heading text-xl font-bold text-[var(--text-main)]">No hay categorías</h3>
-          <p class="text-sm text-[var(--text-muted)]">Crea la primera categoría para poder clasificar preguntas.</p>
+          <h3 class="mb-2 font-heading text-xl font-bold text-[var(--text-main)]">${allCategories.length === 0 ? "No hay categorías" : "Sin resultados"}</h3>
+          <p class="text-sm text-[var(--text-muted)]">${allCategories.length === 0 ? "Crea la primera categoría para poder clasificar preguntas." : "Ninguna categoría coincide con la búsqueda."}</p>
         </div>`;
       return;
     }
@@ -144,7 +136,7 @@ export const setupAdminCategories = () => {
     document.querySelectorAll(".btn-edit-category").forEach(btn => {
       btn.addEventListener("click", () => {
         const id = parseInt(btn.dataset.id);
-        const category = categories.find(c => c.id === id);
+        const category = allCategories.find(c => c.id === id);
         if (category) openEditModal(category, btn);
       });
     });
@@ -166,6 +158,27 @@ export const setupAdminCategories = () => {
         }
       });
     });
+  };
+
+  const loadCategories = async () => {
+    try {
+      allCategories = await categoryService.getCategories();
+      renderCategoriesList(allCategories);
+      if (searchSlot) {
+        // Se regenera para no acumular listeners de recargas anteriores
+        // (ver mismo comentario en periods.view.js).
+        searchSlot.innerHTML = searchBoxComponent('category-search', 'Buscar categoría...');
+        setupSearch('category-search', allCategories, ['name'], renderCategoriesList);
+      }
+    } catch (error) {
+      console.error(error);
+      showToast("No se pudieron cargar las categorías", "error");
+      listContainer.innerHTML = `
+        <div class="text-center py-8 text-[var(--danger-text)] text-sm">
+          No se pudieron cargar las categorías. Recarga la página para reintentar.
+        </div>
+      `;
+    }
   };
 
   form.addEventListener("submit", async (e) => {
