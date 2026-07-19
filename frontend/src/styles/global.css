@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Roboto:ital,wght@0,100..900;1,100..900&family=Rubik:ital,wght@0,300..900;1,300..900&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -13,42 +14,104 @@
   --color-danger-hover: var(--danger-hover);
   --color-danger-text: var(--danger-text);
   --color-danger-border: var(--danger-border);
+
+  /* Tipografías */
+  --font-body: 'Open Sans', sans-serif;
+  --font-heading: 'Rubik', serif;
 }
 
+/* #6b5cff */
+
 :root {
-  --bg-base: #f8fafc; /* slate-50 */
-  --bg-panel: #ffffff; /* white */
-  --text-main: #0f172a; /* slate-900 */
-  --text-muted: #475569; /* slate-600 */
-  --border-main: #dbeafe; /* blue-100 */
-  --brand-bg: #4f46e5; /* indigo-600 */
-  --brand-hover: #4338ca; /* indigo-700 */
+  --bg-base: #f8fafc;
+  /* slate-50 */
+  --bg-panel: #ffffff;
+  /* white */
+  --bg-sidebar: #fffff0;
+  --text-main: #0f172a;
+  /* slate-900 */
+  --text-muted: #475569;
+  /* slate-600 */
+  --border-main: #dbeafe;
+  /* blue-100 */
+  --brand-bg: #4f46e5;
+  /* indigo-600 */
+  --brand-hover: #4338ca;
+  /* indigo-700 */
   --brand-text: #ffffff;
   --danger-bg: #fee2e2;
-  --danger-hover: #fecaca;
+  --danger-hover: #ff7878;
   --danger-text: #dc2626;
   --danger-border: #fca5a5;
+
+  /* Gradiente Navbar Modo Claro */
+  --topbar-grad-start: #090c1e;
+  --topbar-grad-mid: #5a4bfc;
+  --topbar-grad-end: #776bf8;
+
+  /* Tipografías */
+  /*--font-body: 'Inter', sans-serif;
+  --font-heading: 'Merriweather', serif;
+  /* Puedes cambiar esto a 'Merriweather', serif */
 }
 
 html.dark {
-  --bg-base: #0f172a; /* slate-900 */
-  --bg-panel: #1e293b; /* slate-800 - soft dark */
-  --text-main: #f8fafc; /* slate-50 */
-  --text-muted: #94a3b8; /* slate-400 */
-  --border-main: #334155; /* slate-700 */
-  --brand-bg: #6366f1; /* indigo-500 */
-  --brand-hover: #818cf8; /* indigo-400 */
+  --bg-base: #090c1e;
+  /* slate-900 */
+  --bg-panel: #1e293b;
+  /* slate-800 - soft dark */
+  --bg-sidebar: #0a0f19;
+  /* slate-900 */
+  --text-main: #f8fafc;
+  /* slate-50 */
+  --text-muted: #94a3b8;
+  /* slate-400 */
+  --border-main: #334155;
+  /* slate-700 */
+  --brand-bg: #1e293b;
+  /* indigo-500 */
+  --brand-hover: #818cf8;
+  /* indigo-400 */
   --brand-text: #ffffff;
   --danger-bg: rgba(220, 38, 38, 0.1);
-  --danger-hover: rgba(220, 38, 38, 0.2);
-  --danger-text: #ef4444; /* red-500 */
+  --danger-hover: rgba(220, 38, 38, 0.863);
+  --danger-text: #ef4444;
+  /* red-500 */
   --danger-border: rgba(220, 38, 38, 0.3);
+
+  /* Gradiente Navbar Modo Oscuro (Color Sólido) */
+  --topbar-grad-start: #0f172a;
+  --topbar-grad-mid: #334155;
+  --topbar-grad-end: #1e293b;
 }
 
 html {
-  transition: background-color 0.3s ease, color 0.3s ease;
+  font-family: var(--font-body);
+  scroll-behavior: smooth;
   background-color: var(--bg-base);
   color: var(--text-main);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Aplicar fuente de encabezados para mejorar la jerarquía */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.font-heading {
+  font-family: var(--font-heading);
+  font-weight: 600;
+}
+
+/* Control de logos según el tema */
+html.dark .logo-light {
+  display: none !important;
+}
+
+html:not(.dark) .logo-dark {
+  display: none !important;
 }
 
 /* SweetAlert2 Theme overrides */
@@ -65,4 +128,40 @@ div.swal2-title {
 
 .swal2-timer-progress-bar {
   background-color: var(--brand-bg);
+}
+
+/* --- View Transitions for Theme Toggle --- */
+::view-transition-group(root) {
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  /* expo-out equivalent */
+}
+
+::view-transition-new(root) {
+  /* Usando clip-path de círculo que crece desde el botón (arriba a la derecha) 
+     en lugar de SVG externo para evitar dependencias faltantes */
+  clip-path: circle(0% at 85% 32px);
+  animation: scale-circle 1s both;
+  z-index: 9999;
+}
+
+::view-transition-old(root) {
+  animation: none;
+  z-index: 1;
+}
+
+.dark::view-transition-old(root) {
+  z-index: 9999;
+  animation: none;
+}
+
+.dark::view-transition-new(root) {
+  clip-path: circle(0% at 85% 32px);
+  animation: scale-circle 1s both;
+  z-index: 9999;
+}
+
+@keyframes scale-circle {
+  to {
+    clip-path: circle(150% at 85% 32px);
+  }
 }

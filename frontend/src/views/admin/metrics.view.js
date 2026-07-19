@@ -114,14 +114,14 @@ export const setupMetrics = async () => {
 
   try {
     periods = await periodService.get();
-    
+
     if (periods.length === 0) {
       periodSelector.innerHTML = '<option value="">No hay periodos</option>';
       gridContainer.innerHTML = '<p class="text-[var(--text-muted)]">No hay periodos registrados.</p>';
       return;
     }
 
-    periodSelector.innerHTML = periods.map(p => 
+    periodSelector.innerHTML = periods.map(p =>
       `<option value="${p.id}" ${p.is_active ? 'selected' : ''}>${p.name}</option>`
     ).join("");
 

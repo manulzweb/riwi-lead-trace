@@ -7,6 +7,7 @@ class QuestionOut(BaseModel):
     category: str
     input_type: str
     sort_order: int
+    weight: int
 
     class Config:
         from_attributes = True

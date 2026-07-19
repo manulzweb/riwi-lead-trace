@@ -7,9 +7,9 @@ Filosofia: **startup validando una idea**. El MVP debe ser lo minimo para compro
 | Funcionalidad | Por que es obligatoria |
 |---------------|------------------------|
 | **Backend FastAPI + MySQL** funcional | Requisito de la rubrica: integracion front + back + persistencia |
-| **Logica de negocio** (anonimato, no-duplicado, **ICP**, RBAC) | Requisito: no limitarse a CRUD basico |
-| Inicio de sesion (con JWT) | Sin identidad no hay feedback atribuible ni roles |
-| Gestion de roles (Coder, Tutor, TL, Admin) | Define que ve y hace cada usuario |
+| **Logica de negocio** (anonimato, no-duplicado, **ICP**, filtro por rol) | Requisito: no limitarse a CRUD basico |
+| Inicio de sesion (hash bcrypt en servidor, **sin JWT**, ver `06-arquitectura.md`) | Sin identidad no hay feedback atribuible ni roles |
+| Gestion de roles (Coder, Tutor, TL, Admin; **un usuario puede tener mas de un rol a la vez**) | Define que ve y hace cada usuario |
 | Listar Team Leaders y Tutores evaluables | Punto de entrada de la accion principal |
 | Evaluar Team Leader (formulario estructurado) | Nucleo de la hipotesis del producto |
 | Evaluar Tutor (formulario estructurado) | Completa el alcance del feedback ascendente |
@@ -33,7 +33,7 @@ Filosofia: **startup validando una idea**. El MVP debe ser lo minimo para compro
 | Areas / segmentacion multi-area | Simplifica el MVP; la segmentacion se agrega post-validacion |
 | Bitacora TL->Tutor (evaluacion descendente) | Excede el feedback ascendente; se agrega como v2 |
 | Analitica de talento (ranking de futuros TL) | Requiere volumen de datos y bitacora; post-validacion |
-| ICP ponderado por categoria (con pesos, editables o no) | El MVP usa un promedio simple; alcanza para validar la hipotesis del piloto |
+| ICP ponderado y agregado por categoria | El MVP ya pondera por pregunta (`weight_percent`), pero no agrupa el resultado por categoria; alcanza para validar la hipotesis del piloto |
 | Mejoras por IA para el evaluado (TL/Tutor) | El MVP entrega IA solo al Admin; el evaluado ve resultados sin IA |
 | Visualizacion de tendencias (graficos temporales) | CSV/tabla basica como `Could`; graficos avanzados son futuro |
 | Reportes avanzados / exportacion PDF estilizada | CSV/impresion basica como `Could`; lo demas es futuro |
@@ -57,9 +57,9 @@ Definidos con criterio MVP: suficientes para un piloto confiable, sin sobreingen
 
 | RNF | Que exige | Objetivo verificable |
 |---|---|---|
-| **Seguridad** | JWT + contrasenas hasheadas (bcrypt); anonimato real (sin `evaluator_id`); RBAC validado en backend; HTTPS en produccion; sanear entradas (evitar XSS). | 0 contrasenas en texto plano; anonimas sin `evaluator_id` |
+| **Seguridad** | Contrasenas hasheadas (bcrypt); anonimato real (sin `evaluator_id`); **sin JWT** — el rol/ID de quien llama lo manda el propio front y el backend lo confia (filtro de datos, no verificacion criptografica, ver `06-arquitectura.md`); HTTPS en produccion; sanear entradas (evitar XSS). | 0 contrasenas en texto plano; anonimas sin `evaluator_id` |
 | **Escalabilidad** | Frontend desacoplado via contrato REST; arquitectura modular; plantillas de formulario en BD. | — |
 | **Rendimiento** | Bundle ligero (Vite, sin frameworks pesados); estados de carga; evitar peticiones redundantes. | FCP < 2s; bundle inicial liviano |
 | **Usabilidad** | Responsive mobile-first (>=320px); feedback inmediato (carga/vacio/error/exito); validacion clara por campo. | Completar evaluacion en <=3 clics |
-| **Mantenibilidad** | Capas separadas (router/store/services en front; services/repositories en back); Conventional Commits; docs vivos. | Logica de negocio aislada en `services` |
+| **Mantenibilidad** | Capas separadas (router/store/services en front; routes/services en back, sin `repositories/` ni `models/` — ver `06-arquitectura.md`); Conventional Commits; docs vivos. | Logica de negocio aislada en `services` |
 | **Accesibilidad** | HTML semantico; navegacion por teclado; contraste WCAG AA; `aria-*` donde falte semantica. | Navegable 100% por teclado; contraste AA |

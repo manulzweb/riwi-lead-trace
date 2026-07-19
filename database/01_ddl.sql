@@ -1,0 +1,258 @@
+-- =====================================================================
+-- Riwi LeadTrace — Script SQL inicial (MVP)
+-- Motor: MySQL 8
+-- Modelo relacional normalizado hasta 3FN (ver docs/07-base-de-datos.md)
+-- Uso: mysql -u root -p < database/schema.sql
+-- =====================================================================
+
+CREATE DATABASE IF NOT EXISTS riwi_lead_trace
+    CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE riwi_lead_trace;
+
+-- Idempotencia para entorno de desarrollo
+DROP TABLE IF EXISTS ai_feedback_cache;
+DROP TABLE IF EXISTS evaluation_answers;
+DROP TABLE IF EXISTS evaluations;
+DROP TABLE IF EXISTS questions;
+DROP TABLE IF EXISTS form_templates;
+DROP TABLE IF EXISTS periods;
+DROP TABLE IF EXISTS team_leader_clans;
+DROP TABLE IF EXISTS user_roles;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS clans;
+DROP TABLE IF EXISTS cohorts;
+DROP TABLE IF EXISTS roles;
+
+-- ---------------------------------------------------------------------
+-- Catálogo de roles
+-- ---------------------------------------------------------------------
+CREATE TABLE roles (
+    id   INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(30) NOT NULL UNIQUE
+);
+
+-- ---------------------------------------------------------------------
+-- Cohortes (agrupan clanes)
+-- ---------------------------------------------------------------------
+CREATE TABLE cohorts (
+    id     INT AUTO_INCREMENT PRIMARY KEY,
+    number INT NOT NULL UNIQUE,
+    name   VARCHAR(80) NOT NULL,
+    city   VARCHAR(80) NULL
+);
+
+-- ---------------------------------------------------------------------
+-- Clanes (dentro de una cohorte; a ellos pertenecen Coders y Tutores)
+-- ---------------------------------------------------------------------
+CREATE TABLE clans (
+    id        INT AUTO_INCREMENT PRIMARY KEY,
+    cohort_id INT NOT NULL,
+    number    INT NOT NULL,
+    name      VARCHAR(80) NOT NULL,
+    CONSTRAINT fk_clan_cohort
+        FOREIGN KEY (cohort_id)
+        REFERENCES cohorts(id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+    CONSTRAINT uq_clan_number_cohort UNIQUE (cohort_id, number)
+);
+
+-- ---------------------------------------------------------------------
+-- Usuarios
+--   clan_id es NULL para team_leader/admin; lo usan coder y tutor
+-- ---------------------------------------------------------------------
+CREATE TABLE users (
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    full_name     VARCHAR(120) NOT NULL,
+    email         VARCHAR(150) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    clan_id       INT NULL,
+    is_active     BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_users_clan
+        FOREIGN KEY (clan_id)
+        REFERENCES clans(id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT
+);
+
+-- ---------------------------------------------------------------------
+-- Roles de Usuarios (Relación N:M para soportar múltiples roles por usuario)
+-- ---------------------------------------------------------------------
+CREATE TABLE user_roles (
+    user_id INT NOT NULL,
+    role_id INT NOT NULL,
+    PRIMARY KEY (user_id, role_id),
+    CONSTRAINT fk_userroles_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
+    CONSTRAINT fk_userroles_role
+        FOREIGN KEY (role_id)
+        REFERENCES roles(id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT
+);
+
+-- ---------------------------------------------------------------------
+-- Asignación de múltiples clanes para Team Leaders
+--   Los coders usan users.clan_id (relación 1:1).
+--   Los TLs (que pueden tener 2 o más) usan esta tabla.
+-- ---------------------------------------------------------------------
+CREATE TABLE team_leader_clans (
+    user_id INT NOT NULL,
+    clan_id INT NOT NULL,
+    PRIMARY KEY (user_id, clan_id),
+    CONSTRAINT fk_tlclans_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
+    CONSTRAINT fk_tlclans_clan
+        FOREIGN KEY (clan_id)
+        REFERENCES clans(id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
+);
+
+-- ---------------------------------------------------------------------
+-- Periodos de evaluación
+-- ---------------------------------------------------------------------
+CREATE TABLE periods (
+    id        INT AUTO_INCREMENT PRIMARY KEY,
+    name      VARCHAR(60) NOT NULL,
+    starts_at DATE NOT NULL,
+    ends_at   DATE NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+-- ---------------------------------------------------------------------
+-- Plantillas de formulario (por rol evaluado)
+-- ---------------------------------------------------------------------
+CREATE TABLE form_templates (
+    id             INT AUTO_INCREMENT PRIMARY KEY,
+    title          VARCHAR(120) NOT NULL,
+    target_role_id INT NOT NULL,
+    is_active      BOOLEAN NOT NULL DEFAULT TRUE,
+    CONSTRAINT fk_template_role
+        FOREIGN KEY (target_role_id)
+        REFERENCES roles(id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT
+);
+
+-- ---------------------------------------------------------------------
+-- Preguntas / criterios de una plantilla
+-- ---------------------------------------------------------------------
+CREATE TABLE questions (
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    template_id   INT NOT NULL,
+    text          VARCHAR(255) NOT NULL,
+    category      VARCHAR(60) NOT NULL,
+    input_type    VARCHAR(20) NOT NULL DEFAULT 'scale', -- 'scale' | 'text'
+    sort_order    INT NOT NULL DEFAULT 0,
+    -- Peso de la pregunta en el ICP ponderado (ADMIN-02). Solo aplica a
+    -- preguntas 'scale'; las 'text' quedan en 0. Los pesos de las preguntas
+    -- de escala ACTIVAS de un mismo template deben sumar exactamente 100
+    -- (se valida en question_service antes de guardar, ver PUT /questions/weights).
+    weight_percent DECIMAL(5,2) NOT NULL DEFAULT 0,
+    -- Edición del Admin (ADMIN-02): editar texto = versionar (fila nueva +
+    -- desactivar la anterior). Las evaluaciones nuevas cargan solo activas;
+    -- las respuestas históricas conservan su pregunta y su peso original.
+    is_active     BOOLEAN NOT NULL DEFAULT TRUE,
+    CONSTRAINT fk_question_template
+        FOREIGN KEY (template_id)
+        REFERENCES form_templates(id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+    CONSTRAINT chk_input_type CHECK (input_type IN ('scale','text')),
+    CONSTRAINT chk_weight_percent_range CHECK (weight_percent >= 0 AND weight_percent <= 100)
+);
+
+-- ---------------------------------------------------------------------
+-- Evaluaciones
+--   evaluator_id es NULL cuando la evaluación es anónima (anonimato real)
+-- ---------------------------------------------------------------------
+CREATE TABLE evaluations (
+    id           INT AUTO_INCREMENT PRIMARY KEY,
+    evaluator_id INT NULL,
+    evaluatee_id INT NOT NULL,
+    template_id  INT NOT NULL,
+    period_id    INT NOT NULL,
+    is_anonymous BOOLEAN NOT NULL DEFAULT FALSE,
+    status       ENUM('draft', 'submitted') NOT NULL DEFAULT 'draft',
+    submitted_at TIMESTAMP NULL,
+    created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_eval_evaluator
+        FOREIGN KEY (evaluator_id)
+        REFERENCES users(id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+    CONSTRAINT fk_eval_evaluatee
+        FOREIGN KEY (evaluatee_id)
+        REFERENCES users(id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+    CONSTRAINT fk_eval_template
+        FOREIGN KEY (template_id)
+        REFERENCES form_templates(id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+    CONSTRAINT fk_eval_period
+        FOREIGN KEY (period_id)
+        REFERENCES periods(id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+    CONSTRAINT chk_status CHECK (status IN ('draft','submitted'))
+);
+
+-- Evita doble evaluación del mismo evaluado en el mismo periodo (solo no anónimas)
+-- (Comentado temporalmente por solicitud: el backend ya realiza esta validación)
+-- CREATE UNIQUE INDEX uq_eval_once
+--     ON evaluations (evaluator_id, evaluatee_id, period_id);
+
+-- ---------------------------------------------------------------------
+-- Respuestas por pregunta
+-- ---------------------------------------------------------------------
+CREATE TABLE evaluation_answers (
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    evaluation_id INT NOT NULL,
+    question_id   INT NOT NULL,
+    score         SMALLINT NULL, -- 1..5 cuando la pregunta es de escala
+    comment       TEXT NULL,
+    CONSTRAINT fk_answer_eval
+        FOREIGN KEY (evaluation_id)
+        REFERENCES evaluations(id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
+    CONSTRAINT fk_answer_question
+        FOREIGN KEY (question_id)
+        REFERENCES questions(id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+    CONSTRAINT chk_score_range CHECK (score IS NULL OR (score BETWEEN 1 AND 5))
+);
+
+-- ---------------------------------------------------------------------
+-- Cache de resúmenes generados por IA (Claude API) para el Admin
+-- ---------------------------------------------------------------------
+CREATE TABLE ai_feedback_cache (
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    evaluatee_id  INT NOT NULL,
+    period_id     INT NOT NULL,
+    summary       TEXT NOT NULL,
+    model         VARCHAR(40) NOT NULL,
+    generated_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_ai_cache_evaluatee
+        FOREIGN KEY (evaluatee_id)
+        REFERENCES users(id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+    CONSTRAINT fk_ai_cache_period
+        FOREIGN KEY (period_id)
+        REFERENCES periods(id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+    CONSTRAINT uq_ai_cache_evaluatee_period UNIQUE (evaluatee_id, period_id)
+);

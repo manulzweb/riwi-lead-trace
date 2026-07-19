@@ -91,9 +91,9 @@ const handleLoginSubmit = (elements) => async (event) => {
   setButtonLoadingState(elements.submitBtn, true, "Validando...", "Entrar al dashboard");
 
   try {
-    const { user, access_token } = await authService.login(email, password);
+    const { user } = await authService.login(email, password);
 
-    authService.setSession(user, access_token);
+    authService.setSession(user);
     showToast(`Bienvenido ${user.name}!`, "success");
 
     window.history.pushState({}, "", "/dashboard");
