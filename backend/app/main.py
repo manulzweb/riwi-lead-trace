@@ -9,7 +9,7 @@ from app.routes import auth_routes, category_routes, check, period_routes, user_
 tags_metadata = [
     {"name": "auth", "description": "Validación de credenciales (bcrypt). No emite JWT; el cliente asume el estado de sesión."},
     {"name": "users", "description": "CRUD de usuarios. Mapeo de entidades a roles (`team_leader`, `tutor`, `coder`, `admin`)."},
-    {"name": "forms", "description": "Gestión de esquemas de plantillas (`form_templates`)."},
+    {"name": "forms", "description": "Gestión de esquemas de plantillas (`forms`)."},
     {"name": "questions", "description": "Mutación de preguntas. Utiliza Soft Deletes/Versionado (`is_active` flag) para mantener la integridad de evaluaciones históricas."},
     {"name": "evaluations", "description": "Transacciones de evaluación. Implementa control de concurrencia y validación de periodo activo."},
     {"name": "periods", "description": "Control de ciclos temporales. Constraint de aplicación: max 1 periodo activo global."},
