@@ -1,444 +1,155 @@
-# Guía de estudio: cómo funciona el backend de Riwi LeadTrace
+# Guía de Arquitectura: Cómo funciona el Backend de Riwi LeadTrace
 
-Este documento es material de estudio personal (no es parte de `/docs` oficial del repo). El objetivo:
-que puedas recrear cualquier endpoint de esta API vos mismo, entendiendo cada pieza, sin depender de que
-alguien más te dé el código.
-
-> **Aviso importante — esta guía enseña un patrón genérico, no la estructura real de este repo.**
-> Las secciones 1, 3, 4, 5, 6.1, 6.2, 9 y 10 usan un ejemplo clásico de FastAPI + SQLAlchemy **ORM**
-> con capas `models/` y `repositories/` (clases `Period`, `Session`, `db.query(...)`, etc.) porque es
-> la forma más didáctica de explicar el patrón `Depends()` y el flujo request → respuesta. **El
-> backend real de Riwi LeadTrace no está armado así:** no existen las carpetas `app/models/` ni
-> `app/repositories/`; las queries son SQL plano con SQLAlchemy `text()` + `conn.execute(...)`,
-> escritas directo en `app/services/*.py` (ver `app/config/database.py` y cualquier archivo de
-> `app/services/`). El equipo eliminó esas dos capas a propósito por ser indirección sin beneficio
-> en un MVP de este tamaño (detalle y motivo en `CLAUDE.md` y `README.md`). Usá esta guía para
-> entender los **conceptos** (ORM, `Depends`, capas, Pydantic vs. SQLAlchemy), pero para ver cómo
-> luce el código **real** de este proyecto, mirá `app/services/period_service.py` o
-> `app/routes/period_routes.py` directamente.
+Este documento explica **exactamente** cómo está construido el backend actual. El objetivo es que cualquier miembro del equipo entienda la arquitectura, el flujo de datos y las decisiones de diseño (como no usar ORM ni JWT) para poder contribuir sin romper las reglas de negocio.
 
 ---
 
-## 1. Panorama general: la arquitectura en capas
+## 1. Arquitectura: El Patrón "Router-Service" (Sin ORM)
 
-Cuando el navegador (o Swagger) le pide algo a la API, la petición viaja así:
+El backend evita intencionalmente capas de abstracción excesivas (no hay carpetas `models/` ni `repositories/`). Todo el flujo se divide estrictamente en dos capas:
 
 ```
-Cliente HTTP
-   │  GET /periods
+Cliente HTTP (Frontend)
+   │  POST /evaluations
    ▼
-routes/          → recibe el request, decide qué status code devolver
+routes/          → (Controladores) Recibe HTTP, valida el JSON con Pydantic, delega al servicio.
    │
    ▼
-services/        → lógica de negocio (reglas, decisiones)
-   │
-   ▼
-repositories/    → las únicas funciones que hacen preguntas a la base de datos
-   │
-   ▼
-models/          → describen cómo son las tablas (y la forma del JSON de salida)
+services/        → (Reglas y Datos) Lógica de negocio, consultas SQL planas y transacciones.
    │
    ▼
 Base de datos (MySQL)
 ```
 
-**Regla de oro: cada capa solo le habla a su vecina inmediata.** Una `route` nunca hace una query
-directamente; un `service` nunca arma una respuesta HTTP; un `repository` nunca decide reglas de negocio.
-
-¿Por qué separar así? Es el principio **SRP** (Single Responsibility Principle, la "S" de SOLID):
-cada archivo tiene una sola razón para cambiar. Si mañana cambia la regla de negocio de "quién puede ver
-qué periodo", tocás `services/`, no `routes/` ni `repositories/`. Si cambia la query SQL, tocás
-`repositories/`, y nada más se entera.
+**¿Por qué no hay ORM?**
+Para evitar indirecciones en consultas complejas y optimizar el rendimiento. Las tablas se crean con un script (`database/01_ddl.sql`) y en los `services` se escriben sentencias SQL reales usando `sqlalchemy.text()`.
 
 ---
 
-## 2. Conceptos de SQL (la base de datos relacional)
+## 2. La Base de Datos: Conexiones e Hilos
 
-MySQL es una **base de datos relacional**: guarda la información en **tablas** (como hojas de Excel).
+En `app/config/database.py`, inicializamos SQLAlchemy puramente como un **gestor del pool de conexiones**, no como un mapeador de objetos.
 
-- Cada **tabla** tiene **columnas** (campos, ej. `id`, `name`, `starts_at`) y **filas** (registros, ej. un
-  periodo concreto).
-- La **primary key** (`id`) identifica una fila de forma única.
-- Una **foreign key** (`clan_id` en `users`, por ejemplo) es una columna que apunta al `id` de otra tabla
-  — así se relacionan las tablas entre sí sin repetir datos (esto es lo que hace que sea "relacional").
-- Ejemplo real del proyecto: `clans.cohort_id` apunta a `cohorts.id`. Cada clan pertenece a una
-  cohorte, pero la info de la cohorte solo vive una vez en su propia tabla.
+```python
+engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True)
+_local = threading.local()
 
-El lenguaje para hablarle a la base de datos es **SQL** (Structured Query Language). Ejemplos:
-
-```sql
--- Traer todos los periodos, del más nuevo al más viejo
-SELECT * FROM periods ORDER BY starts_at DESC;
-
--- Traer un usuario por su email
-SELECT * FROM users WHERE email = 'coder@riwi.edu';
-
--- Traer los clanes de una cohorte específica (join)
-SELECT clans.* FROM clans
-JOIN cohorts ON clans.cohort_id = cohorts.id
-WHERE cohorts.number = 5;
+def get_connection():
+    if not hasattr(_local, "conn"):
+        _local.conn = engine.connect()
+    return _local.conn
 ```
 
-En este proyecto **casi nunca vas a escribir SQL a mano** — para eso usamos SQLAlchemy (sección
-siguiente). Pero entender el SQL de abajo te ayuda a leer errores y a razonar qué está pasando
-realmente.
+*   **`threading.local()`**: FastAPI corre las rutas síncronas en un ThreadPool. Usamos memoria local por hilo para asegurar que **cada request HTTP tenga su propia conexión exclusiva**. Esto evita colisiones (race conditions) cuando dos usuarios envían evaluaciones al mismo tiempo.
+*   En los `services`, accedes a la base de datos simplemente importando `conn`:
+    ```python
+    from app.config.database import conn
+    ```
 
 ---
 
-## 3. Qué es SQLAlchemy (el ORM)
+## 3. Transaccionalidad y Rollbacks
 
-**ORM** = Object-Relational Mapper. Es una librería que te deja trabajar con la base de datos usando
-**clases y objetos de Python**, en vez de escribir SQL a mano.
-
-Ejemplo — esto:
+Dado que ejecutamos SQL a mano, es **crítico** asegurar la integridad referencial. Cuando una operación inserta datos en múltiples tablas (ej. crear una evaluación y sus respuestas), usamos un bloque `try/except` con `conn.rollback()`:
 
 ```python
-db.query(Period).order_by(Period.starts_at.desc()).all()
+def create_evaluation(eval_data: EvaluationCreate):
+    try:
+        # 1. Insertar la cabecera
+        conn.execute(text("INSERT INTO evaluations ..."))
+        
+        # 2. Insertar los hijos
+        conn.execute(text("INSERT INTO evaluation_answers ..."))
+        
+        # 3. Confirmar transacción
+        conn.commit()
+    except Exception as e:
+        # Si algo falla en el paso 2, se deshace el paso 1.
+        conn.rollback()
+        raise e
 ```
-
-Es lo mismo que este SQL, pero escrito con sintaxis de Python:
-
-```sql
-SELECT * FROM periods ORDER BY starts_at DESC;
-```
-
-### 3.1 El "modelo" SQLAlchemy
-
-Cada tabla de la base de datos se representa como una **clase Python** que hereda de `Base`:
-
-```python
-# backend/app/models/period.py
-from sqlalchemy import Boolean, Column, Date, Integer, String
-from app.core.database import Base
-
-
-class Period(Base):
-    __tablename__ = "periods"          # nombre real de la tabla en MySQL
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(60), nullable=False)
-    starts_at = Column(Date, nullable=False)
-    ends_at = Column(Date, nullable=False)
-    is_active = Column(Boolean, nullable=False, default=False)
-```
-
-- `__tablename__` conecta la clase con la tabla real.
-- Cada `Column(...)` es una columna: el primer argumento es el tipo SQL (`Integer`, `String(60)`,
-  `Date`, `Boolean`...), y los argumentos con nombre (`nullable`, `primary_key`, `default`) son las
-  mismas reglas que verías en un `CREATE TABLE` de `database/01_ddl.sql`.
-- `relationship("Clan")` (lo ves en `models/user.py`) no crea una columna nueva: le dice a SQLAlchemy
-  "cuando accedas a `user.clan`, andá a buscar la fila relacionada usando la foreign key". Es azúcar
-  sintáctico para no escribir el `JOIN` a mano.
-
-### 3.2 El `engine` y la `Session`
-
-Dos piezas clave viven en `core/database.py` (esa carpeta la maneja el equipo/vos, no yo):
-
-```python
-engine = create_engine(settings.DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
-```
-
-- **`engine`**: sabe *cómo* conectarse a MySQL (el driver, el host, el puerto). No abre la conexión
-  todavía, solo la deja lista para usar.
-- **`SessionLocal`**: es una "fábrica" de sesiones. Cada vez que la llamás (`SessionLocal()`), te da una
-  conversación nueva con la base de datos — como abrir una pestaña de MySQL Workbench.
-- **`Base`**: la clase madre de la que heredan todos los modelos (`Period`, `User`, `Clan`...). Es lo que
-  le permite a SQLAlchemy saber "estas son todas mis tablas" (`Base.metadata`).
-
-### 3.3 Cómo se usa una `Session` para consultar
-
-```python
-# backend/app/repositories/period_repository.py
-from sqlalchemy.orm import Session
-from app.models.period import Period
-
-
-def list_periods(db: Session) -> list[Period]:
-    return db.query(Period).order_by(Period.starts_at.desc()).all()
-```
-
-- `db.query(Period)` = "quiero traer filas de la tabla `periods`".
-- `.order_by(Period.starts_at.desc())` = "ordenadas por fecha, de más reciente a más vieja".
-- `.all()` = "dame todas las filas como una lista de objetos `Period`". Otras opciones comunes:
-  `.first()` (una sola fila o `None`), `.filter(Period.is_active == True)` (el equivalente al `WHERE`).
+**Regla:** Toda mutación múltiple debe tener un `conn.rollback()` en el except.
 
 ---
 
-## 4. Cómo se arma la conexión a la base de datos (paso a paso)
+## 4. Validaciones de Datos: Pydantic (Schemas)
 
-1. **`.env`** tiene la cadena de conexión:
-   ```
-   DATABASE_URL=mysql+pymysql://usuario:password@localhost:3306/riwi_lead_trace
-   ```
-   Formato: `dialecto+driver://usuario:contraseña@host:puerto/nombre_bd`.
-   - `mysql` = el motor de base de datos.
-   - `pymysql` = el driver de Python que sabe "hablar" el protocolo de MySQL (por eso está en
-     `requirements.txt`).
-
-2. **`core/config.py`** lee esa variable de entorno con Pydantic Settings:
-   ```python
-   class Settings(BaseSettings):
-       DATABASE_URL: str
-       ...
-       class Config:
-           env_file = ".env"
-
-   settings = Settings()
-   ```
-   `pydantic-settings` valida que las variables de entorno existan y tengan el tipo correcto (si falta
-   `DATABASE_URL`, la app ni siquiera arranca — falla rápido, en vez de fallar más tarde a mitad de un
-   request).
-
-3. **`core/database.py`** usa esa `settings.DATABASE_URL` para crear el `engine` (sección 3.2).
-
-4. **`deps.py`** expone `get_db()`, la función que **cada endpoint** usa para pedir una sesión:
-   ```python
-   def get_db():
-       db = SessionLocal()
-       try:
-           yield db
-       finally:
-           db.close()
-   ```
-   Esto es un **generador** (`yield` en vez de `return`). FastAPI lo entiende como: "abrí la sesión,
-   dásela al endpoint, y cuando el endpoint termine (aunque sea con un error), cerrala". Es el patrón
-   que garantiza que nunca se quede una conexión abierta colgada.
-
----
-
-## 5. Dos tipos de clases: modelo SQLAlchemy vs esquema Pydantic
-
-Esto confunde al principio porque parecen lo mismo, pero cumplen roles distintos:
-
-| | SQLAlchemy (`Period`) | Pydantic (`PeriodOut`) |
-|---|---|---|
-| Para qué | Representa la fila en la BD | Representa el JSON de salida/entrada de la API |
-| Vive en | `models/period.py` | `models/period.py` (mismo archivo, por simplicidad) |
-| Hereda de | `Base` | `BaseModel` |
-| Sabe hacer queries | Sí | No, solo valida datos |
+Al no usar modelos SQLAlchemy (`models/`), toda la validación de entrada y salida recae sobre **Pydantic** (`app/schemas/`).
 
 ```python
-from datetime import date
-from pydantic import BaseModel, ConfigDict
-
-
-class PeriodOut(BaseModel):
-    id: int
-    name: str
+class PeriodCreate(BaseModel):
+    name: str = Field(..., max_length=60)
     starts_at: date
     ends_at: date
-    is_active: bool
-
-    model_config = ConfigDict(from_attributes=True)
+    is_active: bool = False
 ```
 
-`model_config = ConfigDict(from_attributes=True)` es la línea clave: le dice a Pydantic "podés
-construirte a partir de un objeto que tiene estos atributos" (un objeto `Period` de SQLAlchemy), no
-solo a partir de un diccionario. Sin esto, FastAPI no podría convertir automáticamente lo que devuelve
-`db.query(Period).all()` en JSON.
-
-**Por qué separarlas:** si la tabla `users` tiene `password_hash`, jamás querés que ese campo termine en
-una respuesta JSON. Con un esquema de salida propio, vos decidís explícitamente qué campos salen —
-la clase SQLAlchemy puede tener más columnas de las que el `Out` expone.
+FastAPI intercepta la petición HTTP y la choca contra este `BaseModel`. Si el frontend manda un `starts_at` que no es una fecha válida, la API responde automáticamente con HTTP 422 Unprocessable Entity, protegiendo a los `services` de recibir basura.
 
 ---
 
-## 6. FastAPI: las piezas que usamos
+## 5. Decisiones de Diseño: Stateless Auth (Sin JWT)
 
-### 6.1 `APIRouter`
+El proyecto asume que es un **MVP cerrado**. No implementa firmas criptográficas (JWT) ni mantiene sesiones en memoria.
 
-Un router agrupa endpoints relacionados (todo lo de `periods` en un archivo, todo lo de `health` en
-otro):
+1.  **Login (`POST /auth/login`)**: Verifica el correo y compara la contraseña contra el hash `Bcrypt` de la base de datos. Retorna la información del usuario en texto plano.
+2.  **Identidad**: En operaciones posteriores, el Frontend envía su ID (ej. `evaluator_id`) en el body de la petición JSON.
+3.  **Seguridad Delegada**: El backend confía en el ID proporcionado. Las barreras de autorización (RBAC) están a cargo de la Interfaz de Usuario (UI).
 
+---
+
+## 6. Flujo Práctico: De la Ruta al Servicio
+
+Tomemos como ejemplo la obtención del resumen de métricas con Inteligencia Artificial.
+
+### Paso 1: El Router (`app/routes/metrics_routes.py`)
 ```python
-# backend/app/routes/period_routes.py
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
-
-from app.deps import get_db
-from app.models.period import PeriodOut
-from app.services import period_service
-
-router = APIRouter()
-
-
-@router.get("/periods", response_model=list[PeriodOut])
-def get_periods(db: Session = Depends(get_db)):
-    return period_service.get_periods(db)
+@router.get("/metrics/ai-summary")
+def get_ai_summary(evaluatee_id: int, period_id: int):
+    """Delega al servicio la generación NLP. Documentación expuesta vía Swagger."""
+    summary = ai_service.get_or_generate_ai_summary(evaluatee_id, period_id)
+    return {"summary": summary}
 ```
 
-- `@router.get("/periods", ...)` = "cuando llegue un `GET /periods`, ejecutá esta función".
-- `response_model=list[PeriodOut]` = "la salida tiene que tener esta forma". FastAPI valida el
-  resultado contra `PeriodOut` automáticamente y lo convierte a JSON — si el `service` devolviera algo
-  con forma incorrecta, FastAPI tira un error 500 en vez de mandar datos rotos al cliente.
-- `db: Session = Depends(get_db)` es **inyección de dependencias**: le decís a FastAPI "antes de correr
-  esta función, ejecutá `get_db()` y pasame lo que devuelva como el parámetro `db`". Así el endpoint
-  nunca abre la sesión a mano, ni se olvida de cerrarla.
-
-### 6.2 Registrar el router en `main.py`
-
+### Paso 2: El Servicio (`app/services/ai_service.py`)
 ```python
-from app.routes import health, period_routes
+def get_or_generate_ai_summary(evaluatee_id: int, period_id: int):
+    # 1. Buscar en caché relacional (SQL Plano)
+    cache = conn.execute(text("SELECT summary FROM ai_feedback_cache ...")).first()
+    if cache: return cache.summary
 
-app.include_router(health.router, tags=["health"])
-app.include_router(period_routes.router, tags=["periods"])
+    # 2. Compilar métricas crudas (Raw SQL)
+    raw_data = conn.execute(text("SELECT text, score FROM evaluations JOIN ...")).mappings()
+    
+    # 3. Invocar SDK (google-generativeai / Gemini 1.5)
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    response = model.generate_content(prompt)
+    
+    # 4. Guardar en caché relacional
+    conn.execute(text("INSERT INTO ai_feedback_cache ..."))
+    conn.commit()
+    
+    return response.text
 ```
 
-`include_router` "pega" las rutas del router dentro de la app principal. `tags=[...]` es solo cosmético:
-agrupa los endpoints en `/docs` bajo ese nombre.
-
-### 6.3 `Depends()` en general
-
-`Depends()` no es solo para la BD. También se usa para autenticación:
-
-```python
-# deps.py
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
-    db: Session = Depends(get_db),
-):
-    payload = decode_access_token(credentials.credentials)
-    ...
-    return {"id": ..., "role": ...}
-
-
-def require_role(*roles: str):
-    def checker(current_user: dict = Depends(get_current_user)):
-        if current_user["role"] not in roles:
-            raise HTTPException(status_code=403, detail="Sin permiso")
-        return current_user
-    return checker
-```
-
-- `get_current_user` lee el header `Authorization: Bearer <token>`, lo decodifica, y devuelve quién es
-  el usuario. Cualquier endpoint que lo pida como dependencia queda protegido: si el token es inválido,
-  ni siquiera entra a la función del endpoint.
-- `require_role("admin")` es una **fábrica de dependencias**: es una función que devuelve otra función
-  (`checker`). Así podés escribir `Depends(require_role("admin"))` en un endpoint y `Depends(require_role("coder", "tutor"))`
-  en otro, reutilizando la misma lógica de verificación con distintos roles permitidos — DRY en acción.
-
-> **Nota:** `get_current_user`/`require_role` es un ejemplo genérico de cómo funciona el patrón
-> `Depends()` encadenado para auth. **Riwi LeadTrace no usa este patrón**: el backend no maneja
-> JWT, por lo que `app/deps.py` no existe en este repo. El rol/ID de quien llama se confía al valor
-> que manda el propio front (ver "Endpoints" en `README.md`) — no hay verificación de sesión en el
-> servidor. El ejemplo sirve para entender `Depends()`, pero no lo agregues al proyecto sin
-> aprobación del equipo (ver `CLAUDE.md`).
-
-### 6.4 CORS
-
-```python
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[settings.FRONTEND_ORIGIN],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-```
-
-Por seguridad, un navegador bloquea por defecto que una página en `http://localhost:5173` (la SPA) le
-pida datos a `http://localhost:8000` (la API) — son "orígenes" distintos. Este middleware le dice al
-navegador "confío en pedidos que vengan de `FRONTEND_ORIGIN`, dejalos pasar".
-
-### 6.5 `/docs` gratis
-
-FastAPI genera automáticamente una interfaz interactiva (Swagger UI) en `http://localhost:8000/docs`,
-leyendo los `response_model`, los tipos de los parámetros y los docstrings. No hay que escribir nada
-extra para tenerla — es una ventaja grande de declarar bien los tipos con Pydantic.
+### Resumen del flujo:
+El Router abstrae el protocolo HTTP (Queries, Status Codes). El Servicio abstrae la base de datos (SQL, Caché, Transactions) y los proveedores de terceros (Gemini).
 
 ---
 
-## 7. `requirements.txt` explicado paquete por paquete
+## 7. Referencia Rápida de Librerías (`requirements.txt`)
 
-```
-fastapi==0.111.0            # el framework web: define rutas, valida requests/responses, genera /docs
-uvicorn[standard]==0.29.0   # el servidor que realmente corre la app (FastAPI no se ejecuta solo)
-sqlalchemy==2.0.30          # el ORM (sección 3)
-pymysql==1.1.1              # el driver que le permite a SQLAlchemy hablar con MySQL
-pydantic==2.7.1             # validación de datos y tipos (los BaseModel, como PeriodOut)
-pydantic-settings==2.2.1    # extensión de Pydantic para leer configuración desde variables de entorno / .env
-passlib[bcrypt]==1.7.4      # hashear y verificar contraseñas de forma segura
-python-dotenv==1.0.1        # carga el archivo .env para que esté disponible como variables de entorno
-anthropic==0.28.0           # SDK oficial para llamar a la API de Claude (resúmenes de feedback con IA)
-python-multipart==0.0.9     # necesario para que FastAPI pueda leer formularios/archivos subidos
-```
+*   `fastapi`: Framework web y ruteador HTTP.
+*   `uvicorn[standard]`: Servidor ASGI para correr FastAPI.
+*   `sqlalchemy` + `pymysql`: Utilizados estrictamente para conexión a MySQL y ejecución de texto crudo.
+*   `pydantic`: Tipado estricto y validación de schemas de entrada/salida.
+*   `bcrypt` (`passlib`): Hashing asimétrico de contraseñas de un solo sentido.
+*   `google-generativeai`: SDK de Gemini para análisis sintáctico de preguntas y NLP de métricas.
 
-**Analogía:** `fastapi` es el mesero (recibe pedidos, entrega platos), `uvicorn` es el que abre el
-restaurante y lo mantiene funcionando, `sqlalchemy` + `pymysql` es quien va a la cocina (la BD) a buscar
-los ingredientes, y `pydantic` es el que revisa que cada plato tenga la forma correcta antes de salir.
+## 8. Siguientes Pasos (Para el equipo)
 
----
-
-## 8. Cómo correr el proyecto (paso a paso)
-
-```bash
-cd backend
-python -m venv venv
-# Windows:
-venv\Scripts\activate
-# Mac/Linux:
-source venv/bin/activate
-
-pip install -r requirements.txt
-
-# Asegurate de tener un archivo .env (basado en .env.example) con tu DATABASE_URL real
-
-uvicorn app.main:app --reload
-```
-
-- `--reload` reinicia el servidor automáticamente cada vez que guardás un archivo — útil en desarrollo,
-  nunca en producción.
-- Una vez corriendo: abrí `http://localhost:8000/docs` y probá los endpoints ahí mismo, sin necesitar
-  Postman ni curl.
-
----
-
-## 9. Caso de estudio completo: `GET /periods` de punta a punta
-
-Este es el flujo genérico ORM+repositorio explicado arriba (no el código real de este repo — ver
-el aviso al inicio del documento); sirve como receta didáctica para razonar sobre cualquier
-entidad. Para ver el flujo **real** de `GET /periods` en Riwi LeadTrace (sin `models/` ni
-`repositories/`), compará con `app/routes/period_routes.py` + `app/services/period_service.py`.
-
-1. **`models/period.py`** — define la tabla (`Period`, SQLAlchemy) y la forma de salida (`PeriodOut`,
-   Pydantic).
-2. **`repositories/period_repository.py`** — la única función que sabe hacer la query:
-   ```python
-   def list_periods(db: Session) -> list[Period]:
-       return db.query(Period).order_by(Period.starts_at.desc()).all()
-   ```
-3. **`services/period_service.py`** — hoy no tiene lógica de negocio propia (todavía), solo delega. Es
-   el lugar donde, si mañana la historia pide "solo devolver periodos activos", agregás esa regla sin
-   tocar la query ni la ruta:
-   ```python
-   def get_periods(db: Session) -> list[Period]:
-       return period_repository.list_periods(db)
-   ```
-4. **`routes/period_routes.py`** — conecta el HTTP con el service (sección 6.1).
-5. **`main.py`** — registra el router (sección 6.2).
-
-Petición real: `GET http://localhost:8000/periods` → FastAPI ejecuta `get_periods` → inyecta `db` vía
-`get_db()` → llama a `period_service.get_periods(db)` → llama a `period_repository.list_periods(db)` →
-SQLAlchemy arma y ejecuta el `SELECT` → devuelve objetos `Period` → FastAPI los valida/convierte con
-`PeriodOut` → responde JSON.
-
----
-
-## 10. Ejercicio guiado: repetí el patrón con otra entidad
-
-Para practicar sin ayuda, elegí una tabla simple que ya existe en `database/01_ddl.sql` (por ejemplo
-`cohorts`) y recreá los 5 archivos siguiendo exactamente el mismo orden que en la sección 9:
-
-1. ¿Ya existe la clase SQLAlchemy en `models/`? Si no, creala primero (columnas = columnas del `CREATE
-   TABLE`).
-2. Agregá la clase Pydantic de salida (`CohortOut`) en el mismo archivo.
-3. `repositories/cohort_repository.py` → función `list_cohorts(db)`.
-4. `services/cohort_service.py` → función `get_cohorts(db)` (por ahora solo delega).
-5. `routes/cohort_routes.py` → `GET /cohorts` con `response_model=list[CohortOut]`.
-6. Registrar el router nuevo en `main.py`.
-7. Probar en `/docs`.
-
-Si en algún paso no estás seguro de qué escribir, volvé a la sección correspondiente de esta guía antes
-de pedir ayuda — la idea es que puedas defender cada línea en la sustentación.
+Si vas a agregar una nueva entidad (ej. `Reclamaciones`):
+1. Añade la tabla a `database/01_ddl.sql`.
+2. Crea un archivo en `app/schemas/claim.py` definiendo la entrada/salida.
+3. Crea un archivo `app/services/claim_service.py` con tus SQL `text()`.
+4. Expón la lógica en `app/routes/claim_routes.py` y regístralo en `main.py`.

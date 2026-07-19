@@ -1,5 +1,5 @@
 import { authService } from "../services/auth.service";
-import { navBarComponent } from "../components/navbar";
+import { navBarComponent, setupNavBar } from "../components/navbar";
 import { escapeHtml } from "../utils/validators";
 import { metricsService } from "../services/metrics.service";
 import { periodService } from "../services/periods.service";
@@ -292,7 +292,7 @@ export const setupDashboard = async () => {
 
   const renderTable = () => {
     if (!leadersList) return;
-    
+
     let filtered = evaluatees;
     if (currentFilter !== "all") {
       filtered = evaluatees.filter((e) => e.role === currentFilter);
@@ -311,7 +311,7 @@ export const setupDashboard = async () => {
       const scoreText = ev.average_score !== null ? `${ev.average_score}` : "--";
       const initials = getInitials(ev.name);
       const department = getDepartment(ev.name, ev.role);
-      
+
       let badgeClass = "bg-gray-100 text-gray-800 dark:bg-gray-900/50 dark:text-gray-400";
       let displayStatus = ev.status;
       if (ev.status === "Sólido") {
@@ -368,7 +368,7 @@ export const setupDashboard = async () => {
     try {
       const templates = await templatesService.getTemplates();
       const questionsMap = new Map();
-      
+
       for (const temp of templates) {
         try {
           const questions = await request(`/questions?template_id=${temp.id}`);
@@ -454,7 +454,7 @@ export const setupDashboard = async () => {
     if (categoriesContainer) {
       categoriesContainer.innerHTML = `<div class="text-center text-xs text-[var(--text-muted)] py-4 animate-pulse">Cargando desglose...</div>`;
       const breakdown = await getCategoryBreakdown(leaderId, activePeriod.id);
-      
+
       if (breakdown.length === 0) {
         categoriesContainer.innerHTML = `<div class="text-xs text-[var(--text-muted)] py-2">No hay puntajes por categorías disponibles.</div>`;
       } else {

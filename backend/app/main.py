@@ -34,10 +34,19 @@ app = FastAPI(
     openapi_tags=tags_metadata
 )
 
+# Middleware de sesión eliminado porque la auto-sanación se hace ahora a nivel de SQLAlchemy en database.py.
+
 # Configuración de CORS
+origins = [
+    settings.FRONTEND_ORIGIN,
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:5175",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.FRONTEND_ORIGIN],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
