@@ -4,9 +4,7 @@ import { showToast } from "../components/alerts";
 import { escapeHtml } from "../utils/validators";
 import { metricsService } from "../services/metrics.service";
 import { periodService } from "../services/periods.service";
-import { evaluationService } from "../services/evaluation.service";
-import { templatesService } from "../services/templates.service";
-import { request } from "../services/api.service";
+import { getCategoryBreakdown } from "../utils/categoryBreakdown";
 
 export const renderDashboard = () => {
   const user = authService.getSession();
@@ -353,52 +351,6 @@ export const setupDashboard = async () => {
         showLeaderDetails(id);
       });
     });
-  };
-
-  const getCategoryBreakdown = async (evaluateeId, periodId) => {
-    try {
-      const templates = await templatesService.getTemplates();
-      const questionsMap = new Map();
-
-      for (const temp of templates) {
-        try {
-          const questions = await request(`/questions?form_id=${temp.id}`);
-          questions.forEach((q) => questionsMap.set(q.id, q));
-        } catch (e) {
-          console.error(e);
-        }
-      }
-
-      const evaluations = await evaluationService.getByEvaluatee(evaluateeId);
-      const periodEvals = evaluations.filter((e) => e.period_id === periodId && e.status === "submitted");
-
-      const categoryScores = {};
-      periodEvals.forEach((ev) => {
-        ev.answers.forEach((ans) => {
-          if (ans.score !== null && questionsMap.has(ans.question_id)) {
-            const q = questionsMap.get(ans.question_id);
-            if (q.input_type === "scale") {
-              if (!categoryScores[q.category]) {
-                categoryScores[q.category] = { sum: 0, count: 0 };
-              }
-              categoryScores[q.category].sum += ans.score;
-              categoryScores[q.category].count += 1;
-            }
-          }
-        });
-      });
-
-      const breakdown = [];
-      for (const [catName, data] of Object.entries(categoryScores)) {
-        const avg_1_5 = data.sum / data.count;
-        const score_100 = Math.round((avg_1_5 - 1) / 4 * 100);
-        breakdown.push({ category: catName, score: score_100 });
-      }
-      return breakdown;
-    } catch (e) {
-      console.error(e);
-      return [];
-    }
   };
 
   const showLeaderDetails = async (leaderId) => {

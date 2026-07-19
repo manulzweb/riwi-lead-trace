@@ -4,6 +4,7 @@ import { dropdownComponent, setupDropdown } from "../../components/dropdown";
 import { metricsService } from "../../services/metrics.service";
 import { periodService } from "../../services/periods.service";
 import { showToast } from "../../components/alerts";
+import { getCategoryBreakdown } from "../../utils/categoryBreakdown";
 
 export const renderMetrics = () => `
   ${navBarComponent()}
@@ -264,13 +265,85 @@ export const setupMetrics = async () => {
                 <p class="text-3xl font-black text-[var(--brand-bg)] mt-1">${scoreText}</p>
               </div>
             </div>
+
+            <button class="btn-toggle-detail mt-4 w-full text-center text-xs font-semibold text-[var(--brand-bg)] hover:text-[var(--brand-hover)] cursor-pointer" data-id="${ev.id}" data-period="${periodId}">
+              Ver detalle por categoría e historial ↓
+            </button>
+            <div id="detail-${ev.id}" class="mt-4 hidden border-t border-[var(--border-main)] pt-4"></div>
           </article>
         `;
       }).join("");
 
+      document.querySelectorAll(".btn-toggle-detail").forEach(btn => {
+        btn.addEventListener("click", () => toggleDetail(btn));
+      });
+
     } catch (err) {
       showToast("Error", "error", "No se pudieron actualizar las métricas.");
       console.error(err);
+    }
+  }
+
+  // Desglose por categoria (reusa el mismo calculo que el panel del dashboard,
+  // ver utils/categoryBreakdown.js) + historial de ICP en todos los periodos
+  // (nuevo GET /metrics/history) para la persona seleccionada. Se carga
+  // perezosamente al abrir el detalle, no en cada render de la grilla.
+  async function toggleDetail(btn) {
+    const evaluateeId = parseInt(btn.dataset.id);
+    const periodId = parseInt(btn.dataset.period);
+    const container = document.getElementById(`detail-${evaluateeId}`);
+    if (!container) return;
+
+    if (!container.classList.contains("hidden")) {
+      container.classList.add("hidden");
+      btn.textContent = "Ver detalle por categoría e historial ↓";
+      return;
+    }
+
+    btn.textContent = "Ocultar detalle ↑";
+    container.classList.remove("hidden");
+    container.innerHTML = `<div class="h-20 animate-pulse rounded-2xl bg-[var(--bg-base)]"></div>`;
+
+    try {
+      const [breakdown, history] = await Promise.all([
+        getCategoryBreakdown(evaluateeId, periodId),
+        metricsService.getHistory(evaluateeId),
+      ]);
+
+      const breakdownHtml = breakdown.length === 0
+        ? `<p class="text-xs text-[var(--text-muted)]">Sin puntajes por categoría en este periodo.</p>`
+        : breakdown.map(cat => `
+            <div class="mb-2">
+              <div class="flex justify-between text-xs mb-1">
+                <span class="font-semibold text-[var(--text-main)]">${cat.category}</span>
+                <span class="font-bold text-[var(--text-main)]">${cat.score}/100</span>
+              </div>
+              <div class="w-full bg-[var(--border-main)] h-1.5 rounded-full overflow-hidden">
+                <div class="bg-[var(--brand-bg)] h-full rounded-full" style="width: ${cat.score}%"></div>
+              </div>
+            </div>
+          `).join("");
+
+      const historyHtml = history.length === 0
+        ? `<p class="text-xs text-[var(--text-muted)]">Sin historial en otros periodos.</p>`
+        : `<div class="flex items-end gap-2 h-16">
+            ${history.map(h => `
+              <div class="flex flex-col items-center gap-1 flex-1" title="${h.period_name}: ${h.average_score}/100">
+                <div class="w-full rounded-t bg-[var(--brand-bg)]/70" style="height: ${Math.max(h.average_score, 4)}%"></div>
+                <span class="text-[9px] text-[var(--text-muted)] truncate w-full text-center">${h.period_name}</span>
+              </div>
+            `).join("")}
+          </div>`;
+
+      container.innerHTML = `
+        <p class="text-xs font-semibold uppercase tracking-wider text-[var(--brand-bg)] mb-2">Por categoría (este periodo)</p>
+        ${breakdownHtml}
+        <p class="text-xs font-semibold uppercase tracking-wider text-[var(--brand-bg)] mt-4 mb-2">Historial de ICP</p>
+        ${historyHtml}
+      `;
+    } catch (err) {
+      console.error(err);
+      container.innerHTML = `<p class="text-xs text-[var(--danger-text)]">No se pudo cargar el detalle.</p>`;
     }
   }
 };
