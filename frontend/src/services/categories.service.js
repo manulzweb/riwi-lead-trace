@@ -6,7 +6,10 @@ const getCategories = async () => {
 
 const create = async (name) => await request('/categories', jsonOptions('POST', { name }));
 const update = async (id, name) => await request(`/categories/${id}`, jsonOptions('PUT', { name }));
-const remove = async (id) => await request(`/categories/${id}`, { method: 'DELETE' });
+const remove = async (id, adminId) => {
+  const query = adminId ? `?admin_id=${adminId}` : '';
+  return await request(`/categories/${id}${query}`, { method: 'DELETE' });
+};
 
 export const categoryService = {
   getCategories,

@@ -68,7 +68,8 @@ export const sidebarComponent = (isActive) => {
           { href: "/admin/periods", label: "Ciclos" },
           { href: "/admin/categories", label: "Categorías" },
           { href: "/admin/metrics", label: "Métricas" },
-          { href: "/admin/ai-summary", label: "Resumen IA" }
+          { href: "/admin/ai-summary", label: "Resumen IA" },
+          { href: "/admin/activity-log", label: "Bitácora" }
         ]
       }
     ];

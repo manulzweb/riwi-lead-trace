@@ -10,6 +10,7 @@ CREATE DATABASE IF NOT EXISTS riwi_lead_trace
 USE riwi_lead_trace;
 
 -- Idempotencia para entorno de desarrollo
+DROP TABLE IF EXISTS admin_activity_log;
 DROP TABLE IF EXISTS ai_feedback_cache;
 DROP TABLE IF EXISTS evaluation_answers;
 DROP TABLE IF EXISTS evaluations;
@@ -279,4 +280,27 @@ CREATE TABLE ai_feedback_cache (
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
     CONSTRAINT uq_ai_cache_evaluatee_period UNIQUE (evaluatee_id, period_id)
+);
+
+-- ---------------------------------------------------------------------
+-- Bitacora de acciones administrativas (auditoria basica)
+--   admin_id es NULL si la accion se registro sin sesion identificada
+--   (no hay JWT: el id que llega es el que el propio front manda, igual
+--   que evaluator_id en evaluations -- ver seccion "Roles del sistema"
+--   de CLAUDE.md). No es prueba criptografica de autoria, es un registro
+--   de conveniencia para trazabilidad.
+-- ---------------------------------------------------------------------
+CREATE TABLE admin_activity_log (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    admin_id    INT NULL,
+    action      VARCHAR(60) NOT NULL,
+    target_type VARCHAR(40) NOT NULL,
+    target_id   INT NULL,
+    detail      VARCHAR(255) NULL,
+    created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_activity_admin
+        FOREIGN KEY (admin_id)
+        REFERENCES users(id)
+        ON UPDATE CASCADE
+        ON DELETE SET NULL
 );

@@ -3,6 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 from app.config.database import engine
 from app.schemas.period import PeriodCreate, PeriodUpdate
+from app.services import activity_log_service
 
 def get_periods():
     with engine.connect() as conn:
@@ -39,6 +40,7 @@ def create_period(period: PeriodCreate):
     return get_period(new_id)
 
 def update_period(period_id: int, period: PeriodUpdate):
+    admin_id = period.admin_id
     values = {}
     if period.name is not None:
         values["name"] = period.name
@@ -58,7 +60,21 @@ def update_period(period_id: int, period: PeriodUpdate):
         conn.execute(query, {**values, "id": period_id})
         if values.get("is_active") is True:
             _deactivate_other_periods(conn, period_id)
-            
+
+        if "is_active" in values:
+            period_name = values.get("name")
+            if period_name is None:
+                period_name = conn.execute(
+                    text("SELECT name FROM periods WHERE id = :id"), {"id": period_id}
+                ).scalar()
+            activity_log_service.log_action(
+                conn, admin_id,
+                action="period_opened" if values["is_active"] else "period_closed",
+                target_type="period",
+                target_id=period_id,
+                detail=period_name,
+            )
+
     return get_period(period_id)
 
 def delete_period(period_id: int):

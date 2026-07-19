@@ -49,7 +49,7 @@ def delete_question(question_id: int):
 )
 def patch_question_text(question_id: int, payload: QuestionTextPatch):
     """Genera una nueva versión de la pregunta y desactiva la anterior. Valida coherencia semántica (NLP) contra su categoría original. Precondición: periodo cerrado."""
-    return question_service.version_question_text(question_id, payload.text, payload.confirm)
+    return question_service.version_question_text(question_id, payload.text, payload.confirm, payload.admin_id)
 
 
 @router.put(

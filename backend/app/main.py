@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import traceback
 
 from app.config.config import settings
-from app.routes import auth_routes, category_routes, check, period_routes, user_routes, form_routes, evaluation_routes, metrics_routes, question_routes
+from app.routes import auth_routes, category_routes, check, period_routes, user_routes, form_routes, evaluation_routes, metrics_routes, question_routes, activity_log_routes
 
 tags_metadata = [
     {"name": "auth", "description": "Validación de credenciales (bcrypt). No emite JWT; el cliente asume el estado de sesión."},
@@ -14,7 +14,8 @@ tags_metadata = [
     {"name": "evaluations", "description": "Transacciones de evaluación. Implementa control de concurrencia y validación de periodo activo."},
     {"name": "periods", "description": "Control de ciclos temporales. Constraint de aplicación: max 1 periodo activo global."},
     {"name": "metrics", "description": "Agregación y cálculo del Índice de Calidad Percibida (ICP) on-read. Integración NLP vía Google Gemini API."},
-    {"name": "health", "description": "Health checks para el Load Balancer / Proxy."}
+    {"name": "health", "description": "Health checks para el Load Balancer / Proxy."},
+    {"name": "activity-log", "description": "Bitacora de acciones administrativas (auditoria basica, sin verificacion criptografica de autoria)."}
 ]
 
 description_text = """
@@ -84,3 +85,4 @@ app.include_router(evaluation_routes.router, tags=["evaluations"])
 app.include_router(metrics_routes.router, tags=["metrics"])
 app.include_router(question_routes.router, tags=["questions"])
 app.include_router(category_routes.router, tags=["categories"])
+app.include_router(activity_log_routes.router, tags=["activity-log"])
