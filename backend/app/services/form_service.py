@@ -9,7 +9,7 @@ EVALUABLE_ROLES = ("team_leader", "tutor")
 
 
 QUESTIONS_SELECT = """
-    SELECT q.id, q.template_id, q.text, q.category_id, c.name AS category, q.input_type, q.sort_order, q.weight
+    SELECT q.id, q.template_id, q.text, q.category_id, c.name AS category, q.input_type, q.sort_order, q.weight_percent AS weight
     FROM questions q
     JOIN categories c ON q.category_id = c.id
     WHERE q.template_id = :template_id AND q.is_active = TRUE
@@ -87,13 +87,14 @@ def create_template(payload: TemplateCreate):
         insert_template = text("""
             INSERT INTO form_templates (title, description, target_role_id, is_active)
             VALUES (:title, :description, :target_role_id, TRUE)
+            RETURNING id
         """)
         result = conn.execute(insert_template, {
             "title": payload.title,
             "description": payload.description,
             "target_role_id": role_id,
         })
-        template_id = result.lastrowid
+        template_id = result.scalar()
 
         for category_id in {q.category_id for q in payload.questions}:
             exists = conn.execute(text("SELECT id FROM categories WHERE id = :id"), {"id": category_id}).scalar()

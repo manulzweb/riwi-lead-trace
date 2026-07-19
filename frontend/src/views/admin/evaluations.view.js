@@ -3,6 +3,7 @@ import { showToast } from "../../components/alerts";
 import { escapeHtml } from "../../utils/validators";
 import { dropdownComponent, setupDropdown } from "../../components/dropdown";
 import { templatesService } from "../../services/templates.service.js";
+import { categoryService } from "../../services/categories.service.js";
 
 export const renderAdminEvaluations = () => `
   ${navBarComponent()}
@@ -117,14 +118,24 @@ export const setupAdminEvaluations = () => {
   // --- ESTADO (Memoria) ---
   let questions = [];
   let editId = null;
+  let categoriesData = [];
 
   // --- LÓGICA DE VISTAS ---
-  const showBuilder = () => {
+  const showBuilder = async () => {
     viewList.classList.add("hidden");
     viewBuilder.classList.remove("hidden");
     setupDropdown('template-role');
     setupDropdown('evaluator-role');
     updateWeightCounter();
+    
+    if (categoriesData.length === 0) {
+      try {
+        categoriesData = await categoryService.getCategories();
+      } catch (err) {
+        console.error("Error cargando categorías", err);
+      }
+    }
+    renderQuestions(); // Re-render to populate category dropdowns
   };
 
   const showList = async () => {
@@ -133,16 +144,15 @@ export const setupAdminEvaluations = () => {
     await renderTemplatesList();
   };
 
-  btnCreate.addEventListener("click", () => {
+  btnCreate.addEventListener("click", async () => {
     // Resetear constructor para nueva plantilla
     editId = null;
     inputTitle.value = "";
     inputDesc.value = "";
     selectRole.value = "tutor";
     document.getElementById("evaluator-role").value = "coder";
-    questions = [{ id: Date.now().toString(), text: "", input_type: "scale_1_5", category: "General", weight: 0 }];
-    renderQuestions();
-    showBuilder();
+    questions = [{ id: Date.now().toString(), text: "", input_type: "scale_1_5", category_id: 1, weight: 100 }];
+    await showBuilder();
   });
 
   btnBack.addEventListener("click", showList);
@@ -216,12 +226,14 @@ export const setupAdminEvaluations = () => {
               
               <div class="flex items-center gap-2">
                 <label class="text-sm font-bold text-[var(--text-muted)]">Categoría:</label>
-                <input type="text" class="q-category-input w-48 rounded-xl border border-[var(--border-main)] bg-[var(--bg-base)] px-3 py-2 text-[var(--text-main)] text-sm focus:border-[var(--brand-bg)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-bg)]/20" placeholder="Ej. Comunicación" value="${escapeHtml(q.category || '')}" data-id="${q.id}">
+                <div class="w-48 relative">
+                  ${dropdownComponent(`q-category-${q.id}`, categoriesData.map(c => ({ value: c.id, label: c.name })), q.category_id || (categoriesData[0]?.id || 1))}
+                </div>
               </div>
 
               <div class="flex items-center gap-2">
                 <label class="text-sm font-bold text-[var(--text-muted)]">Puntos:</label>
-                <input type="number" min="0" max="100" class="q-weight-input w-24 rounded-xl border border-[var(--border-main)] bg-[var(--bg-base)] px-3 py-2 text-[var(--text-main)] font-bold focus:border-[var(--brand-bg)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-bg)]/20" placeholder="0-100" value="${q.weight || ''}" data-id="${q.id}">
+                <input type="number" min="0" max="100" class="q-weight-input w-24 rounded-xl border border-[var(--border-main)] bg-[var(--bg-base)] px-3 py-2 text-[var(--text-main)] font-bold focus:border-[var(--brand-bg)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-bg)]/20 disabled:opacity-50" placeholder="0-100" value="${q.input_type === 'scale_1_5' ? (q.weight || 0) : 0}" data-id="${q.id}" ${q.input_type !== 'scale_1_5' ? 'disabled' : ''}>
               </div>
             </div>
             
@@ -263,21 +275,18 @@ export const setupAdminEvaluations = () => {
       });
     });
 
-    document.querySelectorAll(".q-category-input").forEach(input => {
-      input.addEventListener("input", (e) => {
-        const id = e.target.dataset.id;
-        const q = questions.find(item => item.id === id);
-        if (q) q.category = e.target.value;
-      });
-    });
-
-    // Configurar dropdowns dinámicos para el tipo de pregunta
+    // Re-initialize dropdown logic for newly rendered components
     questions.forEach(q => {
       setupDropdown(`q-type-${q.id}`, (val) => {
         q.input_type = val;
+        if (q.input_type !== 'scale_1_5') q.weight = 0;
         renderQuestions();
+        updateWeightCounter();
       });
-      // Ajustar el padding izquierdo del botón del dropdown generado para que no tape el ícono
+      setupDropdown(`q-category-${q.id}`, (val) => {
+        q.category_id = parseInt(val);
+      });
+      
       const btn = document.getElementById(`q-type-${q.id}-btn`);
       if (btn) btn.classList.add("pl-10");
     });
@@ -287,12 +296,19 @@ export const setupAdminEvaluations = () => {
         const id = e.currentTarget.dataset.id;
         questions = questions.filter(item => item.id !== id);
         renderQuestions();
+        updateWeightCounter();
       });
     });
   };
 
   btnAddQuestion.addEventListener("click", () => {
-    questions.push({ id: Date.now().toString(), text: "", type: "scale_1_5", weight: 0 });
+    questions.push({
+      id: Date.now().toString(),
+      text: "",
+      input_type: "scale_1_5",
+      category_id: categoriesData.length > 0 ? categoriesData[0].id : 1,
+      weight: 0
+    });
     renderQuestions();
     updateWeightCounter();
   });
@@ -319,7 +335,9 @@ export const setupAdminEvaluations = () => {
 
     // Validar suma de puntos (100)
     const totalWeight = questions.reduce((sum, q) => sum + (parseInt(q.weight) || 0), 0);
-    if (totalWeight !== 100) {
+    const hasScale = questions.some(q => q.input_type === 'scale_1_5');
+    
+    if (hasScale && totalWeight !== 100) {
       if (totalWeight < 100) {
         showToast("Faltan puntos", "warning", `La suma total es ${totalWeight}. Debes sumar exactamente 100.`);
       } else {
@@ -328,14 +346,20 @@ export const setupAdminEvaluations = () => {
       return;
     }
 
-    // Preparar objeto para enviar a la BD (el ID se generará automáticamente en creación si usamos json-server)
+    // Preparar objeto para enviar a la BD (pasando por templates.service.js)
+    const formattedQuestions = questions.map(q => ({
+      id: q.id,
+      text: q.text,
+      categoryId: parseInt(q.category_id),
+      type: q.input_type,
+      weight: parseFloat(q.weight) || 0
+    }));
+
     const templateData = {
       title,
       description: inputDesc.value.trim(),
-      evaluatorRole: document.getElementById("evaluator-role").value,
       targetRole: document.getElementById("template-role").value,
-      questions,
-      createdAt: new Date().toISOString()
+      questions: formattedQuestions
     };
     if (editId) {
       templateData.id = editId;
@@ -389,15 +413,20 @@ export const setupAdminEvaluations = () => {
 
     templatesContainer.innerHTML = `
       <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        ${templates.map(t => `
+        ${templates.map(t => {
+          console.log("Estructura de la plantilla:", t);
+          // Obtenemos la fecha si existe, si no, mostramos "Recién creada"
+          const dateStr = t.createdAt ? new Date(t.createdAt).toLocaleDateString() : 'Recién creada';
+          
+          return `
           <div class="group flex flex-col justify-between rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm hover:border-[var(--brand-hover)] transition-all duration-300 hover:shadow-md cursor-pointer btn-edit-template" data-id="${t.id}">
             <div>
               <div class="flex items-center justify-between mb-4">
                 <span class="inline-flex items-center rounded-full bg-[var(--brand-bg)]/10 px-3 py-1 text-xs font-bold text-[var(--brand-bg)] capitalize">
-                  Evaluador: ${escapeHtml(t.evaluatorRole || 'Cualquiera')} ➔ Evalúa a: ${escapeHtml(t.targetRole)}
+                  Evaluador: ${escapeHtml(t.evaluatorRole || 'Cualquiera')} ➔ Evalúa a: ${escapeHtml(t.targetRole || t.target_role || '')}
                 </span>
                 <span class="text-xs text-[var(--text-muted)] font-medium">
-                  ${t.questions.length} preg.
+                  ${t.questions ? t.questions.length : 0} preg.
                 </span>
               </div>
               <h3 class="text-xl font-bold text-[var(--text-main)] font-heading leading-tight">${escapeHtml(t.title)}</h3>
@@ -406,14 +435,15 @@ export const setupAdminEvaluations = () => {
             
             <div class="mt-6 pt-4 border-t border-[var(--border-main)] flex items-center justify-between">
               <span class="text-xs text-[var(--text-muted)]">
-                ${new Date(t.createdAt).toLocaleDateString()}
+                ${dateStr}
               </span>
               <button class="btn-delete-template text-[var(--text-muted)] hover:text-[var(--danger-text)] transition-colors p-2 -mr-2" data-id="${t.id}" title="Eliminar">
                 <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
               </button>
             </div>
           </div>
-        `).join('')}
+          `;
+        }).join('')}
       </div>
     `;
 

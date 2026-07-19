@@ -62,27 +62,33 @@ export const sidebarComponent = (isActive) => {
     `;
     navConfig = [
       { href: "/dashboard", label: "Home", icon: icons.home },
-      { label: "Admin Hub", icon: icons.adminHub, submenu: [
-        { href: "/admin/evaluations", label: "Evaluations" },
-        { href: "/admin/metrics", label: "Metrics" },
-        { href: "/admin/ai-summary", label: "AI Summary" }
-      ]}
+      {
+        label: "Admin Hub", icon: icons.adminHub, submenu: [
+          { href: "/admin/evaluations", label: "Evaluations" },
+          { href: "/admin/metrics", label: "Metrics" },
+          { href: "/admin/ai-summary", label: "AI Summary" }
+        ]
+      }
     ];
   } else if (role === "coder") {
     navConfig = [
       { href: "/dashboard", label: "Home", icon: icons.home },
-      { label: "Evaluations", icon: icons.evaluations, submenu: [
-        { href: "/evaluations/new", label: "To-Do" },
-        { href: "/evaluations", label: "History" }
-      ]}
+      {
+        label: "Evaluations", icon: icons.evaluations, submenu: [
+          { href: "/evaluations/new", label: "To-Do" },
+          { href: "/evaluations", label: "History" }
+        ]
+      }
     ];
   } else if (role === "tutor") {
     navConfig = [
       { href: "/dashboard", label: "Home", icon: icons.home },
-      { label: "Make Evaluation", icon: icons.evaluations, submenu: [
-        { href: "/evaluations/new", label: "To-Do" },
-        { href: "/evaluations", label: "History" }
-      ]},
+      {
+        label: "Make Evaluation", icon: icons.evaluations, submenu: [
+          { href: "/evaluations/new", label: "To-Do" },
+          { href: "/evaluations", label: "History" }
+        ]
+      },
       { href: "/my-results", label: "My Results", icon: icons.evaluations }
     ];
   } else {
@@ -147,7 +153,7 @@ export const setupSidebar = () => {
     header.addEventListener("click", () => {
       const content = header.nextElementSibling;
       const icon = header.querySelector("svg:last-child");
-      
+
       if (content.classList.contains("max-h-0")) {
         // Open
         content.classList.remove("max-h-0", "opacity-0");

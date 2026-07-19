@@ -1,5 +1,6 @@
 import { authService } from "../services/auth.service";
 import { navBarComponent, setupNavBar } from "../components/navbar";
+import { showToast } from "../components/alerts";
 import { escapeHtml } from "../utils/validators";
 import { periodService } from "../services/periods.service";
 import { metricsService } from "../services/metrics.service";
@@ -46,9 +47,17 @@ export const renderDashboard = () => {
       <div class="mx-auto max-w-7xl">
         
         <!-- Saludo -->
-        <header class="mb-10">
-          <h1 class="text-4xl font-black tracking-tight mb-2">Bienvenido de vuelta, ${name.split(' ')[0]}</h1>
-          <p class="text-[var(--text-muted)] text-sm font-medium">Este es tu panel de control y accesos rápidos de hoy.</p>
+        <header class="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 class="text-4xl font-black tracking-tight mb-2">Bienvenido de vuelta, ${name.split(' ')[0]}</h1>
+            <p class="text-[var(--text-muted)] text-sm font-medium">Este es tu panel de control y accesos rápidos de hoy.</p>
+          </div>
+          ${roles.includes("admin") ? `
+          <button id="btn-close-period" class="hidden inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--danger-bg)] px-4 py-2 text-sm font-bold text-[var(--danger-text)] transition-all duration-300 hover:bg-red-500 hover:text-white cursor-pointer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+            Cerrar Periodo Activo
+          </button>
+          ` : ''}
         </header>
 
         <!-- Accesos rápidos (Estilo Proyecto) -->
@@ -128,7 +137,6 @@ export const renderDashboard = () => {
 };
 
 export const setupDashboard = async () => {
-  setupNavBar();
   
   const user = authService.getSession();
   const isAdmin = user?.roles?.includes("admin");
@@ -145,6 +153,31 @@ export const setupDashboard = async () => {
     if (!activePeriod) {
       document.getElementById("period-name").textContent = "(Ningún periodo activo)";
       return;
+    }
+
+    const btnClose = document.getElementById("btn-close-period");
+    if (btnClose) {
+      btnClose.classList.remove("hidden");
+      btnClose.addEventListener("click", async () => {
+        if (confirm("¿Estás seguro de cerrar el periodo activo? Esto permitirá crear/editar formularios, pero detendrá las evaluaciones en curso.")) {
+          try {
+            btnClose.disabled = true;
+            btnClose.innerText = "Cerrando...";
+            await periodService.update(activePeriod.id, {
+              name: activePeriod.name,
+              starts_at: activePeriod.starts_at,
+              ends_at: activePeriod.ends_at,
+              is_active: false
+            });
+            showToast("Periodo cerrado exitosamente", "success");
+            setTimeout(() => window.location.reload(), 1500);
+          } catch (err) {
+            showToast("Error al cerrar periodo", "error");
+            btnClose.disabled = false;
+            btnClose.innerText = "Cerrar Periodo Activo";
+          }
+        }
+      });
     }
 
     document.getElementById("period-name").textContent = `(${activePeriod.name})`;

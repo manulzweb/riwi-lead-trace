@@ -91,7 +91,7 @@ export const setupNavBar = () => {
   themeBtns.forEach(btn => {
     btn.addEventListener("click", () => {
       const theme = btn.getAttribute("data-theme");
-      
+
       const switchTheme = () => {
         themeService.setTheme(theme);
         renderRoute();
@@ -114,7 +114,7 @@ export const setupNavBar = () => {
   const toggleSidebar = (forceClose = false) => {
     if (!sidebar || !overlay) return;
     const isClosed = sidebar.classList.contains("-translate-x-full");
-    
+
     if (isClosed && !forceClose) {
       sidebar.classList.remove("-translate-x-full");
       overlay.classList.remove("opacity-0", "pointer-events-none");
