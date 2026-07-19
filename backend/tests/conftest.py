@@ -16,11 +16,11 @@ from sqlalchemy import text
 from app.main import app
 from app.config.database import conn
 
-# IDs de los usuarios semilla de database/schema.sql
-CODER_ID = 1
+# IDs de los usuarios semilla de database/02_dml.sql
+ADMIN_ID = 1
 TEAM_LEADER_ID = 2
-TUTOR_ID = 3
-ADMIN_ID = 4
+TUTOR_ID = 5
+CODER_ID = 8
 
 
 @pytest.fixture

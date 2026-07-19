@@ -36,7 +36,7 @@ def test_no_se_edita_texto_con_periodo_activo(client):
 
 def test_no_se_actualizan_pesos_con_periodo_activo(client):
     response = client.put("/questions/weights", json={
-        "template_id": TL_TEMPLATE_ID,
+        "form_id": TL_TEMPLATE_ID,
         "weights": [{"question_id": FIRST_TL_SCALE_QUESTION_ID, "weight_percent": 10}]
     })
     assert response.status_code == 409
@@ -128,7 +128,7 @@ def test_pesos_deben_sumar_100(client):
         # 10 preguntas a 9.00 cada una = 90, no 100.
         weights = [{"question_id": qid, "weight_percent": 9} for qid in scale_ids]
 
-        response = client.put("/questions/weights", json={"template_id": TL_TEMPLATE_ID, "weights": weights})
+        response = client.put("/questions/weights", json={"form_id": TL_TEMPLATE_ID, "weights": weights})
         assert response.status_code == 422
     finally:
         _reopen_seed_period()
@@ -143,7 +143,7 @@ def test_pesos_deben_cubrir_todas_las_preguntas_activas(client):
         weights = [{"question_id": qid, "weight_percent": round(100 / (len(scale_ids) - 1), 2)}
                    for qid in scale_ids[:-1]]
 
-        response = client.put("/questions/weights", json={"template_id": TL_TEMPLATE_ID, "weights": weights})
+        response = client.put("/questions/weights", json={"form_id": TL_TEMPLATE_ID, "weights": weights})
         assert response.status_code == 422
     finally:
         _reopen_seed_period()
@@ -164,7 +164,7 @@ def test_actualizar_pesos_ok_y_se_reflejan(client):
         suma = sum(w["weight_percent"] for w in weights)
         weights[-1]["weight_percent"] = round(weights[-1]["weight_percent"] + (100 - suma), 2)
 
-        response = client.put("/questions/weights", json={"template_id": TL_TEMPLATE_ID, "weights": weights})
+        response = client.put("/questions/weights", json={"form_id": TL_TEMPLATE_ID, "weights": weights})
         assert response.status_code == 200
 
         # Terminar la transaccion abierta en el hilo principal del test para ver los cambios
