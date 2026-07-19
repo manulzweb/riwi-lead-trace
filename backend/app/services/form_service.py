@@ -11,7 +11,7 @@ EVALUABLE_ROLES = ("team_leader", "tutor")
 
 
 QUESTIONS_SELECT = """
-    SELECT q.id, q.template_id, q.text, q.category_id, c.name AS category, q.input_type, q.sort_order
+    SELECT q.id, q.template_id, q.text, q.category_id, c.name AS category, q.input_type, q.sort_order, q.weight_percent
     FROM questions q
     JOIN categories c ON q.category_id = c.id
     WHERE q.template_id = :template_id AND q.is_active = TRUE
