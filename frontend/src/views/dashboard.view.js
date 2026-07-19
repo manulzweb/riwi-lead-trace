@@ -117,7 +117,7 @@ const renderAdminDashboard = (name) => {
             <!-- Cabecera de la Tabla -->
             <div class="grid grid-cols-12 text-[10px] font-extrabold text-[var(--text-muted)] uppercase tracking-widest px-4 py-2 border-b border-[var(--border-main)]">
               <span class="col-span-5">Leader / Tutor</span>
-              <span class="col-span-3">Department</span>
+              <span class="col-span-3">Clan</span>
               <span class="col-span-2">ICA Score</span>
               <span class="col-span-2">Status</span>
             </div>
@@ -138,8 +138,8 @@ const renderAdminDashboard = (name) => {
                 --
               </div>
               <div>
-                <h3 class="text-base font-bold text-[var(--text-main)]" id="detail-name">Sarah Jenkins</h3>
-                <p class="text-xs text-[var(--text-muted)] font-semibold uppercase tracking-wider" id="detail-dept">Engineering Dept.</p>
+                <h3 class="text-base font-bold text-[var(--text-main)]" id="detail-name"></h3>
+                <p class="text-xs text-[var(--text-muted)] font-semibold uppercase tracking-wider" id="detail-dept"></p>
               </div>
             </div>
             <button id="close-detail-btn" class="p-1.5 rounded-full hover:bg-[var(--bg-base)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer">
@@ -272,16 +272,6 @@ export const setupDashboard = async () => {
     }
   };
 
-  const getDepartment = (name, role) => {
-    if (name.includes("Jenkins") || name.includes("Javier")) return "Engineering";
-    if (name.includes("Chen") || name.includes("Abraham")) return "Design";
-    if (name.includes("Thorne") || name.includes("Ariza")) return "Data Science";
-    if (name.includes("Vásquez")) return "Frontend Dept.";
-    if (name.includes("Giraldo")) return "Backend Dept.";
-    if (name.includes("Reniz")) return "Soft Skills";
-    return role === "team_leader" ? "Liderazgo" : "Tutoría";
-  };
-
   const getInitials = (name) => {
     return name
       .split(" ")
@@ -311,7 +301,7 @@ export const setupDashboard = async () => {
     leadersList.innerHTML = filtered.map((ev) => {
       const scoreText = ev.average_score !== null ? `${ev.average_score}` : "--";
       const initials = getInitials(ev.name);
-      const department = getDepartment(ev.name, ev.role);
+      const clanName = ev.clan_name || "Sin clan asignado";
 
       let badgeClass = "bg-gray-100 text-gray-800 dark:bg-gray-900/50 dark:text-gray-400";
       let displayStatus = ev.status;
@@ -341,7 +331,7 @@ export const setupDashboard = async () => {
             </div>
           </div>
           <div class="col-span-3 text-sm text-[var(--text-muted)]">
-            ${department}
+            ${escapeHtml(clanName)}
           </div>
           <div class="col-span-2 text-sm font-extrabold text-[var(--text-main)]">
             ${scoreText}
@@ -426,7 +416,7 @@ export const setupDashboard = async () => {
 
     document.getElementById("detail-avatar").textContent = getInitials(ev.name);
     document.getElementById("detail-name").textContent = ev.name;
-    document.getElementById("detail-dept").textContent = getDepartment(ev.name, ev.role) + " Dept.";
+    document.getElementById("detail-dept").textContent = ev.clan_name || "Sin clan asignado";
     document.getElementById("detail-overall-score").textContent = ev.average_score !== null ? ev.average_score : "--";
     document.getElementById("detail-participation-text").textContent = `${ev.n_evals} evaluaciones`;
 
@@ -536,5 +526,14 @@ export const setupDashboard = async () => {
 
   } catch (err) {
     console.error(err);
+    showToast("Error", "error", "No se pudo cargar el dashboard. Intenta recargar la página.");
+    if (periodLabel) periodLabel.textContent = "No se pudo cargar el periodo.";
+    if (leadersList) {
+      leadersList.innerHTML = `
+        <div class="text-center py-8 text-[var(--text-muted)] text-sm">
+          No se pudieron cargar los líderes y tutores. Recarga la página para reintentar.
+        </div>
+      `;
+    }
   }
 };

@@ -63,10 +63,21 @@ def get_metrics_summary(period_id: int):
         total_evaluations = conn.execute(total_eval_query, {"period_id": period_id}).scalar() or 0
 
         users_query = text("""
-            SELECT u.id, u.full_name AS name, u.email, r.name AS role
+            SELECT u.id, u.full_name AS name, u.email, r.name AS role,
+                   COALESCE(
+                       tutor_clan.name,
+                       tl_clans.clan_names
+                   ) AS clan_name
             FROM users u
             JOIN user_roles ur ON u.id = ur.user_id
             JOIN roles r ON ur.role_id = r.id
+            LEFT JOIN clans tutor_clan ON tutor_clan.id = u.clan_id
+            LEFT JOIN (
+                SELECT tlc.user_id, GROUP_CONCAT(c.name SEPARATOR ', ') AS clan_names
+                FROM team_leader_clans tlc
+                JOIN clans c ON c.id = tlc.clan_id
+                GROUP BY tlc.user_id
+            ) tl_clans ON tl_clans.user_id = u.id
             WHERE r.name IN ('team_leader', 'tutor')
             GROUP BY u.id, r.name
         """)
