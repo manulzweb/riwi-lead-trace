@@ -7,21 +7,52 @@ from app.services import category_service
 router = APIRouter()
 
 
-@router.get("/categories", response_model=List[CategoryOut])
+@router.get(
+    "/categories", 
+    response_model=List[CategoryOut],
+    summary="Listar categorías",
+    response_description="Lista completa de categorías disponibles"
+)
 def get_categories():
     """Consulta de lectura total sobre la entidad `categories`."""
     return category_service.get_categories()
 
 
-@router.post("/categories", response_model=CategoryOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/categories", 
+    response_model=CategoryOut, 
+    status_code=status.HTTP_201_CREATED,
+    summary="Crear categoría",
+    response_description="La categoría recién creada"
+)
 def create_category(payload: CategoryCreate):
     """Inserta una nueva categoría en la base de datos."""
     return category_service.create_category(payload.name)
 
 
-@router.patch("/categories/{category_id}", response_model=CategoryOut)
+@router.put(
+    "/categories/{category_id}", 
+    response_model=CategoryOut,
+    summary="Actualizar categoría (PUT)",
+    response_description="La categoría actualizada",
+    responses={404: {"description": "Categoría no encontrada"}}
+)
+def put_category(category_id: int, payload: CategoryUpdate):
+    """Actualiza el campo `name` de una categoría existente de manera total."""
+    updated = category_service.update_category(category_id, payload.name)
+    if not updated:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Categoria no encontrada.")
+    return updated
+
+@router.patch(
+    "/categories/{category_id}", 
+    response_model=CategoryOut,
+    summary="Actualizar categoría (PATCH)",
+    response_description="La categoría actualizada",
+    responses={404: {"description": "Categoría no encontrada"}}
+)
 def update_category(category_id: int, payload: CategoryUpdate):
-    """Actualiza el campo `name` de una categoría existente."""
+    """Actualiza el campo `name` de una categoría existente de manera parcial."""
     updated = category_service.update_category(category_id, payload.name)
     if not updated:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Categoria no encontrada.")
