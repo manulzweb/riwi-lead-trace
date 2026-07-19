@@ -8,7 +8,7 @@ from app.services.question_service import _assert_no_active_period, WEIGHT_SUM_T
 EVALUABLE_ROLES = ("team_leader", "tutor")
 
 
-QUESTIONS_SELECT = """
+QUESTIONS_QUERY = """
     SELECT q.id, q.template_id, q.text, q.category_id, c.name AS category, q.input_type, q.sort_order, q.weight_percent
     FROM questions q
     JOIN categories c ON q.category_id = c.id
@@ -34,7 +34,7 @@ def get_form_templates_by_role(role_name: str):
         templates = []
         for row in template_rows:
             template_dict = dict(row)
-            questions_result = conn.execute(text(QUESTIONS_SELECT), {"template_id": template_dict["id"]})
+            questions_result = conn.execute(text(QUESTIONS_QUERY), {"template_id": template_dict["id"]})
             template_dict["questions"] = [dict(q) for q in questions_result.mappings()]
             templates.append(template_dict)
 
@@ -53,7 +53,7 @@ def get_template(template_id: int):
             return None
 
         template_dict = dict(template_row)
-        questions_result = conn.execute(text(QUESTIONS_SELECT), {"template_id": template_id})
+        questions_result = conn.execute(text(QUESTIONS_QUERY), {"template_id": template_id})
         template_dict["questions"] = [dict(row) for row in questions_result.mappings()]
         return template_dict
 
@@ -84,11 +84,11 @@ def create_template(payload: TemplateCreate):
             {"role_id": role_id}
         )
 
-        insert_template = text("""
+        insert_template_query = text("""
             INSERT INTO form_templates (title, description, target_role_id, is_active)
             VALUES (:title, :description, :target_role_id, TRUE)
         """)
-        result = conn.execute(insert_template, {
+        result = conn.execute(insert_template_query, {
             "title": payload.title,
             "description": payload.description,
             "target_role_id": role_id,
@@ -100,12 +100,12 @@ def create_template(payload: TemplateCreate):
             if not exists:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Categoria {category_id} no encontrada.")
 
-        insert_question = text("""
+        insert_question_query = text("""
             INSERT INTO questions (template_id, text, category_id, input_type, sort_order, weight_percent, is_active)
             VALUES (:template_id, :text, :category_id, :input_type, :sort_order, :weight_percent, TRUE)
         """)
         for index, q in enumerate(payload.questions):
-            conn.execute(insert_question, {
+            conn.execute(insert_question_query, {
                 "template_id": template_id,
                 "text": q.text,
                 "category_id": q.category_id,
