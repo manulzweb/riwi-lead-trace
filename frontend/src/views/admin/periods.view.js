@@ -147,6 +147,11 @@ export const setupAdminPeriods = () => {
     } catch (error) {
       console.error(error);
       showToast("No se pudieron cargar los ciclos", "error");
+      listContainer.innerHTML = `
+        <div class="text-center py-8 text-[var(--danger-text)] text-sm">
+          No se pudieron cargar los ciclos. Recarga la página para reintentar.
+        </div>
+      `;
     }
   };
 

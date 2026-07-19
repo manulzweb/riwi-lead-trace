@@ -28,11 +28,13 @@ export const renderAiSummary = () => `
   { value: '', label: 'Selecciona un periodo...' }
 ], '')}
         </div>
-        <button id="generate-btn"
-          class="inline-flex items-center justify-center rounded-2xl bg-[var(--brand-bg)] px-5 py-3 text-sm font-bold text-[var(--brand-text)] transition-all duration-300 ease-in-out hover:bg-[var(--brand-hover)] hover:shadow-md hover:cursor-pointer focus:ring-4 focus:ring-[var(--border-main)]">
-          Generar resumen
+        <button id="generate-btn" disabled
+          class="inline-flex items-center justify-center rounded-2xl bg-[var(--brand-bg)] px-5 py-3 text-sm font-bold text-[var(--brand-text)] transition-all duration-300 ease-in-out hover:bg-[var(--brand-hover)] hover:shadow-md hover:cursor-pointer focus:ring-4 focus:ring-[var(--border-main)] disabled:opacity-50 disabled:cursor-not-allowed">
+          Cargando...
         </button>
       </div>
+
+      <div id="ai-empty" class="mt-8 hidden text-center py-8 text-[var(--text-muted)] text-sm"></div>
 
       <div id="ai-result" class="mt-8 hidden">
         <hr class="border-[var(--border-main)]" />
@@ -52,12 +54,21 @@ export const setupAiSummary = async () => {
   const periodSelect = document.getElementById("period");
   const resultSection = document.getElementById("ai-result");
   const resultContent = document.getElementById("ai-content");
+  const emptyState = document.getElementById("ai-empty");
 
-  if (!generateBtn || !targetUserSelect || !periodSelect || !resultSection || !resultContent) return;
+  if (!generateBtn || !targetUserSelect || !periodSelect || !resultSection || !resultContent || !emptyState) return;
 
   try {
     const [users, periods] = await Promise.all([userService.get(), periodService.get()]);
     const evaluables = users.filter(u => u.roles?.includes("team_leader") || u.roles?.includes("tutor"));
+
+    if (evaluables.length === 0 || periods.length === 0) {
+      const missing = evaluables.length === 0 ? "líderes o tutores" : "periodos";
+      emptyState.textContent = `No hay ${missing} registrados todavía. Vuelve cuando existan datos para generar un resumen.`;
+      emptyState.classList.remove("hidden");
+      document.getElementById("generate-btn").closest("div").classList.add("hidden");
+      return;
+    }
 
     const userOptions = [
       { value: '', label: 'Selecciona una persona...' },
@@ -74,9 +85,13 @@ export const setupAiSummary = async () => {
     document.getElementById('period-container').outerHTML = dropdownComponent('period', periodOptions, activePeriod);
     setupDropdown('period');
 
+    generateBtn.disabled = false;
+    generateBtn.textContent = "Generar resumen";
   } catch (err) {
     showToast("Error", "error", "No se pudieron cargar las personas o periodos.");
     console.error(err);
+    emptyState.textContent = "No se pudieron cargar los datos. Recarga la página para reintentar.";
+    emptyState.classList.remove("hidden");
     return;
   }
 

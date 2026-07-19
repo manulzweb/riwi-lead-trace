@@ -158,6 +158,8 @@ export const setupMetrics = async () => {
   } catch (err) {
     showToast("Error", "error", "No se pudieron obtener las métricas.");
     console.error(err);
+    periodContainer.innerHTML = '<p class="text-sm text-[var(--danger-text)]">No se pudo cargar</p>';
+    gridContainer.innerHTML = '<p class="text-[var(--danger-text)]">No se pudieron cargar las métricas. Recarga la página para reintentar.</p>';
   }
 
   function renderHighlights(list) {
