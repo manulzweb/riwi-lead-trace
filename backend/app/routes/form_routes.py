@@ -14,11 +14,6 @@ def get_form_templates(
     Resuelve la jerarquía de plantillas (`form_templates`). Devuelve la plantilla activa que coincide con el `target_role_id` (Team Leader o Tutor) y hace inner join con preguntas activas.
     """
     templates = form_service.get_form_templates_by_role(target_role)
-    if not templates:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No se encontró una plantilla de formulario para el rol '{target_role}'"
-        )
     return templates
 
 
