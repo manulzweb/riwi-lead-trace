@@ -372,7 +372,7 @@ export const setupDashboard = async () => {
 
       for (const temp of templates) {
         try {
-          const questions = await request(`/questions?template_id=${temp.id}`);
+          const questions = await request(`/questions?form_id=${temp.id}`);
           questions.forEach((q) => questionsMap.set(q.id, q));
         } catch (e) {
           console.error(e);

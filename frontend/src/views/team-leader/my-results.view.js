@@ -1,4 +1,5 @@
 import { navBarComponent } from "../../components/navbar";
+import { dropdownComponent, setupDropdown } from "../../components/dropdown";
 import { metricsService } from "../../services/metrics.service";
 import { evaluationService } from "../../services/evaluation.service";
 import { periodService } from "../../services/periods.service";
@@ -14,11 +15,9 @@ export const renderMyResults = () => `
         <h1 class="mt-1 text-4xl font-black tracking-tight text-[var(--text-main)]">Mis resultados</h1>
         <p class="mt-4 text-[var(--text-muted)]">Consulta cómo te han evaluado los Coders de tu clan.</p>
       </div>
-      <div>
-        <select id="period-selector" 
-          class="rounded-2xl border border-[var(--border-main)] bg-[var(--bg-panel)] px-4 py-3 text-sm text-[var(--text-main)] focus:border-[var(--brand-hover)] focus:outline-none">
-          <option value="">Cargando periodos...</option>
-        </select>
+      <div id="period-selector-container" class="w-64">
+        <label class="mb-2 block text-sm font-medium text-[var(--text-main)] sr-only" for="period-selector">Periodo</label>
+        ${dropdownComponent('period-selector', [{ value: '', label: 'Cargando periodos...' }], '')}
       </div>
     </section>
 
@@ -62,24 +61,37 @@ export const setupMyResults = async () => {
     periods = await periodService.get();
 
     if (periods.length === 0) {
-      periodSelector.innerHTML = '<option value="">No hay periodos</option>';
+      document.getElementById('period-selector-container').outerHTML = `
+        <div id="period-selector-container" class="w-64">
+          ${dropdownComponent('period-selector', [{ value: '', label: 'No hay periodos' }], '')}
+        </div>`;
+      setupDropdown('period-selector');
       feedbackList.innerHTML = '<p class="text-[var(--text-muted)]">No hay periodos registrados.</p>';
       return;
     }
 
-    periodSelector.innerHTML = periods.map(p =>
-      `<option value="${p.id}" ${p.is_active ? 'selected' : ''}>${p.name}</option>`
-    ).join("");
-
     const activePeriod = periods.find(p => p.is_active) || periods[0];
+    const periodOptions = periods.map(p => ({ value: p.id, label: p.name }));
+
+    document.getElementById('period-selector-container').outerHTML = `
+      <div id="period-selector-container" class="w-64">
+        <label class="mb-2 block text-sm font-medium text-[var(--text-main)] sr-only" for="period-selector">Periodo</label>
+        ${dropdownComponent('period-selector', periodOptions, activePeriod.id)}
+      </div>`;
+    setupDropdown('period-selector');
+
+    // After re-rendering, get the new input
+    const periodInput = document.getElementById("period-selector");
 
     // Cargar datos del periodo inicial
     await loadResultsForPeriod(currentUser.id, activePeriod.id);
 
-    periodSelector.addEventListener("change", async () => {
-      const selectedPeriodId = parseInt(periodSelector.value);
-      await loadResultsForPeriod(currentUser.id, selectedPeriodId);
-    });
+    if (periodInput) {
+      periodInput.addEventListener("change", async () => {
+        const selectedPeriodId = parseInt(periodInput.value);
+        await loadResultsForPeriod(currentUser.id, selectedPeriodId);
+      });
+    }
 
   } catch (err) {
     showToast("Error", "error", "No se pudo cargar la información de resultados.");

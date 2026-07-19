@@ -103,7 +103,7 @@ export const setupMyEvaluations = async () => {
       const evaluatee = usersMap.get(evaluation.evaluatee_id);
       const evaluateeName = evaluatee ? evaluatee.name : `Usuario #${evaluation.evaluatee_id}`;
 
-      const template = templatesMap.get(evaluation.template_id);
+      const template = templatesMap.get(evaluation.form_id);
       const questionsMap = new Map();
       if (template && template.questions) {
         template.questions.forEach(q => questionsMap.set(String(q.id), q));

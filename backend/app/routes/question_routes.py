@@ -14,10 +14,10 @@ router = APIRouter()
     response_description="Lista de preguntas activas de la plantilla"
 )
 def get_questions(
-    template_id: int = Query(..., description="ID del template (form_templates.id)"),
+    form_id: int = Query(..., description="ID del form"),
 ):
-    """Consulta anidada sobre `questions` filtrando por `template_id` e `is_active=TRUE`."""
-    return question_service.get_questions_by_template(template_id, only_active=True)
+    """Consulta anidada sobre `questions` filtrando por `form_id` e `is_active=TRUE`."""
+    return question_service.get_questions_by_template(form_id, only_active=True)
 
 
 @router.post(

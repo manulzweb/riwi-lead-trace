@@ -4,7 +4,7 @@ from typing import List, Optional
 
 class QuestionOut(BaseModel):
     id: int
-    template_id: int
+    form_id: int
     text: str
     category_id: int
     category: str  # nombre de la categoria (join contra categories), no editable directo
@@ -25,7 +25,7 @@ class QuestionCreate(BaseModel):
     una pregunta sola es normal que el total quede descuadrado; el admin
     lo reequilibra despues con PUT /questions/weights.
     """
-    template_id: int = Field(
+    form_id: int = Field(
         title="ID de la Plantilla",
         description="ID de la plantilla a la que se agregará la pregunta",
         examples=[1]
@@ -76,5 +76,5 @@ class WeightItem(BaseModel):
 
 
 class WeightsUpdate(BaseModel):
-    template_id: int
+    form_id: int
     weights: List[WeightItem]

@@ -56,17 +56,18 @@ export const sidebarComponent = (isActive) => {
       <div class="px-6 py-4">
         <a href="/admin/evaluations" class="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand-bg)] py-3 text-sm font-bold text-[var(--brand-text)] transition-all hover:bg-[var(--brand-hover)] hover:shadow-md cursor-pointer">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-          Nueva Plantilla
+          Nuevo Formulario
         </a>
       </div>
     `;
     navConfig = [
-      { href: "/dashboard", label: "Home", icon: icons.home },
+      { href: "/dashboard", label: "Inicio", icon: icons.home },
       {
         label: "Admin Hub", icon: icons.adminHub, submenu: [
-          { href: "/admin/evaluations", label: "Evaluations" },
-          { href: "/admin/metrics", label: "Metrics" },
-          { href: "/admin/ai-summary", label: "AI Summary" }
+          { href: "/admin/evaluations", label: "Formularios" },
+          { href: "/admin/periods", label: "Ciclos" },
+          { href: "/admin/metrics", label: "Métricas" },
+          { href: "/admin/ai-summary", label: "Resumen IA" }
         ]
       }
     ];

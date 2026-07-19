@@ -37,18 +37,26 @@ const getDefaultCategoryId = () => {
 const getTemplates = async () => {
   const results = await Promise.all(
     TARGET_ROLES.map(async (targetRole) => {
-      const templates = await request(`/forms?target_role=${targetRole}`);
-      const template = templates[0];
-      return template ? { ...template, targetRole } : null;
+      try {
+        const templates = await request(`/forms?target_role=${targetRole}`);
+        // Mapeamos todas las plantillas que devuelva el backend
+        return templates.map(t => ({ ...t, targetRole }));
+      } catch (error) {
+        // Si la API arroja 404 porque todavía no hay plantillas creadas para este rol,
+        // devolvemos un array vacío para no romper nada.
+        if (error.message.includes("404")) return [];
+        throw error; 
+      }
     })
   );
-  return results.filter(Boolean);
+  // results es un array de arrays (uno por rol), lo aplanamos a una sola lista
+  return results.flat();
 };
 
 // Para editar, ademas del texto (que ya viene en /forms) hace falta el peso
 // de cada pregunta, que /forms no expone -- se completa con /questions.
 const getTemplateForEdit = async (template) => {
-  const questions = await request(`/questions?template_id=${template.id}`);
+  const questions = await request(`/questions?form_id=${template.id}`);
   return {
     ...template,
     questions: questions.map((q) => ({
@@ -106,7 +114,7 @@ const updateTemplate = async (id, templateData) => {
   const createdFromNew = [];
   for (const q of added) {
     const created = await request('/questions', jsonOptions('POST', {
-      template_id: id,
+      form_id: id,
       ...(await toQuestionPayload(q)),
     }));
     createdFromNew.push({ realId: created.id, type: q.type, weight: q.weight });
@@ -120,14 +128,13 @@ const updateTemplate = async (id, templateData) => {
   }
 
   // Reequilibrar pesos: todas las preguntas de escala que quedan activas
-  // (las que ya existian + las recien creadas), con su peso actual del builder.
   const scaleWeights = [
     ...kept.filter((q) => q.type === 'scale_1_5').map((q) => ({ question_id: Number(q.id), weight_percent: q.weight || 0 })),
     ...createdFromNew.filter((c) => c.type === 'scale_1_5').map((c) => ({ question_id: c.realId, weight_percent: c.weight || 0 })),
   ];
   if (scaleWeights.length > 0) {
     await request('/questions/weights', jsonOptions('PUT', {
-      template_id: id,
+      form_id: id,
       weights: scaleWeights,
     }));
   }

@@ -1,4 +1,5 @@
 import { navBarComponent } from "../../components/navbar";
+import { dropdownComponent, setupDropdown } from "../../components/dropdown";
 import { userService } from "../../services/users.service";
 import { evaluationService } from "../../services/evaluation.service";
 import { periodService } from "../../services/periods.service";
@@ -32,22 +33,20 @@ export const renderEvaluate = () => `
       <section class="rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-8 shadow-sm">
         
         <div class="grid gap-6 md:grid-cols-2 mb-8">
-          <div>
+          <div id="target-role-container">
             <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="target-role">¿A quién evalúas?</label>
-            <select id="target-role" required
-              class="w-full rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] px-4 py-3 text-[var(--text-main)] focus:border-[var(--brand-hover)] focus:outline-none">
-              <option value="">Selecciona un rol...</option>
-              <option value="team_leader">Team Leader</option>
-              <option value="tutor">Tutor</option>
-            </select>
+            ${dropdownComponent('target-role', [
+              { value: '', label: 'Selecciona un rol...' },
+              { value: 'team_leader', label: 'Team Leader' },
+              { value: 'tutor', label: 'Tutor' }
+            ], '')}
           </div>
 
-          <div>
+          <div id="evaluatee-container">
             <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="evaluatee">Persona a evaluar</label>
-            <select id="evaluatee" disabled required
-              class="w-full rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] px-4 py-3 text-[var(--text-main)] focus:border-[var(--brand-hover)] focus:outline-none disabled:cursor-not-allowed disabled:text-[var(--text-muted)]">
-              <option value="">Primero selecciona un rol...</option>
-            </select>
+            ${dropdownComponent('evaluatee', [
+              { value: '', label: 'Primero selecciona un rol...' }
+            ], '')}
           </div>
         </div>
 
@@ -94,6 +93,9 @@ export const setupEvaluate = async () => {
 
   if (!form || !submitBtn || !targetRole || !evaluatee || !qContainer) return;
 
+  setupDropdown('target-role');
+  setupDropdown('evaluatee');
+
   const currentUser = authService.getSession();
 
   // Función para actualizar la barra de progreso
@@ -134,17 +136,18 @@ export const setupEvaluate = async () => {
     progressContainer.classList.add("hidden");
 
     if (!role) {
-      evaluatee.disabled = true;
-      evaluatee.innerHTML = '<option value="">Primero selecciona un rol...</option>';
+      document.getElementById('evaluatee-container').outerHTML = `
+        <div id="evaluatee-container">
+          <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="evaluatee">Persona a evaluar</label>
+          ${dropdownComponent('evaluatee', [{ value: '', label: 'Primero selecciona un rol...' }], '')}
+        </div>`;
+      setupDropdown('evaluatee');
       return;
     }
 
     try {
       qContainer.innerHTML = '<div class="text-center py-4 text-[var(--text-muted)] animate-pulse">Cargando datos...</div>';
 
-      // evaluationService.getForm ya unicamente acepta target_role (ver
-      // backend/app/routes/form_routes.py); devuelve la plantilla o lanza
-      // si no hay ninguna activa para ese rol.
       const [template, previousEvaluations] = await Promise.all([
         evaluationService.getForm(role),
         evaluationService.getByEvaluator(currentUser.id)
@@ -152,27 +155,39 @@ export const setupEvaluate = async () => {
       currentTemplate = template;
 
       const evaluatedIds = previousEvaluations
-        .filter(e => e.period_id === activePeriod.id && e.template_id === currentTemplate.id)
+        .filter(e => e.period_id === activePeriod.id && e.form_id === currentTemplate.id)
         .map(e => String(e.evaluatee_id));
 
       const filtered = allUsers.filter(u => u.roles?.includes(role) && u.id !== currentUser.id && !evaluatedIds.includes(String(u.id)));
 
       if (filtered.length === 0) {
-        evaluatee.innerHTML = '<option value="">Ya has evaluado a todos para este rol</option>';
-        evaluatee.disabled = true;
+        document.getElementById('evaluatee-container').outerHTML = `
+          <div id="evaluatee-container">
+            <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="evaluatee">Persona a evaluar</label>
+            ${dropdownComponent('evaluatee', [{ value: '', label: 'Ya has evaluado a todos para este rol' }], '')}
+          </div>`;
+        setupDropdown('evaluatee');
         qContainer.innerHTML = '<div class="text-center py-4 text-[var(--brand-bg)] font-bold">¡Has completado todas las evaluaciones para este rol en el periodo actual!</div>';
         return;
       }
 
-      evaluatee.disabled = false;
-      evaluatee.innerHTML = '<option value="">Selecciona una persona...</option>' +
-        filtered.map(u => `<option value="${u.id}">${u.name} (${u.email})</option>`).join("");
+      const evaluateeOptions = [
+        { value: '', label: 'Selecciona una persona...' },
+        ...filtered.map(u => ({ value: u.id, label: `${u.name} (${u.email})` }))
+      ];
+      
+      document.getElementById('evaluatee-container').outerHTML = `
+        <div id="evaluatee-container">
+          <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="evaluatee">Persona a evaluar</label>
+          ${dropdownComponent('evaluatee', evaluateeOptions, '')}
+        </div>`;
+      setupDropdown('evaluatee');
 
       renderQuestions(currentTemplate.questions);
 
       progressContainer.classList.remove("hidden");
       updateProgress();
-      loadDraft(role); // Cargar borrador si existe para este rol
+      loadDraft(role);
     } catch (err) {
       qContainer.innerHTML = '<div class="text-red-500 py-4 text-center">Error al cargar preguntas de la plantilla.</div>';
       console.error(err);
@@ -402,7 +417,7 @@ export const setupEvaluate = async () => {
     const evaluationData = {
       evaluator_id: currentUser.id,
       evaluatee_id: parseInt(evaluatee.value),
-      template_id: currentTemplate.id,
+      form_id: currentTemplate.id,
       period_id: activePeriod.id,
       is_anonymous: anonCheck.checked,
       status: "submitted",

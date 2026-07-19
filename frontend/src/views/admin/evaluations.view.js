@@ -1,4 +1,5 @@
 import { navBarComponent } from "../../components/navbar";
+import { statusBadgeComponent } from "../../components/statusBadge.js";
 import { showToast } from "../../components/alerts";
 import { escapeHtml } from "../../utils/validators";
 import { dropdownComponent, setupDropdown } from "../../components/dropdown";
@@ -7,22 +8,24 @@ import { categoryService } from "../../services/categories.service.js";
 
 export const renderAdminEvaluations = () => `
   ${navBarComponent()}
-  <main class="mx-auto max-w-6xl px-6 py-10 relative">
-    
+  <main class="mx-auto max-w-7xl px-6 py-10 relative">
+    <div class="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <p class="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--brand-bg)]">Admin · Formularios</p>
+        <h1 class="mt-1 text-4xl font-black tracking-tight text-[var(--text-main)] font-heading">Gestión de Formularios</h1>
+        <p class="mt-4 text-[var(--text-muted)] max-w-2xl text-sm leading-relaxed">
+          Crea, edita y duplica los formularios de evaluación. Los formularios se pueden reutilizar en múltiples ciclos de evaluación.
+        </p>
+      </div>
+      <button id="btn-new-template"
+        class="inline-flex items-center gap-2 rounded-2xl bg-[var(--brand-bg)] px-5 py-3 text-sm font-bold text-[var(--brand-text)] transition-all hover:bg-[var(--brand-hover)] hover:shadow-lg hover:shadow-[var(--brand-bg)]/20 focus:ring-4 focus:ring-[var(--border-main)]">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Nuevo Formulario
+      </button>
+    </div>
+
     <!-- 1. VISTA LISTA DE PLANTILLAS -->
     <div id="list-view" class="block transition-all duration-300">
-      <section class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div>
-          <p class="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--brand-bg)]">Admin</p>
-          <h1 class="mt-1 text-4xl font-black font-heading tracking-tight text-[var(--text-main)]">Gestión de Evaluaciones</h1>
-          <p class="mt-4 text-[var(--text-muted)]">Crea y gestiona las plantillas de feedback para tu equipo.</p>
-        </div>
-        <button id="btn-create-template" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--brand-bg)] px-6 py-3 text-sm font-bold text-[var(--brand-text)] transition-all duration-300 ease-in-out hover:bg-[var(--brand-hover)] hover:shadow-md hover:-translate-y-0.5 cursor-pointer">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-          Nueva Plantilla
-        </button>
-      </section>
-
       <div id="templates-container">
         <!-- Generado dinámicamente -->
       </div>
@@ -103,7 +106,7 @@ export const setupAdminEvaluations = () => {
   // --- ELEMENTOS DOM ---
   const viewList = document.getElementById("list-view");
   const viewBuilder = document.getElementById("builder-view");
-  const btnCreate = document.getElementById("btn-create-template");
+  const btnCreate = document.getElementById("btn-new-template");
   const btnBack = document.getElementById("btn-back");
   const btnAddQuestion = document.getElementById("btn-add-question");
   const btnSave = document.getElementById("btn-save-template");
@@ -414,18 +417,17 @@ export const setupAdminEvaluations = () => {
     templatesContainer.innerHTML = `
       <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         ${templates.map(t => {
-          console.log("Estructura de la plantilla:", t);
-          // Obtenemos la fecha si existe, si no, mostramos "Recién creada"
-          const dateStr = t.createdAt ? new Date(t.createdAt).toLocaleDateString() : 'Recién creada';
+          const statusText = t.is_active ? 'Activa' : 'Inactiva';
+          const dateStr = t.created_at ? new Date(t.created_at).toLocaleDateString() : '11';
           
           return `
           <div class="group flex flex-col justify-between rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm hover:border-[var(--brand-hover)] transition-all duration-300 hover:shadow-md cursor-pointer btn-edit-template" data-id="${t.id}">
             <div>
               <div class="flex items-center justify-between mb-4">
                 <span class="inline-flex items-center rounded-full bg-[var(--brand-bg)]/10 px-3 py-1 text-xs font-bold text-[var(--brand-bg)] capitalize">
-                  Evaluador: ${escapeHtml(t.evaluatorRole || 'Cualquiera')} ➔ Evalúa a: ${escapeHtml(t.targetRole || t.target_role || '')}
+                  🎯 Para: ${escapeHtml((t.targetRole || t.target_role || '').replace('_', ' '))}
                 </span>
-                <span class="text-xs text-[var(--text-muted)] font-medium">
+                <span class="text-xs text-[var(--text-muted)] font-medium shrink-0 ml-2">
                   ${t.questions ? t.questions.length : 0} preg.
                 </span>
               </div>
@@ -434,12 +436,18 @@ export const setupAdminEvaluations = () => {
             </div>
             
             <div class="mt-6 pt-4 border-t border-[var(--border-main)] flex items-center justify-between">
-              <span class="text-xs text-[var(--text-muted)]">
-                ${dateStr}
-              </span>
-              <button class="btn-delete-template text-[var(--text-muted)] hover:text-[var(--danger-text)] transition-colors p-2 -mr-2" data-id="${t.id}" title="Eliminar">
-                <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-              </button>
+              <div class="flex items-center gap-3">
+                ${statusBadgeComponent({ status: statusText, variant: 'dot' })}
+                ${dateStr ? `<span class="text-xs font-medium text-[var(--text-muted)]">${dateStr}</span>` : ''}
+              </div>
+              <div class="flex items-center">
+                <button class="btn-clone-template text-[var(--text-muted)] hover:text-[var(--brand-bg)] transition-colors p-2" data-id="${t.id}" title="Duplicar Formulario">
+                  <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                </button>
+                <button class="btn-delete-template text-[var(--text-muted)] hover:text-[var(--danger-text)] transition-colors p-2 -mr-2" data-id="${t.id}" title="Eliminar">
+                  <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </button>
+              </div>
             </div>
           </div>
           `;
@@ -450,8 +458,8 @@ export const setupAdminEvaluations = () => {
     // Eventos para editar
     document.querySelectorAll(".btn-edit-template").forEach(card => {
       card.addEventListener("click", async (e) => {
-        // Evitar que el click en el botón de borrar active la edición
-        if (e.target.closest('.btn-delete-template')) return;
+        // Evitar que el click en el botón de borrar o duplicar active la edición normal
+        if (e.target.closest('.btn-delete-template') || e.target.closest('.btn-clone-template')) return;
         
         const id = card.dataset.id;
         try {
@@ -462,10 +470,12 @@ export const setupAdminEvaluations = () => {
             editId = template.id;
             inputTitle.value = template.title;
             inputDesc.value = template.description || "";
-            document.getElementById("evaluator-role").value = template.evaluatorRole || "coder";
-            selectRole.value = template.targetRole || "tutor";
             
-            // Asegurarse de que al editar tengan los campos correctos
+            // dropdownComponent update requires us to use the specific DOM ID and maybe dispatch change
+            const evaluatorRoleEl = document.getElementById("evaluator-role");
+            if (evaluatorRoleEl) { evaluatorRoleEl.value = template.evaluatorRole || "coder"; }
+            if (selectRole) { selectRole.value = template.targetRole || template.target_role || "tutor"; }
+            
             questions = JSON.parse(JSON.stringify(template.questions)).map(q => ({
               ...q,
               weight: q.weight || 0,
@@ -478,6 +488,43 @@ export const setupAdminEvaluations = () => {
           }
         } catch (error) {
           showToast("Error", "error", "Error al cargar la plantilla para editar.");
+        }
+      });
+    });
+
+    // Eventos para duplicar
+    document.querySelectorAll(".btn-clone-template").forEach(btn => {
+      btn.addEventListener("click", async (e) => {
+        e.stopPropagation(); // Prevenir que abra modo edición
+        const id = btn.dataset.id;
+        try {
+          const templates = await templatesService.getTemplates();
+          const template = templates.find(t => t.id === id || t.id === parseInt(id));
+          
+          if (template) {
+            editId = null; // Important: this makes it a new form!
+            inputTitle.value = "Copia de " + template.title;
+            inputDesc.value = template.description || "";
+            
+            const evaluatorRoleEl = document.getElementById("evaluator-role");
+            if (evaluatorRoleEl) { evaluatorRoleEl.value = template.evaluatorRole || "coder"; }
+            if (selectRole) { selectRole.value = template.targetRole || template.target_role || "tutor"; }
+            
+            // Reset IDs for the cloned questions
+            questions = JSON.parse(JSON.stringify(template.questions)).map(q => ({
+              ...q,
+              id: Date.now() + Math.random(),
+              weight: q.weight || 0,
+              input_type: q.input_type || q.type || "scale_1_5",
+              category: q.category || "General"
+            }));
+            
+            renderQuestions();
+            showBuilder();
+            showToast("Formulario duplicado", "success", "Ahora estás creando un nuevo formulario basado en el anterior.");
+          }
+        } catch (error) {
+          showToast("Error", "error", "Error al duplicar el formulario.");
         }
       });
     });
