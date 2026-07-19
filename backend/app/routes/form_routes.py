@@ -13,7 +13,7 @@ def get_form_templates(
     """
     Resuelve la jerarquía de plantillas (`form_templates`). Devuelve la plantilla activa que coincide con el `target_role_id` (Team Leader o Tutor) y hace inner join con preguntas activas.
     """
-    templates = form_service.get_form_templates_by_role(target_role)
+    templates = form_service.get_forms_by_role(target_role)
     return templates
 
 
