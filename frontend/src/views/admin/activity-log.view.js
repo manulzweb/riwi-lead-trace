@@ -2,6 +2,7 @@ import { navBarComponent } from "../../components/navbar";
 import { showToast } from "../../components/alerts";
 import { activityLogService } from "../../services/activityLog.service";
 import { escapeHtml } from "../../utils/validators";
+import { formatDateTime } from "../../utils/date";
 
 const ACTION_LABELS = {
   period_opened: "Abrió un ciclo",
@@ -53,7 +54,7 @@ export const setupActivityLog = async () => {
     listContainer.innerHTML = entries.map(entry => {
       const label = ACTION_LABELS[entry.action] || entry.action;
       const actor = entry.admin_name || (entry.admin_id ? `Usuario #${entry.admin_id}` : "Desconocido");
-      const date = entry.created_at ? new Date(entry.created_at).toLocaleString() : "";
+      const date = formatDateTime(entry.created_at);
 
       return `
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-2xl bg-[var(--bg-panel)] p-4 shadow-sm border border-gray-100 dark:border-zinc-800">
