@@ -7,6 +7,8 @@ import { templatesService } from "../../services/templates.service.js";
 import { categoryService } from "../../services/categories.service.js";
 import { periodService } from "../../services/periods.service.js";
 import { authService } from "../../services/auth.service";
+import { formatDate } from "../../utils/date";
+import { searchBoxComponent, setupSearch } from "../../components/searchBox";
 
 export const renderAdminEvaluations = () => `
   ${navBarComponent()}
@@ -33,6 +35,7 @@ export const renderAdminEvaluations = () => `
 
     <!-- 1. VISTA LISTA DE PLANTILLAS -->
     <div id="list-view" class="block transition-all duration-300">
+      <div id="template-search-slot" class="mb-6 max-w-sm"></div>
       <div id="templates-container">
         <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <div class="h-48 animate-pulse rounded-[2rem] bg-[var(--bg-panel)]"></div>
@@ -467,37 +470,18 @@ export const setupAdminEvaluations = () => {
 
 
   // --- RENDERIZADO DE LA LISTA ---
-  const renderTemplatesList = async () => {
-    let templates = [];
-    try {
-      templates = await templatesService.getTemplates();
-    } catch (error) {
-      showToast("Error", "error", "No se pudieron cargar las plantillas.");
-      console.error(error);
-      templatesContainer.innerHTML = `
-        <section class="rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-12 text-center shadow-sm">
-          <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[var(--danger-bg)] text-[var(--danger-text)] mb-4">
-            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
-          </div>
-          <h3 class="text-xl font-bold text-[var(--text-main)]">No se pudieron cargar las plantillas</h3>
-          <p class="mt-2 text-[var(--text-muted)] max-w-md mx-auto">Revisa tu conexión e intenta de nuevo.</p>
-          <button id="btn-retry-templates" class="mt-6 inline-flex items-center gap-2 rounded-2xl bg-[var(--brand-bg)] px-5 py-3 text-sm font-bold text-[var(--brand-text)] transition-all hover:bg-[var(--brand-hover)] cursor-pointer">
-            Reintentar
-          </button>
-        </section>
-      `;
-      document.getElementById("btn-retry-templates")?.addEventListener("click", renderTemplatesList);
-      return;
-    }
+  let allTemplates = [];
+  const templateSearchSlot = document.getElementById("template-search-slot");
 
+  const renderTemplateCards = (templates) => {
     if (templates.length === 0) {
       templatesContainer.innerHTML = `
         <section class="rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-12 text-center shadow-sm">
           <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[var(--bg-base)] text-[var(--brand-bg)] mb-4">
             <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
           </div>
-          <h3 class="text-xl font-bold text-[var(--text-main)]">No hay plantillas</h3>
-          <p class="mt-2 text-[var(--text-muted)] max-w-md mx-auto">Comienza creando una nueva plantilla de evaluación para asignar a tu equipo.</p>
+          <h3 class="text-xl font-bold text-[var(--text-main)]">${allTemplates.length === 0 ? "No hay plantillas" : "Sin resultados"}</h3>
+          <p class="mt-2 text-[var(--text-muted)] max-w-md mx-auto">${allTemplates.length === 0 ? "Comienza creando una nueva plantilla de evaluación para asignar a tu equipo." : "Ningún formulario coincide con la búsqueda."}</p>
         </section>
       `;
       return;
@@ -507,7 +491,7 @@ export const setupAdminEvaluations = () => {
       <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         ${templates.map(t => {
           const statusText = t.is_active ? 'Activa' : 'Inactiva';
-          const dateStr = t.created_at ? new Date(t.created_at).toLocaleDateString() : 'Fecha no disponible';
+          const dateStr = formatDate(t.created_at) || 'Fecha no disponible';
           
           return `
           <div class="group flex flex-col justify-between rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm hover:border-[var(--brand-hover)] transition-all duration-300 hover:shadow-md cursor-pointer btn-edit-template" data-id="${t.id}">
@@ -649,6 +633,37 @@ export const setupAdminEvaluations = () => {
         }
       });
     });
+  };
+
+  const renderTemplatesList = async () => {
+    try {
+      allTemplates = await templatesService.getTemplates();
+    } catch (error) {
+      showToast("Error", "error", "No se pudieron cargar las plantillas.");
+      console.error(error);
+      templatesContainer.innerHTML = `
+        <section class="rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-12 text-center shadow-sm">
+          <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[var(--danger-bg)] text-[var(--danger-text)] mb-4">
+            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
+          </div>
+          <h3 class="text-xl font-bold text-[var(--text-main)]">No se pudieron cargar las plantillas</h3>
+          <p class="mt-2 text-[var(--text-muted)] max-w-md mx-auto">Revisa tu conexión e intenta de nuevo.</p>
+          <button id="btn-retry-templates" class="mt-6 inline-flex items-center gap-2 rounded-2xl bg-[var(--brand-bg)] px-5 py-3 text-sm font-bold text-[var(--brand-text)] transition-all hover:bg-[var(--brand-hover)] cursor-pointer">
+            Reintentar
+          </button>
+        </section>
+      `;
+      document.getElementById("btn-retry-templates")?.addEventListener("click", renderTemplatesList);
+      return;
+    }
+
+    renderTemplateCards(allTemplates);
+
+    if (templateSearchSlot) {
+      // Se regenera para no acumular listeners de recargas anteriores.
+      templateSearchSlot.innerHTML = searchBoxComponent('template-search', 'Buscar formulario por título...');
+      setupSearch('template-search', allTemplates, ['title', 'description'], renderTemplateCards);
+    }
   };
 
   // Inicializar mostrando la lista
