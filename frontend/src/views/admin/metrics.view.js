@@ -5,6 +5,16 @@ import { metricsService } from "../../services/metrics.service";
 import { periodService } from "../../services/periods.service";
 import { showToast } from "../../components/alerts";
 import { getCategoryBreakdown } from "../../utils/categoryBreakdown";
+import { formatDate } from "../../utils/date";
+import {
+  Chart, LineController, LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Filler,
+} from "chart.js";
+
+Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Filler);
+
+// Canvas no resuelve variables CSS (var(--brand-bg)) como los elementos del
+// DOM -- hay que pedirle el valor calculado real al navegador.
+const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
 export const renderMetrics = () => `
   ${navBarComponent()}
@@ -115,6 +125,7 @@ export const setupMetrics = async () => {
   let periods = [];
   let currentPeriodId = null;
   let currentRoleFilter = "all";
+  const historyCharts = new Map(); // evaluateeId -> instancia de Chart.js activa, para destruirla antes de recrearla
 
   try {
     periods = await periodService.get();
@@ -204,6 +215,11 @@ export const setupMetrics = async () => {
 
   async function loadMetrics(periodId, roleFilter) {
     try {
+      // Los canvases de historial que hubiera abiertos se van a reemplazar;
+      // hay que destruir sus instancias de Chart.js o quedan huerfanas.
+      historyCharts.forEach((chart) => chart.destroy());
+      historyCharts.clear();
+
       gridContainer.innerHTML = `
         <div class="h-32 animate-pulse rounded-3xl bg-[var(--bg-panel)]"></div>
         <div class="h-32 animate-pulse rounded-3xl bg-[var(--bg-panel)]"></div>
@@ -218,7 +234,7 @@ export const setupMetrics = async () => {
 
       if (reportPeriodLabel) {
         const periodName = periods.find(p => p.id === periodId)?.name ?? "";
-        reportPeriodLabel.textContent = `Periodo: ${periodName} - generado el ${new Date().toLocaleDateString()}`;
+        reportPeriodLabel.textContent = `Periodo: ${periodName} - generado el ${formatDate(new Date())}`;
       }
 
       let list = summary.evaluatees;
@@ -297,6 +313,8 @@ export const setupMetrics = async () => {
     if (!container.classList.contains("hidden")) {
       container.classList.add("hidden");
       btn.textContent = "Ver detalle por categoría e historial ↓";
+      historyCharts.get(evaluateeId)?.destroy();
+      historyCharts.delete(evaluateeId);
       return;
     }
 
@@ -326,14 +344,7 @@ export const setupMetrics = async () => {
 
       const historyHtml = history.length === 0
         ? `<p class="text-xs text-[var(--text-muted)]">Sin historial en otros periodos.</p>`
-        : `<div class="flex items-end gap-2 h-16">
-            ${history.map(h => `
-              <div class="flex flex-col items-center gap-1 flex-1" title="${h.period_name}: ${h.average_score}/100">
-                <div class="w-full rounded-t bg-[var(--brand-bg)]/70" style="height: ${Math.max(h.average_score, 4)}%"></div>
-                <span class="text-[9px] text-[var(--text-muted)] truncate w-full text-center">${h.period_name}</span>
-              </div>
-            `).join("")}
-          </div>`;
+        : `<div class="h-40"><canvas id="history-chart-${evaluateeId}"></canvas></div>`;
 
       container.innerHTML = `
         <p class="text-xs font-semibold uppercase tracking-wider text-[var(--brand-bg)] mb-2">Por categoría (este periodo)</p>
@@ -341,6 +352,40 @@ export const setupMetrics = async () => {
         <p class="text-xs font-semibold uppercase tracking-wider text-[var(--brand-bg)] mt-4 mb-2">Historial de ICP</p>
         ${historyHtml}
       `;
+
+      if (history.length > 0) {
+        historyCharts.get(evaluateeId)?.destroy();
+        const canvas = document.getElementById(`history-chart-${evaluateeId}`);
+        const brandColor = cssVar('--brand-bg') || '#4f46e5';
+        const mutedColor = cssVar('--text-muted') || '#64748b';
+        const chart = new Chart(canvas, {
+          type: 'line',
+          data: {
+            labels: history.map(h => h.period_name),
+            datasets: [{
+              data: history.map(h => h.average_score),
+              borderColor: brandColor,
+              backgroundColor: `${brandColor}33`,
+              pointBackgroundColor: brandColor,
+              tension: 0.3,
+              fill: true,
+            }],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: { callbacks: { label: (ctx) => `ICP: ${ctx.parsed.y}/100` } },
+            },
+            scales: {
+              y: { min: 0, max: 100, ticks: { color: mutedColor, font: { size: 10 } }, grid: { color: `${mutedColor}22` } },
+              x: { ticks: { color: mutedColor, font: { size: 10 } }, grid: { display: false } },
+            },
+          },
+        });
+        historyCharts.set(evaluateeId, chart);
+      }
     } catch (err) {
       console.error(err);
       container.innerHTML = `<p class="text-xs text-[var(--danger-text)]">No se pudo cargar el detalle.</p>`;
