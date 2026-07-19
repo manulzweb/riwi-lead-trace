@@ -5,7 +5,12 @@ from app.services import user_service
 
 router = APIRouter()
 
-@router.get("/users", response_model=List[UserOut])
+@router.get(
+    "/users", 
+    response_model=List[UserOut],
+    summary="Listar usuarios",
+    response_description="Lista de usuarios filtrada (opcionalmente por rol)"
+)
 def get_users(role: Optional[str] = Query(None, description="Filtrar por rol (ej. team_leader, tutor)")):
     """Consulta indexada sobre la tabla `users` mediante el campo `role_id`."""
     return user_service.get_users(role)
@@ -23,12 +28,25 @@ def get_user(user_id: int):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
     return user
 
-@router.post("/users", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/users", 
+    response_model=UserOut, 
+    status_code=status.HTTP_201_CREATED,
+    summary="Crear usuario",
+    response_description="El usuario recién creado",
+    responses={409: {"description": "El email ya está registrado"}}
+)
 def create_user(user: UserCreate):
     """Inserta un registro transaccional en `users` (aplica hash bcrypt sincrónico al password) y asocia FK en `user_roles`."""
     return user_service.create_user(user)
 
-@router.put("/users/{user_id}", response_model=UserOut)
+@router.put(
+    "/users/{user_id}", 
+    response_model=UserOut,
+    summary="Actualizar usuario (PUT)",
+    response_description="El usuario actualizado completamente",
+    responses={404: {"description": "Usuario no encontrado"}}
+)
 def update_user(user_id: int, user: UserUpdate):
     """Operación PUT (Reemplazo total) sobre `users` y recálculo/reemplazo de entradas en `user_roles`."""
     updated = user_service.update_user(user_id, user)

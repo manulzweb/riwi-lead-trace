@@ -22,7 +22,18 @@ def get_form_templates(
     return templates
 
 
-@router.post("/forms", response_model=FormTemplateOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/forms", 
+    response_model=FormTemplateOut, 
+    status_code=status.HTTP_201_CREATED,
+    summary="Crear una nueva plantilla",
+    response_description="La plantilla recién creada junto con sus preguntas iniciales",
+    responses={
+        201: {"description": "Plantilla creada exitosamente"},
+        422: {"description": "Error de validación (ej. pesos de preguntas 'scale' no suman 100)"},
+        409: {"description": "No se puede editar/crear mientras haya un período activo"}
+    }
+)
 def create_form_template(payload: TemplateCreate):
     """Transacción compuesta: inserta `form_templates` y realiza bulk insert de esquemas hijos (`questions`). Valida constraint `is_active`."""
     return form_service.create_template(payload)
