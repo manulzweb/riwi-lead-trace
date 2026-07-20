@@ -262,8 +262,8 @@ export const setupMetrics = async () => {
         if (ev.status === "Estable") statusBadgeClass = "bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400";
 
         return `
-          <article class="rounded-3xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-md transition-all hover:shadow-lg">
-            <div class="flex items-start justify-between">
+          <article class="metrics-card rounded-3xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-md transition-all hover:shadow-lg cursor-pointer" data-id="${ev.id}" data-period="${periodId}">
+            <div class="flex items-start justify-between pointer-events-none">
               <div>
                 <h3 class="text-lg font-bold text-[var(--text-main)]">${ev.name}</h3>
                 <p class="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">${ev.role.replace('_', ' ')}</p>
@@ -271,7 +271,7 @@ export const setupMetrics = async () => {
               <span class="rounded-full px-3 py-1 text-xs font-semibold ${statusBadgeClass}">${ev.status}</span>
             </div>
 
-            <div class="mt-6 flex justify-between items-end border-t border-[var(--border-main)] pt-4">
+            <div class="mt-6 flex justify-between items-end border-t border-[var(--border-main)] pt-4 pointer-events-none">
               <div>
                 <p class="text-xs text-[var(--text-muted)]">Evaluaciones</p>
                 <p class="text-sm mt-1 text-[var(--text-main)]">${ev.n_evals}</p>
@@ -282,16 +282,16 @@ export const setupMetrics = async () => {
               </div>
             </div>
 
-            <button class="btn-toggle-detail mt-4 w-full text-center text-xs font-semibold text-[var(--brand-bg)] hover:text-[var(--brand-hover)] cursor-pointer" data-id="${ev.id}" data-period="${periodId}">
+            <button class="btn-toggle-detail mt-4 w-full text-center text-xs font-semibold text-[var(--brand-bg)] pointer-events-none">
               Ver detalle por categoría e historial ↓
             </button>
-            <div id="detail-${ev.id}" class="mt-4 hidden border-t border-[var(--border-main)] pt-4"></div>
+            <div id="detail-${ev.id}" class="mt-4 hidden border-t border-[var(--border-main)] pt-4 cursor-default" onclick="event.stopPropagation()"></div>
           </article>
         `;
       }).join("");
 
-      document.querySelectorAll(".btn-toggle-detail").forEach(btn => {
-        btn.addEventListener("click", () => toggleDetail(btn));
+      document.querySelectorAll(".metrics-card").forEach(card => {
+        card.addEventListener("click", () => toggleDetail(card));
       });
 
     } catch (err) {
@@ -304,21 +304,22 @@ export const setupMetrics = async () => {
   // ver utils/categoryBreakdown.js) + historial de ICP en todos los periodos
   // (nuevo GET /metrics/history) para la persona seleccionada. Se carga
   // perezosamente al abrir el detalle, no en cada render de la grilla.
-  async function toggleDetail(btn) {
-    const evaluateeId = parseInt(btn.dataset.id);
-    const periodId = parseInt(btn.dataset.period);
+  async function toggleDetail(card) {
+    const evaluateeId = parseInt(card.dataset.id);
+    const periodId = parseInt(card.dataset.period);
     const container = document.getElementById(`detail-${evaluateeId}`);
+    const btn = card.querySelector(".btn-toggle-detail");
     if (!container) return;
 
     if (!container.classList.contains("hidden")) {
       container.classList.add("hidden");
-      btn.textContent = "Ver detalle por categoría e historial ↓";
+      if (btn) btn.textContent = "Ver detalle por categoría e historial ↓";
       historyCharts.get(evaluateeId)?.destroy();
       historyCharts.delete(evaluateeId);
       return;
     }
 
-    btn.textContent = "Ocultar detalle ↑";
+    if (btn) btn.textContent = "Ocultar detalle ↑";
     container.classList.remove("hidden");
     container.innerHTML = `<div class="h-20 animate-pulse rounded-2xl bg-[var(--bg-base)]"></div>`;
 
