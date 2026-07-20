@@ -64,7 +64,7 @@ INSERT INTO categories (name) VALUES
     ('General');
 
 -- Plantillas: una para Team Leader, una para Tutor
-INSERT INTO form_templates (title, target_role_id) VALUES
+INSERT INTO forms (title, target_role_id) VALUES
     ('Evaluación de Team Leader', 2),
     ('Evaluación de Tutor', 3);
 
@@ -73,7 +73,7 @@ INSERT INTO form_templates (title, target_role_id) VALUES
 -- Deben coincidir EXACTAMENTE con las categorías/pesos de docs/06-arquitectura.md.
 -- 10 preguntas de escala con peso igual (10.00 cada una = 100.00); la de
 -- texto no pondera (weight_percent queda en su default 0).
-INSERT INTO questions (template_id, text, category_id, input_type, sort_order, weight_percent) VALUES
+INSERT INTO questions (form_id, text, category_id, input_type, sort_order, weight_percent) VALUES
     (1, '¿Tu Team Leader se comunica de forma clara y oportuna durante los dailies y ceremonias del Sprint?', (SELECT id FROM categories WHERE name = 'Comunicación efectiva'), 'scale', 1, 10.00),
     (1, '¿Sientes confianza para hablar con tu Team Leader cuando te atrasas con un reto o simulacro?', (SELECT id FROM categories WHERE name = 'Comunicación efectiva'), 'scale', 2, 10.00),
     (1, '¿Tu Team Leader deja claras las rúbricas y lo que se espera de ti en las entregas de Riwi?', (SELECT id FROM categories WHERE name = 'Alineación de expectativas'), 'scale', 3, 10.00),
@@ -89,7 +89,7 @@ INSERT INTO questions (template_id, text, category_id, input_type, sort_order, w
 -- Preguntas de la plantilla de Tutor (id=2)
 -- Categorías del ICP para Tutor, basadas en el SEEQ (Marsh, 1982).
 -- 8 preguntas de escala con peso igual (12.50 cada una = 100.00).
-INSERT INTO questions (template_id, text, category_id, input_type, sort_order, weight_percent) VALUES
+INSERT INTO questions (form_id, text, category_id, input_type, sort_order, weight_percent) VALUES
     (2, '¿Las clases de tu Tutor te dan las bases necesarias para resolver los retos de Riwi?', (SELECT id FROM categories WHERE name = 'Valor del aprendizaje'), 'scale', 1, 12.50),
     (2, '¿El contenido que explica el Tutor aporta valor técnico real y actualizado?', (SELECT id FROM categories WHERE name = 'Valor del aprendizaje'), 'scale', 2, 12.50),
     (2, '¿El Tutor estructura sus clases teóricas de forma ordenada y fácil de digerir?', (SELECT id FROM categories WHERE name = 'Claridad y organización'), 'scale', 3, 12.50),

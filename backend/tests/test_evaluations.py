@@ -7,17 +7,17 @@ Reglas de negocio de POST /evaluations:
    nunca es la autoridad.
 """
 
-# IDs de los datos semilla de database/schema.sql
-EVALUATEE_ID = 3       # tutor@riwi.edu
+# IDs de los datos semilla de database/02_dml.sql
+EVALUATEE_ID = 5       # mvasquez@riwi.io, tutor, clan_id=1
 TEMPLATE_EVAL = 2  # plantilla "Evaluacion de Tutor"
 SCALE_QUESTION_ID = 12     # primera pregunta tipo 'scale' de esa plantilla
 
-CODER_ID_FROM_TOKEN = 1  # debe coincidir con CODER_ID en conftest.py
+CODER_ID_FROM_TOKEN = 8  # sebastian@riwi.io, coder, mismo clan_id=1 que EVALUATEE_ID
 
 def _payload(period_id, evaluator_id=CODER_ID_FROM_TOKEN, is_anonymous=False):
     return {
         "evaluatee_id": EVALUATEE_ID,
-        "template_id": TEMPLATE_EVAL,
+        "form_id": TEMPLATE_EVAL,
         "period_id": period_id,
         "is_anonymous": is_anonymous,
         "status": "submitted",

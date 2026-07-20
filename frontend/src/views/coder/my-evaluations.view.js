@@ -6,6 +6,7 @@ import { periodService } from "../../services/periods.service";
 import { showToast } from "../../components/alerts";
 import { templatesService } from "../../services/templates.service";
 import Swal from 'sweetalert2';
+import { formatDateLong } from "../../utils/date";
 
 export const renderMyEvaluations = () => `
   ${navBarComponent()}
@@ -66,9 +67,7 @@ export const setupMyEvaluations = async () => {
         : 'Colaborador';
       const periodName = period ? period.name : `Periodo #${ev.period_id}`;
 
-      const formattedDate = ev.submitted_at
-        ? new Date(ev.submitted_at).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" })
-        : "No enviada";
+      const formattedDate = ev.submitted_at ? formatDateLong(ev.submitted_at) : "No enviada";
 
       const statusBadge = ev.status === "submitted"
         ? `<span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400">Enviada</span>`

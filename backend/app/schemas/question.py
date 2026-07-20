@@ -68,6 +68,9 @@ class QuestionTextPatch(BaseModel):
     # El admin confirma explicitamente cuando la IA marca que el texto ya
     # no coincide con la categoria (anti deriva semantica).
     confirm: bool = False
+    # Quien hace la peticion, para la bitacora (admin_activity_log). Ver
+    # PeriodUpdate.admin_id para el mismo tradeoff de confianza sin JWT.
+    admin_id: Optional[int] = None
 
 
 class WeightItem(BaseModel):
@@ -78,3 +81,5 @@ class WeightItem(BaseModel):
 class WeightsUpdate(BaseModel):
     form_id: int
     weights: List[WeightItem]
+    # Quien hace la peticion, para la bitacora (admin_activity_log).
+    admin_id: Optional[int] = None

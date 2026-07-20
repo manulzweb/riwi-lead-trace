@@ -60,9 +60,9 @@ def update_category(category_id: int, payload: CategoryUpdate):
 
 
 @router.delete("/categories/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_category(category_id: int):
+def delete_category(category_id: int, admin_id: int = None):
     """Ejecuta un hard delete sobre la entidad `categories`. Valida restricciones de FK; retorna HTTP 409 si existe constraint violation (uso en preguntas históricas o activas)."""
-    deleted = category_service.delete_category(category_id)
+    deleted = category_service.delete_category(category_id, admin_id)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Categoria no encontrada.")
     return None

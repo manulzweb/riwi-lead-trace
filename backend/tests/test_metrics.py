@@ -36,12 +36,12 @@ def test_score_entre_0_y_100_con_evaluaciones_suficientes(temp_period):
 
     for evaluator_id in EVALUATOR_IDS:
         result = conn.execute(text("""
-            INSERT INTO evaluations (evaluator_id, evaluatee_id, template_id, period_id, is_anonymous, status)
-            VALUES (:evaluator_id, :evaluatee_id, :template_id, :period_id, FALSE, 'submitted')
+            INSERT INTO evaluations (evaluator_id, evaluatee_id, form_id, period_id, is_anonymous, status)
+            VALUES (:evaluator_id, :evaluatee_id, :form_id, :period_id, FALSE, 'submitted')
         """), {
             "evaluator_id": evaluator_id,
             "evaluatee_id": TEAM_LEADER_ID,
-            "template_id": TEMPLATE_TEAM_LEADER,
+            "form_id": TEMPLATE_TEAM_LEADER,
             "period_id": temp_period
         })
         conn.execute(text("""

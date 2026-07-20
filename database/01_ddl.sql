@@ -10,12 +10,13 @@ CREATE DATABASE IF NOT EXISTS riwi_lead_trace
 USE riwi_lead_trace;
 
 -- Idempotencia para entorno de desarrollo
+DROP TABLE IF EXISTS admin_activity_log;
 DROP TABLE IF EXISTS ai_feedback_cache;
 DROP TABLE IF EXISTS evaluation_answers;
 DROP TABLE IF EXISTS evaluations;
 DROP TABLE IF EXISTS questions;
 DROP TABLE IF EXISTS categories;
-DROP TABLE IF EXISTS form_templates;
+DROP TABLE IF EXISTS forms;
 DROP TABLE IF EXISTS periods;
 DROP TABLE IF EXISTS team_leader_clans;
 DROP TABLE IF EXISTS user_roles;
@@ -143,14 +144,17 @@ CREATE TABLE categories (
 -- ---------------------------------------------------------------------
 -- Plantillas de formulario (por rol evaluado)
 -- ---------------------------------------------------------------------
-CREATE TABLE form_templates (
+CREATE TABLE forms (
     id             INT AUTO_INCREMENT PRIMARY KEY,
     title          VARCHAR(120) NOT NULL,
     description    VARCHAR(255) NULL,
     target_role_id INT NOT NULL,
     is_active      BOOLEAN NOT NULL DEFAULT TRUE,
+    -- TRUE = plantilla base reutilizable; FALSE = formulario activo para
+    -- recibir respuestas (ver form_service.create_template / is_template).
+    is_template    BOOLEAN NOT NULL DEFAULT FALSE,
     created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_template_role
+    CONSTRAINT fk_form_role
         FOREIGN KEY (target_role_id)
         REFERENCES roles(id)
         ON UPDATE CASCADE
@@ -162,7 +166,7 @@ CREATE TABLE form_templates (
 -- ---------------------------------------------------------------------
 CREATE TABLE questions (
     id            INT AUTO_INCREMENT PRIMARY KEY,
-    template_id   INT NOT NULL,
+    form_id       INT NOT NULL,
     text          VARCHAR(255) NOT NULL,
     category_id   INT NOT NULL,
     input_type    VARCHAR(20) NOT NULL DEFAULT 'scale', -- 'scale' | 'text' | 'yes_no'
@@ -176,9 +180,9 @@ CREATE TABLE questions (
     -- desactivar la anterior). Las evaluaciones nuevas cargan solo activas;
     -- las respuestas históricas conservan su pregunta y su peso original.
     is_active     BOOLEAN NOT NULL DEFAULT TRUE,
-    CONSTRAINT fk_question_template
-        FOREIGN KEY (template_id)
-        REFERENCES form_templates(id)
+    CONSTRAINT fk_question_form
+        FOREIGN KEY (form_id)
+        REFERENCES forms(id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
     -- RESTRICT a proposito: el Admin no puede borrar una categoria mientras
@@ -199,7 +203,7 @@ CREATE TABLE evaluations (
     id           INT AUTO_INCREMENT PRIMARY KEY,
     evaluator_id INT NULL,
     evaluatee_id INT NOT NULL,
-    template_id  INT NOT NULL,
+    form_id      INT NOT NULL,
     period_id    INT NOT NULL,
     is_anonymous BOOLEAN NOT NULL DEFAULT FALSE,
     status       ENUM('draft', 'submitted') NOT NULL DEFAULT 'draft',
@@ -215,9 +219,9 @@ CREATE TABLE evaluations (
         REFERENCES users(id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
-    CONSTRAINT fk_eval_template
-        FOREIGN KEY (template_id)
-        REFERENCES form_templates(id)
+    CONSTRAINT fk_eval_form
+        FOREIGN KEY (form_id)
+        REFERENCES forms(id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
     CONSTRAINT fk_eval_period
@@ -276,4 +280,27 @@ CREATE TABLE ai_feedback_cache (
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
     CONSTRAINT uq_ai_cache_evaluatee_period UNIQUE (evaluatee_id, period_id)
+);
+
+-- ---------------------------------------------------------------------
+-- Bitacora de acciones administrativas (auditoria basica)
+--   admin_id es NULL si la accion se registro sin sesion identificada
+--   (no hay JWT: el id que llega es el que el propio front manda, igual
+--   que evaluator_id en evaluations -- ver seccion "Roles del sistema"
+--   de CLAUDE.md). No es prueba criptografica de autoria, es un registro
+--   de conveniencia para trazabilidad.
+-- ---------------------------------------------------------------------
+CREATE TABLE admin_activity_log (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    admin_id    INT NULL,
+    action      VARCHAR(60) NOT NULL,
+    target_type VARCHAR(40) NOT NULL,
+    target_id   INT NULL,
+    detail      VARCHAR(255) NULL,
+    created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_activity_admin
+        FOREIGN KEY (admin_id)
+        REFERENCES users(id)
+        ON UPDATE CASCADE
+        ON DELETE SET NULL
 );

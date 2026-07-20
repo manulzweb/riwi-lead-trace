@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Roboto:ital,wght@0,100..900;1,100..900&family=Rubik:ital,wght@0,300..900;1,300..900&display=swap');
 @import "tailwindcss";
 @source "../**/*.js";
+@custom-variant dark (&:is(.dark *));
 @theme {
   --color-bg-base: var(--bg-base);
   --color-bg-panel: var(--bg-panel);
@@ -27,7 +28,7 @@
   /* slate-50 */
   --bg-panel: #ffffff;
   /* white */
-  --bg-sidebar: #fffff0;
+  --bg-sidebar: #ffffff;
   --text-main: #0f172a;
   /* slate-900 */
   --text-muted: #475569;
@@ -49,18 +50,14 @@
   --topbar-grad-mid: #5a4bfc;
   --topbar-grad-end: #776bf8;
 
-  /* Tipografías */
-  /*--font-body: 'Inter', sans-serif;
-  --font-heading: 'Merriweather', serif;
-  /* Puedes cambiar esto a 'Merriweather', serif */
 }
 
 html.dark {
-  --bg-base: #090c1e;
-  /* slate-900 */
+  --bg-base: #0f172a;
+  /* slate-900 (figma) */
   --bg-panel: #1e293b;
   /* slate-800 - soft dark */
-  --bg-sidebar: #0a0f19;
+  --bg-sidebar: #0f172a;
   /* slate-900 */
   --text-main: #f8fafc;
   /* slate-50 */
@@ -68,10 +65,10 @@ html.dark {
   /* slate-400 */
   --border-main: #334155;
   /* slate-700 */
-  --brand-bg: #1e293b;
+  --brand-bg: #4f46e5;
+  /* indigo-600 */
+  --brand-hover: #6366f1;
   /* indigo-500 */
-  --brand-hover: #818cf8;
-  /* indigo-400 */
   --brand-text: #ffffff;
   --danger-bg: rgba(220, 38, 38, 0.1);
   --danger-hover: rgba(220, 38, 38, 0.863);
@@ -79,10 +76,10 @@ html.dark {
   /* red-500 */
   --danger-border: rgba(220, 38, 38, 0.3);
 
-  /* Gradiente Navbar Modo Oscuro (Color Sólido) */
+  /* Gradiente Navbar Modo Oscuro */
   --topbar-grad-start: #0f172a;
-  --topbar-grad-mid: #334155;
-  --topbar-grad-end: #1e293b;
+  --topbar-grad-mid: #1e293b;
+  --topbar-grad-end: #0f172a;
 }
 
 html {
@@ -165,3 +162,46 @@ div.swal2-title {
     clip-path: circle(150% at 85% 32px);
   }
 }
+/* Sidebar Collapsed State (Desktop) */
+@media (min-width: 1024px) {
+  body.sidebar-collapsed #main-sidebar {
+    width: 5.5rem !important;
+  }
+  
+  body.sidebar-collapsed main {
+    margin-left: 5.5rem !important;
+  }
+  
+  body:not(.sidebar-collapsed) main {
+    margin-left: 18rem !important;
+  }
+  
+  body.sidebar-collapsed #main-sidebar .accordion-header span,
+  body.sidebar-collapsed #main-sidebar .accordion-header svg:last-child,
+  body.sidebar-collapsed #main-sidebar a > span.submenu-label,
+  body.sidebar-collapsed #main-sidebar a > span:not(.submenu-label),
+  body.sidebar-collapsed #main-sidebar .user-info {
+    display: none !important;
+  }
+  
+  body.sidebar-collapsed #main-sidebar .accordion-header,
+  body.sidebar-collapsed #main-sidebar a {
+    justify-content: center !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  
+  body.sidebar-collapsed #main-sidebar .accordion-header div.flex {
+    justify-content: center !important;
+    width: 100%;
+  }
+  
+  body.sidebar-collapsed .desktop-sidebar-icon {
+    transform: rotate(180deg);
+  }
+}
+
+main {
+  transition: margin-left 0.3s ease-in-out;
+}
+

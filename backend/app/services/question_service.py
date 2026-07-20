@@ -4,6 +4,7 @@ from fastapi import HTTPException, status
 from app.config.database import engine
 from app.schemas.question import QuestionCreate, WeightsUpdate
 from app.services.ai_service import check_question_category_coherence
+from app.services import activity_log_service
 
 WEIGHT_SUM_TOLERANCE = 0.01  # margen por redondeo de DECIMAL(5,2)
 
@@ -43,7 +44,7 @@ def get_questions_by_template(form_id: int, only_active: bool = True):
         return [dict(row) for row in result.mappings()]
 
 
-def version_question_text(question_id: int, new_text: str, confirm: bool):
+def version_question_text(question_id: int, new_text: str, confirm: bool, admin_id: int = None):
     _assert_no_active_period()
 
     original = get_question(question_id)
@@ -86,7 +87,15 @@ def version_question_text(question_id: int, new_text: str, confirm: bool):
             "weight_percent": original["weight_percent"],
         })
         new_id = result.lastrowid
-        
+
+        activity_log_service.log_action(
+            conn, admin_id,
+            action="question_text_edited",
+            target_type="question",
+            target_id=new_id,
+            detail=f'"{original["text"]}" -> "{new_text}"'[:255],
+        )
+
     return get_question(new_id)
 
 
@@ -168,5 +177,13 @@ def update_weights(payload: WeightsUpdate):
         update_query = text("UPDATE questions SET weight_percent = :weight_percent WHERE id = :id")
         for item in payload.weights:
             conn.execute(update_query, {"weight_percent": item.weight_percent, "id": item.question_id})
+
+        activity_log_service.log_action(
+            conn, payload.admin_id,
+            action="question_weights_updated",
+            target_type="form",
+            target_id=payload.form_id,
+            detail=f"{len(payload.weights)} pregunta(s) reponderadas",
+        )
 
     return get_questions_by_template(payload.form_id, only_active=True)

@@ -6,6 +6,27 @@ import { periodService } from "../../services/periods.service";
 import { authService } from "../../services/auth.service";
 import { showToast } from "../../components/alerts";
 import { renderRoute } from "../../router/router";
+import { z } from "zod";
+
+// Preguntas de escala/si-no son obligatorias; texto abierto es opcional. La
+// validacion vive aca en vez de un if/else imperativo por cada pregunta --
+// mas facil de leer que "que hace falta para poder enviar" de un vistazo.
+const answerSchema = z.object({
+  question_id: z.number(),
+  type: z.enum(["scale", "scale_1_5", "yes_no", "open_text", "text"]),
+  score: z.number().min(1).max(5).nullable(),
+  comment: z.string().nullable(),
+}).superRefine((answer, ctx) => {
+  const isScale = answer.type === "scale" || answer.type === "scale_1_5";
+  if (isScale && (answer.score === null || Number.isNaN(answer.score))) {
+    ctx.addIssue({ code: "custom", message: "Selecciona una opción.", path: ["score"] });
+  }
+  if (answer.type === "yes_no" && !answer.comment) {
+    ctx.addIssue({ code: "custom", message: "Selecciona una opción.", path: ["comment"] });
+  }
+});
+
+const evaluationAnswersSchema = z.array(answerSchema).min(1, "La evaluación debe tener al menos una pregunta.");
 
 let allUsers = [];
 let activePeriod = null;
@@ -387,32 +408,32 @@ export const setupEvaluate = async () => {
       return;
     }
 
-    const answers = [];
     const questionElements = qContainer.querySelectorAll("[data-question-id]");
-    let allValid = true;
-
-    questionElements.forEach(el => {
-      const qId = parseInt(el.dataset.questionId);
+    const draftAnswers = Array.from(questionElements).map(el => {
       const type = el.dataset.inputType;
       const val = el.dataset.selectedValue;
-      const errorMsg = el.querySelector(".error-msg");
-
-      if ((type === "scale" || type === "scale_1_5" || type === "yes_no") && !val) {
-        allValid = false;
-        if (errorMsg) errorMsg.classList.remove("hidden");
-      }
-
-      answers.push({
-        question_id: qId,
-        score: (type === "scale" || type === "scale_1_5") ? parseInt(val) : null,
-        comment: (type === "open_text" || type === "yes_no") ? val || "" : null
-      });
+      return {
+        question_id: parseInt(el.dataset.questionId),
+        type,
+        score: (type === "scale" || type === "scale_1_5") ? (val ? parseInt(val) : null) : null,
+        comment: (type === "open_text" || type === "yes_no") ? (val || null) : null,
+      };
     });
 
-    if (!allValid) {
-      showToast("Formulario incompleto", "warning", "Por favor califica todas las preguntas de escala.");
+    questionElements.forEach(el => el.querySelector(".error-msg")?.classList.add("hidden"));
+
+    const validation = evaluationAnswersSchema.safeParse(draftAnswers);
+    if (!validation.success) {
+      validation.error.issues.forEach(issue => {
+        const index = issue.path[0];
+        questionElements[index]?.querySelector(".error-msg")?.classList.remove("hidden");
+      });
+      showToast("Formulario incompleto", "warning", "Por favor completa todas las preguntas obligatorias.");
       return;
     }
+
+    // El backend no espera el campo "type" (solo se usaba para validar aca).
+    const answers = draftAnswers.map(({ type, ...rest }) => rest);
 
     const evaluationData = {
       evaluator_id: currentUser.id,

@@ -66,8 +66,10 @@ export const sidebarComponent = (isActive) => {
         label: "Admin Hub", icon: icons.adminHub, submenu: [
           { href: "/admin/evaluations", label: "Formularios" },
           { href: "/admin/periods", label: "Ciclos" },
+          { href: "/admin/categories", label: "Categorías" },
           { href: "/admin/metrics", label: "Métricas" },
-          { href: "/admin/ai-summary", label: "Resumen IA" }
+          { href: "/admin/ai-summary", label: "Resumen IA" },
+          { href: "/admin/activity-log", label: "Bitácora" }
         ]
       }
     ];

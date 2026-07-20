@@ -11,7 +11,7 @@ def get_form_templates(
     target_role: str = Query(..., description="El rol para el cual se requiere el formulario (ej. team_leader, tutor)")
 ):
     """
-    Resuelve la jerarquía de plantillas (`form_templates`). Devuelve la plantilla activa que coincide con el `target_role_id` (Team Leader o Tutor) y hace inner join con preguntas activas.
+    Resuelve la jerarquía de plantillas (`forms`). Devuelve la plantilla activa que coincide con el `target_role_id` (Team Leader o Tutor) y hace inner join con preguntas activas.
     """
     templates = form_service.get_forms_by_role(target_role)
     return templates
@@ -30,13 +30,13 @@ def get_form_templates(
     }
 )
 def create_form_template(payload: TemplateCreate):
-    """Transacción compuesta: inserta `form_templates` y realiza bulk insert de esquemas hijos (`questions`). Valida constraint `is_active`."""
+    """Transacción compuesta: inserta `forms` y realiza bulk insert de esquemas hijos (`questions`). Valida constraint `is_active`."""
     return form_service.create_template(payload)
 
 
 @router.put("/forms/{form_id}", response_model=FormTemplateOut)
 def update_form_template(form_id: int, payload: TemplateUpdate):
-    """Mutación parcial (PATCH) sobre `form_templates.title` o `description`. Exclusivo estado cerrado."""
+    """Mutación parcial (PATCH) sobre `forms.title` o `description`. Exclusivo estado cerrado."""
     updated = form_service.update_template(form_id, payload)
     if not updated:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plantilla no encontrada.")

@@ -5,6 +5,10 @@ import { escapeHtml } from "../../utils/validators";
 import { dropdownComponent, setupDropdown } from "../../components/dropdown";
 import { templatesService } from "../../services/templates.service.js";
 import { categoryService } from "../../services/categories.service.js";
+import { periodService } from "../../services/periods.service.js";
+import { authService } from "../../services/auth.service";
+import { formatDate } from "../../utils/date";
+import { searchBoxComponent, setupSearch } from "../../components/searchBox";
 
 export const renderAdminEvaluations = () => `
   ${navBarComponent()}
@@ -24,10 +28,20 @@ export const renderAdminEvaluations = () => `
       </button>
     </div>
 
+    <div id="active-period-banner" class="hidden mb-6 flex items-center gap-3 rounded-2xl border border-[var(--danger-border)] bg-[var(--danger-bg)] px-5 py-4 text-sm font-semibold text-[var(--danger-text)]">
+      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
+      Hay un periodo activo. Los formularios y preguntas solo se pueden crear, editar o eliminar con el periodo cerrado.
+    </div>
+
     <!-- 1. VISTA LISTA DE PLANTILLAS -->
     <div id="list-view" class="block transition-all duration-300">
+      <div id="template-search-slot" class="mb-6 max-w-sm"></div>
       <div id="templates-container">
-        <!-- Generado dinámicamente -->
+        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div class="h-48 animate-pulse rounded-[2rem] bg-[var(--bg-panel)]"></div>
+          <div class="h-48 animate-pulse rounded-[2rem] bg-[var(--bg-panel)]"></div>
+          <div class="h-48 animate-pulse rounded-[2rem] bg-[var(--bg-panel)]"></div>
+        </div>
       </div>
     </div>
 
@@ -121,7 +135,33 @@ export const setupAdminEvaluations = () => {
   // --- ESTADO (Memoria) ---
   let questions = [];
   let editId = null;
+  let originalQuestions = [];
   let categoriesData = [];
+  let hasActivePeriod = false;
+
+  // El backend rechaza crear/editar/borrar formularios y preguntas mientras
+  // haya un periodo activo (ver question_service._assert_no_active_period).
+  // Se consulta acá para avisar antes de que el admin llegue al error.
+  const refreshPeriodGate = async () => {
+    const banner = document.getElementById("active-period-banner");
+    try {
+      const periods = await periodService.get();
+      hasActivePeriod = periods.some(p => p.is_active);
+    } catch (err) {
+      hasActivePeriod = false; // si falla la consulta, no bloqueamos -- el backend igual lo valida
+    }
+    if (banner) banner.classList.toggle("hidden", !hasActivePeriod);
+    btnCreate.disabled = hasActivePeriod;
+    btnCreate.classList.toggle("opacity-50", hasActivePeriod);
+    btnCreate.classList.toggle("cursor-not-allowed", hasActivePeriod);
+    btnCreate.title = hasActivePeriod ? "Cierra el periodo activo para poder crear formularios." : "";
+    if (btnSave) {
+      btnSave.disabled = hasActivePeriod;
+      btnSave.classList.toggle("opacity-50", hasActivePeriod);
+      btnSave.classList.toggle("cursor-not-allowed", hasActivePeriod);
+      btnSave.title = hasActivePeriod ? "Cierra el periodo activo para poder guardar cambios." : "";
+    }
+  };
 
   // --- LÓGICA DE VISTAS ---
   const showBuilder = async () => {
@@ -130,7 +170,8 @@ export const setupAdminEvaluations = () => {
     setupDropdown('template-role');
     setupDropdown('evaluator-role');
     updateWeightCounter();
-    
+    await refreshPeriodGate();
+
     if (categoriesData.length === 0) {
       try {
         categoriesData = await categoryService.getCategories();
@@ -148,8 +189,13 @@ export const setupAdminEvaluations = () => {
   };
 
   btnCreate.addEventListener("click", async () => {
+    if (hasActivePeriod) {
+      showToast("Periodo activo", "warning", "Cierra el periodo activo para poder crear formularios.");
+      return;
+    }
     // Resetear constructor para nueva plantilla
     editId = null;
+    originalQuestions = [];
     inputTitle.value = "";
     inputDesc.value = "";
     selectRole.value = "tutor";
@@ -318,6 +364,11 @@ export const setupAdminEvaluations = () => {
 
   // --- GUARDADO ---
   btnSave.addEventListener("click", async () => {
+    if (hasActivePeriod) {
+      showToast("Periodo activo", "warning", "Cierra el periodo activo para poder guardar cambios.");
+      return;
+    }
+
     const title = inputTitle.value.trim();
     if (!title) {
       showToast("Falta el título", "error", "Debes darle un título a la plantilla.");
@@ -362,18 +413,42 @@ export const setupAdminEvaluations = () => {
       title,
       description: inputDesc.value.trim(),
       targetRole: document.getElementById("template-role").value,
-      questions: formattedQuestions
+      questions: formattedQuestions,
+      adminId: authService.getSession()?.id,
     };
     if (editId) {
       templateData.id = editId;
+      templateData.originalQuestions = originalQuestions;
+
+      // El texto de una pregunta ya usada no se sobreescribe: se versiona
+      // (fila nueva, la vieja queda is_active=FALSE) -- es irreversible desde
+      // la UI. Avisamos antes de mandarlo, en vez de que sea automático.
+      const changedTexts = formattedQuestions.filter(q => {
+        const original = originalQuestions.find(o => o.id === q.id);
+        return original && original.text !== q.text;
+      });
+      if (changedTexts.length > 0) {
+        const confirmed = confirm(
+          `Vas a reformular el texto de ${changedTexts.length} pregunta(s) ya usada(s). ` +
+          `Esto crea una nueva versión y no se puede deshacer (la anterior queda inactiva). ¿Continuar?`
+        );
+        if (!confirmed) return;
+      }
     }
 
     try {
       btnSave.disabled = true;
       btnSave.innerHTML = "Guardando...";
-      
+
       if (editId) {
-        await templatesService.updateTemplate(editId, templateData);
+        // Se llama solo si la IA objeta la coherencia texto<->categoria de
+        // una pregunta puntual (ver templates.service.js.updateTemplate) --
+        // muestra su razon real, no un aviso generico.
+        const onCoherenceConfirm = async (question, aiMessage) => confirm(
+          `${aiMessage || "La IA no está segura de que el nuevo texto siga encajando en su categoría."}\n\n` +
+          `¿Guardar de todas formas?`
+        );
+        await templatesService.updateTemplate(editId, templateData, onCoherenceConfirm);
       } else {
         await templatesService.createTemplate(templateData);
       }
@@ -381,7 +456,11 @@ export const setupAdminEvaluations = () => {
       showToast("Plantilla Guardada", "success");
       await showList();
     } catch (error) {
-      showToast("Error", "error", "No se pudo guardar la plantilla.");
+      if (error.message?.startsWith("Guardado cancelado")) {
+        showToast("Guardado cancelado", "warning", "No se confirmó el cambio de texto; no se guardó nada.");
+      } else {
+        showToast("Error", "error", "No se pudo guardar la plantilla.");
+      }
       console.error(error);
     } finally {
       btnSave.disabled = false;
@@ -391,24 +470,18 @@ export const setupAdminEvaluations = () => {
 
 
   // --- RENDERIZADO DE LA LISTA ---
-  const renderTemplatesList = async () => {
-    let templates = [];
-    try {
-      templates = await templatesService.getTemplates();
-    } catch (error) {
-      showToast("Error", "error", "No se pudieron cargar las plantillas.");
-      console.error(error);
-      return;
-    }
-    
+  let allTemplates = [];
+  const templateSearchSlot = document.getElementById("template-search-slot");
+
+  const renderTemplateCards = (templates) => {
     if (templates.length === 0) {
       templatesContainer.innerHTML = `
         <section class="rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-12 text-center shadow-sm">
           <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[var(--bg-base)] text-[var(--brand-bg)] mb-4">
             <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
           </div>
-          <h3 class="text-xl font-bold text-[var(--text-main)]">No hay plantillas</h3>
-          <p class="mt-2 text-[var(--text-muted)] max-w-md mx-auto">Comienza creando una nueva plantilla de evaluación para asignar a tu equipo.</p>
+          <h3 class="text-xl font-bold text-[var(--text-main)]">${allTemplates.length === 0 ? "No hay plantillas" : "Sin resultados"}</h3>
+          <p class="mt-2 text-[var(--text-muted)] max-w-md mx-auto">${allTemplates.length === 0 ? "Comienza creando una nueva plantilla de evaluación para asignar a tu equipo." : "Ningún formulario coincide con la búsqueda."}</p>
         </section>
       `;
       return;
@@ -418,7 +491,7 @@ export const setupAdminEvaluations = () => {
       <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         ${templates.map(t => {
           const statusText = t.is_active ? 'Activa' : 'Inactiva';
-          const dateStr = t.created_at ? new Date(t.created_at).toLocaleDateString() : '11';
+          const dateStr = formatDate(t.created_at) || 'Fecha no disponible';
           
           return `
           <div class="group flex flex-col justify-between rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm hover:border-[var(--brand-hover)] transition-all duration-300 hover:shadow-md cursor-pointer btn-edit-template" data-id="${t.id}">
@@ -431,6 +504,11 @@ export const setupAdminEvaluations = () => {
                   ${t.questions ? t.questions.length : 0} preg.
                 </span>
               </div>
+              ${t.is_template ? `
+                <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-950/20 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400 mb-2" title="Es una plantilla base: no recibe respuestas hasta que se use para crear un formulario activo.">
+                  📋 Plantilla base
+                </span>
+              ` : ''}
               <h3 class="text-xl font-bold text-[var(--text-main)] font-heading leading-tight">${escapeHtml(t.title)}</h3>
               <p class="mt-2 text-sm text-[var(--text-muted)] line-clamp-2">${escapeHtml(t.description || 'Sin descripción')}</p>
             </div>
@@ -470,19 +548,26 @@ export const setupAdminEvaluations = () => {
             editId = template.id;
             inputTitle.value = template.title;
             inputDesc.value = template.description || "";
-            
+
             // dropdownComponent update requires us to use the specific DOM ID and maybe dispatch change
             const evaluatorRoleEl = document.getElementById("evaluator-role");
             if (evaluatorRoleEl) { evaluatorRoleEl.value = template.evaluatorRole || "coder"; }
             if (selectRole) { selectRole.value = template.targetRole || template.target_role || "tutor"; }
-            
-            questions = JSON.parse(JSON.stringify(template.questions)).map(q => ({
-              ...q,
-              weight: q.weight || 0,
-              input_type: q.input_type || q.type || "scale_1_5",
-              category: q.category || "General"
+
+            // getTemplateForEdit trae el weight_percent real (GET /forms no lo expone) y
+            // convierte input_type/category_id al formato que usa el constructor visual.
+            const editData = await templatesService.getTemplateForEdit(template);
+            questions = editData.questions.map(q => ({
+              id: q.id,
+              text: q.text,
+              input_type: q.type,
+              category_id: q.categoryId,
+              weight: q.weight,
             }));
-            
+            // Snapshot para que updateTemplate() pueda diferenciar qué preguntas
+            // se agregaron/quitaron/reformularon al guardar.
+            originalQuestions = editData.questions.map(q => ({ id: q.id, text: q.text }));
+
             renderQuestions();
             showBuilder();
           }
@@ -503,22 +588,25 @@ export const setupAdminEvaluations = () => {
           
           if (template) {
             editId = null; // Important: this makes it a new form!
+            originalQuestions = [];
             inputTitle.value = "Copia de " + template.title;
             inputDesc.value = template.description || "";
-            
+
             const evaluatorRoleEl = document.getElementById("evaluator-role");
             if (evaluatorRoleEl) { evaluatorRoleEl.value = template.evaluatorRole || "coder"; }
             if (selectRole) { selectRole.value = template.targetRole || template.target_role || "tutor"; }
-            
-            // Reset IDs for the cloned questions
-            questions = JSON.parse(JSON.stringify(template.questions)).map(q => ({
-              ...q,
-              id: Date.now() + Math.random(),
-              weight: q.weight || 0,
-              input_type: q.input_type || q.type || "scale_1_5",
-              category: q.category || "General"
+
+            // Reset IDs for the cloned questions (mismo mapeo que el modo edición,
+            // ver getTemplateForEdit, pero con IDs nuevos para que se creen como preguntas nuevas)
+            const editData = await templatesService.getTemplateForEdit(template);
+            questions = editData.questions.map(q => ({
+              id: (Date.now() + Math.random()).toString(),
+              text: q.text,
+              input_type: q.type,
+              category_id: q.categoryId,
+              weight: q.weight,
             }));
-            
+
             renderQuestions();
             showBuilder();
             showToast("Formulario duplicado", "success", "Ahora estás creando un nuevo formulario basado en el anterior.");
@@ -547,6 +635,38 @@ export const setupAdminEvaluations = () => {
     });
   };
 
+  const renderTemplatesList = async () => {
+    try {
+      allTemplates = await templatesService.getTemplates();
+    } catch (error) {
+      showToast("Error", "error", "No se pudieron cargar las plantillas.");
+      console.error(error);
+      templatesContainer.innerHTML = `
+        <section class="rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-12 text-center shadow-sm">
+          <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[var(--danger-bg)] text-[var(--danger-text)] mb-4">
+            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
+          </div>
+          <h3 class="text-xl font-bold text-[var(--text-main)]">No se pudieron cargar las plantillas</h3>
+          <p class="mt-2 text-[var(--text-muted)] max-w-md mx-auto">Revisa tu conexión e intenta de nuevo.</p>
+          <button id="btn-retry-templates" class="mt-6 inline-flex items-center gap-2 rounded-2xl bg-[var(--brand-bg)] px-5 py-3 text-sm font-bold text-[var(--brand-text)] transition-all hover:bg-[var(--brand-hover)] cursor-pointer">
+            Reintentar
+          </button>
+        </section>
+      `;
+      document.getElementById("btn-retry-templates")?.addEventListener("click", renderTemplatesList);
+      return;
+    }
+
+    renderTemplateCards(allTemplates);
+
+    if (templateSearchSlot) {
+      // Se regenera para no acumular listeners de recargas anteriores.
+      templateSearchSlot.innerHTML = searchBoxComponent('template-search', 'Buscar formulario por título...');
+      setupSearch('template-search', allTemplates, ['title', 'description'], renderTemplateCards);
+    }
+  };
+
   // Inicializar mostrando la lista
+  refreshPeriodGate();
   renderTemplatesList();
 };

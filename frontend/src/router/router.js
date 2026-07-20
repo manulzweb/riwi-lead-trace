@@ -50,9 +50,16 @@ export async function renderRoute() {
 
     // 3. Validar roles permitidos si la ruta está protegida por roles
     if (route.requireAuth && route.allowedRoles && !route.allowedRoles.some(role => userRole.includes(role))) {
-        console.warn("Acceso denegado: Rol insuficiente.");
-        showToast("Acceso Denegado", "error", "No tienes permiso para acceder a esta página.")
-        window.history.replaceState({}, "", "/dashboard");
+        console.warn("Acceso denegado: Rol insuficiente.", { userRole, allowedRoles: route.allowedRoles });
+        showToast("Acceso Denegado", "error", "No tienes permiso para acceder a esta página o tu sesión expiró.");
+        
+        if (currentPath !== "/dashboard") {
+            window.history.replaceState({}, "", "/dashboard");
+        } else {
+            // Evitar loop infinito si ni siquiera tiene acceso al dashboard (ej. sesión corrupta o rol vacío)
+            authService.clearSession();
+            window.history.replaceState({}, "", "/login");
+        }
         return renderRoute();
     }
 
