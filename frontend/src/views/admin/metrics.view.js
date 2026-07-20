@@ -31,10 +31,10 @@ export const renderMetrics = () => `
       <div class="flex flex-col gap-1 w-48">
         <label class="text-sm font-semibold text-[var(--text-muted)]">Filtrar por rol:</label>
         ${dropdownComponent('filter-role', [
-          { value: 'all', label: 'Todos' },
-          { value: 'team_leader', label: 'Team Leaders' },
-          { value: 'tutor', label: 'Tutores' }
-        ], 'all')}
+  { value: 'all', label: 'Todos' },
+  { value: 'team_leader', label: 'Team Leaders' },
+  { value: 'tutor', label: 'Tutores' }
+], 'all')}
       </div>
     </section>
 
@@ -133,7 +133,7 @@ export const setupMetrics = async () => {
     currentPeriodId = activePeriod.id;
 
     periodContainer.innerHTML = dropdownComponent('filter-period', periodOptions, activePeriod.id);
-    
+
     // 3. Inicializar el componente dinámico
     setupDropdown('filter-period');
     const periodSelector = document.getElementById("filter-period");
@@ -190,10 +190,10 @@ export const setupMetrics = async () => {
 
     const opportunityCard = withScore.length > 1
       ? highlightCard("Oportunidad de mejora", needsSupport, {
-          border: "border-amber-200 dark:border-amber-900/50",
-          bg: "bg-amber-100/30 dark:bg-amber-950/30",
-          text: "text-amber-600 dark:text-amber-400"
-        })
+        border: "border-amber-200 dark:border-amber-900/50",
+        bg: "bg-amber-100/30 dark:bg-amber-950/30",
+        text: "text-amber-600 dark:text-amber-400"
+      })
       : "";
 
     highlightsContainer.innerHTML = bestCard + opportunityCard;

@@ -74,19 +74,19 @@ export const renderAdminEvaluations = () => `
               <label class="mb-2 block text-sm font-bold text-[var(--text-main)]">Rol Evaluador (Quién llena la encuesta)</label>
               <div>
                 ${dropdownComponent('evaluator-role', [
-                  { value: 'coder', label: 'Coders' },
-                  { value: 'team_leader', label: 'Team Leaders' },
-                  { value: 'tutor', label: 'Tutores' }
-                ], 'coder')}
+  { value: 'coder', label: 'Coders' },
+  { value: 'team_leader', label: 'Team Leaders' },
+  { value: 'tutor', label: 'Tutores' }
+], 'coder')}
               </div>
             </div>
             <div>
               <label class="mb-2 block text-sm font-bold text-[var(--text-main)]">Rol a Evaluar (A quién se evalúa)</label>
               <div>
                 ${dropdownComponent('template-role', [
-                  { value: 'tutor', label: 'Tutores' },
-                  { value: 'team_leader', label: 'Team Leaders' }
-                ], 'tutor')}
+  { value: 'tutor', label: 'Tutores' },
+  { value: 'team_leader', label: 'Team Leaders' }
+], 'tutor')}
               </div>
             </div>
           </div>
@@ -135,10 +135,10 @@ export const setupAdminEvaluations = () => {
     try {
       const periods = await periodService.get();
       const activePeriod = periods.find(p => p.is_active);
-      
+
       if (activePeriod) {
         bannerContainer.innerHTML = activePeriodBannerComponent(activePeriod);
-        
+
         const closeBtn = document.getElementById("btn-close-period");
         if (closeBtn) {
           closeBtn.addEventListener("click", async () => {
@@ -169,7 +169,7 @@ export const setupAdminEvaluations = () => {
     setupDropdown('template-role');
     setupDropdown('evaluator-role');
     updateWeightCounter();
-    
+
     if (categoriesData.length === 0) {
       try {
         categoriesData = await categoryService.getCategories();
@@ -205,7 +205,7 @@ export const setupAdminEvaluations = () => {
   const updateWeightCounter = () => {
     const total = questions.reduce((sum, q) => sum + (parseInt(q.weight) || 0), 0);
     const counterSpan = document.getElementById("total-weight-value");
-    if(counterSpan) {
+    if (counterSpan) {
       counterSpan.textContent = total;
       if (total === 100) {
         counterSpan.className = "text-lg text-emerald-500";
@@ -228,7 +228,7 @@ export const setupAdminEvaluations = () => {
     if (type === 'scale_1_5') {
       return `
         <div class="flex gap-2 opacity-50 pointer-events-none mt-3">
-          ${[1,2,3,4,5].map(v => `<div class="w-10 h-10 rounded-lg border-2 border-[var(--border-main)] flex items-center justify-center font-bold text-xs">${v}</div>`).join('')}
+          ${[1, 2, 3, 4, 5].map(v => `<div class="w-10 h-10 rounded-lg border-2 border-[var(--border-main)] flex items-center justify-center font-bold text-xs">${v}</div>`).join('')}
         </div>`;
     }
     if (type === 'yes_no') {
@@ -247,7 +247,7 @@ export const setupAdminEvaluations = () => {
     questions.forEach((q, index) => {
       const card = document.createElement("div");
       card.className = "group relative rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm hover:border-[var(--brand-hover)] transition-all duration-300";
-      
+
       card.innerHTML = `
         <div class="flex items-start justify-between gap-4">
           <div class="flex items-center gap-3 bg-[var(--bg-base)] px-3 py-1.5 rounded-lg border border-[var(--border-main)] text-[var(--text-muted)] font-bold text-xs">
@@ -260,10 +260,10 @@ export const setupAdminEvaluations = () => {
             <div class="mt-4 flex flex-wrap gap-4 items-center">
               <div class="w-64 relative">
                 ${dropdownComponent(`q-type-${q.id}`, [
-                  {value: 'scale_1_5', label: 'Escala (1-5)'},
-                  {value: 'yes_no', label: 'Sí / No'},
-                  {value: 'open_text', label: 'Texto Abierto'}
-                ], q.input_type)}
+        { value: 'scale_1_5', label: 'Escala (1-5)' },
+        { value: 'yes_no', label: 'Sí / No' },
+        { value: 'open_text', label: 'Texto Abierto' }
+      ], q.input_type)}
                 <div class="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none z-10">
                   ${getQuestionIcon(q.input_type)}
                 </div>
@@ -331,7 +331,7 @@ export const setupAdminEvaluations = () => {
       setupDropdown(`q-category-${q.id}`, (val) => {
         q.category_id = parseInt(val);
       });
-      
+
       const btn = document.getElementById(`q-type-${q.id}-btn`);
       if (btn) btn.classList.add("pl-10");
     });
@@ -381,7 +381,7 @@ export const setupAdminEvaluations = () => {
     // Validar suma de puntos (100)
     const totalWeight = questions.reduce((sum, q) => sum + (parseInt(q.weight) || 0), 0);
     const hasScale = questions.some(q => q.input_type === 'scale_1_5');
-    
+
     if (hasScale && totalWeight !== 100) {
       if (totalWeight < 100) {
         showToast("Faltan puntos", "warning", `La suma total es ${totalWeight}. Debes sumar exactamente 100.`);
@@ -413,7 +413,7 @@ export const setupAdminEvaluations = () => {
     try {
       btnSave.disabled = true;
       btnSave.innerHTML = "Guardando...";
-      
+
       if (editId) {
         await templatesService.updateTemplate(editId, templateData);
       } else {
@@ -446,7 +446,7 @@ export const setupAdminEvaluations = () => {
       console.error(error);
       return;
     }
-    
+
     if (templates.length === 0) {
       templatesContainer.innerHTML = `
         <section class="rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-12 text-center shadow-sm">
@@ -463,11 +463,11 @@ export const setupAdminEvaluations = () => {
     templatesContainer.innerHTML = `
       <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         ${templates.map(t => {
-          console.log("Estructura de la plantilla:", t);
-          // Obtenemos la fecha si existe, si no, mostramos "Recién creada"
-          const dateStr = t.createdAt ? new Date(t.createdAt).toLocaleDateString() : 'Recién creada';
-          
-          return `
+      console.log("Estructura de la plantilla:", t);
+      // Obtenemos la fecha si existe, si no, mostramos "Recién creada"
+      const dateStr = t.createdAt ? new Date(t.createdAt).toLocaleDateString() : 'Recién creada';
+
+      return `
           <div class="group flex flex-col justify-between rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm hover:border-[var(--brand-hover)] transition-all duration-300 hover:shadow-md cursor-pointer btn-edit-template" data-id="${t.id}">
             <div>
               <div class="flex items-center justify-between mb-4">
@@ -492,7 +492,7 @@ export const setupAdminEvaluations = () => {
             </div>
           </div>
           `;
-        }).join('')}
+    }).join('')}
       </div>
     `;
 
@@ -501,19 +501,19 @@ export const setupAdminEvaluations = () => {
       card.addEventListener("click", async (e) => {
         // Evitar que el click en el botón de borrar active la edición
         if (e.target.closest('.btn-delete-template')) return;
-        
+
         const id = card.dataset.id;
         try {
           const templates = await templatesService.getTemplates();
           const template = templates.find(t => t.id === id || t.id === parseInt(id));
-          
+
           if (template) {
             editId = template.id;
             inputTitle.value = template.title;
             inputDesc.value = template.description || "";
             document.getElementById("evaluator-role").value = template.evaluatorRole || "coder";
             selectRole.value = template.targetRole || "tutor";
-            
+
             // Asegurarse de que al editar tengan los campos correctos
             questions = JSON.parse(JSON.stringify(template.questions)).map(q => ({
               ...q,
@@ -521,7 +521,7 @@ export const setupAdminEvaluations = () => {
               input_type: q.input_type || q.type || "scale_1_5",
               category: q.category || "General"
             }));
-            
+
             renderQuestions();
             showBuilder();
           }

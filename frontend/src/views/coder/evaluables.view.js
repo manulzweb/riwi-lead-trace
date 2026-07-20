@@ -90,9 +90,9 @@ const renderEvaluablesList = () => {
 
   container.className = "mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3";
   container.innerHTML = filtered.map(user => {
-    const isEvaluated = evaluations.some(ev => 
-      ev.evaluatee_id === user.id && 
-      ev.period_id === activePeriod?.id && 
+    const isEvaluated = evaluations.some(ev =>
+      ev.evaluatee_id === user.id &&
+      ev.period_id === activePeriod?.id &&
       ev.status === "submitted"
     );
 
