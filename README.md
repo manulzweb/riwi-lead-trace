@@ -21,7 +21,7 @@ El ICP (Indice de Calidad Percibida) se calcula al consultar, no se guarda en ta
 
 El login valida la contrasena con bcrypt en el servidor. No usamos JWT: el front recibe el usuario ya validado y decide que mostrar segun el rol que le llega.
 
-Los resumenes con IA (API de Claude) reciben solo promedios y conteos, nunca los comentarios ni quien los escribio. Se cachean por persona y periodo. La IA tambien revisa, al editar el texto de una pregunta, que siga encajando en su categoria.
+Los resumenes con IA (API de Gemini) reciben solo promedios y conteos, nunca los comentarios ni quien los escribio. Se cachean por persona y periodo. La IA tambien revisa, al editar el texto de una pregunta, que siga encajando en su categoria.
 
 Las queries son SQL directo con `text()` de SQLAlchemy, sin ORM declarativo.
 
@@ -73,7 +73,7 @@ Detalle en [`docs/11-entregables-y-evaluacion.md`](./docs/11-entregables-y-evalu
 | Backend | Python + FastAPI, SQLAlchemy (`text()`), Pydantic |
 | Base de datos | MySQL, normalizada a 3FN |
 | Auth | bcrypt en el login + sesion en `localStorage` |
-| IA | Claude API (`anthropic`), con cache de resumenes |
+| IA | Gemini API (`google-generativeai`), con cache de resumenes |
 
 ## Tests
 

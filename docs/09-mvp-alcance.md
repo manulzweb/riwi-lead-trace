@@ -20,7 +20,7 @@ Filosofia: **startup validando una idea**. El MVP debe ser lo minimo para compro
 | Historial de evaluaciones (Coder) | Trazabilidad minima para el evaluador |
 | Dashboard de resultados (Admin) | Convierte datos en decision; razon de negocio |
 | **ICP** e indicadores | Mide calidad del acompanamiento con un indice accionable |
-| **Resumen de feedback con IA** (Claude) para el Admin | Diferenciador; sintesis accionable y anonimizada |
+| **Resumen de feedback con IA** (Gemini) para el Admin | Diferenciador; sintesis accionable y anonimizada |
 | SPA responsive y navegable | Restriccion tecnica + usabilidad basica |
 | Despliegue accesible (front + back) | Requisito: app funcional disponible para la sustentacion |
 

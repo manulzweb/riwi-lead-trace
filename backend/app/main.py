@@ -26,7 +26,7 @@ Backend monolítico diseñado en FastAPI para el procesamiento de evaluaciones d
 *   **Base de Datos:** MySQL relacional (3FN). Acceso a datos mediante SQL plano (`sqlalchemy.text()`) sobre pool de conexiones; sin abstracción ORM para queries complejas.
 *   **Autenticación & Autorización:** MVP Stateless. Autenticación contra hash Bcrypt. **No implementa JWT ni manejo de sesiones en servidor.** El control de acceso basado en roles (RBAC) está delegado al cliente (SPA); la API confía en los identificadores de sesión proporcionados en el payload (`evaluator_id`).
 *   **Integridad Transaccional:** Control de concurrencia a nivel de base de datos (`UNIQUE INDEX` compuesto) para prevenir race conditions en el envío de evaluaciones. Las mutaciones de esquemas (preguntas) operan bajo lógica de append-only (versionado).
-*   **IA:** Acoplamiento con `gemini-1.5-flash` (Google AI) para la validación semántica de varianza en actualizaciones de preguntas y generación de resúmenes agregados on-fly (cacheado vía `ai_feedback_cache`).
+*   **IA:** Acoplamiento con `gemini-3.5-flash` (Google AI) para la validación semántica de varianza en actualizaciones de preguntas y generación de resúmenes agregados on-fly (cacheado vía `ai_feedback_cache`).
 """
 
 app = FastAPI(

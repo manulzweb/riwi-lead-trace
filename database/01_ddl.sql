@@ -256,7 +256,7 @@ CREATE TABLE evaluation_answers (
 );
 
 -- ---------------------------------------------------------------------
--- Cache de resúmenes generados por IA (Claude API) para el Admin
+-- Cache de resúmenes generados por IA (Google Gemini API) para el Admin
 -- ---------------------------------------------------------------------
 CREATE TABLE ai_feedback_cache (
     id            INT AUTO_INCREMENT PRIMARY KEY,

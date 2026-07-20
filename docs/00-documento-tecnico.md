@@ -106,7 +106,7 @@ script SQL ejecutable en [`07-base-de-datos.md`](./07-base-de-datos.md) y
 | Backend | Python + FastAPI | Alineado a lo aprendido en la Ruta Básica; validación y docs automáticas |
 | Base de datos | MySQL | Dominio naturalmente relacional; consultas agregadas para el dashboard |
 | Auth | Sin JWT | El rol/ID lo manda el propio front y el backend lo confía; simplifica el MVP a costa de no verificar identidad criptográficamente |
-| IA | Claude API | Resume el feedback en lenguaje natural para el Admin |
+| IA | Gemini API | Resume el feedback en lenguaje natural para el Admin |
 
 Justificación ampliada, comparación contra alternativas y las decisiones que evitan sobreingeniería en
 [`06-arquitectura.md`](./06-arquitectura.md).

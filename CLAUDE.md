@@ -8,7 +8,7 @@ MVP **full-stack** de **feedback ascendente** para el **Proyecto Integrador de R
 Basica)**: una **SPA** permite a los **Coders** evaluar a **Team Leaders** y **Tutores** con
 formularios estructurados (con opcion anonima). Un **backend FastAPI + MySQL** persiste y procesa
 la informacion, calcula un **Indice de Calidad Percibida (ICP)** y **genera resumenes de
-feedback con IA (Claude API)** para el **Admin (Jefe de TL/tutores)**.
+feedback con IA (Gemini API)** para el **Admin (Jefe de TL/tutores)**.
 
 > **Estado actual:** en desarrollo activo. Backend FastAPI y SPA estan implementados y conectados
 > (auth, periods, forms, evaluations, metrics, users). Al implementar, sigue la arquitectura
@@ -79,9 +79,9 @@ skill `.claude/skills/guia-generativa/SKILL.md`.
   equipo lo apruebe primero.
 - Logica de negocio y acceso a datos en la capa `services` (no en los routes). No hay capa
   `repositories/` separada: para el tamano de este MVP agrega una indireccion sin beneficio real.
-- **IA:** integracion con **Claude API** (SDK `anthropic`) en `services/ai_service.py` para resumir
-  feedback (solo para el Admin). Modelo en uso: `claude-haiku-4-5-20251001` (economico).
-  `ANTHROPIC_API_KEY` via `config/config.py`. **Solo se envian agregados anonimizados.**
+- **IA:** integracion con **Gemini API** (SDK `google-generativeai`) en `services/ai_service.py` para resumir
+  feedback (solo para el Admin). Modelo en uso: `gemini-3.5-flash` (economico).
+  `GEMINI_API_KEY` via `config/config.py`. **Solo se envian agregados anonimizados.**
 
 ### Base de datos
 - **MySQL**, modelo relacional **normalizado hasta 3FN**, integridad referencial (FKs), CRUD completo y consultas agregadas para metricas.
@@ -173,7 +173,7 @@ mecanismo de sesion verificable en servidor (JWT u otro), no maquillar el front.
 4. **Logica de negocio identificable** (no solo CRUD): **ICP** (indice 0-100 por persona/periodo, ponderado por el peso de cada pregunta — ver regla 6 — y normalizado, solo si hay al menos `MIN_EVALUATIONS` respuestas), % participacion, estados de evaluacion (borrador/enviada), filtros por rol. No la degrades a CRUD plano. El ICP es **derivado, no se persiste** (se calcula on-read en `metrics_service.calculate_average_score`) y mide **calidad percibida**, no aprendizaje real. No calcula tendencia entre periodos (ver `docs/06-arquitectura.md` para el detalle exacto del calculo antes de asumir que existe algo mas elaborado).
 5. **Ventana de evaluacion controlada (ADMIN-01):** solo puede existir **un periodo activo** a la vez y solo el **admin** lo activa/cierra (activar uno desactiva cualquier otro). Sin periodo activo, la SPA muestra "No hay formularios por realizar" y el backend **rechaza** (`409`) crear/enviar evaluaciones — la SPA nunca es la autoridad.
 6. **Integridad del instrumento (ADMIN-02):** las preguntas solo se editan **con periodo cerrado**; editar el texto **versiona** (fila nueva + `is_active=FALSE` en la anterior), nunca sobrescribe. El admin **si puede** ajustar el **peso** (`weight_percent`) de cada pregunta de escala — es la unica ponderacion que existe — pero **no puede tocar** `category` ni `input_type`. Los pesos de las preguntas de escala **activas de un mismo `form_template` deben sumar exactamente 100** (validado en `question_service` antes de guardar; si no suma, se rechaza con `422`/`409`). Las respuestas historicas conservan su pregunta y su peso original. Editar el texto es **reformular dentro de la misma categoria** (anti deriva semantica): una pregunta de otro tema **no se convierte** — se desactiva y la nueva se crea en su categoria correcta (v2/equipo). Al guardar una edicion de texto, la **IA comprueba la coherencia** texto↔categoria (via `ai_service`, solo texto de la pregunta + definicion de la categoria) y, si no coincide, el admin debe confirmar explicitamente.
-7. **Privacidad de IA:** a Claude API solo se envian **agregados anonimizados** (promedios, conteos, comentarios sin autor). **Nunca** `evaluator_id` ni textos que revelen identidad. La IA genera resumenes **solo para el Admin**.
+7. **Privacidad de IA:** a Gemini API solo se envian **agregados anonimizados** (promedios, conteos, comentarios sin autor). **Nunca** `evaluator_id` ni textos que revelen identidad. La IA genera resumenes **solo para el Admin**.
 8. **Visibilidad de evaluadores:** una persona evaluada (TL/Tutor) **nunca ve quien la evaluo**; solo el **Admin** ve la identidad del evaluador en evaluaciones **no anonimas**. Las **anonimas permanecen anonimas para todos** (incluido el Admin).
 9. **Seguridad:** contrasenas siempre hasheadas (passlib/bcrypt), nunca en texto plano ni devueltas en responses.
 10. **Respeta el alcance MVP** (`docs/09-mvp-alcance.md`): no implementes lo marcado "fuera del MVP" sin que el usuario lo pida. El formulario de evaluacion es **interactivo "una pregunta a la vez" en JS Vanilla + CSS** — sin paquetes de formularios (SurveyJS y similares cuentan como framework de UI prohibido).
@@ -231,7 +231,7 @@ npm run build                            # bundle de produccion
 | PATCH | `/questions/:id` | editar texto de una pregunta | **solo periodo cerrado**, versionado + chequeo IA de coherencia |
 | PUT | `/questions/weights` | actualizar pesos de las preguntas de un template | **solo periodo cerrado**, pesos deben sumar 100 |
 | GET | `/metrics/summary?period_id=:p` | KPIs + ICP | **agregaciones + ICP ponderado** |
-| GET | `/metrics/ai-summary?evaluatee_id=:e&period_id=:p` | resumen IA | **Claude API (anonimizado)** |
+| GET | `/metrics/ai-summary?evaluatee_id=:e&period_id=:p` | resumen IA | **Gemini API (anonimizado)** |
 
 Detalle y modelo de datos: `docs/06-arquitectura.md` y `docs/07-base-de-datos.md`.
 

@@ -121,8 +121,8 @@ def get_or_generate_ai_summary(evaluatee_id: int, period_id: int):
     # 2. Compilar métricas crudas (Raw SQL)
     raw_data = conn.execute(text("SELECT text, score FROM evaluations JOIN ...")).mappings()
     
-    # 3. Invocar SDK (google-generativeai / Gemini 1.5)
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    # 3. Invocar SDK (google-generativeai / Gemini 3.5)
+    model = genai.GenerativeModel('gemini-3.5-flash')
     response = model.generate_content(prompt)
     
     # 4. Guardar en caché relacional

@@ -26,7 +26,7 @@ Justificacion ampliada en [`06-arquitectura.md`](./06-arquitectura.md).
 | `questions` | Preguntas/criterios que componen una plantilla |
 | `evaluations` | Una evaluacion de un evaluador hacia un evaluado, en un periodo |
 | `evaluation_answers` | Respuestas (puntaje + comentario) por pregunta de una evaluacion |
-| `ai_feedback_cache` | Cache de resumenes generados por IA (Claude API) para el Admin |
+| `ai_feedback_cache` | Cache de resumenes generados por IA (Gemini API) para el Admin |
 
 ## Atributos principales
 
@@ -137,7 +137,7 @@ Justificacion ampliada en [`06-arquitectura.md`](./06-arquitectura.md).
 | comment | TEXT NULL | si input_type='text' |
 
 ### `ai_feedback_cache`
-Cache de los resumenes generados por IA (Claude API) para no re-llamar al modelo y controlar costo.
+Cache de los resumenes generados por IA (Gemini API) para no re-llamar al modelo y controlar costo.
 No es dato relacional duplicado, sino el **resultado materializado de un servicio externo** (ver 3FN).
 
 | Atributo | Tipo | Notas |
@@ -146,7 +146,7 @@ No es dato relacional duplicado, sino el **resultado materializado de un servici
 | evaluatee_id | INT FK -> users.id | persona resumida |
 | period_id | INT FK -> periods.id | periodo del resumen |
 | summary | TEXT | texto generado por el modelo |
-| model | VARCHAR(40) | modelo usado (p.ej. claude-sonnet-4-6) |
+| model | VARCHAR(40) | modelo usado (p.ej. gemini-3.5-flash) |
 | generated_at | TIMESTAMP | cuando se genero |
 | | | **UNIQUE(evaluatee_id, period_id)** |
 

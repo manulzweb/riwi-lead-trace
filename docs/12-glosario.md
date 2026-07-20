@@ -1,4 +1,4 @@
-# 13 — Glosario de términos (en palabras simples + referencias técnicas)
+# 12 — Glosario de términos (en palabras simples + referencias técnicas)
 
 Este documento explica, en lenguaje sencillo, los términos que aparecen en el proyecto. La idea es
 que **cualquier integrante pueda sustentar su parte** sin miedo al vocabulario técnico. Cada término
@@ -134,11 +134,11 @@ router  →  service  →  (SQL directo vía SQLAlchemy)  →  MySQL
 | **Deriva semántica** | El riesgo de que una pregunta editada **deje de medir su categoría** (ej. una de cercanía reescrita como desempeño general): las respuestas se pesarían bajo la categoría equivocada. Se previene con la regla **"reformular, no re-temar"**. | Regla de diseño documentada; conviene revisar `question_service.py` para confirmar su implementación actual. |
 | **Anonimato real** | Si una evaluación es anónima, **nunca** se guarda quién la hizo. Ni el admin puede saberlo. | `evaluation_service.py`: `db_evaluator_id = None if eval_data.is_anonymous else evaluator_id`. |
 | **No-duplicado** | Un coder no puede evaluar dos veces a la misma persona en el mismo periodo. | Consulta de existencia (`evaluator_id` + `evaluatee_id` + `period_id`) antes de insertar, en `evaluation_service.py`; lanza `409` si ya existe. |
-| **Resumen con IA** | Un texto ejecutivo que **Claude** (IA) genera para el **admin**, resumiendo el feedback. Solo se le envían **datos agregados y anónimos**. | `ai_service.py` (`get_or_generate_ai_summary`), endpoint `GET /metrics/ai-summary`, vista `admin/ai-summary.view.js`. |
-| **Agregado / anonimizado** | "Agregado" = promedios y conteos, no respuestas individuales. "Anonimizado" = sin nombres ni identidades. | Regla de negocio explícita en `.claude/skills/guia-generativa/SKILL.md`: a la API de Claude solo van agregados anonimizados, nunca identidades. |
-| **Claude API** | El servicio de IA de Anthropic al que el backend llama para generar el resumen ejecutivo. | Librería `anthropic==0.28.0` en `requirements.txt`, usada en `ai_service.py`. |
-| **LLM (Large Language Model)** | El tipo de modelo de IA que hay detrás de Claude: entiende y genera texto en lenguaje natural. | Concepto general detrás del uso de la Claude API. |
-| **Prompt** | El texto de instrucciones que el backend arma y le manda a Claude para pedirle el resumen. | Construido en `ai_service.py` a partir de los datos agregados y anonimizados del evaluado/periodo. |
+| **Resumen con IA** | Un texto ejecutivo que **Gemini** (IA) genera para el **admin**, resumiendo el feedback. Solo se le envían **datos agregados y anónimos**. | `ai_service.py` (`get_or_generate_ai_summary`), endpoint `GET /metrics/ai-summary`, vista `admin/ai-summary.view.js`. |
+| **Agregado / anonimizado** | "Agregado" = promedios y conteos, no respuestas individuales. "Anonimizado" = sin nombres ni identidades. | Regla de negocio explícita en `.claude/skills/guia-generativa/SKILL.md`: a la API de Gemini solo van agregados anonimizados, nunca identidades. |
+| **Gemini API** | El servicio de IA de Google al que el backend llama para generar el resumen ejecutivo. | Librería `google-generativeai==0.8.2` en `requirements.txt`, usada en `ai_service.py`. |
+| **LLM (Large Language Model)** | El tipo de modelo de IA que hay detrás de Gemini: entiende y genera texto en lenguaje natural. | Concepto general detrás del uso de la Gemini API. |
+| **Prompt** | El texto de instrucciones que el backend arma y le manda a Gemini para pedirle el resumen. | Construido en `ai_service.py` a partir de los datos agregados y anonimizados del evaluado/periodo. |
 
 ---
 

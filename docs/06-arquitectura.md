@@ -79,7 +79,7 @@ sitio con estado que varias partes necesitan compartir y observar.
 │     v                                                        │
 │  Services  <── LOGICA DE NEGOCIO + queries SQL (text())      │
 │     │           (anonimato, no-duplicado, metricas, RBAC)   │
-│     │           └─ ai_service ──HTTPS──> Claude API         │
+│     │           └─ ai_service ──HTTPS──> Gemini API         │
 └───────────────────────────┬─────────────────────────────────┘
                             │ SQLAlchemy (text()) + PyMySQL
                             v
@@ -222,9 +222,9 @@ extensiones puntuales sobre `calculate_average_score`, no un rediseno.
 
 ### Resumen por IA — `ai_service`
 - Construye un prompt con **agregados anonimizados** (promedios por categoria, conteos, comentarios
-  sin autor) y llama a **Claude API** (SDK `anthropic`).
-- Modelo en uso: `claude-haiku-4-5-20251001` (economico) — constante `AI_MODEL` en `ai_service.py`.
-  Clave en `config/config.py` (`ANTHROPIC_API_KEY`).
+  sin autor) y llama a **Gemini API** (SDK `google-generativeai`).
+- Modelo en uso: `gemini-3.5-flash` (economico) — constante `AI_MODEL` en `ai_service.py`.
+  Clave en `config/config.py` (`GEMINI_API_KEY`).
 - **Destinatario: solo el Admin** (Jefe de TL/tutores). Resumen ejecutivo del feedback por
   persona/periodo.
 - **Privacidad:** nunca se envian identidades ni `evaluator_id`. El texto resultante se guarda en
@@ -255,7 +255,7 @@ extensiones puntuales sobre `calculate_average_score`, no un rediseno.
 | PATCH | `/questions/:id` | **Admin:** editar (versionar) el texto de una pregunta (solo con periodo cerrado, si no `409`) |
 | PUT | `/questions/weights` | **Admin:** actualizar los pesos (`weight_percent`) de las preguntas de escala de un template (deben sumar 100, solo con periodo cerrado) |
 | GET | `/metrics/summary?period_id=:p` | KPIs + **ICP** |
-| GET | `/metrics/ai-summary?evaluatee_id=:e&period_id=:p` | Resumen IA (Claude, anonimizado) — admin |
+| GET | `/metrics/ai-summary?evaluatee_id=:e&period_id=:p` | Resumen IA (Gemini, anonimizado) — admin |
 
 > FastAPI expone documentacion interactiva automatica en `/docs` (Swagger) y `/redoc`, util para pruebas y sustentacion.
 
@@ -304,8 +304,8 @@ La rubrica exige justificar las decisiones tecnicas. Todas las elecciones estan 
 | Backend | **Python + FastAPI** | Flask, Express.js | Python alineado a la Ruta Basica; validacion y docs integradas |
 | Base de datos | **MySQL** | PostgreSQL, MongoDB | Datos relacionales, integridad, consultas agregadas |
 | Auth | **Sin JWT** | JWT, sesiones server-side | El login valida hash bcrypt pero no emite token; el rol/ID lo manda el propio front y el backend lo confia. Reduce el alcance del MVP a costa de no tener verificacion criptografica real (ver "Manejo de autenticacion") |
-| IA (resumenes) | **Claude API** (`anthropic`) | otros LLM, sin IA | Calidad de redaccion + privacidad por diseno (solo agregados anonimos) |
+| IA (resumenes) | **Gemini API** (`google-generativeai`) | otros LLM, sin IA | Calidad de redaccion + privacidad por diseno (solo agregados anonimos) |
 
-**FastAPI** trae validacion (Pydantic), tipado y documentacion automatica (Swagger/`/docs`) sin librerias extra, util para la sustentacion. **MySQL** encaja porque el dominio es naturalmente relacional (usuarios<->roles, evaluaciones<->respuestas) y el dashboard vive de consultas agregadas. No usar **JWT** es un tradeoff de seguridad consciente para reducir el alcance del MVP en el tiempo disponible; para una SPA sin estado, JWT seria la opcion mas robusta, pero no era necesaria para demostrar la logica de negocio del proyecto. **Claude API** resume el feedback en lenguaje natural para el Admin: complementa la logica de negocio propia (el ICP), que es lo que la rubrica evalua como "no-CRUD".
+**FastAPI** trae validacion (Pydantic), tipado y documentacion automatica (Swagger/`/docs`) sin librerias extra, util para la sustentacion. **MySQL** encaja porque el dominio es naturalmente relacional (usuarios<->roles, evaluaciones<->respuestas) y el dashboard vive de consultas agregadas. No usar **JWT** es un tradeoff de seguridad consciente para reducir el alcance del MVP en el tiempo disponible; para una SPA sin estado, JWT seria la opcion mas robusta, pero no era necesaria para demostrar la logica de negocio del proyecto. **Gemini API** resume el feedback en lenguaje natural para el Admin: complementa la logica de negocio propia (el ICP), que es lo que la rubrica evalua como "no-CRUD".
 
 **Decisiones que evitan sobreingenieria:** sin frameworks de frontend ni estado externo; SQL plano (`text()`) sobre un esquema 3FN sin complejidad extra; `database/01_ddl.sql` + `database/02_dml.sql` versionados en vez de migraciones (Alembic queda como mejora futura); tests enfocados en la logica de negocio, no en cobertura total.
