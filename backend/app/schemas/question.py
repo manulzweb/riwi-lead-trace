@@ -4,9 +4,10 @@ from typing import List, Optional
 
 class QuestionOut(BaseModel):
     id: int
-    template_id: int
+    form_id: int
     text: str
-    category: str
+    category_id: int
+    category: str  # nombre de la categoria (join contra categories), no editable directo
     input_type: str
     sort_order: int
     weight_percent: float
@@ -14,6 +15,47 @@ class QuestionOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class QuestionCreate(BaseModel):
+    """Body de POST /questions: agrega una pregunta nueva a una plantilla
+    ya existente (fuera del flujo de creacion de plantilla en POST /forms).
+
+    No exige que los pesos de escala sumen 100 en el momento: al agregar
+    una pregunta sola es normal que el total quede descuadrado; el admin
+    lo reequilibra despues con PUT /questions/weights.
+    """
+    form_id: int = Field(
+        title="ID de la Plantilla",
+        description="ID de la plantilla a la que se agregará la pregunta",
+        examples=[1]
+    )
+    text: str = Field(
+        min_length=3, 
+        max_length=255,
+        title="Texto de la Pregunta",
+        description="Enunciado de la pregunta",
+        examples=["¿El líder es comunicativo?"]
+    )
+    category_id: int = Field(
+        title="ID de la Categoría",
+        description="Categoría a la que pertenece",
+        examples=[1]
+    )
+    input_type: str = Field(
+        pattern="^(scale|text|yes_no)$",
+        title="Tipo de Entrada",
+        description="Tipo de respuesta esperada",
+        examples=["scale"]
+    )
+    weight_percent: float = Field(
+        default=0, 
+        ge=0, 
+        le=100,
+        title="Peso Porcentual",
+        description="Peso de la pregunta (solo si es scale)",
+        examples=[20.0]
+    )
 
 
 class QuestionTextPatch(BaseModel):
@@ -34,5 +76,5 @@ class WeightItem(BaseModel):
 
 
 class WeightsUpdate(BaseModel):
-    template_id: int
+    form_id: int
     weights: List[WeightItem]

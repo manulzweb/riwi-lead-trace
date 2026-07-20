@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Roboto:ital,wght@0,100..900;1,100..900&family=Rubik:ital,wght@0,300..900;1,300..900&display=swap');
 @import "tailwindcss";
-
+@source "../**/*.js";
 @theme {
   --color-bg-base: var(--bg-base);
   --color-bg-panel: var(--bg-panel);

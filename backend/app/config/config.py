@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     DATABASE_URL: str
-    ANTHROPIC_API_KEY: str = ""
+    GEMINI_API_KEY: str = ""
     FRONTEND_ORIGIN: str = "http://localhost:5173"
 
     class Config:

@@ -5,9 +5,19 @@ from app.services import evaluation_service
 
 router = APIRouter()
 
-@router.post("/evaluations", response_model=EvaluationDetailOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/evaluations", 
+    response_model=EvaluationDetailOut, 
+    status_code=status.HTTP_201_CREATED,
+    summary="Crear evaluación",
+    response_description="La evaluación recién enviada",
+    responses={
+        201: {"description": "Evaluación guardada con éxito"},
+        409: {"description": "El evaluador ya evaluó a este usuario en este periodo"}
+    }
+)
 def create_evaluation(evaluation: EvaluationCreate):
-    """Registra una nueva evaluación (borrador o enviada)."""
+    """Ejecuta una inserción transaccional de una evaluación (estado draft/submitted). Fallará si viola el constraint `uq_eval_once`."""
     return evaluation_service.create_evaluation(evaluation)
 
 @router.get("/evaluations", response_model=List[EvaluationDetailOut])
@@ -15,14 +25,16 @@ def get_evaluations(
     evaluator_id: Optional[int] = Query(None, description="Filtrar por el ID del evaluador"),
     evaluatee_id: Optional[int] = Query(None, description="Filtrar por el ID del evaluado"),
     period_id: Optional[int] = Query(None, description="Filtrar por periodo (solo con evaluatee_id)"),
-    viewer_role: Optional[str] = Query(None, description="Rol de quien consulta, lo manda el front (no se verifica en el servidor)")
+    viewer_role: Optional[str] = Query(None, description="Rol de quien consulta, lo manda el front (no se verifica en el servidor)"),
+    skip: int = Query(0, ge=0, description="Número de registros a omitir (para paginación)"),
+    limit: int = Query(100, ge=1, le=1000, description="Número máximo de registros a devolver")
 ):
-    """Obtiene el historial de evaluaciones filtrado por evaluador o evaluado."""
+    """Consulta evaluaciones con soporte de paginación (`skip`, `limit`) y filtrado por entidad. Provee enmascaramiento de identidad (anonimato) basado en el rol de la petición."""
     if evaluator_id is not None:
-        return evaluation_service.get_evaluations_by_evaluator(evaluator_id)
+        return evaluation_service.get_evaluations_by_evaluator(evaluator_id, skip=skip, limit=limit)
     elif evaluatee_id is not None:
         return evaluation_service.get_evaluations_by_evaluatee(
-            evaluatee_id, period_id, hide_evaluator=(viewer_role != "admin")
+            evaluatee_id, period_id, hide_evaluator=(viewer_role != "admin"), skip=skip, limit=limit
         )
     else:
         raise HTTPException(

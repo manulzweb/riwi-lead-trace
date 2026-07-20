@@ -22,6 +22,7 @@ Justificacion ampliada en [`06-arquitectura.md`](./06-arquitectura.md).
 | `user_roles` | Tabla intermedia para asociar usuarios con multiples roles |
 | `periods` | Periodos/ciclos de evaluacion (p.ej. trimestre, cohorte) |
 | `form_templates` | Plantilla de formulario segun el rol evaluado (TL / Tutor) |
+| `categories` | Categoria/tema de una pregunta (ej. "Comunicacion efectiva"); el Admin la administra aparte de las plantillas |
 | `questions` | Preguntas/criterios que componen una plantilla |
 | `evaluations` | Una evaluacion de un evaluador hacia un evaluado, en un periodo |
 | `evaluation_answers` | Respuestas (puntaje + comentario) por pregunta de una evaluacion |
@@ -91,8 +92,15 @@ Justificacion ampliada en [`06-arquitectura.md`](./06-arquitectura.md).
 |----------|------|-------|
 | id | INT PK | |
 | title | VARCHAR(120) | |
+| description | VARCHAR(255) NULL | instrucciones opcionales para quien llena el formulario |
 | target_role_id | INT FK -> roles.id | rol que se evalua (team_leader/tutor) |
-| is_active | BOOLEAN | |
+| is_active | BOOLEAN | una sola plantilla activa por rol a la vez: crear una nueva (`POST /forms`) desactiva cualquier otra del mismo `target_role_id` |
+
+### `categories`
+| Atributo | Tipo | Notas |
+|----------|------|-------|
+| id | INT PK | |
+| name | VARCHAR(60) UNIQUE | el Admin la crea/renombra libremente (`POST`/`PATCH /categories`); borrarla (`DELETE /categories/{id}`) esta **restringido**: se rechaza con `409` mientras alguna pregunta (activa o de una evaluacion historica) tenga `category_id` apuntando a ella -- lo aplica la FK `fk_question_category` (`ON DELETE RESTRICT`), no una validacion aparte |
 
 ### `questions`
 | Atributo | Tipo | Notas |
@@ -100,10 +108,10 @@ Justificacion ampliada en [`06-arquitectura.md`](./06-arquitectura.md).
 | id | INT PK | |
 | template_id | INT FK -> form_templates.id | |
 | text | VARCHAR(255) | editable por el Admin **solo con periodo cerrado** y via **versionado** (fila nueva + desactivar la anterior) |
-| category | VARCHAR(60) | categoria tematica de la pregunta (organiza el formulario); el calculo del ICP no la usa hoy — ver `06-arquitectura.md`); **no editable** desde la UI |
-| input_type | VARCHAR(20) | 'scale' \| 'text' |
-| sort_order | INT | orden de despliegue |
-| weight_percent | DECIMAL(5,2) | peso porcentual de la pregunta en el ICP (ADMIN-02); solo aplica a preguntas 'scale' (las 'text' quedan en 0 por default); los pesos de las preguntas de escala **activas** de un mismo `template_id` deben sumar exactamente 100 (validado en `question_service` antes de guardar, `PUT /questions/weights`) |
+| category_id | INT FK -> categories.id | categoria tematica de la pregunta (organiza el formulario y permite listar/rankear por categoria en el dashboard); **no editable** en preguntas existentes (se fija al crearla) |
+| input_type | VARCHAR(20) | 'scale' \| 'text' \| 'yes_no'; **no editable** desde la UI en preguntas existentes (si se define al crearla) |
+| sort_order | INT | orden de despliegue; **no editable** desde la UI |
+| weight_percent | DECIMAL(5,2) | peso de la pregunta en el ICP ponderado (solo aplica a 'scale'; 'text' queda en 0). Las preguntas de escala **activas** de un mismo `template_id` deben sumar exactamente 100 — se valida en `question_service.update_weights` antes de guardar. Editable por el Admin via `PUT /questions/weights`, solo con periodo cerrado |
 | is_active | BOOLEAN | default TRUE; las evaluaciones nuevas cargan solo preguntas activas; las respuestas historicas conservan su pregunta y su peso original |
 
 ### `evaluations`
@@ -150,6 +158,7 @@ No es dato relacional duplicado, sino el **resultado materializado de un servici
 - `clanes` N—M `users` *(solo para TLs mediante tabla intermedia `team_leader_clans`)*
 - `roles` 1—N `form_templates` (rol evaluado)
 - `form_templates` 1—N `questions`
+- `categories` 1—N `questions` *(borrar una categoria esta restringido mientras tenga preguntas)*
 - `users` (evaluador) 1—N `evaluations` *(opcional: NULL en anonimas)*
 - `users` (evaluado) 1—N `evaluations`
 - `periods` 1—N `evaluations`
@@ -177,7 +186,9 @@ roles (id PK, name)                                                     │
         │                          │                     │
         └──< form_templates (id PK, title, target_role_id FK, is_active)
             │1
-            └──< questions (id PK, template_id FK, text, category, input_type, sort_order)
+            └──< questions (id PK, template_id FK, text, category_id FK, input_type, sort_order)
+                      │N
+categories (id PK, name) ──────────────────────────< questions.category_id
                       │1
                       └──< evaluation_answers (id PK, evaluation_id FK, question_id FK, score, comment)
                                    │N
@@ -203,8 +214,9 @@ users(id, full_name, email, password_hash, clan_id->clanes?, is_active, created_
 user_roles(user_id->users, role_id->roles)         -- Relación N:M para multiples roles
 team_leader_clans(user_id->users, clan_id->clanes) -- Relación N:M exclusiva para TLs
 periods(id, name, starts_at, ends_at, is_active)
-form_templates(id, title, target_role_id->roles, is_active)
-questions(id, template_id->form_templates, text, category, input_type, sort_order, weight_percent)
+form_templates(id, title, description, target_role_id->roles, is_active)
+categories(id, name)
+questions(id, template_id->form_templates, text, category_id->categories, input_type, sort_order, weight_percent)
 evaluations(id, evaluator_id->users?, evaluatee_id->users, template_id->form_templates,
             period_id->periods, is_anonymous, status, submitted_at, created_at)
 evaluation_answers(id, evaluation_id->evaluations, question_id->questions, score, comment)
@@ -215,7 +227,7 @@ ai_feedback_cache(id, evaluatee_id->users, period_id->periods, summary, model,
 ## Decisiones de diseno
 
 - **Anonimato:** se modela con `is_anonymous` + `evaluator_id` NULLABLE. Si la evaluacion es anonima, no se persiste el evaluador -> anonimato real a nivel de datos.
-- **Plantillas dinamicas:** `form_templates` + `questions` permiten cambiar criterios sin tocar codigo. En el MVP el Admin puede **editar texto y activar/desactivar** preguntas (`questions.is_active`), **solo con periodo cerrado** y **versionando** (fila nueva + desactivar la anterior): asi las respuestas historicas conservan el texto que realmente respondieron y el ICP no se contamina. El editor completo (crear plantillas/tipos) queda fuera del MVP.
+- **Plantillas dinamicas:** `form_templates` + `questions` permiten cambiar criterios sin tocar codigo. El Admin puede **editar texto y activar/desactivar** preguntas (`questions.is_active`), **solo con periodo cerrado** y **versionando** (fila nueva + desactivar la anterior): asi las respuestas historicas conservan el texto que realmente respondieron y el ICP no se contamina. Ademas puede **crear plantillas nuevas** (`POST /forms`, con sus preguntas iniciales) y **agregar/quitar preguntas** de una plantilla existente (`POST`/`DELETE /questions`) — tambien solo con periodo cerrado; crear/quitar nunca versiona (no hay historial previo que preservar), solo desactiva. `target_role` esta restringido a `team_leader`/`tutor` (los unicos roles evaluables); `input_type` acepta `scale`\|`text`\|`yes_no` (`yes_no` se excluye del ICP igual que `text`).
 - **Ventana de evaluacion controlada:** `periods.is_active` define si hay formularios disponibles. Solo **un** periodo activo a la vez (regla en `services`, transaccional); sin periodo activo, no se aceptan evaluaciones nuevas ni envios.
 - **Una respuesta por pregunta** via `evaluation_answers` (normalizado), facilitando metricas por criterio/categoria.
 - **Integridad de unicidad:** un evaluador no deberia evaluar dos veces al mismo evaluado en el mismo periodo. Esto se valida **solo en `evaluation_service`** (un `SELECT` por `evaluator_id`+`evaluatee_id`+`period_id` antes del `INSERT`, sin transaccion). El script trae, comentado a proposito, el indice `uq_eval_once ON evaluations (evaluator_id, evaluatee_id, period_id)` que cerraria la condicion de carrera a nivel de BD; queda deshabilitado para el MVP (ver `database/01_ddl.sql`), asumiendo el riesgo residual de una doble evaluacion por dos requests concurrentes. No reactivarlo ni reescribir la validacion sin aprobacion del equipo.

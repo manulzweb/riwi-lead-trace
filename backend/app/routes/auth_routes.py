@@ -6,7 +6,13 @@ from app.services import auth_service
 router = APIRouter()
 
 
-@router.post("/auth/login", response_model=LoginResponse)
+@router.post(
+    "/auth/login", 
+    response_model=LoginResponse,
+    summary="Iniciar sesión",
+    response_description="Datos del usuario autenticado",
+    responses={401: {"description": "Credenciales inválidas"}}
+)
 def login(credentials: LoginRequest):
-    """Autentica al usuario y devuelve un JWT."""
+    """Verifica credenciales contra el hash bcrypt de la base de datos. Retorna el payload del usuario (stateless). No implementa JWT."""
     return auth_service.login(credentials.email, credentials.password)

@@ -4,5 +4,5 @@ router = APIRouter()
 
 @router.get("/")
 def health_check():
-    """Ruta de salud para verificar si el backend está activo."""
+    """Endpoint de health check (L7) para validación del proxy inverso o load balancer."""
     return {"status": "ok"}

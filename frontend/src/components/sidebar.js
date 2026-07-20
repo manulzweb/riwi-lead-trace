@@ -56,31 +56,47 @@ export const sidebarComponent = (isActive) => {
       <div class="px-6 py-4">
         <a href="/admin/evaluations" class="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand-bg)] py-3 text-sm font-bold text-[var(--brand-text)] transition-all hover:bg-[var(--brand-hover)] hover:shadow-md cursor-pointer">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-          Nueva Plantilla
+          Nuevo Formulario
         </a>
       </div>
     `;
     navConfig = [
-      { href: "/dashboard", label: "Home", icon: icons.home },
-      { label: "Admin Hub", icon: icons.adminHub, submenu: [
-        { href: "/admin/evaluations", label: "Evaluations" },
-        { href: "/admin/metrics", label: "Metrics" },
-        { href: "/admin/ai-summary", label: "AI Summary" }
-      ]}
+      { href: "/dashboard", label: "Inicio", icon: icons.home },
+      {
+        label: "Admin Hub", icon: icons.adminHub, submenu: [
+          { href: "/admin/evaluations", label: "Formularios" },
+          { href: "/admin/periods", label: "Ciclos" },
+          { href: "/admin/metrics", label: "Métricas" },
+          { href: "/admin/ai-summary", label: "Resumen IA" }
+        ]
+      }
     ];
   } else if (role === "coder") {
     navConfig = [
       { href: "/dashboard", label: "Home", icon: icons.home },
-      { label: "Evaluations", icon: icons.evaluations, submenu: [
-        { href: "/evaluations/new", label: "To-Do" },
-        { href: "/evaluations", label: "History" }
-      ]}
+      {
+        label: "Evaluations", icon: icons.evaluations, submenu: [
+          { href: "/evaluations/new", label: "To-Do" },
+          { href: "/evaluations", label: "History" }
+        ]
+      }
     ];
-  } else {
-    // team_leader or tutor
+  } else if (role === "tutor") {
     navConfig = [
       { href: "/dashboard", label: "Home", icon: icons.home },
-      { href: "/my-results", label: "Evaluations", icon: icons.evaluations }
+      {
+        label: "Make Evaluation", icon: icons.evaluations, submenu: [
+          { href: "/evaluations/new", label: "To-Do" },
+          { href: "/evaluations", label: "History" }
+        ]
+      },
+      { href: "/my-results", label: "My Results", icon: icons.evaluations }
+    ];
+  } else {
+    // team_leader
+    navConfig = [
+      { href: "/dashboard", label: "Home", icon: icons.home },
+      { href: "/my-results", label: "My Results", icon: icons.evaluations }
     ];
   }
 
@@ -138,7 +154,7 @@ export const setupSidebar = () => {
     header.addEventListener("click", () => {
       const content = header.nextElementSibling;
       const icon = header.querySelector("svg:last-child");
-      
+
       if (content.classList.contains("max-h-0")) {
         // Open
         content.classList.remove("max-h-0", "opacity-0");

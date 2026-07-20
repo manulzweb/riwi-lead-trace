@@ -1,50 +1,49 @@
 from sqlalchemy import text
 from fastapi import HTTPException, status
 
-from app.config.database import conn
-from app.schemas.question import WeightsUpdate
+from app.config.database import engine
+from app.schemas.question import QuestionCreate, WeightsUpdate
 from app.services.ai_service import check_question_category_coherence
 
 WEIGHT_SUM_TOLERANCE = 0.01  # margen por redondeo de DECIMAL(5,2)
 
 
 def _assert_no_active_period():
-    """Regla ADMIN-02: las preguntas (texto o pesos) solo se editan con el
-    periodo cerrado -- editarlas mientras hay evaluaciones en curso podria
-    cambiar el instrumento debajo de evaluadores a mitad de respuesta.
-    """
-    active = conn.execute(text("SELECT id FROM periods WHERE is_active = TRUE")).first()
-    if active:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="No se pueden editar preguntas mientras haya un periodo activo. Cierra el periodo primero."
-        )
+    with engine.connect() as conn:
+        active = conn.execute(text("SELECT id FROM periods WHERE is_active = TRUE")).first()
+        if active:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="No se pueden editar preguntas mientras haya un periodo activo. Cierra el periodo primero."
+            )
+
+
+QUESTION_QUERY = """
+    SELECT q.id, q.form_id, q.text, q.category_id, c.name AS category,
+           q.input_type, q.sort_order, q.weight_percent, q.is_active
+    FROM questions q
+    JOIN categories c ON q.category_id = c.id
+"""
 
 
 def get_question(question_id: int):
-    query = text("""
-        SELECT id, template_id, text, category, input_type, sort_order, weight_percent, is_active
-        FROM questions WHERE id = :id
-    """)
-    row = conn.execute(query, {"id": question_id}).mappings().first()
-    return dict(row) if row else None
+    with engine.connect() as conn:
+        query = text(f"{QUESTION_QUERY} WHERE q.id = :id")
+        row = conn.execute(query, {"id": question_id}).mappings().first()
+        return dict(row) if row else None
 
 
-def get_questions_by_template(template_id: int, only_active: bool = True):
-    query_str = "SELECT id, template_id, text, category, input_type, sort_order, weight_percent, is_active FROM questions WHERE template_id = :template_id"
-    if only_active:
-        query_str += " AND is_active = TRUE"
-    query_str += " ORDER BY sort_order ASC"
-    result = conn.execute(text(query_str), {"template_id": template_id})
-    return [dict(row) for row in result.mappings()]
+def get_questions_by_template(form_id: int, only_active: bool = True):
+    with engine.connect() as conn:
+        query_str = f"{QUESTION_QUERY} WHERE q.form_id = :form_id"
+        if only_active:
+            query_str += " AND q.is_active = TRUE"
+        query_str += " ORDER BY q.sort_order ASC"
+        result = conn.execute(text(query_str), {"form_id": form_id})
+        return [dict(row) for row in result.mappings()]
 
 
 def version_question_text(question_id: int, new_text: str, confirm: bool):
-    """Edita el texto de una pregunta versionandola (ADMIN-02): nunca
-    sobrescribe la fila -- desactiva la anterior y crea una nueva con el
-    mismo template/category/input_type/weight_percent/sort_order, para que
-    las respuestas historicas conserven su pregunta y su peso originales.
-    """
     _assert_no_active_period()
 
     original = get_question(question_id)
@@ -70,36 +69,82 @@ def version_question_text(question_id: int, new_text: str, confirm: bool):
                 )
             )
 
-    # category, input_type, sort_order y weight_percent NUNCA los toca esta
-    # operacion -- el admin no puede tocarlos al "editar el texto" (regla
-    # ADMIN-02). Si se quiere reponderar, es un paso aparte (PUT /questions/weights).
-    deactivate_query = text("UPDATE questions SET is_active = FALSE WHERE id = :id")
-    conn.execute(deactivate_query, {"id": question_id})
+    with engine.begin() as conn:
+        deactivate_query = text("UPDATE questions SET is_active = FALSE WHERE id = :id")
+        conn.execute(deactivate_query, {"id": question_id})
 
-    insert_query = text("""
-        INSERT INTO questions (template_id, text, category, input_type, sort_order, weight_percent, is_active)
-        VALUES (:template_id, :text, :category, :input_type, :sort_order, :weight_percent, TRUE)
-    """)
-    result = conn.execute(insert_query, {
-        "template_id": original["template_id"],
-        "text": new_text,
-        "category": original["category"],
-        "input_type": original["input_type"],
-        "sort_order": original["sort_order"],
-        "weight_percent": original["weight_percent"],
-    })
-    conn.commit()
-    return get_question(result.lastrowid)
+        insert_query = text("""
+            INSERT INTO questions (form_id, text, category_id, input_type, sort_order, weight_percent, is_active)
+            VALUES (:form_id, :text, :category_id, :input_type, :sort_order, :weight_percent, TRUE)
+        """)
+        result = conn.execute(insert_query, {
+            "form_id": original["form_id"],
+            "text": new_text,
+            "category_id": original["category_id"],
+            "input_type": original["input_type"],
+            "sort_order": original["sort_order"],
+            "weight_percent": original["weight_percent"],
+        })
+        new_id = result.lastrowid
+        
+    return get_question(new_id)
+
+
+def create_question(payload: QuestionCreate):
+    _assert_no_active_period()
+
+    with engine.begin() as conn:
+        template_exists = conn.execute(
+            text("SELECT id FROM forms WHERE id = :id"), {"id": payload.form_id}
+        ).scalar()
+        if not template_exists:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plantilla no encontrada.")
+
+        category_exists = conn.execute(
+            text("SELECT id FROM categories WHERE id = :id"), {"id": payload.category_id}
+        ).scalar()
+        if not category_exists:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Categoria no encontrada.")
+
+        next_sort_order = conn.execute(
+            text("SELECT COALESCE(MAX(sort_order), -1) + 1 FROM questions WHERE form_id = :form_id"),
+            {"form_id": payload.form_id}
+        ).scalar()
+
+        weight = payload.weight_percent if payload.input_type == "scale" else 0
+
+        insert_query = text("""
+            INSERT INTO questions (form_id, text, category_id, input_type, sort_order, weight_percent, is_active)
+            VALUES (:form_id, :text, :category_id, :input_type, :sort_order, :weight_percent, TRUE)
+        """)
+        result = conn.execute(insert_query, {
+            "form_id": payload.form_id,
+            "text": payload.text,
+            "category_id": payload.category_id,
+            "input_type": payload.input_type,
+            "sort_order": next_sort_order,
+            "weight_percent": weight,
+        })
+        new_id = result.lastrowid
+        
+    return get_question(new_id)
+
+
+def delete_question(question_id: int):
+    _assert_no_active_period()
+    existing = get_question(question_id)
+    if existing is None:
+        return False
+    if existing["is_active"]:
+        with engine.begin() as conn:
+            conn.execute(text("UPDATE questions SET is_active = FALSE WHERE id = :id"), {"id": question_id})
+    return True
 
 
 def update_weights(payload: WeightsUpdate):
-    """PUT /questions/weights: reponderar las preguntas de escala activas de
-    un template. Los pesos deben cubrir EXACTAMENTE ese conjunto (ni de mas
-    ni de menos) y sumar 100, o se rechaza sin tocar nada.
-    """
     _assert_no_active_period()
 
-    current = get_questions_by_template(payload.template_id, only_active=True)
+    current = get_questions_by_template(payload.form_id, only_active=True)
     current_scale = {q["id"] for q in current if q["input_type"] == "scale"}
 
     sent_ids = {w.question_id for w in payload.weights}
@@ -119,9 +164,9 @@ def update_weights(payload: WeightsUpdate):
             detail=f"Los pesos deben sumar 100 (suma actual: {total})."
         )
 
-    update_query = text("UPDATE questions SET weight_percent = :weight_percent WHERE id = :id")
-    for item in payload.weights:
-        conn.execute(update_query, {"weight_percent": item.weight_percent, "id": item.question_id})
-    conn.commit()
+    with engine.begin() as conn:
+        update_query = text("UPDATE questions SET weight_percent = :weight_percent WHERE id = :id")
+        for item in payload.weights:
+            conn.execute(update_query, {"weight_percent": item.weight_percent, "id": item.question_id})
 
-    return get_questions_by_template(payload.template_id, only_active=True)
+    return get_questions_by_template(payload.form_id, only_active=True)

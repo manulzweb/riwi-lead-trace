@@ -59,11 +59,21 @@ export const setupAiSummary = async () => {
     const [users, periods] = await Promise.all([userService.get(), periodService.get()]);
     const evaluables = users.filter(u => u.roles?.includes("team_leader") || u.roles?.includes("tutor"));
 
-    targetUserSelect.innerHTML = '<option value="">Selecciona una persona...</option>' +
-      evaluables.map(u => `<option value="${u.id}">${u.name} (${u.roles.map(r => r.replace('_', ' ')).join(' / ')})</option>`).join("");
+    const userOptions = [
+      { value: '', label: 'Selecciona una persona...' },
+      ...evaluables.map(u => ({ value: u.id, label: `${u.name} (${u.roles.map(r => r.replace('_', ' ')).join(' / ')})` }))
+    ];
+    document.getElementById('target-user-container').outerHTML = dropdownComponent('target-user', userOptions, '');
+    setupDropdown('target-user');
 
-    periodSelect.innerHTML = '<option value="">Selecciona un periodo...</option>' +
-      periods.map(p => `<option value="${p.id}" ${p.is_active ? "selected" : ""}>${p.name}</option>`).join("");
+    const periodOptions = [
+      { value: '', label: 'Selecciona un periodo...' },
+      ...periods.map(p => ({ value: p.id, label: p.name }))
+    ];
+    const activePeriod = periods.find(p => p.is_active)?.id || '';
+    document.getElementById('period-container').outerHTML = dropdownComponent('period', periodOptions, activePeriod);
+    setupDropdown('period');
+
   } catch (err) {
     showToast("Error", "error", "No se pudieron cargar las personas o periodos.");
     console.error(err);
@@ -71,8 +81,11 @@ export const setupAiSummary = async () => {
   }
 
   generateBtn.addEventListener("click", async () => {
-    const evaluateeId = parseInt(targetUserSelect.value);
-    const periodId = parseInt(periodSelect.value);
+    // We must query the input value dynamically at click time
+    const targetUserInput = document.getElementById("target-user");
+    const periodInput = document.getElementById("period");
+    const evaluateeId = parseInt(targetUserInput.value);
+    const periodId = parseInt(periodInput.value);
 
     if (!evaluateeId || !periodId) {
       showToast("Falta información", "warning", "Selecciona una persona y un periodo.");

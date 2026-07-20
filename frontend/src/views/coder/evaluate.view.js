@@ -1,4 +1,5 @@
 import { navBarComponent } from "../../components/navbar";
+import { dropdownComponent, setupDropdown } from "../../components/dropdown";
 import { userService } from "../../services/users.service";
 import { evaluationService } from "../../services/evaluation.service";
 import { periodService } from "../../services/periods.service";
@@ -32,22 +33,20 @@ export const renderEvaluate = () => `
       <section class="rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-8 shadow-sm">
         
         <div class="grid gap-6 md:grid-cols-2 mb-8">
-          <div>
+          <div id="target-role-container">
             <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="target-role">¿A quién evalúas?</label>
-            <select id="target-role" required
-              class="w-full rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] px-4 py-3 text-[var(--text-main)] focus:border-[var(--brand-hover)] focus:outline-none">
-              <option value="">Selecciona un rol...</option>
-              <option value="team_leader">Team Leader</option>
-              <option value="tutor">Tutor</option>
-            </select>
+            ${dropdownComponent('target-role', [
+              { value: '', label: 'Selecciona un rol...' },
+              { value: 'team_leader', label: 'Team Leader' },
+              { value: 'tutor', label: 'Tutor' }
+            ], '')}
           </div>
 
-          <div>
+          <div id="evaluatee-container">
             <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="evaluatee">Persona a evaluar</label>
-            <select id="evaluatee" disabled required
-              class="w-full rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] px-4 py-3 text-[var(--text-main)] focus:border-[var(--brand-hover)] focus:outline-none disabled:cursor-not-allowed disabled:text-[var(--text-muted)]">
-              <option value="">Primero selecciona un rol...</option>
-            </select>
+            ${dropdownComponent('evaluatee', [
+              { value: '', label: 'Primero selecciona un rol...' }
+            ], '')}
           </div>
         </div>
 
@@ -94,6 +93,9 @@ export const setupEvaluate = async () => {
 
   if (!form || !submitBtn || !targetRole || !evaluatee || !qContainer) return;
 
+  setupDropdown('target-role');
+  setupDropdown('evaluatee');
+
   const currentUser = authService.getSession();
 
   // Función para actualizar la barra de progreso
@@ -134,24 +136,58 @@ export const setupEvaluate = async () => {
     progressContainer.classList.add("hidden");
 
     if (!role) {
-      evaluatee.disabled = true;
-      evaluatee.innerHTML = '<option value="">Primero selecciona un rol...</option>';
+      document.getElementById('evaluatee-container').outerHTML = `
+        <div id="evaluatee-container">
+          <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="evaluatee">Persona a evaluar</label>
+          ${dropdownComponent('evaluatee', [{ value: '', label: 'Primero selecciona un rol...' }], '')}
+        </div>`;
+      setupDropdown('evaluatee');
       return;
     }
 
-    const filtered = allUsers.filter(u => u.roles?.includes(role) && u.id !== currentUser.id);
-    evaluatee.disabled = false;
-    evaluatee.innerHTML = '<option value="">Selecciona una persona...</option>' +
-      filtered.map(u => `<option value="${u.id}">${u.name} (${u.email})</option>`).join("");
-
     try {
-      qContainer.innerHTML = '<div class="text-center py-4 text-[var(--text-muted)] animate-pulse">Cargando preguntas...</div>';
-      currentTemplate = await evaluationService.getForm(role);
+      qContainer.innerHTML = '<div class="text-center py-4 text-[var(--text-muted)] animate-pulse">Cargando datos...</div>';
+
+      const [template, previousEvaluations] = await Promise.all([
+        evaluationService.getForm(role),
+        evaluationService.getByEvaluator(currentUser.id)
+      ]);
+      currentTemplate = template;
+
+      const evaluatedIds = previousEvaluations
+        .filter(e => e.period_id === activePeriod.id && e.form_id === currentTemplate.id)
+        .map(e => String(e.evaluatee_id));
+
+      const filtered = allUsers.filter(u => u.roles?.includes(role) && u.id !== currentUser.id && !evaluatedIds.includes(String(u.id)));
+
+      if (filtered.length === 0) {
+        document.getElementById('evaluatee-container').outerHTML = `
+          <div id="evaluatee-container">
+            <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="evaluatee">Persona a evaluar</label>
+            ${dropdownComponent('evaluatee', [{ value: '', label: 'Ya has evaluado a todos para este rol' }], '')}
+          </div>`;
+        setupDropdown('evaluatee');
+        qContainer.innerHTML = '<div class="text-center py-4 text-[var(--brand-bg)] font-bold">¡Has completado todas las evaluaciones para este rol en el periodo actual!</div>';
+        return;
+      }
+
+      const evaluateeOptions = [
+        { value: '', label: 'Selecciona una persona...' },
+        ...filtered.map(u => ({ value: u.id, label: `${u.name} (${u.email})` }))
+      ];
+      
+      document.getElementById('evaluatee-container').outerHTML = `
+        <div id="evaluatee-container">
+          <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="evaluatee">Persona a evaluar</label>
+          ${dropdownComponent('evaluatee', evaluateeOptions, '')}
+        </div>`;
+      setupDropdown('evaluatee');
+
       renderQuestions(currentTemplate.questions);
 
       progressContainer.classList.remove("hidden");
       updateProgress();
-      loadDraft(role); // Cargar borrador si existe para este rol
+      loadDraft(role);
     } catch (err) {
       qContainer.innerHTML = '<div class="text-red-500 py-4 text-center">Error al cargar preguntas de la plantilla.</div>';
       console.error(err);
@@ -200,7 +236,7 @@ export const setupEvaluate = async () => {
         qLabel.textContent = q.text;
         qDiv.appendChild(qLabel);
 
-        if (q.input_type === "scale") {
+        if (q.input_type === "scale" || q.input_type === "scale_1_5") {
           const scaleDiv = document.createElement("div");
           scaleDiv.className = "grid grid-cols-5 gap-3";
 
@@ -213,9 +249,9 @@ export const setupEvaluate = async () => {
 
             btn.addEventListener("click", () => {
               scaleDiv.querySelectorAll("button").forEach(b => {
-                b.classList.remove("border-[var(--brand-bg)]", "text-[var(--brand-bg)]", "shadow-sm");
+                b.classList.remove("border-[var(--brand-bg)]", "text-[var(--brand-bg)]", "shadow-sm", "bg-[var(--brand-bg)]/10");
               });
-              btn.classList.add("border-[var(--brand-bg)]", "text-[var(--brand-bg)]", "shadow-sm");
+              btn.classList.add("border-[var(--brand-bg)]", "text-[var(--brand-bg)]", "shadow-sm", "bg-[var(--brand-bg)]/10");
               qDiv.dataset.selectedValue = i;
 
               const errorMsg = qDiv.querySelector(".error-msg");
@@ -233,10 +269,43 @@ export const setupEvaluate = async () => {
           errorMsg.textContent = "Por favor selecciona una opción.";
           qDiv.appendChild(errorMsg);
 
+        } else if (q.input_type === "yes_no") {
+          const yesNoDiv = document.createElement("div");
+          yesNoDiv.className = "flex gap-4";
+
+          ['Sí', 'No'].forEach(val => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "flex h-12 flex-1 items-center justify-center rounded-xl border border-[var(--border-main)] bg-transparent font-bold text-[var(--text-muted)] transition-all hover:border-[var(--brand-hover)] focus:outline-none";
+            btn.textContent = val;
+            btn.dataset.value = val;
+
+            btn.addEventListener("click", () => {
+              yesNoDiv.querySelectorAll("button").forEach(b => {
+                b.classList.remove("border-[var(--brand-bg)]", "text-[var(--brand-bg)]", "shadow-sm", "bg-[var(--brand-bg)]/10");
+              });
+              btn.classList.add("border-[var(--brand-bg)]", "text-[var(--brand-bg)]", "shadow-sm", "bg-[var(--brand-bg)]/10");
+              qDiv.dataset.selectedValue = val;
+
+              const errorMsg = qDiv.querySelector(".error-msg");
+              if (errorMsg) errorMsg.classList.add("hidden");
+
+              updateProgress();
+            });
+
+            yesNoDiv.appendChild(btn);
+          });
+          qDiv.appendChild(yesNoDiv);
+
+          const errorMsg = document.createElement("p");
+          errorMsg.className = "error-msg mt-2 hidden text-sm text-red-500";
+          errorMsg.textContent = "Por favor selecciona una opción.";
+          qDiv.appendChild(errorMsg);
+
         } else {
           const textarea = document.createElement("textarea");
           textarea.className = "w-full resize-none rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] p-4 text-[var(--text-main)] focus:border-[var(--brand-hover)] focus:outline-none focus:ring-1 focus:ring-[var(--brand-hover)]";
-          textarea.placeholder = "Escribe tu comentario opcional...";
+          textarea.placeholder = "Escribe tu respuesta...";
           textarea.rows = 4;
 
           textarea.addEventListener("input", (e) => {
@@ -292,9 +361,9 @@ export const setupEvaluate = async () => {
 
             if (savedVal) {
               el.dataset.selectedValue = savedVal;
-              if (el.dataset.inputType === "scale") {
+              if (el.dataset.inputType === "scale" || el.dataset.inputType === "scale_1_5" || el.dataset.inputType === "yes_no") {
                 const btn = el.querySelector(`button[data-value="${savedVal}"]`);
-                if (btn) btn.classList.add("border-[var(--brand-bg)]", "text-[var(--brand-bg)]", "shadow-sm");
+                if (btn) btn.classList.add("border-[var(--brand-bg)]", "text-[var(--brand-bg)]", "shadow-sm", "bg-[var(--brand-bg)]/10");
               } else {
                 const textarea = el.querySelector("textarea");
                 if (textarea) textarea.value = savedVal;
@@ -328,15 +397,15 @@ export const setupEvaluate = async () => {
       const val = el.dataset.selectedValue;
       const errorMsg = el.querySelector(".error-msg");
 
-      if (type === "scale" && !val) {
+      if ((type === "scale" || type === "scale_1_5" || type === "yes_no") && !val) {
         allValid = false;
         if (errorMsg) errorMsg.classList.remove("hidden");
       }
 
       answers.push({
         question_id: qId,
-        score: type === "scale" ? parseInt(val) : null,
-        comment: type === "text" ? val || "" : null
+        score: (type === "scale" || type === "scale_1_5") ? parseInt(val) : null,
+        comment: (type === "open_text" || type === "yes_no") ? val || "" : null
       });
     });
 
@@ -348,10 +417,11 @@ export const setupEvaluate = async () => {
     const evaluationData = {
       evaluator_id: currentUser.id,
       evaluatee_id: parseInt(evaluatee.value),
-      template_id: currentTemplate.id,
+      form_id: currentTemplate.id,
       period_id: activePeriod.id,
       is_anonymous: anonCheck.checked,
       status: "submitted",
+      submitted_at: new Date().toISOString(),
       answers
     };
 

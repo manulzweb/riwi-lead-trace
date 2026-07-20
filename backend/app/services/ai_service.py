@@ -1,17 +1,13 @@
 from sqlalchemy import text
 from fastapi import HTTPException, status
-import anthropic
+import google.generativeai as genai
 
-from app.config.database import conn
+from app.config.database import engine
 from app.config.config import settings
 from app.services.metrics_service import calculate_average_score, MIN_EVALUATIONS
 
-AI_MODEL = "claude-haiku-4-5-20251001"
+AI_MODEL = "gemini-3.5-flash"
 
-# Definiciones cortas de categoria para el chequeo de coherencia (regla
-# ADMIN-02). Si una categoria no esta aca (p. ej. una nueva que el equipo
-# agregue mas adelante), el chequeo usa el nombre de la categoria tal cual
-# -- sigue funcionando, solo con menos contexto para la IA.
 _CATEGORY_DEFINITIONS = {
     "Comunicación efectiva": "que tan claro y oportuno se comunica el Team Leader con el Coder",
     "Alineación de expectativas": "que tan claro deja el Team Leader lo que espera del Coder en cada entrega",
@@ -27,14 +23,14 @@ _CATEGORY_DEFINITIONS = {
 
 
 def get_or_generate_ai_summary(evaluatee_id: int, period_id: int):
-    """Genera u obtiene de cache el resumen ejecutivo por IA para un evaluado."""
-    cache_query = text("""
-        SELECT summary FROM ai_feedback_cache
-        WHERE evaluatee_id = :evaluatee_id AND period_id = :period_id
-    """)
-    cached = conn.execute(cache_query, {"evaluatee_id": evaluatee_id, "period_id": period_id}).scalar()
-    if cached:
-        return cached
+    with engine.connect() as conn:
+        cache_query = text("""
+            SELECT summary FROM ai_feedback_cache
+            WHERE evaluatee_id = :evaluatee_id AND period_id = :period_id
+        """)
+        cached = conn.execute(cache_query, {"evaluatee_id": evaluatee_id, "period_id": period_id}).scalar()
+        if cached:
+            return cached
 
     score_info = calculate_average_score(evaluatee_id, period_id)
     if score_info["average_score"] is None:
@@ -56,50 +52,57 @@ def get_or_generate_ai_summary(evaluatee_id: int, period_id: int):
         comments=comments,
     )
 
-    summary = _ask_claude(prompt)
+    summary = _ask_gemini(prompt)
     _cache_summary(evaluatee_id, period_id, summary)
     return summary
 
 
 def _get_anonymized_comments(evaluatee_id: int, period_id: int) -> list[str]:
-    """Solo texto y agregados, nunca el evaluator_id (privacidad de IA)."""
-    query = text("""
-        SELECT a.comment
-        FROM evaluation_answers a
-        JOIN evaluations e ON a.evaluation_id = e.id
-        JOIN questions q ON a.question_id = q.id
-        WHERE e.evaluatee_id = :evaluatee_id
-          AND e.period_id = :period_id
-          AND e.status = 'submitted'
-          AND q.input_type = 'text'
-          AND a.comment IS NOT NULL
-          AND a.comment != ''
-    """)
-    result = conn.execute(query, {"evaluatee_id": evaluatee_id, "period_id": period_id})
-    return [row[0] for row in result.all()]
+    with engine.connect() as conn:
+        query = text("""
+            SELECT a.comment
+            FROM evaluation_answers a
+            JOIN evaluations e ON a.evaluation_id = e.id
+            JOIN questions q ON a.question_id = q.id
+            WHERE e.evaluatee_id = :evaluatee_id
+              AND e.period_id = :period_id
+              AND e.status = 'submitted'
+              AND q.input_type = 'text'
+              AND a.comment IS NOT NULL
+              AND a.comment != ''
+        """)
+        result = conn.execute(query, {"evaluatee_id": evaluatee_id, "period_id": period_id})
+        return [row[0] for row in result.all()]
 
 
 def _get_evaluatee_name_and_role(evaluatee_id: int) -> tuple[str, str]:
-    query = text("""
-        SELECT u.full_name, GROUP_CONCAT(r.name) as role
-        FROM users u
-        LEFT JOIN user_roles ur ON u.id = ur.user_id
-        LEFT JOIN roles r ON ur.role_id = r.id
-        WHERE u.id = :id
-        GROUP BY u.id
-    """)
-    row = conn.execute(query, {"id": evaluatee_id}).first()
-    return (row[0], row[1]) if row else ("Persona", "Rol")
+    with engine.connect() as conn:
+        query = text("""
+            SELECT u.full_name, GROUP_CONCAT(r.name) as role
+            FROM users u
+            LEFT JOIN user_roles ur ON u.id = ur.user_id
+            LEFT JOIN roles r ON ur.role_id = r.id
+            WHERE u.id = :id
+            GROUP BY u.id
+        """)
+        row = conn.execute(query, {"id": evaluatee_id}).first()
+        return (row[0], row[1]) if row else ("Persona", "Rol")
 
 
 def _get_period_name(period_id: int) -> str:
-    query = text("SELECT name FROM periods WHERE id = :id")
-    return conn.execute(query, {"id": period_id}).scalar() or "Periodo"
+    with engine.connect() as conn:
+        query = text("SELECT name FROM periods WHERE id = :id")
+        return conn.execute(query, {"id": period_id}).scalar() or "Periodo"
 
 
 def _build_prompt(name, role, period_name, average_score, n_evals, comments: list[str]) -> str:
     comments_str = chr(10).join([f"- {c}" for c in comments]) if comments else "No hay comentarios de texto."
-    return f"""Eres un asistente de IA para Riwi LeadTrace. Tu tarea es generar un resumen ejecutivo constructivo y profesional del feedback recibido por {name} ({role}) en el periodo {period_name}.
+    return f"""Eres un asistente de IA para Riwi LeadTrace. Tu tarea es generar un resumen ejecutivo constructivo y profesional del feedback recibido por {name}, quien tiene el rol de {role}, en el periodo {period_name}.
+
+IMPORTANTE: Debes enfocar claramente tu análisis y tus recomendaciones en el contexto específico de su rol como {role}. 
+- Si es un Team Leader, enfócate en liderazgo, comunicación y gestión de equipo.
+- Si es un Tutor, enfócate en pedagogía, claridad técnica y acompañamiento del aprendizaje.
+- Si es un Admin, enfócate en administración, gestión operativa y soporte.
 
 Aqui tienes las metricas agregadas:
 - Puntaje promedio de las evaluaciones: {average_score}/100
@@ -108,39 +111,31 @@ Aqui tienes las metricas agregadas:
 Comentarios de los evaluadores:
 {comments_str}
 
-Por favor, proporciona un resumen estructurado con un tono constructivo y profesional, estructurado en las siguientes secciones:
-1. Fortalezas (que hace bien)
-2. Areas de oportunidad (que puede mejorar)
-3. Recomendaciones de accion (pasos practicos para el evaluado)"""
+Por favor, proporciona un resumen estructurado con un tono constructivo y profesional, en las siguientes secciones:
+1. Fortalezas (qué hace bien en su rol de {role})
+2. Areas de oportunidad (qué puede mejorar en su rol de {role})
+3. Recomendaciones de accion (pasos prácticos enfocados a su rol de {role})"""
 
 
-def _ask_claude(prompt: str) -> str:
-    if not settings.ANTHROPIC_API_KEY:
-        return "[Servicio de IA deshabilitado: ANTHROPIC_API_KEY no configurado en el archivo .env]"
+def _ask_gemini(prompt: str) -> str:
+    if not settings.GEMINI_API_KEY:
+        return "[Servicio de IA deshabilitado: GEMINI_API_KEY no configurado en el archivo .env]"
 
     try:
-        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-        message = client.messages.create(
-            model=AI_MODEL,
-            max_tokens=1000,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        return message.content[0].text
+        genai.configure(api_key=settings.GEMINI_API_KEY)
+        model = genai.GenerativeModel(AI_MODEL)
+        response = model.generate_content(prompt)
+        return response.text
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Error al conectar con el servicio de IA de Claude: {str(e)}"
+            detail=f"Error al conectar con el servicio de IA de Gemini: {str(e)}"
         )
 
 
+
 def check_question_category_coherence(question_text: str, category: str) -> bool:
-    """Regla de negocio ADMIN-02: al editar el texto de una pregunta, la IA
-    comprueba que siga hablando del mismo tema que su categoria (anti deriva
-    semantica). Devuelve True si son coherentes (o si no se pudo consultar a
-    la IA -- "fail open": esto es una ayuda para que el admin decida, no un
-    bloqueo duro, asi que un error de red no debe impedir editar preguntas).
-    """
-    if not settings.ANTHROPIC_API_KEY:
+    if not settings.GEMINI_API_KEY:
         return True
 
     definition = _CATEGORY_DEFINITIONS.get(category, category)
@@ -152,29 +147,24 @@ def check_question_category_coherence(question_text: str, category: str) -> bool
     )
 
     try:
-        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-        message = client.messages.create(
-            model=AI_MODEL,
-            max_tokens=5,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        answer = message.content[0].text.strip().upper()
+        genai.configure(api_key=settings.GEMINI_API_KEY)
+        model = genai.GenerativeModel(AI_MODEL)
+        response = model.generate_content(prompt)
+        answer = response.text.strip().upper()
         return answer.startswith("S")
     except Exception:
-        # No tumbamos la edicion de la pregunta por un problema de red/API:
-        # el admin puede seguir, simplemente sin la ayuda de la IA.
         return True
 
 
 def _cache_summary(evaluatee_id: int, period_id: int, summary: str) -> None:
-    query = text("""
-        INSERT INTO ai_feedback_cache (evaluatee_id, period_id, summary, model)
-        VALUES (:evaluatee_id, :period_id, :summary, :model)
-    """)
-    conn.execute(query, {
-        "evaluatee_id": evaluatee_id,
-        "period_id": period_id,
-        "summary": summary,
-        "model": AI_MODEL
-    })
-    conn.commit()
+    with engine.begin() as conn:
+        query = text("""
+            INSERT INTO ai_feedback_cache (evaluatee_id, period_id, summary, model)
+            VALUES (:evaluatee_id, :period_id, :summary, :model)
+        """)
+        conn.execute(query, {
+            "evaluatee_id": evaluatee_id,
+            "period_id": period_id,
+            "summary": summary,
+            "model": AI_MODEL
+        })

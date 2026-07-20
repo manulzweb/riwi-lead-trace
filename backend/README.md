@@ -2,7 +2,7 @@
 
 API REST del proyecto **Riwi LeadTrace**: evaluación ascendente de Coders hacia Team Leaders y
 Tutores, con anonimato opcional, un Índice de Calidad Percibida (ICP) por periodo y resúmenes de
-feedback generados con IA (Claude API).
+feedback generados con IA (Google Gemini API).
 
 Para entender *cómo* funciona cada capa del código (con ejemplos guiados), ver
 [`GUIA-BACKEND.md`](./GUIA-BACKEND.md). Este README es para poner el proyecto a correr y consultar
@@ -14,7 +14,7 @@ la lista de endpoints.
 - **SQL plano** vía SQLAlchemy `text()` + `conn.execute()` (sin ORM, sin capa `models/`) + **PyMySQL** sobre **MySQL**
 - **Pydantic** para validación de entrada/salida
 - **bcrypt** (`passlib`) para hashear contraseñas — login verifica en servidor, **sin JWT**: el rol/ID de quien llama se confía al valor que manda el propio front, sin verificación criptográfica de sesión en el backend
-- **Claude API** (`anthropic`) para el resumen de feedback
+- **Gemini API** (`google-generativeai`) para validaciones NLP y resúmenes de feedback
 
 ## Requisitos previos
 
@@ -47,7 +47,7 @@ cp .env.example .env
 | Variable | Descripción | Ejemplo |
 |---|---|---|
 | `DATABASE_URL` | Cadena de conexión a MySQL (`dialecto+driver://usuario:password@host:puerto/bd`) | `mysql+pymysql://root:password@localhost:3306/riwi_lead_trace` |
-| `ANTHROPIC_API_KEY` | API key de Claude, para `/metrics/ai-summary`. Si falta, ese endpoint responde un mensaje claro en vez de fallar. | `sk-ant-...` |
+| `GEMINI_API_KEY` | API key de Google AI Studio, para IA. Si falta, el endpoint responde un mensaje claro. | `AIzaSy...` |
 | `FRONTEND_ORIGIN` | Origen permitido por CORS (la URL de la SPA) | `http://localhost:5173` |
 
 ## Base de datos
@@ -102,15 +102,24 @@ para filtrar datos, sin poder confirmar que sea real. No lo trates como control 
 | POST | `/periods` | Crear periodo | admin |
 | PUT | `/periods/{id}` | Actualizar periodo (activarlo desactiva cualquier otro) | admin |
 | DELETE | `/periods/{id}` | Eliminar periodo | admin |
-| GET | `/forms?target_role=` | Plantilla de formulario para `team_leader` o `tutor` | cualquiera |
+| GET | `/forms?target_role=` | Plantillas activas para `team_leader` o `tutor` (arreglo; en la práctica 0 o 1) | cualquiera |
+| POST | `/forms` | Crear una plantilla nueva con sus preguntas iniciales (constructor del Admin) — solo con periodo cerrado, desactiva cualquier otra plantilla activa del mismo rol | admin |
+| PUT | `/forms/{id}` | Actualizar título/descripción de una plantilla (las preguntas se manejan con `/questions`) — solo con periodo cerrado | admin |
+| DELETE | `/forms/{id}` | Desactivar una plantilla — solo con periodo cerrado | admin |
 | POST | `/evaluations` | Registrar evaluación (borrador o enviada) — valida anonimato, no-duplicado por periodo y periodo activo | cualquiera |
 | GET | `/evaluations?evaluator_id=` | Historial de evaluaciones hechas por un Coder | cualquiera |
 | GET | `/evaluations?evaluatee_id=&period_id=&viewer_role=` | Histórico de evaluaciones recibidas; `viewer_role=admin` revela al evaluador en no-anónimas | cualquiera |
-| GET | `/questions?template_id=` | Preguntas activas de un template (texto + peso) | admin |
+| GET | `/questions?template_id=` | Preguntas activas de un template (texto + categoría + peso) | admin |
+| POST | `/questions` | Agregar una pregunta nueva a una plantilla existente — solo con periodo cerrado, no exige que los pesos sumen 100 en el momento | admin |
 | PATCH | `/questions/{id}` | Reformular el texto de una pregunta — siempre versiona, solo con periodo cerrado | admin |
+| DELETE | `/questions/{id}` | Desactivar una pregunta — solo con periodo cerrado, idempotente | admin |
 | PUT | `/questions/weights` | Actualizar los pesos de las preguntas de escala de un template — deben sumar 100, solo con periodo cerrado | admin |
+| GET | `/categories` | Listar todas las categorías de pregunta | admin |
+| POST | `/categories` | Crear una categoría nueva | admin |
+| PATCH | `/categories/{id}` | Renombrar una categoría | admin |
+| DELETE | `/categories/{id}` | Eliminar una categoría — `409` si alguna pregunta (activa o histórica) la usa (FK `ON DELETE RESTRICT`) | admin |
 | GET | `/metrics/summary?period_id=` | KPIs globales + ICP ponderado por persona en un periodo | admin, team_leader, tutor |
-| GET | `/metrics/ai-summary?evaluatee_id=&period_id=` | Resumen de feedback generado con Claude (cacheado) | admin |
+| GET | `/metrics/ai-summary?evaluatee_id=&period_id=` | Resumen de feedback generado con Gemini (cacheado) | admin |
 
 ## Estructura del proyecto
 
@@ -152,10 +161,25 @@ Reglas de negocio clave (no romper sin acordarlo con el equipo):
   (`Sólido` / `Estable` / `En riesgo` / `Datos insuficientes`) sale de comparar contra dos umbrales
   fijos en código, no hay tendencia contra el periodo anterior.
 - Las preguntas (texto o pesos) solo se editan con el periodo cerrado. Editar el texto **versiona**
-  (fila nueva + `is_active=FALSE` en la anterior); `category`/`input_type`/`sort_order`/
+  (fila nueva + `is_active=FALSE` en la anterior); `category_id`/`input_type`/`sort_order`/
   `weight_percent` se heredan sin tocar. Al guardar, la IA revisa que el texto siga encajando en la
   categoria (`ai_service.check_question_category_coherence`); si no, hace falta `confirm: true`.
-- A Claude API solo se le envían agregados anonimizados (nunca `evaluator_id` ni identidades).
+- Las categorías (`categories`) son su propia tabla, no texto libre: el Admin las crea, renombra
+  (`PATCH /categories/{id}`) y elimina (`DELETE /categories/{id}`) independientemente de las
+  plantillas. `questions.category_id` es FK con `ON DELETE RESTRICT` — no se puede borrar una
+  categoría mientras alguna pregunta (activa o de una evaluación histórica) la use; la base de
+  datos lo rechaza con un error de integridad que `category_service.delete_category` traduce a
+  `409`, en vez de validarlo "a mano" en Python (una sola fuente de verdad para la regla).
+- El constructor de plantillas (`POST /forms`, `POST /questions`) también exige periodo cerrado.
+  Solo `team_leader`/`tutor` son roles evaluables (`form_service.EVALUABLE_ROLES`) — un `target_role`
+  distinto (ej. `coder`, que evalúa pero nunca es evaluado) se rechaza con `422`. Crear una plantilla
+  nueva para un rol desactiva cualquier otra plantilla activa de ese mismo rol (una sola activa por
+  rol, igual que los periodos). Ni `POST /forms` ni `POST /questions` ni `DELETE` borran filas
+  físicamente: siempre desactivan (`is_active=FALSE`), porque `evaluations.template_id` y
+  `evaluation_answers.question_id` pueden referenciarlas desde evaluaciones históricas. Los tipos de
+  pregunta válidos son `scale` \| `text` \| `yes_no`; `yes_no` se trata como `text` para el ICP (se
+  excluye del promedio ponderado, igual que `text`, ver `metrics_service.calculate_average_score`).
+- A la API de Gemini solo se le envían agregados anonimizados (nunca `evaluator_id` ni identidades).
 
 Detalle completo en [`CLAUDE.md`](../CLAUDE.md) y [`docs/`](../docs).
 
@@ -166,5 +190,5 @@ pytest
 ```
 
 Suite en [`backend/tests/`](./tests): `test_auth.py`, `test_evaluations.py`, `test_metrics.py`,
-`test_periods.py`, `test_questions.py`. También podés probar a mano en `http://localhost:8000/docs`
+`test_periods.py`, `test_questions.py`, `test_form_templates.py`. También podés probar a mano en `http://localhost:8000/docs`
 (Swagger).
