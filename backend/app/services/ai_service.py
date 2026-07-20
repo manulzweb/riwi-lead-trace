@@ -6,7 +6,7 @@ from app.config.database import engine
 from app.config.config import settings
 from app.services.metrics_service import calculate_average_score, MIN_EVALUATIONS
 
-AI_MODEL = "gemini-1.5-flash"
+AI_MODEL = "gemini-3.5-flash"
 
 _CATEGORY_DEFINITIONS = {
     "Comunicación efectiva": "que tan claro y oportuno se comunica el Team Leader con el Coder",
