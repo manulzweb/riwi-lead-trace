@@ -1,8 +1,11 @@
 from fastapi import APIRouter, HTTPException, Query, status
 from typing import List, Optional
+import logging
 from app.schemas.user import UserCreate, UserUpdate, UserOut
-from app.services import user_service
+from app.services.user_service import user_service
+from app.exceptions.user_exceptions import UserNotFoundException, EmailAlreadyExistsException
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 @router.get(
@@ -13,20 +16,34 @@ router = APIRouter()
 )
 def get_users(role: Optional[str] = Query(None, description="Filtrar por rol (ej. team_leader, tutor)")):
     """Consulta indexada sobre la tabla `users` mediante el campo `role_id`."""
-    return user_service.get_users(role)
+    try:
+        return user_service.get_users(role)
+    except Exception as e:
+        logger.error(f"Error fetching users: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al consultar usuarios")
 
 @router.get("/evaluables", response_model=List[UserOut])
 def get_evaluables():
     """Consulta filtrada con un array `IN` sobre `role_id` para resolver entidades evaluables (`team_leader`, `tutor`)."""
-    return user_service.get_evaluables()
+    try:
+        return user_service.get_evaluables()
+    except Exception as e:
+        logger.error(f"Error fetching evaluables: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.get("/users/{user_id}", response_model=UserOut)
 def get_user(user_id: int):
     """Resolución de entidad `users` por su Primary Key (`id`)."""
-    user = user_service.get_user(user_id)
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
-    return user
+    try:
+        user = user_service.get_user(user_id)
+        if not user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+        return user
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching user: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.post(
     "/users", 
@@ -38,7 +55,13 @@ def get_user(user_id: int):
 )
 def create_user(user: UserCreate):
     """Inserta un registro transaccional en `users` (aplica hash bcrypt sincrónico al password) y asocia FK en `user_roles`."""
-    return user_service.create_user(user)
+    try:
+        return user_service.create_user(user)
+    except EmailAlreadyExistsException as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error creating user: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.put(
     "/users/{user_id}", 
@@ -49,23 +72,37 @@ def create_user(user: UserCreate):
 )
 def update_user(user_id: int, user: UserUpdate):
     """Operación PUT (Reemplazo total) sobre `users` y recálculo/reemplazo de entradas en `user_roles`."""
-    updated = user_service.update_user(user_id, user)
-    if not updated:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
-    return updated
+    try:
+        return user_service.update_user(user_id, user)
+    except UserNotFoundException as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except EmailAlreadyExistsException as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error updating user: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.patch("/users/{user_id}", response_model=UserOut)
 def patch_user(user_id: int, user: UserUpdate):
     """Operación PATCH (Reemplazo parcial) sobre `users`. Muta únicamente los campos proporcionados en el payload sin afectar la entidad completa."""
-    updated = user_service.update_user(user_id, user)
-    if not updated:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
-    return updated
+    try:
+        return user_service.update_user(user_id, user)
+    except UserNotFoundException as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except EmailAlreadyExistsException as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error patching user: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_user(user_id: int):
     """Hard delete sobre `users`. Falla si existen dependencias referenciales en cascada no manejadas (e.g., evaluaciones existentes)."""
-    deleted = user_service.delete_user(user_id)
-    if not deleted:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
-    return None
+    try:
+        user_service.delete_user(user_id)
+        return None
+    except UserNotFoundException as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error deleting user: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="No se puede eliminar el usuario. Es posible que tenga dependencias (evaluaciones) en el sistema.")
