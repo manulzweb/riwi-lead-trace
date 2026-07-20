@@ -35,6 +35,8 @@ export const setupDropdown = (id, onChangeCallback = null) => {
   const icon = document.getElementById(`${id}-icon`);
   
   if (!btn || !menu) return;
+  if (container.dataset.initialized === 'true') return;
+  container.dataset.initialized = 'true';
 
   const toggleMenu = (show) => {
     if (show) {

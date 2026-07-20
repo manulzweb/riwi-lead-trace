@@ -59,7 +59,6 @@ def get_template(template_id: int):
 
 
 def create_template(payload: TemplateCreate):
-    _assert_no_active_period()
 
     if payload.target_role not in EVALUABLE_ROLES:
         raise HTTPException(

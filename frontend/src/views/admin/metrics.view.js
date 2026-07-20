@@ -184,14 +184,14 @@ export const setupMetrics = async () => {
 
     const bestCard = highlightCard("Mejor evaluado", best, {
       border: "border-emerald-200 dark:border-emerald-900/50",
-      bg: "bg-red-100 dark:bg-emerald-950/20",
+      bg: "bg-emerald-100/30 dark:bg-emerald-950/30",
       text: "text-emerald-600 dark:text-emerald-400"
     });
 
     const opportunityCard = withScore.length > 1
       ? highlightCard("Oportunidad de mejora", needsSupport, {
           border: "border-amber-200 dark:border-amber-900/50",
-          bg: "bg-red-100 dark:bg-amber-950/20",
+          bg: "bg-amber-100/30 dark:bg-amber-950/30",
           text: "text-amber-600 dark:text-amber-400"
         })
       : "";

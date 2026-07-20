@@ -4,11 +4,18 @@ import { escapeHtml } from "../../utils/validators";
 import { dropdownComponent, setupDropdown } from "../../components/dropdown";
 import { templatesService } from "../../services/templates.service.js";
 import { categoryService } from "../../services/categories.service.js";
+import { periodService } from "../../services/periods.service.js";
+
+import { activePeriodBannerComponent } from "../../components/active_period_banner.js";
+import { periodManagementComponent, setupPeriodManagement } from "../../components/period_management.js";
+import Swal from 'sweetalert2';
 
 export const renderAdminEvaluations = () => `
   ${navBarComponent()}
   <main class="mx-auto max-w-6xl px-6 py-10 relative">
     
+    <div id="active-period-banner-container"></div>
+
     <!-- 1. VISTA LISTA DE PLANTILLAS -->
     <div id="list-view" class="block transition-all duration-300">
       <section class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -26,6 +33,8 @@ export const renderAdminEvaluations = () => `
       <div id="templates-container">
         <!-- Generado dinámicamente -->
       </div>
+      
+      ${periodManagementComponent()}
     </div>
 
     <!-- 2. VISTA CONSTRUCTOR DE PLANTILLAS -->
@@ -109,6 +118,7 @@ export const setupAdminEvaluations = () => {
   const btnSave = document.getElementById("btn-save-template");
   const questionsContainer = document.getElementById("questions-container");
   const templatesContainer = document.getElementById("templates-container");
+  const bannerContainer = document.getElementById("active-period-banner-container");
 
   // Inputs principales
   const inputTitle = document.getElementById("template-title");
@@ -119,6 +129,38 @@ export const setupAdminEvaluations = () => {
   let questions = [];
   let editId = null;
   let categoriesData = [];
+
+  // --- REVISIÓN DE PERIODO ACTIVO ---
+  const checkActivePeriod = async () => {
+    try {
+      const periods = await periodService.get();
+      const activePeriod = periods.find(p => p.is_active);
+      
+      if (activePeriod) {
+        bannerContainer.innerHTML = activePeriodBannerComponent(activePeriod);
+        
+        const closeBtn = document.getElementById("btn-close-period");
+        if (closeBtn) {
+          closeBtn.addEventListener("click", async () => {
+            if (confirm("¿Estás seguro de que deseas cerrar este periodo? Las evaluaciones pendientes ya no se podrán responder.")) {
+              try {
+                await periodService.update(activePeriod.id, { is_active: false });
+                showToast("Periodo cerrado", "success", "Ya puedes gestionar las plantillas libremente.");
+                bannerContainer.innerHTML = "";
+              } catch (e) {
+                showToast("Error", "error", "No se pudo cerrar el periodo.");
+                console.error(e);
+              }
+            }
+          });
+        }
+      } else {
+        bannerContainer.innerHTML = "";
+      }
+    } catch (e) {
+      console.error("Error al buscar periodo activo", e);
+    }
+  };
 
   // --- LÓGICA DE VISTAS ---
   const showBuilder = async () => {
@@ -136,12 +178,15 @@ export const setupAdminEvaluations = () => {
       }
     }
     renderQuestions(); // Re-render to populate category dropdowns
+    await checkActivePeriod();
   };
 
   const showList = async () => {
     viewBuilder.classList.add("hidden");
     viewList.classList.remove("hidden");
     await renderTemplatesList();
+    await setupPeriodManagement(checkActivePeriod);
+    await checkActivePeriod();
   };
 
   btnCreate.addEventListener("click", async () => {
@@ -378,7 +423,11 @@ export const setupAdminEvaluations = () => {
       showToast("Plantilla Guardada", "success");
       await showList();
     } catch (error) {
-      showToast("Error", "error", "No se pudo guardar la plantilla.");
+      if (error.message && error.message.includes("409")) {
+        showToast("No se puede crear/editar", "warning", "No se permiten modificaciones mientras haya un periodo activo o ya existe una plantilla. Finaliza el periodo actual primero.");
+      } else {
+        showToast("Error", "error", "No se pudo guardar la plantilla.");
+      }
       console.error(error);
     } finally {
       btnSave.disabled = false;
@@ -500,6 +549,11 @@ export const setupAdminEvaluations = () => {
     });
   };
 
-  // Inicializar mostrando la lista
-  renderTemplatesList();
+  // Inicializar vista según parámetro en URL
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('action') === 'create') {
+    showBuilder();
+  } else {
+    showList();
+  }
 };
