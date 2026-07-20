@@ -37,18 +37,26 @@ const getDefaultCategoryId = () => {
 const getTemplates = async () => {
   const results = await Promise.all(
     TARGET_ROLES.map(async (targetRole) => {
-      const templates = await request(`/forms?target_role=${targetRole}`);
-      const template = templates[0];
-      return template ? { ...template, targetRole } : null;
+      try {
+        const templates = await request(`/forms?target_role=${targetRole}`);
+        // Mapeamos todas las plantillas que devuelva el backend
+        return templates.map(t => ({ ...t, targetRole }));
+      } catch (error) {
+        // Si la API arroja 404 porque todavía no hay plantillas creadas para este rol,
+        // devolvemos un array vacío para no romper nada.
+        if (error.message.includes("404")) return [];
+        throw error; 
+      }
     })
   );
-  return results.filter(Boolean);
+  // results es un array de arrays (uno por rol), lo aplanamos a una sola lista
+  return results.flat();
 };
 
 // Para editar, ademas del texto (que ya viene en /forms) hace falta el peso
 // de cada pregunta, que /forms no expone -- se completa con /questions.
 const getTemplateForEdit = async (template) => {
-  const questions = await request(`/questions?template_id=${template.id}`);
+  const questions = await request(`/questions?form_id=${template.id}`);
   return {
     ...template,
     questions: questions.map((q) => ({
@@ -84,7 +92,7 @@ const createTemplate = async (templateData) => {
 // asi que se compara el estado actual del builder contra lo que estaba
 // cargado al abrirlo y se manda solo lo que cambio -- agregar, quitar,
 // reformular texto (versiona) y por ultimo reequilibrar los pesos.
-const updateTemplate = async (id, templateData) => {
+const updateTemplate = async (id, templateData, onCoherenceConfirm) => {
   await request(`/forms/${id}`, jsonOptions('PUT', {
     title: templateData.title,
     description: templateData.description || null,
@@ -106,7 +114,7 @@ const updateTemplate = async (id, templateData) => {
   const createdFromNew = [];
   for (const q of added) {
     const created = await request('/questions', jsonOptions('POST', {
-      template_id: id,
+      form_id: id,
       ...(await toQuestionPayload(q)),
     }));
     createdFromNew.push({ realId: created.id, type: q.type, weight: q.weight });
@@ -115,20 +123,35 @@ const updateTemplate = async (id, templateData) => {
   for (const q of kept) {
     const original = before.find((b) => b.id === q.id);
     if (original && original.text !== q.text) {
-      await request(`/questions/${q.id}`, jsonOptions('PATCH', { text: q.text, confirm: true }));
+      // Primer intento SIN forzar: si la IA ve coherente el nuevo texto con
+      // la categoria de la pregunta, el backend lo guarda directo. Si no,
+      // responde 409 con su razon puntual -- recien ahi se pide confirmar.
+      try {
+        await request(`/questions/${q.id}`, jsonOptions('PATCH', { text: q.text, confirm: false, admin_id: templateData.adminId }));
+      } catch (err) {
+        if (err.status === 409 && onCoherenceConfirm) {
+          const confirmed = await onCoherenceConfirm(q, err.detail);
+          if (!confirmed) {
+            throw new Error(`Guardado cancelado: no se confirmo el cambio de texto de "${original.text}".`);
+          }
+          await request(`/questions/${q.id}`, jsonOptions('PATCH', { text: q.text, confirm: true, admin_id: templateData.adminId }));
+        } else {
+          throw err;
+        }
+      }
     }
   }
 
   // Reequilibrar pesos: todas las preguntas de escala que quedan activas
-  // (las que ya existian + las recien creadas), con su peso actual del builder.
   const scaleWeights = [
     ...kept.filter((q) => q.type === 'scale_1_5').map((q) => ({ question_id: Number(q.id), weight_percent: q.weight || 0 })),
     ...createdFromNew.filter((c) => c.type === 'scale_1_5').map((c) => ({ question_id: c.realId, weight_percent: c.weight || 0 })),
   ];
   if (scaleWeights.length > 0) {
     await request('/questions/weights', jsonOptions('PUT', {
-      template_id: id,
+      form_id: id,
       weights: scaleWeights,
+      admin_id: templateData.adminId,
     }));
   }
 

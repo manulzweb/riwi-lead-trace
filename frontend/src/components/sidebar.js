@@ -62,8 +62,11 @@ export const sidebarComponent = (isActive) => {
       { label: "Evaluations", icon: icons.evaluations, submenu: [
         { href: "/admin/evaluations?action=create", label: "Create Evaluations", icon: icons.create },
         { href: "/admin/evaluations", label: "Manage Evaluations", icon: icons.list },
+        { href: "/admin/periods", label: "Manage Periods", icon: icons.list },
+        { href: "/admin/categories", label: "Categories", icon: icons.list },
         { href: "/admin/metrics", label: "Metrics", icon: icons.chart },
-        { href: "/admin/ai-summary", label: "AI Summary/Feedback", icon: icons.ai }
+        { href: "/admin/ai-summary", label: "AI Summary/Feedback", icon: icons.ai },
+        { href: "/admin/activity-log", label: "Activity Log", icon: icons.list }
       ]}
     ];
   } else if (role === "team_leader") {

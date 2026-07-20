@@ -13,6 +13,16 @@ def get_metrics_summary(period_id: int = Query(..., description="ID del periodo 
     return metrics_service.get_metrics_summary(period_id)
 
 @router.get(
+    "/metrics/history",
+    summary="Historial de ICP de una persona a traves de periodos",
+    response_description="Serie de ICP por periodo (solo periodos con evaluaciones suficientes)"
+)
+def get_score_history(evaluatee_id: int = Query(..., description="ID de la persona evaluada")):
+    """Recorre todos los periodos y calcula el ICP ponderado en cada uno (calculate_average_score),
+    omitiendo los que no alcanzan MIN_EVALUATIONS. No persiste tendencia -- se recalcula on-read."""
+    return metrics_service.get_score_history(evaluatee_id)
+
+@router.get(
     "/metrics/ai-summary",
     summary="Generar resumen de IA (NLP)",
     response_description="El texto de resumen generado por Gemini a partir del feedback escrito"

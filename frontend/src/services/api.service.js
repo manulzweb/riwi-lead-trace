@@ -1,7 +1,3 @@
-// En desarrollo local no hace falta configurar nada (usa el valor por
-// defecto). Al desplegar, la plataforma (Vercel/GitHub Pages) debe definir
-// la variable de entorno VITE_API_BASE_URL con la URL real del backend
-// desplegado; Vite la reemplaza en tiempo de build.
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
 const jsonHeaders = {
@@ -19,7 +15,20 @@ export const jsonOptions = (method, data) => ({
 export const request = async (path, options) => {
   const response = await fetch(BASE_URL + path, options)
   if (!response.ok) {
-    throw new Error(`Error: ${response.status} La peticion ha fallado en el endpoint ${BASE_URL}${path}`)
+    // Mantiene el formato de mensaje existente (varios callers hacen
+    // error.message.includes("404")) y ademas expone el detalle real del
+    // backend en error.detail/error.status para quien lo necesite (ej. el
+    // texto especifico del rechazo de la IA en PATCH /questions/:id).
+    let detail = null
+    try {
+      detail = (await response.json())?.detail ?? null
+    } catch {
+      // body vacio o no-JSON, se deja detail en null
+    }
+    const error = new Error(`Error: ${response.status} La peticion ha fallado en el endpoint ${BASE_URL}${path}`)
+    error.status = response.status
+    error.detail = detail
+    throw error
   }
   return await response.json()
 }

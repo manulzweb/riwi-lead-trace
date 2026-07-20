@@ -5,26 +5,21 @@ import { userService } from "../../services/users.service";
 import { periodService } from "../../services/periods.service";
 import { showToast } from "../../components/alerts";
 import { templatesService } from "../../services/templates.service";
-import { showEvaluationDetailModal } from "../../components/evaluation_detail_modal";
+import Swal from 'sweetalert2';
+import { formatDateLong } from "../../utils/date";
 
-export const renderMyEvaluations = () => {
-  const currentUser = authService.getSession();
-  const isCoder = currentUser?.roles?.includes('coder');
-
-  return `
+export const renderMyEvaluations = () => `
   ${navBarComponent()}
   <main class="mx-auto max-w-6xl px-6 py-10">
     <section class="flex items-center justify-between">
       <div>
-        <p class="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--brand-bg)]">${currentUser?.roles?.[0] || 'User'}</p>
+        <p class="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--brand-bg)]">Coder</p>
         <h1 class="mt-1 text-4xl font-black tracking-tight text-[var(--text-main)]">Mis evaluaciones</h1>
       </div>
-      ${!isCoder ? `
       <a href="/evaluables"
         class="inline-flex items-center justify-center rounded-2xl bg-[var(--brand-bg)] px-5 py-3 text-sm font-bold text-[var(--brand-text)] transition-all duration-300 ease-in-out hover:bg-[var(--brand-hover)] hover:shadow-md">
         Nueva evaluación
       </a>
-      ` : ''}
     </section>
 
     <section id="evaluations-list" class="mt-8 grid gap-4">
@@ -33,8 +28,7 @@ export const renderMyEvaluations = () => {
       <div class="h-20 animate-pulse rounded-3xl bg-[var(--bg-panel)]"></div>
     </section>
   </main>
-  `;
-};
+`;
 
 export const setupMyEvaluations = async () => {
   const container = document.getElementById("evaluations-list");
@@ -73,9 +67,7 @@ export const setupMyEvaluations = async () => {
         : 'Colaborador';
       const periodName = period ? period.name : `Periodo #${ev.period_id}`;
 
-      const formattedDate = ev.submitted_at
-        ? new Date(ev.submitted_at).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" })
-        : "No enviada";
+      const formattedDate = ev.submitted_at ? formatDateLong(ev.submitted_at) : "No enviada";
 
       const statusBadge = ev.status === "submitted"
         ? `<span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400">Enviada</span>`
@@ -110,13 +102,48 @@ export const setupMyEvaluations = async () => {
       const evaluatee = usersMap.get(evaluation.evaluatee_id);
       const evaluateeName = evaluatee ? evaluatee.name : `Usuario #${evaluation.evaluatee_id}`;
 
-      const template = templatesMap.get(evaluation.form_id || evaluation.template_id);
+      const template = templatesMap.get(evaluation.form_id);
       const questionsMap = new Map();
       if (template && template.questions) {
         template.questions.forEach(q => questionsMap.set(String(q.id), q));
       }
 
-      showEvaluationDetailModal(evaluation, evaluateeName, template, questionsMap);
+      const answersHtml = evaluation.answers.map(ans => {
+        const questionData = questionsMap.get(String(ans.question_id));
+        const questionText = questionData ? questionData.text : `Pregunta #${ans.question_id}`;
+        
+        let answerDisplay = '';
+        if (questionData && (questionData.input_type === 'scale' || questionData.input_type === 'scale_1_5')) {
+          answerDisplay = `<div class="mt-2 text-sm"><span class="font-bold text-[var(--brand-bg)] text-2xl">${ans.score || 'N/A'}</span> <span class="text-[var(--text-muted)] font-medium">/ 5</span></div>`;
+        } else if (questionData && questionData.input_type === 'yes_no') {
+          answerDisplay = `<div class="mt-2 inline-flex items-center rounded-xl bg-[var(--brand-bg)]/10 px-4 py-2 text-sm font-bold text-[var(--brand-bg)]">${ans.comment || 'N/A'}</div>`;
+        } else {
+           answerDisplay = ans.comment ? `<p class="mt-2 rounded-xl bg-[var(--bg-base)] p-4 text-sm text-[var(--text-main)] border border-[var(--border-main)]">"${ans.comment}"</p>` : `<p class="mt-2 text-sm text-[var(--text-muted)] italic">Sin respuesta</p>`;
+        }
+
+        return `
+          <div class="border-b border-[var(--border-main)] pb-5 mb-5 last:border-b-0 last:mb-0">
+            <h4 class="text-base font-semibold text-[var(--text-main)] leading-snug">${questionText}</h4>
+            ${answerDisplay}
+          </div>
+        `;
+      }).join("");
+
+      Swal.fire({
+        title: `<div class="text-left"><h3 class="text-2xl font-black text-[var(--text-main)]">Resultados</h3><p class="text-sm text-[var(--text-muted)] mt-1 font-normal">Evaluación a <span class="font-semibold text-[var(--text-main)]">${evaluateeName}</span></p></div>`,
+        html: `
+          <div class="text-left mt-6 max-h-[60vh] overflow-y-auto pr-4 custom-scrollbar">
+            ${answersHtml}
+          </div>
+        `,
+        width: '600px',
+        showCloseButton: true,
+        confirmButtonText: "Cerrar ventana",
+        customClass: {
+          popup: "rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-2",
+          confirmButton: "rounded-2xl bg-[var(--bg-base)] border border-[var(--border-main)] px-6 py-3 font-bold text-[var(--text-main)] hover:bg-[var(--border-main)] w-full mt-4 transition-colors"
+        }
+      });
     };
 
   } catch (err) {

@@ -99,9 +99,19 @@ const handleLoginSubmit = (elements) => async (event) => {
     window.history.pushState({}, "", "/dashboard");
     renderRoute();
   } catch (error) {
-    showToast("Falló el inicio de sesión", "error", "Credenciales incorrectas");
+    const errorMap = {
+      "Failed to fetch": "No se pudo conectar con el servidor",
+      "NetworkError": "No se pudo conectar con el servidor",
+      "401": "Contraseña incorrecta",
+      "404": "El correo no está registrado"
+    };
+
+    const matchedKey = Object.keys(errorMap).find(key => error.message.includes(key));
+    const errorMsg = matchedKey ? errorMap[matchedKey] : (error.message || "Error desconocido");
+
+    showToast("Falló el inicio de sesión", "error", errorMsg);
     setButtonLoadingState(elements.submitBtn, false, "", "Entrar al dashboard");
-    return showFieldError(elements.emailInput, "Credenciales incorrectas", elements.emailError);
+    return showFieldError(elements.emailInput, errorMsg, elements.emailError);
   }
 };
 

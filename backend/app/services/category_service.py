@@ -3,6 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 
 from app.config.database import engine
+from app.services import activity_log_service
 
 
 def get_categories():
@@ -39,9 +40,9 @@ def update_category(category_id: int, name: str):
         return {"id": category_id, "name": name}
 
 
-def delete_category(category_id: int):
+def delete_category(category_id: int, admin_id: int = None):
     with engine.begin() as conn:
-        existing = conn.execute(text("SELECT id FROM categories WHERE id = :id"), {"id": category_id}).first()
+        existing = conn.execute(text("SELECT id, name FROM categories WHERE id = :id"), {"id": category_id}).mappings().first()
         if not existing:
             return False
 
@@ -52,4 +53,12 @@ def delete_category(category_id: int):
                 status_code=status.HTTP_409_CONFLICT,
                 detail="No se puede eliminar: hay preguntas (activas o de evaluaciones historicas) que usan esta categoria."
             )
+
+        activity_log_service.log_action(
+            conn, admin_id,
+            action="category_deleted",
+            target_type="category",
+            target_id=category_id,
+            detail=existing["name"],
+        )
         return True

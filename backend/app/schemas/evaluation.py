@@ -18,8 +18,8 @@ class EvaluationCreate(BaseModel):
         description="ID del usuario que está siendo evaluado",
         examples=[2]
     )
-    template_id: int = Field(
-        title="ID de la Plantilla",
+    form_id: int = Field(
+        title="ID del Formulario",
         description="ID del formulario base usado",
         examples=[1]
     )
@@ -57,7 +57,7 @@ class EvaluationOut(BaseModel):
     id: int
     evaluator_id: Optional[int]
     evaluatee_id: int
-    template_id: int
+    form_id: int
     period_id: int
     is_anonymous: bool
     status: str

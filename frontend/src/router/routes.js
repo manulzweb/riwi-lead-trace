@@ -9,6 +9,9 @@ import { renderMyResults, setupMyResults } from "../views/team-leader/my-results
 import { renderMetrics, setupMetrics } from "../views/admin/metrics.view.js";
 import { renderAiSummary, setupAiSummary } from "../views/admin/ai-summary.view.js";
 import { renderAdminEvaluations, setupAdminEvaluations } from "../views/admin/evaluations.view.js";
+import { renderAdminPeriods, setupAdminPeriods } from "../views/admin/periods.view.js";
+import { renderAdminCategories, setupAdminCategories } from "../views/admin/categories.view.js";
+import { renderActivityLog, setupActivityLog } from "../views/admin/activity-log.view.js";
 
 export const ROUTES = {
   "/login": {
@@ -68,9 +71,16 @@ export const ROUTES = {
 
   // ── Admin ──────────────────────────────────────────────────────────────────
   "/admin/evaluations": {
-    title: "Gestión de Evaluaciones | LeadTrace",
+    title: "Gestión de Plantillas | LeadTrace",
     renderView: renderAdminEvaluations,
     initSetup: setupAdminEvaluations,
+    requireAuth: true,
+    allowedRoles: ["admin"],
+  },
+  "/admin/periods": {
+    title: "Gestión de Ciclos | LeadTrace",
+    renderView: renderAdminPeriods,
+    initSetup: setupAdminPeriods,
     requireAuth: true,
     allowedRoles: ["admin"],
   },
@@ -85,6 +95,20 @@ export const ROUTES = {
     title: "Resumen IA | LeadTrace",
     renderView: renderAiSummary,
     initSetup: setupAiSummary,
+    requireAuth: true,
+    allowedRoles: ["admin"],
+  },
+  "/admin/categories": {
+    title: "Categorías | LeadTrace",
+    renderView: renderAdminCategories,
+    initSetup: setupAdminCategories,
+    requireAuth: true,
+    allowedRoles: ["admin"],
+  },
+  "/admin/activity-log": {
+    title: "Bitácora | LeadTrace",
+    renderView: renderActivityLog,
+    initSetup: setupActivityLog,
     requireAuth: true,
     allowedRoles: ["admin"],
   },

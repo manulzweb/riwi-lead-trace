@@ -4,6 +4,7 @@ import { escapeHtml } from "../utils/validators";
 import { Card, StatsCard } from "../components/cards_ui";
 import { metricsService } from "../services/metrics.service";
 import { request } from "../services/api.service";
+import { periodService } from "../services/periods.service";
 
 const icons = {
   check: `<svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
@@ -61,7 +62,9 @@ export const setupDashboard = async () => {
   try {
     if (role === "admin") {
       // Admin View
-      const summary = await metricsService.getSummary(1);
+      const periods = await periodService.get();
+      const activePeriod = periods.find(p => p.is_active) || periods[0];
+      const summary = activePeriod ? await metricsService.getSummary(activePeriod.id) : { kpis: { total_evaluations: 0, average_score: 0, participation_rate: 0 }, evaluatees: [] };
       const kpis = summary.kpis || { total_evaluations: 0, average_score: 0, participation_rate: 0 };
       
       html += `
@@ -131,7 +134,9 @@ export const setupDashboard = async () => {
       `;
     } else if (role === "team_leader" || role === "tutor") {
       // Leader / Tutor View
-      const summary = await metricsService.getSummary(1);
+      const periods = await periodService.get();
+      const activePeriod = periods.find(p => p.is_active) || periods[0];
+      const summary = activePeriod ? await metricsService.getSummary(activePeriod.id) : { evaluatees: [] };
       const myStats = summary.evaluatees?.find(e => e.id === user.id) || { n_evals: 0, average_score: 0, status: "Sin datos" };
       
       html += `

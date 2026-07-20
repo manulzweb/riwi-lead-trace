@@ -14,10 +14,10 @@ router = APIRouter()
     response_description="Lista de preguntas activas de la plantilla"
 )
 def get_questions(
-    template_id: int = Query(..., description="ID del template (form_templates.id)"),
+    form_id: int = Query(..., description="ID del form"),
 ):
-    """Consulta anidada sobre `questions` filtrando por `template_id` e `is_active=TRUE`."""
-    return question_service.get_questions_by_template(template_id, only_active=True)
+    """Consulta anidada sobre `questions` filtrando por `form_id` e `is_active=TRUE`."""
+    return question_service.get_questions_by_template(form_id, only_active=True)
 
 
 @router.post(
@@ -49,7 +49,7 @@ def delete_question(question_id: int):
 )
 def patch_question_text(question_id: int, payload: QuestionTextPatch):
     """Genera una nueva versión de la pregunta y desactiva la anterior. Valida coherencia semántica (NLP) contra su categoría original. Precondición: periodo cerrado."""
-    return question_service.version_question_text(question_id, payload.text, payload.confirm)
+    return question_service.version_question_text(question_id, payload.text, payload.confirm, payload.admin_id)
 
 
 @router.put(
