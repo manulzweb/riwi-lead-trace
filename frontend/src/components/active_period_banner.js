@@ -12,8 +12,8 @@ export const activePeriodBannerComponent = (activePeriod) => {
           <p class="text-xs font-medium opacity-90 mt-0.5">No puedes modificar ni eliminar plantillas mientras haya un periodo en curso.</p>
         </div>
       </div>
-      <button id="btn-close-period" class="shrink-0 rounded-xl bg-[#ffe082] px-5 py-2.5 text-sm font-bold text-[#b71c1c] transition hover:bg-[#ffb300] shadow-sm dark:bg-amber-800/50 dark:text-white dark:hover:bg-amber-600/70">
-        Desactivar periodo actual
+      <button id="btn-close-period" class="shrink-0 rounded-xl bg-[#ffe082] px-5 py-2.5 text-sm font-bold text-amber-900 transition hover:bg-amber-400/70 shadow-sm dark:bg-amber-800/50 dark:text-white dark:hover:bg-amber-600/70">
+        Desactivar periodo
       </button>
     </div>
   `;

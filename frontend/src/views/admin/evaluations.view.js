@@ -9,6 +9,7 @@ import { periodService } from "../../services/periods.service.js";
 import { authService } from "../../services/auth.service";
 import { formatDate } from "../../utils/date";
 import { searchBoxComponent, setupSearch } from "../../components/searchBox";
+import { activePeriodBannerComponent } from "../../components/active_period_banner.js";
 
 export const renderAdminEvaluations = () => `
   ${navBarComponent()}
@@ -27,12 +28,8 @@ export const renderAdminEvaluations = () => `
         Nuevo Formulario
       </button>
     </div>
-
-    <div id="active-period-banner" class="hidden mb-6 flex items-center gap-3 rounded-2xl border border-[var(--danger-border)] bg-[var(--danger-bg)] px-5 py-4 text-sm font-semibold text-[var(--danger-text)]">
-      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
-      Hay un periodo activo. Los formularios y preguntas solo se pueden crear, editar o eliminar con el periodo cerrado.
-    </div>
-
+    <div id="active-period-banner-container"></div>
+    
     <!-- 1. VISTA LISTA DE PLANTILLAS -->
     <div id="list-view" class="block transition-all duration-300">
       <div id="template-search-slot" class="mb-6 max-w-sm"></div>
@@ -82,19 +79,19 @@ export const renderAdminEvaluations = () => `
               <label class="mb-2 block text-sm font-bold text-[var(--text-main)]">Rol Evaluador (Quién llena la encuesta)</label>
               <div>
                 ${dropdownComponent('evaluator-role', [
-                  { value: 'coder', label: 'Coders' },
-                  { value: 'team_leader', label: 'Team Leaders' },
-                  { value: 'tutor', label: 'Tutores' }
-                ], 'coder')}
+  { value: 'coder', label: 'Coders' },
+  { value: 'team_leader', label: 'Team Leaders' },
+  { value: 'tutor', label: 'Tutores' }
+], 'coder')}
               </div>
             </div>
             <div>
               <label class="mb-2 block text-sm font-bold text-[var(--text-main)]">Rol a Evaluar (A quién se evalúa)</label>
               <div>
                 ${dropdownComponent('template-role', [
-                  { value: 'tutor', label: 'Tutores' },
-                  { value: 'team_leader', label: 'Team Leaders' }
-                ], 'tutor')}
+  { value: 'tutor', label: 'Tutores' },
+  { value: 'team_leader', label: 'Team Leaders' }
+], 'tutor')}
               </div>
             </div>
           </div>
@@ -143,14 +140,45 @@ export const setupAdminEvaluations = () => {
   // haya un periodo activo (ver question_service._assert_no_active_period).
   // Se consulta acá para avisar antes de que el admin llegue al error.
   const refreshPeriodGate = async () => {
-    const banner = document.getElementById("active-period-banner");
+    const bannerContainer = document.getElementById("active-period-banner-container");
+    let activePeriod = null;
+
     try {
       const periods = await periodService.get();
-      hasActivePeriod = periods.some(p => p.is_active);
+      activePeriod = periods.find(p => p.is_active);
+      hasActivePeriod = !!activePeriod;
     } catch (err) {
-      hasActivePeriod = false; // si falla la consulta, no bloqueamos -- el backend igual lo valida
+      hasActivePeriod = false;
     }
-    if (banner) banner.classList.toggle("hidden", !hasActivePeriod);
+
+    if (bannerContainer) {
+      if (activePeriod) {
+        bannerContainer.innerHTML = activePeriodBannerComponent(activePeriod);
+
+        const closeBtn = document.getElementById("btn-close-period");
+        if (closeBtn) {
+          closeBtn.addEventListener("click", async () => {
+            if (confirm("¿Estás seguro de que deseas cerrar este periodo? Las evaluaciones pendientes ya no se podrán responder.")) {
+              try {
+                await periodService.update(activePeriod.id, { is_active: false });
+                import("../../components/alerts.js").then(({ showToast }) => {
+                  showToast("Periodo cerrado", "success", "Ya puedes gestionar las plantillas libremente.");
+                });
+                refreshPeriodGate();
+              } catch (e) {
+                import("../../components/alerts.js").then(({ showToast }) => {
+                  showToast("Error", "error", "No se pudo cerrar el periodo.");
+                });
+                console.error(e);
+              }
+            }
+          });
+        }
+      } else {
+        bannerContainer.innerHTML = "";
+      }
+    }
+
     btnCreate.disabled = hasActivePeriod;
     btnCreate.classList.toggle("opacity-50", hasActivePeriod);
     btnCreate.classList.toggle("cursor-not-allowed", hasActivePeriod);
@@ -209,7 +237,7 @@ export const setupAdminEvaluations = () => {
   const updateWeightCounter = () => {
     const total = questions.reduce((sum, q) => sum + (parseInt(q.weight) || 0), 0);
     const counterSpan = document.getElementById("total-weight-value");
-    if(counterSpan) {
+    if (counterSpan) {
       counterSpan.textContent = total;
       if (total === 100) {
         counterSpan.className = "text-lg text-emerald-500";
@@ -232,7 +260,7 @@ export const setupAdminEvaluations = () => {
     if (type === 'scale_1_5') {
       return `
         <div class="flex gap-2 opacity-50 pointer-events-none mt-3">
-          ${[1,2,3,4,5].map(v => `<div class="w-10 h-10 rounded-lg border-2 border-[var(--border-main)] flex items-center justify-center font-bold text-xs">${v}</div>`).join('')}
+          ${[1, 2, 3, 4, 5].map(v => `<div class="w-10 h-10 rounded-lg border-2 border-[var(--border-main)] flex items-center justify-center font-bold text-xs">${v}</div>`).join('')}
         </div>`;
     }
     if (type === 'yes_no') {
@@ -251,7 +279,7 @@ export const setupAdminEvaluations = () => {
     questions.forEach((q, index) => {
       const card = document.createElement("div");
       card.className = "group relative rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm hover:border-[var(--brand-hover)] transition-all duration-300";
-      
+
       card.innerHTML = `
         <div class="flex items-start justify-between gap-4">
           <div class="flex items-center gap-3 bg-[var(--bg-base)] px-3 py-1.5 rounded-lg border border-[var(--border-main)] text-[var(--text-muted)] font-bold text-xs">
@@ -264,10 +292,10 @@ export const setupAdminEvaluations = () => {
             <div class="mt-4 flex flex-wrap gap-4 items-center">
               <div class="w-64 relative">
                 ${dropdownComponent(`q-type-${q.id}`, [
-                  {value: 'scale_1_5', label: 'Escala (1-5)'},
-                  {value: 'yes_no', label: 'Sí / No'},
-                  {value: 'open_text', label: 'Texto Abierto'}
-                ], q.input_type)}
+        { value: 'scale_1_5', label: 'Escala (1-5)' },
+        { value: 'yes_no', label: 'Sí / No' },
+        { value: 'open_text', label: 'Texto Abierto' }
+      ], q.input_type)}
                 <div class="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none z-10">
                   ${getQuestionIcon(q.input_type)}
                 </div>
@@ -335,7 +363,7 @@ export const setupAdminEvaluations = () => {
       setupDropdown(`q-category-${q.id}`, (val) => {
         q.category_id = parseInt(val);
       });
-      
+
       const btn = document.getElementById(`q-type-${q.id}-btn`);
       if (btn) btn.classList.add("pl-10");
     });
@@ -390,7 +418,7 @@ export const setupAdminEvaluations = () => {
     // Validar suma de puntos (100)
     const totalWeight = questions.reduce((sum, q) => sum + (parseInt(q.weight) || 0), 0);
     const hasScale = questions.some(q => q.input_type === 'scale_1_5');
-    
+
     if (hasScale && totalWeight !== 100) {
       if (totalWeight < 100) {
         showToast("Faltan puntos", "warning", `La suma total es ${totalWeight}. Debes sumar exactamente 100.`);
@@ -490,10 +518,10 @@ export const setupAdminEvaluations = () => {
     templatesContainer.innerHTML = `
       <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         ${templates.map(t => {
-          const statusText = t.is_active ? 'Activa' : 'Inactiva';
-          const dateStr = formatDate(t.created_at) || 'Fecha no disponible';
-          
-          return `
+      const statusText = t.is_active ? 'Activa' : 'Inactiva';
+      const dateStr = formatDate(t.created_at) || 'Fecha no disponible';
+
+      return `
           <div class="group flex flex-col justify-between rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm hover:border-[var(--brand-hover)] transition-all duration-300 hover:shadow-md cursor-pointer btn-edit-template" data-id="${t.id}">
             <div>
               <div class="flex items-center justify-between mb-4">
@@ -529,7 +557,7 @@ export const setupAdminEvaluations = () => {
             </div>
           </div>
           `;
-        }).join('')}
+    }).join('')}
       </div>
     `;
 
@@ -538,12 +566,12 @@ export const setupAdminEvaluations = () => {
       card.addEventListener("click", async (e) => {
         // Evitar que el click en el botón de borrar o duplicar active la edición normal
         if (e.target.closest('.btn-delete-template') || e.target.closest('.btn-clone-template')) return;
-        
+
         const id = card.dataset.id;
         try {
           const templates = await templatesService.getTemplates();
           const template = templates.find(t => t.id === id || t.id === parseInt(id));
-          
+
           if (template) {
             editId = template.id;
             inputTitle.value = template.title;
@@ -585,7 +613,7 @@ export const setupAdminEvaluations = () => {
         try {
           const templates = await templatesService.getTemplates();
           const template = templates.find(t => t.id === id || t.id === parseInt(id));
-          
+
           if (template) {
             editId = null; // Important: this makes it a new form!
             originalQuestions = [];
@@ -668,5 +696,11 @@ export const setupAdminEvaluations = () => {
 
   // Inicializar mostrando la lista
   refreshPeriodGate();
-  renderTemplatesList();
+
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('action') === 'create') {
+    showBuilder();
+  } else {
+    renderTemplatesList();
+  }
 };
