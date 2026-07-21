@@ -109,6 +109,12 @@ export const setupNavBar = () => {
   const closeSidebarBtn = document.getElementById("close-sidebar-btn");
   const desktopSidebarBtn = document.getElementById("desktop-sidebar-btn");
 
+  if (sidebar) {
+    document.body.classList.add("has-sidebar");
+  } else {
+    document.body.classList.remove("has-sidebar");
+  }
+
   const toggleSidebar = (forceClose = false) => {
     if (!sidebar || !overlay) return;
 
