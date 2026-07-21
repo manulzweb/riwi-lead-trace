@@ -167,14 +167,14 @@ const renderDashboardContent = async (content, user, name, role) => {
               let rowClass = "hover:bg-[var(--bg-base)] transition-colors";
               
               if (index === 0) {
-                medalIcon = '<svg class="w-6 h-6 mx-auto text-yellow-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7.4-6.3-4.8-6.3 4.8 2.3-7.4-6-4.6h7.6z"/></svg>';
-                rowClass = "bg-amber-500/10 hover:bg-amber-500/20 transition-colors";
+                medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/><path d="M11 12 5.12 2.2"/><path d="m13 12 5.88-9.8"/><path d="M8 7h8"/><circle cx="12" cy="17" r="5"/><path d="M12 14.7v4.6"/></svg>';
+                //rowClass = "bg-amber-500/10 hover:bg-amber-400/20 transition-colors";
               } else if (index === 1) {
-                medalIcon = '<svg class="w-6 h-6 mx-auto text-gray-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7.4-6.3-4.8-6.3 4.8 2.3-7.4-6-4.6h7.6z"/></svg>';
-                rowClass = "bg-gray-500/10 hover:bg-gray-500/20 transition-colors";
+                medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B8B8B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/> <path d="M11 12 5.12 2.2"/> <path d="m13 12 5.88-9.8"/> <path d="M8 7h8"/> <circle cx="12" cy="17" r="5"/> <path d="M10.4 15.6c.4-.6 1-.9 1.7-.9.8 0 1.4.4 1.4 1 0 .6-.3.9-1.1 1.5l-1.8 1.3H14"/> </svg>';
+                //rowClass = "bg-gray-500/10 hover:bg-gray-400/20 transition-colors";
               } else if (index === 2) {
-                medalIcon = '<svg class="w-6 h-6 mx-auto text-orange-700" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7.4-6.3-4.8-6.3 4.8 2.3-7.4-6-4.6h7.6z"/></svg>';
-                rowClass = "bg-orange-500/10 hover:bg-orange-500/20 transition-colors";
+                medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B87333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/> <path d="M11 12 5.12 2.2"/> <path d="m13 12 5.88-9.8"/> <path d="M8 7h8"/> <circle cx="12" cy="17" r="5"/> <!-- 3 --> <path d="M10.5 15h2c.6 0 1 .3 1 .8s-.4.8-1 .8"/> <path d="M12.5 16.6c.8 0 1.2.4 1.2 1s-.5 1-1.4 1c-.6 0-1.1-.2-1.5-.6"/> </svg>';
+                //rowClass = "bg-orange-500/10 hover:bg-orange-400/20 transition-colors";
               } else {
                 medalIcon = `<span class="font-bold text-[var(--text-muted)]">${index + 1}</span>`;
               }
@@ -328,13 +328,13 @@ const renderDashboardContent = async (content, user, name, role) => {
                 let medalIcon = "";
                 let rowClass = "hover:bg-[var(--bg-base)] transition-colors";
                 if (index === 0) {
-                  medalIcon = '<svg class="w-6 h-6 mx-auto text-yellow-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7.4-6.3-4.8-6.3 4.8 2.3-7.4-6-4.6h7.6z"/></svg>';
+                  medalIcon = '<svg class="w-8 h-8 mx-auto" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="#D4AF37" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 4 L28 20" /><path d="M42 4 L36 20" /><path d="M28 20 H36" /><circle cx="32" cy="38" r="18"/><text x="32" y="45" text-anchor="middle" font-size="16" font-family="Arial" font-weight="bold" fill="#D4AF37" stroke="none">1</text></svg>';
                   rowClass = "bg-amber-500/10 hover:bg-amber-500/20 transition-colors";
                 } else if (index === 1) {
-                  medalIcon = '<svg class="w-6 h-6 mx-auto text-gray-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7.4-6.3-4.8-6.3 4.8 2.3-7.4-6-4.6h7.6z"/></svg>';
+                  medalIcon = '<svg class="w-8 h-8 mx-auto" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="#A7A7A7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 4 L28 20"/><path d="M42 4 L36 20"/><path d="M28 20 H36"/><circle cx="32" cy="38" r="18"/><text x="32" y="45" text-anchor="middle" font-size="16" font-family="Arial" font-weight="bold" fill="#A7A7A7" stroke="none">2</text></svg>';
                   rowClass = "bg-gray-500/10 hover:bg-gray-500/20 transition-colors";
                 } else if (index === 2) {
-                  medalIcon = '<svg class="w-6 h-6 mx-auto text-orange-700" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7.4-6.3-4.8-6.3 4.8 2.3-7.4-6-4.6h7.6z"/></svg>';
+                  medalIcon = '<svg class="w-8 h-8 mx-auto" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="#B87333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 4 L28 20"/><path d="M42 4 L36 20"/><path d="M28 20 H36"/><circle cx="32" cy="38" r="18"/><text x="32" y="45" text-anchor="middle" font-size="16" font-family="Arial" font-weight="bold" fill="#B87333" stroke="none">3</text></svg>';
                   rowClass = "bg-orange-500/10 hover:bg-orange-500/20 transition-colors";
                 } else {
                   medalIcon = `<span class="font-bold text-[var(--text-muted)]">${index + 1}</span>`;
