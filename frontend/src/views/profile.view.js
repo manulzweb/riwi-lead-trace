@@ -9,7 +9,7 @@ export const renderProfile = () => {
 
   return `
     ${navBarComponent()}
-    <main class="w-full px-6 py-10 transition-all duration-300 ease-in-out">
+    <main class="px-6 py-10 transition-all duration-300 ease-in-out">
       <div class="mx-auto max-w-3xl">
         <section class="rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-8 shadow-xl">
           <p class="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--brand-bg)]">Cuenta</p>
