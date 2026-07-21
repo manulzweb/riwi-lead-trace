@@ -49,12 +49,6 @@ export const renderActivityLog = () => `
         </div>
       `).join("")}
     </section>
-
-    <section id="pagination-controls" class="mt-6 flex justify-between items-center hidden">
-      <button id="btn-prev-page" class="px-4 py-2 rounded-xl bg-[var(--bg-panel)] border border-[var(--border-main)] text-[var(--text-main)] hover:bg-[var(--bg-base)] transition-colors text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed">Anterior</button>
-      <span id="page-indicator" class="text-sm font-medium text-[var(--text-muted)]">Página 1</span>
-      <button id="btn-next-page" class="px-4 py-2 rounded-xl bg-[var(--bg-panel)] border border-[var(--border-main)] text-[var(--text-main)] hover:bg-[var(--bg-base)] transition-colors text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed">Siguiente</button>
-    </section>
     </div>
   </main>
 `;
@@ -73,10 +67,6 @@ export const setupActivityLog = async () => {
   const listContainer = document.getElementById("activity-log-list");
   const searchInput = document.getElementById("search-log");
   const filterAction = document.getElementById("filter-action");
-  const paginationControls = document.getElementById("pagination-controls");
-  const btnPrev = document.getElementById("btn-prev-page");
-  const btnNext = document.getElementById("btn-next-page");
-  const pageIndicator = document.getElementById("page-indicator");
 
   if (!listContainer) return;
 
@@ -91,7 +81,6 @@ export const setupActivityLog = async () => {
         "Sin resultados",
         "No se encontraron acciones que coincidan con la búsqueda."
       );
-      paginationControls.classList.add("hidden");
       return;
     }
 
@@ -101,7 +90,7 @@ export const setupActivityLog = async () => {
     const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
     const paginated = filteredEntries.slice(startIdx, startIdx + ITEMS_PER_PAGE);
 
-    listContainer.innerHTML = paginated.map(entry => {
+    let html = paginated.map(entry => {
       const label = ACTION_LABELS[entry.action] || entry.action;
       const actor = entry.admin_name || (entry.admin_id ? `Usuario #${entry.admin_id}` : "Desconocido");
       const date = formatDateTime(entry.created_at);
@@ -118,12 +107,30 @@ export const setupActivityLog = async () => {
     }).join("");
 
     if (totalPages > 1) {
-      paginationControls.classList.remove("hidden");
-      pageIndicator.textContent = `Página ${currentPage} de ${totalPages}`;
-      btnPrev.disabled = currentPage === 1;
-      btnNext.disabled = currentPage === totalPages;
-    } else {
-      paginationControls.classList.add("hidden");
+      html += `
+        <div class="flex justify-between items-center mt-4 px-2">
+          <button class="btn-prev-page px-4 py-2 rounded-xl font-bold bg-[var(--bg-base)] text-[var(--text-muted)] border border-[var(--border-main)] hover:bg-[var(--border-main)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer" ${currentPage === 1 ? 'disabled' : ''}>Anterior</button>
+          <span class="text-sm font-semibold text-[var(--text-muted)]">Página ${currentPage} de ${totalPages}</span>
+          <button class="btn-next-page px-4 py-2 rounded-xl font-bold bg-[var(--bg-base)] text-[var(--text-muted)] border border-[var(--border-main)] hover:bg-[var(--border-main)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer" ${currentPage === totalPages ? 'disabled' : ''}>Siguiente</button>
+        </div>
+      `;
+    }
+
+    listContainer.innerHTML = html;
+
+    if (totalPages > 1) {
+      listContainer.querySelector(".btn-prev-page")?.addEventListener("click", () => {
+        if (currentPage > 1) {
+          currentPage--;
+          renderList();
+        }
+      });
+      listContainer.querySelector(".btn-next-page")?.addEventListener("click", () => {
+        if (currentPage < totalPages) {
+          currentPage++;
+          renderList();
+        }
+      });
     }
   };
 
@@ -145,25 +152,9 @@ export const setupActivityLog = async () => {
 
   searchInput.addEventListener("input", applyFilters);
   filterAction.addEventListener("change", applyFilters);
-  
-  btnPrev.addEventListener("click", () => {
-    if (currentPage > 1) {
-      currentPage--;
-      renderList();
-    }
-  });
-
-  btnNext.addEventListener("click", () => {
-    const totalPages = Math.ceil(filteredEntries.length / ITEMS_PER_PAGE);
-    if (currentPage < totalPages) {
-      currentPage++;
-      renderList();
-    }
-  });
 
   const load = async () => {
     listContainer.setAttribute("aria-busy", "true");
-    paginationControls.classList.add("hidden");
     try {
       allEntries = await activityLogService.getRecent(100);
 
