@@ -294,23 +294,30 @@ export const setupAdminEvaluations = () => {
       <div class="w-full h-12 mt-3 rounded-xl border-2 border-dashed border-[var(--border-main)] opacity-50 pointer-events-none"></div>`;
   };
 
+  let draggedIndex = null;
+
   const renderQuestions = () => {
     questionsContainer.innerHTML = "";
     questions.forEach((q, index) => {
       const card = document.createElement("div");
-      card.className = "group relative rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm hover:border-[var(--brand-hover)] transition-all duration-300";
+      card.className = "group relative rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm hover:border-[var(--brand-hover)] transition-all duration-300 cursor-move";
+      card.draggable = true;
+      card.dataset.index = index;
 
       card.innerHTML = `
         <div class="flex items-start justify-between gap-4">
-          <div class="flex items-center gap-3 bg-[var(--bg-base)] px-3 py-1.5 rounded-lg border border-[var(--border-main)] text-[var(--text-muted)] font-bold text-xs">
-            ${index + 1}
+          <div class="flex flex-col items-center gap-1">
+            <svg class="w-5 h-5 text-[var(--border-main)] mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/></svg>
+            <div class="flex items-center justify-center bg-[var(--bg-base)] w-8 h-8 rounded-lg border border-[var(--border-main)] text-[var(--text-muted)] font-bold text-xs">
+              ${index + 1}
+            </div>
           </div>
           
           <div class="flex-1">
-            <input type="text" class="q-text-input w-full bg-transparent text-lg font-bold text-[var(--text-main)] focus:outline-none placeholder-[var(--text-muted)]" placeholder="Escribe tu pregunta aquí..." value="${escapeHtml(q.text)}" data-id="${q.id}">
+            <input type="text" class="q-text-input w-full bg-transparent text-lg font-bold text-[var(--text-main)] focus:outline-none placeholder-[var(--text-muted)] cursor-text" placeholder="Escribe tu pregunta aquí..." value="${escapeHtml(q.text)}" data-id="${q.id}">
             
             <div class="mt-4 flex flex-wrap gap-4 items-center">
-              <div class="w-64 relative">
+              <div class="w-64 relative cursor-default">
                 ${dropdownComponent(`q-type-${q.id}`, [
         { value: 'scale_1_5', label: 'Escala (1-5)' },
         { value: 'yes_no', label: 'Sí / No' },
@@ -321,21 +328,23 @@ export const setupAdminEvaluations = () => {
                 </div>
               </div>
               
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-2 cursor-default">
                 <label class="text-sm font-bold text-[var(--text-muted)]">Categoría:</label>
                 <div class="w-48 relative">
                   ${dropdownComponent(`q-category-${q.id}`, categoriesData.map(c => ({ value: c.id, label: c.name })), q.categoryId || (categoriesData[0]?.id || 1))}
                 </div>
               </div>
 
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-2 cursor-default">
                 <label class="text-sm font-bold text-[var(--text-muted)]">Puntos:</label>
-                <input type="number" min="0" max="100" class="q-weight-input w-24 rounded-xl border border-[var(--border-main)] bg-[var(--bg-base)] px-3 py-2 text-[var(--text-main)] font-bold focus:border-[var(--brand-bg)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-bg)]/20 disabled:opacity-50" placeholder="0-100" value="${q.type === 'scale_1_5' ? (q.weight || 0) : 0}" data-id="${q.id}" ${q.type !== 'scale_1_5' ? 'disabled' : ''}>
+                <input type="number" min="0" max="100" class="q-weight-input cursor-text w-24 rounded-xl border border-[var(--border-main)] bg-[var(--bg-base)] px-3 py-2 text-[var(--text-main)] font-bold focus:border-[var(--brand-bg)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-bg)]/20 disabled:opacity-50" placeholder="0-100" value="${q.type === 'scale_1_5' ? (q.weight || 0) : 0}" data-id="${q.id}" ${q.type !== 'scale_1_5' ? 'disabled' : ''}>
               </div>
             </div>
             
             <!-- Vista Previa Visual -->
-            ${getQuestionPreview(q.type)}
+            <div class="cursor-default">
+              ${getQuestionPreview(q.type)}
+            </div>
           </div>
           
           <button class="btn-delete-q p-2 text-[var(--text-muted)] hover:bg-[var(--danger-bg)] hover:text-[var(--danger-text)] rounded-xl transition-colors cursor-pointer" data-id="${q.id}" title="Eliminar pregunta">
@@ -343,6 +352,38 @@ export const setupAdminEvaluations = () => {
           </button>
         </div>
       `;
+
+      // Eventos Drag and Drop
+      card.addEventListener("dragstart", (e) => {
+        draggedIndex = index;
+        e.dataTransfer.effectAllowed = "move";
+        setTimeout(() => card.classList.add("opacity-40", "scale-95"), 0);
+      });
+
+      card.addEventListener("dragend", () => {
+        card.classList.remove("opacity-40", "scale-95");
+      });
+
+      card.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        card.classList.add("border-[var(--brand-bg)]", "border-2");
+      });
+
+      card.addEventListener("dragleave", () => {
+        card.classList.remove("border-[var(--brand-bg)]", "border-2");
+      });
+
+      card.addEventListener("drop", (e) => {
+        e.preventDefault();
+        card.classList.remove("border-[var(--brand-bg)]", "border-2");
+        if (draggedIndex !== null && draggedIndex !== index) {
+          const draggedItem = questions[draggedIndex];
+          questions.splice(draggedIndex, 1);
+          questions.splice(index, 0, draggedItem);
+          renderQuestions();
+          updateWeightCounter();
+        }
+      });
 
       questionsContainer.appendChild(card);
     });

@@ -298,7 +298,8 @@ const renderDashboardContent = async (content, user, name, role) => {
           datasets: [{
             data: [total, pending],
             backgroundColor: [brandColor, emptyColor],
-            borderWidth: 0,
+            borderWidth: 2,
+            borderColor: 'transparent',
             hoverOffset: 4
           }]
         },
