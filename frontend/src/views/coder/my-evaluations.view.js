@@ -4,9 +4,10 @@ import { authService } from "../../services/auth.service";
 import { userService } from "../../services/users.service";
 import { periodService } from "../../services/periods.service";
 import { showToast } from "../../components/alerts";
-import { templatesService } from "../../services/templates.service";
+import { formsService } from "../../services/forms.service";
 import Swal from 'sweetalert2';
 import { formatDateLong } from "../../utils/date";
+import { emptyStateComponent } from "../../components/emptyState";
 
 export const renderMyEvaluations = () => `
   ${navBarComponent()}
@@ -37,24 +38,24 @@ export const setupMyEvaluations = async () => {
   const currentUser = authService.getSession();
 
   try {
-    const [evaluations, users, periods, templates] = await Promise.all([
+    const [evaluations, users, periods, forms] = await Promise.all([
       evaluationService.getByEvaluator(currentUser.id),
       userService.get(),
       periodService.get(),
-      templatesService.getTemplates()
+      formsService.getForms()
     ]);
 
     const usersMap = new Map(users.map(u => [u.id, u]));
     const periodsMap = new Map(periods.map(p => [p.id, p]));
-    const templatesMap = new Map(templates.map(t => [t.id, t]));
+    const formsMap = new Map(forms.map(t => [t.id, t]));
 
     if (evaluations.length === 0) {
-      container.innerHTML = `
-        <article class="rounded-3xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-10 text-center">
-          <p class="text-[var(--text-muted)]">No has realizado ninguna evaluación visible todavía.</p>
-          <p class="text-xs text-[var(--text-muted)] mt-2">Nota: Las evaluaciones enviadas como "Anónimas" no se asocian a tu perfil para resguardar tu privacidad.</p>
-        </article>
-      `;
+      container.innerHTML = emptyStateComponent(
+        "Aún no hay evaluaciones",
+        "No has realizado ninguna evaluación visible todavía. (Las anónimas no se muestran aquí por privacidad).",
+        "Nueva evaluación",
+        "/evaluables"
+      );
       return;
     }
 
@@ -102,10 +103,10 @@ export const setupMyEvaluations = async () => {
       const evaluatee = usersMap.get(Number(evaluation.evaluatee_id)) || usersMap.get(String(evaluation.evaluatee_id));
       const evaluateeName = evaluatee ? evaluatee.name : `Usuario #${evaluation.evaluatee_id}`;
 
-      const template = templatesMap.get(evaluation.form_id);
+      const form = formsMap.get(evaluation.form_id);
       const questionsMap = new Map();
-      if (template && template.questions) {
-        template.questions.forEach(q => questionsMap.set(String(q.id), q));
+      if (form && form.questions) {
+        form.questions.forEach(q => questionsMap.set(String(q.id), q));
       }
 
       const answersHtml = evaluation.answers.map(ans => {

@@ -23,10 +23,10 @@ def get_users(role: Optional[str] = Query(None, description="Filtrar por rol (ej
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al consultar usuarios")
 
 @router.get("/evaluables", response_model=List[UserOut])
-def get_evaluables():
+def get_evaluables(evaluator_id: Optional[int] = Query(None, description="Si se envía, excluye de la lista al propio usuario aunque tenga otro ID (por email)")):
     """Consulta filtrada con un array `IN` sobre `role_id` para resolver entidades evaluables (`team_leader`, `tutor`)."""
     try:
-        return user_service.get_evaluables()
+        return user_service.get_evaluables(evaluator_id)
     except Exception as e:
         logger.error(f"Error fetching evaluables: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")

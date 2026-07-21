@@ -71,7 +71,7 @@ export const ROUTES = {
 
   // ── Admin ──────────────────────────────────────────────────────────────────
   "/admin/evaluations": {
-    title: "Gestión de Plantillas | LeadTrace",
+    title: "Gestión de Formularios | LeadTrace",
     renderView: renderAdminEvaluations,
     initSetup: setupAdminEvaluations,
     requireAuth: true,

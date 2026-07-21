@@ -5,7 +5,7 @@ Reglas de negocio ADMIN-02 (integridad del instrumento):
    sobrescribe, category/input_type/sort_order/weight_percent se conservan.
 3. Si la IA marca que el texto ya no encaja en la categoria, hace falta
    confirm=true para guardar igual.
-4. Los pesos de las preguntas de escala activas de un template deben
+4. Los pesos de las preguntas de escala activas de un form deben
    cubrir exactamente ese conjunto y sumar 100.
 """
 from sqlalchemy import text
@@ -13,7 +13,7 @@ from sqlalchemy import text
 from app.config.database import conn
 from app.services import question_service
 
-TL_TEMPLATE_ID = 1
+TL_FORM_ID = 1
 FIRST_TL_SCALE_QUESTION_ID = 1  # 'Comunicación efectiva', weight_percent=10.00
 SEED_ACTIVE_PERIOD_ID = 1
 
@@ -36,7 +36,7 @@ def test_no_se_edita_texto_con_periodo_activo(client):
 
 def test_no_se_actualizan_pesos_con_periodo_activo(client):
     response = client.put("/questions/weights", json={
-        "form_id": TL_TEMPLATE_ID,
+        "form_id": TL_FORM_ID,
         "weights": [{"question_id": FIRST_TL_SCALE_QUESTION_ID, "weight_percent": 10}]
     })
     assert response.status_code == 409
@@ -65,7 +65,7 @@ def test_editar_texto_versiona_sin_sobrescribir(client):
         original = question_service.get_question(FIRST_TL_SCALE_QUESTION_ID)
         assert not original["is_active"]  # la version vieja queda desactivada, no borrada
 
-        activas = question_service.get_questions_by_template(TL_TEMPLATE_ID, only_active=True)
+        activas = question_service.get_questions_by_form(TL_FORM_ID, only_active=True)
         active_ids = {q["id"] for q in activas}
         assert FIRST_TL_SCALE_QUESTION_ID not in active_ids
         assert new_question_id in active_ids
@@ -123,12 +123,12 @@ def test_editar_texto_pide_confirmacion_si_ia_dice_que_no_coincide(client, monke
 def test_pesos_deben_sumar_100(client):
     _close_seed_period()
     try:
-        activas = question_service.get_questions_by_template(TL_TEMPLATE_ID, only_active=True)
+        activas = question_service.get_questions_by_form(TL_FORM_ID, only_active=True)
         scale_ids = [q["id"] for q in activas if q["input_type"] == "scale"]
         # 10 preguntas a 9.00 cada una = 90, no 100.
         weights = [{"question_id": qid, "weight_percent": 9} for qid in scale_ids]
 
-        response = client.put("/questions/weights", json={"form_id": TL_TEMPLATE_ID, "weights": weights})
+        response = client.put("/questions/weights", json={"form_id": TL_FORM_ID, "weights": weights})
         assert response.status_code == 422
     finally:
         _reopen_seed_period()
@@ -137,13 +137,13 @@ def test_pesos_deben_sumar_100(client):
 def test_pesos_deben_cubrir_todas_las_preguntas_activas(client):
     _close_seed_period()
     try:
-        activas = question_service.get_questions_by_template(TL_TEMPLATE_ID, only_active=True)
+        activas = question_service.get_questions_by_form(TL_FORM_ID, only_active=True)
         scale_ids = [q["id"] for q in activas if q["input_type"] == "scale"]
         # Falta la ultima pregunta de escala.
         weights = [{"question_id": qid, "weight_percent": round(100 / (len(scale_ids) - 1), 2)}
                    for qid in scale_ids[:-1]]
 
-        response = client.put("/questions/weights", json={"form_id": TL_TEMPLATE_ID, "weights": weights})
+        response = client.put("/questions/weights", json={"form_id": TL_FORM_ID, "weights": weights})
         assert response.status_code == 422
     finally:
         _reopen_seed_period()
@@ -151,7 +151,7 @@ def test_pesos_deben_cubrir_todas_las_preguntas_activas(client):
 
 def test_actualizar_pesos_ok_y_se_reflejan(client):
     _close_seed_period()
-    original = question_service.get_questions_by_template(TL_TEMPLATE_ID, only_active=True)
+    original = question_service.get_questions_by_form(TL_FORM_ID, only_active=True)
     original_weights = {q["id"]: float(q["weight_percent"]) for q in original if q["input_type"] == "scale"}
     try:
         scale_ids = list(original_weights.keys())
@@ -164,14 +164,14 @@ def test_actualizar_pesos_ok_y_se_reflejan(client):
         suma = sum(w["weight_percent"] for w in weights)
         weights[-1]["weight_percent"] = round(weights[-1]["weight_percent"] + (100 - suma), 2)
 
-        response = client.put("/questions/weights", json={"form_id": TL_TEMPLATE_ID, "weights": weights})
+        response = client.put("/questions/weights", json={"form_id": TL_FORM_ID, "weights": weights})
         assert response.status_code == 200
 
         # Terminar la transaccion abierta en el hilo principal del test para ver los cambios
         # hechos por el hilo de FastAPI en MySQL (por el nivel de aislamiento Repeatable Read).
         conn.commit()
 
-        actualizadas = question_service.get_questions_by_template(TL_TEMPLATE_ID, only_active=True)
+        actualizadas = question_service.get_questions_by_form(TL_FORM_ID, only_active=True)
         nuevo_peso = next(q["weight_percent"] for q in actualizadas if q["id"] == scale_ids[0])
         assert float(nuevo_peso) == 19.0
     finally:

@@ -253,7 +253,7 @@ extensiones puntuales sobre `calculate_average_score`, no un rediseno.
 | GET | `/periods` | Listar periodos (el activo define si hay formularios disponibles) |
 | PUT | `/periods/:id` | **Admin:** activar/cerrar el periodo de evaluacion (solo uno activo a la vez) |
 | PATCH | `/questions/:id` | **Admin:** editar (versionar) el texto de una pregunta (solo con periodo cerrado, si no `409`) |
-| PUT | `/questions/weights` | **Admin:** actualizar los pesos (`weight_percent`) de las preguntas de escala de un template (deben sumar 100, solo con periodo cerrado) |
+| PUT | `/questions/weights` | **Admin:** actualizar los pesos (`weight_percent`) de las preguntas de escala de un form (deben sumar 100, solo con periodo cerrado) |
 | GET | `/metrics/summary?period_id=:p` | KPIs + **ICP** |
 | GET | `/metrics/ai-summary?evaluatee_id=:e&period_id=:p` | Resumen IA (Claude, anonimizado) — admin |
 

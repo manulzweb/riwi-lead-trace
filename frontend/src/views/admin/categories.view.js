@@ -1,10 +1,11 @@
 import { navBarComponent } from "../../components/navbar";
-import { showToast } from "../../components/alerts";
+import { showToast, showConfirm } from "../../components/alerts";
 import { categoryService } from "../../services/categories.service.js";
 import { escapeHtml } from "../../utils/validators";
 import { setupModalA11y } from "../../utils/modalA11y";
 import { authService } from "../../services/auth.service";
 import { searchBoxComponent, setupSearch } from "../../components/searchBox";
+import { emptyStateComponent } from "../../components/emptyState.js";
 
 export const renderAdminCategories = () => `
   ${navBarComponent()}
@@ -108,14 +109,10 @@ export const setupAdminCategories = () => {
 
   const renderCategoriesList = (categories) => {
     if (!categories || categories.length === 0) {
-      listContainer.innerHTML = `
-        <div class="flex flex-col items-center justify-center py-16 text-center">
-          <div class="mb-4 rounded-full bg-gray-100 p-4 dark:bg-zinc-800">
-            <svg class="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 11V6a3 3 0 013-3z"/></svg>
-          </div>
-          <h3 class="mb-2 font-heading text-xl font-bold text-[var(--text-main)]">${allCategories.length === 0 ? "No hay categorías" : "Sin resultados"}</h3>
-          <p class="text-sm text-[var(--text-muted)]">${allCategories.length === 0 ? "Crea la primera categoría para poder clasificar preguntas." : "Ninguna categoría coincide con la búsqueda."}</p>
-        </div>`;
+      listContainer.innerHTML = emptyStateComponent(
+        allCategories.length === 0 ? "No hay categorías" : "Sin resultados",
+        allCategories.length === 0 ? "Crea la primera categoría para poder clasificar preguntas." : "Ninguna categoría coincide con la búsqueda."
+      );
       return;
     }
 
@@ -144,7 +141,7 @@ export const setupAdminCategories = () => {
     document.querySelectorAll(".btn-delete-category").forEach(btn => {
       btn.addEventListener("click", async (e) => {
         const id = e.currentTarget.dataset.id;
-        if (!confirm("¿Estás seguro de que deseas eliminar esta categoría?")) return;
+        if (!(await showConfirm("¿Estás seguro de que deseas eliminar esta categoría?"))) return;
 
         try {
           await categoryService.remove(id, authService.getSession()?.id);

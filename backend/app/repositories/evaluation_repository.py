@@ -37,7 +37,7 @@ class EvaluationRepository:
     def get_user_clan_and_roles(self, conn, user_id: int) -> Optional[Dict[str, Any]]:
         try:
             query = text("""
-                SELECT u.clan_id, GROUP_CONCAT(r.name) as roles
+                SELECT u.clan_id, u.email, GROUP_CONCAT(r.name) as roles
                 FROM users u
                 LEFT JOIN user_roles ur ON u.id = ur.user_id
                 LEFT JOIN roles r ON ur.role_id = r.id

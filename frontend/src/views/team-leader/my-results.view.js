@@ -5,6 +5,7 @@ import { evaluationService } from "../../services/evaluation.service";
 import { periodService } from "../../services/periods.service";
 import { authService } from "../../services/auth.service";
 import { showToast } from "../../components/alerts";
+import { emptyStateComponent } from "../../components/emptyState";
 
 export const renderMyResults = () => `
   ${navBarComponent()}
@@ -129,11 +130,10 @@ export const setupMyResults = async () => {
       const periodEvaluations = evaluations.filter(e => e.period_id === periodId && e.status === "submitted");
 
       if (periodEvaluations.length === 0) {
-        feedbackList.innerHTML = `
-          <article class="rounded-3xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-10 text-center text-[var(--text-muted)]">
-            No has recibido ninguna evaluación para este periodo.
-          </article>
-        `;
+        feedbackList.innerHTML = emptyStateComponent(
+          "Sin feedback",
+          "No has recibido evaluaciones para este periodo."
+        );
         return;
       }
 

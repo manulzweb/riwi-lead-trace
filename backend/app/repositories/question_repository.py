@@ -33,7 +33,7 @@ class QuestionRepository:
             logger.error(f"Error fetching question {question_id}: {e}")
             raise
 
-    def get_questions_by_template(self, conn: Connection, form_id: int, only_active: bool) -> List[Dict[str, Any]]:
+    def get_questions_by_form(self, conn: Connection, form_id: int, only_active: bool) -> List[Dict[str, Any]]:
         try:
             query_str = self._base_query() + " WHERE q.form_id = :form_id"
             if only_active:
@@ -43,7 +43,7 @@ class QuestionRepository:
             rows = conn.execute(text(query_str), {"form_id": form_id}).mappings().all()
             return [dict(r) for r in rows]
         except SQLAlchemyError as e:
-            logger.error(f"Error fetching questions for template {form_id}: {e}")
+            logger.error(f"Error fetching questions for form {form_id}: {e}")
             raise
 
     def deactivate_question(self, conn: Connection, question_id: int) -> None:

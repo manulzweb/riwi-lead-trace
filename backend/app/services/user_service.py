@@ -21,9 +21,14 @@ class UserService:
             users = self.repo.get_users(conn, role)
             return [self._format_user(u) for u in users]
 
-    def get_evaluables(self) -> List[Dict[str, Any]]:
+    def get_evaluables(self, evaluator_id: Optional[int] = None) -> List[Dict[str, Any]]:
         with engine.connect() as conn:
             users = self.repo.get_evaluables(conn)
+            if evaluator_id is not None:
+                evaluator = self.repo.get_user_by_id(conn, evaluator_id)
+                if evaluator:
+                    evaluator_email = evaluator["email"]
+                    users = [u for u in users if u["email"] != evaluator_email]
             return [self._format_user(u) for u in users]
 
     def get_user(self, user_id: int) -> Optional[Dict[str, Any]]:

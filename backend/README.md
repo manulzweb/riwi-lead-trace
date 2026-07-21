@@ -61,7 +61,7 @@ mysql -u root -p riwi_lead_trace < ../database/02_dml.sql
 ```
 
 Esto crea las tablas normalizadas a 3FN (`roles`, `cohorts`, `clans`, `users`, `user_roles`,
-`team_leader_clans`, `periods`, `form_templates`, `questions`, `evaluations`,
+`team_leader_clans`, `periods`, `forms`, `questions`, `evaluations`,
 `evaluation_answers`, `ai_feedback_cache`). Los roles de cada usuario son N:M (`user_roles`): un
 usuario puede tener más de un rol a la vez, y un Team Leader puede tener varios clanes a cargo
 (`team_leader_clans`). Ver [`docs/07-base-de-datos.md`](../docs/07-base-de-datos.md) para el
@@ -109,11 +109,11 @@ para filtrar datos, sin poder confirmar que sea real. No lo trates como control 
 | POST | `/evaluations` | Registrar evaluación (borrador o enviada) — valida anonimato, no-duplicado por periodo y periodo activo | cualquiera |
 | GET | `/evaluations?evaluator_id=` | Historial de evaluaciones hechas por un Coder | cualquiera |
 | GET | `/evaluations?evaluatee_id=&period_id=&viewer_role=` | Histórico de evaluaciones recibidas; `viewer_role=admin` revela al evaluador en no-anónimas | cualquiera |
-| GET | `/questions?template_id=` | Preguntas activas de un template (texto + categoría + peso) | admin |
+| GET | `/questions?form_id=` | Preguntas activas de un form (texto + categoría + peso) | admin |
 | POST | `/questions` | Agregar una pregunta nueva a una plantilla existente — solo con periodo cerrado, no exige que los pesos sumen 100 en el momento | admin |
 | PATCH | `/questions/{id}` | Reformular el texto de una pregunta — siempre versiona, solo con periodo cerrado | admin |
 | DELETE | `/questions/{id}` | Desactivar una pregunta — solo con periodo cerrado, idempotente | admin |
-| PUT | `/questions/weights` | Actualizar los pesos de las preguntas de escala de un template — deben sumar 100, solo con periodo cerrado | admin |
+| PUT | `/questions/weights` | Actualizar los pesos de las preguntas de escala de un form — deben sumar 100, solo con periodo cerrado | admin |
 | GET | `/categories` | Listar todas las categorías de pregunta | admin |
 | POST | `/categories` | Crear una categoría nueva | admin |
 | PATCH | `/categories/{id}` | Renombrar una categoría | admin |
@@ -155,7 +155,7 @@ Reglas de negocio clave (no romper sin acordarlo con el equipo):
   desactiva automaticamente cualquier otro (`period_service._deactivate_other_periods`).
 - El ICP (`average_score` + `status`) se calcula on-read en `metrics_service.py`, no se persiste.
   Es un **promedio ponderado**: cada pregunta de escala pesa lo que diga su `weight_percent`
-  (`questions.weight_percent`, que las preguntas de escala activas de un template deben sumar
+  (`questions.weight_percent`, que las preguntas de escala activas de un form deben sumar
   exactamente 100 — se valida en `question_service.update_weights`). Con menos de
   `MIN_EVALUATIONS` (3) respuestas, no se publica (`average_score: null`). El estado
   (`Sólido` / `Estable` / `En riesgo` / `Datos insuficientes`) sale de comparar contra dos umbrales
@@ -175,7 +175,7 @@ Reglas de negocio clave (no romper sin acordarlo con el equipo):
   distinto (ej. `coder`, que evalúa pero nunca es evaluado) se rechaza con `422`. Crear una plantilla
   nueva para un rol desactiva cualquier otra plantilla activa de ese mismo rol (una sola activa por
   rol, igual que los periodos). Ni `POST /forms` ni `POST /questions` ni `DELETE` borran filas
-  físicamente: siempre desactivan (`is_active=FALSE`), porque `evaluations.template_id` y
+  físicamente: siempre desactivan (`is_active=FALSE`), porque `evaluations.form_id` y
   `evaluation_answers.question_id` pueden referenciarlas desde evaluaciones históricas. Los tipos de
   pregunta válidos son `scale` \| `text` \| `yes_no`; `yes_no` se trata como `text` para el ICP (se
   excluye del promedio ponderado, igual que `text`, ver `metrics_service.calculate_average_score`).
@@ -190,5 +190,5 @@ pytest
 ```
 
 Suite en [`backend/tests/`](./tests): `test_auth.py`, `test_evaluations.py`, `test_metrics.py`,
-`test_periods.py`, `test_questions.py`, `test_form_templates.py`. También podés probar a mano en `http://localhost:8000/docs`
+`test_periods.py`, `test_questions.py`, `test_forms.py`. También podés probar a mano en `http://localhost:8000/docs`
 (Swagger).

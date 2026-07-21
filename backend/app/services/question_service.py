@@ -23,9 +23,9 @@ class QuestionService:
         with engine.connect() as conn:
             return self.repo.get_question_by_id(conn, question_id)
 
-    def get_questions_by_template(self, form_id: int, only_active: bool = True) -> List[Dict[str, Any]]:
+    def get_questions_by_form(self, form_id: int, only_active: bool = True) -> List[Dict[str, Any]]:
         with engine.connect() as conn:
-            return self.repo.get_questions_by_template(conn, form_id, only_active)
+            return self.repo.get_questions_by_form(conn, form_id, only_active)
 
     def version_question_text(self, question_id: int, new_text: str, confirm: bool, admin_id: int = None) -> Dict[str, Any]:
         with engine.begin() as conn:
@@ -111,11 +111,13 @@ class QuestionService:
         with engine.begin() as conn:
             self._assert_no_active_period(conn)
 
-            current = self.repo.get_questions_by_template(conn, payload.form_id, only_active=True)
+            current = self.repo.get_questions_by_form(conn, payload.form_id, only_active=True)
             current_scale = {q["id"] for q in current if q["input_type"] == "scale"}
 
             sent_ids = {w.question_id for w in payload.weights}
             if sent_ids != current_scale:
+                import logging
+                logging.error(f"Mismatch! sent_ids: {sent_ids}, current_scale: {current_scale}")
                 raise InvalidWeightsException(
                     "El listado de pesos debe incluir exactamente todas las preguntas de escala "
                     "activas del template, ni de mas ni de menos."
@@ -136,15 +138,15 @@ class QuestionService:
                 detail=f"{len(payload.weights)} pregunta(s) reponderadas",
             )
             
-            return self.repo.get_questions_by_template(conn, payload.form_id, only_active=True)
+            return self.repo.get_questions_by_form(conn, payload.form_id, only_active=True)
 
 question_service = QuestionService()
 
 def get_question(question_id: int):
     return question_service.get_question(question_id)
 
-def get_questions_by_template(form_id: int, only_active: bool = True):
-    return question_service.get_questions_by_template(form_id, only_active)
+def get_questions_by_form(form_id: int, only_active: bool = True):
+    return question_service.get_questions_by_form(form_id, only_active)
 
 def version_question_text(question_id: int, new_text: str, confirm: bool, admin_id: int = None):
     return question_service.version_question_text(question_id, new_text, confirm, admin_id)

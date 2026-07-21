@@ -5,15 +5,16 @@ const jsonHeaders = {
 }
 
 // Arma las options de fetch para un POST/PUT/PATCH con body JSON. Varios
-// services (auth, evaluation, users, templates) dependen de este helper.
+// services (auth, evaluation, users, forms) dependen de este helper.
 export const jsonOptions = (method, data) => ({
   method,
   headers: jsonHeaders,
   body: JSON.stringify(data)
 })
 
-export const request = async (path, options) => {
-  const response = await fetch(BASE_URL + path, options)
+export const request = async (path, options = {}) => {
+  const fetchOptions = { ...options, cache: 'no-store' };
+  const response = await fetch(BASE_URL + path, fetchOptions)
   if (!response.ok) {
     // Mantiene el formato de mensaje existente (varios callers hacen
     // error.message.includes("404")) y ademas expone el detalle real del
@@ -29,6 +30,9 @@ export const request = async (path, options) => {
     error.status = response.status
     error.detail = detail
     throw error
+  }
+  if (response.status === 204) {
+    return null;
   }
   return await response.json()
 }

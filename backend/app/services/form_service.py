@@ -1,6 +1,6 @@
 from typing import List, Dict, Any, Optional
 from app.config.database import engine
-from app.schemas.form_template import TemplateCreate, TemplateUpdate
+from app.schemas.form import FormCreate, FormUpdate
 from app.repositories.form_repository import FormRepository
 from app.constants.form_constants import EVALUABLE_ROLES, WEIGHT_SUM_TOLERANCE
 from app.exceptions.form_exceptions import (
@@ -40,14 +40,14 @@ class FormService:
             forms = self.repo.get_forms_by_role_id(conn, role_id)
             return self._attach_questions(conn, forms)
 
-    def get_template(self, form_id: int) -> Optional[Dict[str, Any]]:
+    def get_form(self, form_id: int) -> Optional[Dict[str, Any]]:
         with engine.connect() as conn:
             form_dict = self.repo.get_form_by_id(conn, form_id)
             if not form_dict:
                 return None
             return self._attach_questions(conn, [form_dict])[0]
 
-    def _validate_creation_payload(self, payload: TemplateCreate):
+    def _validate_creation_payload(self, payload: FormCreate):
         if payload.target_role not in EVALUABLE_ROLES:
             raise InvalidRoleException(f"target_role debe ser uno de {EVALUABLE_ROLES}.")
 
@@ -57,12 +57,10 @@ class FormService:
             if abs(total - 100) > WEIGHT_SUM_TOLERANCE:
                 raise InvalidWeightException(f"Los pesos de las preguntas de escala deben sumar 100 (suma actual: {total}).")
 
-    def create_template(self, payload: TemplateCreate) -> Dict[str, Any]:
+    def create_form(self, payload: FormCreate) -> Dict[str, Any]:
         self._validate_creation_payload(payload)
 
         with engine.begin() as conn:
-            self._assert_no_active_period(conn)
-            
             role_id = self.repo.get_role_id_by_name(conn, payload.target_role)
             if not role_id:
                 raise InvalidRoleException(f"Rol '{payload.target_role}' no existe en BD.")
@@ -73,7 +71,7 @@ class FormService:
                 "title": payload.title,
                 "description": payload.description,
                 "target_role_id": role_id,
-                "is_template": payload.is_template
+                "is_form": payload.is_form
             }
             form_id = self.repo.insert_form(conn, form_data)
 
@@ -99,7 +97,7 @@ class FormService:
             form_dict = self.repo.get_form_by_id(conn, form_id)
             return self._attach_questions(conn, [form_dict])[0]
 
-    def update_template(self, form_id: int, payload: TemplateUpdate) -> Optional[Dict[str, Any]]:
+    def update_form(self, form_id: int, payload: FormUpdate) -> Optional[Dict[str, Any]]:
         with engine.begin() as conn:
             self._assert_no_active_period(conn)
 
@@ -117,7 +115,7 @@ class FormService:
 
             return self._attach_questions(conn, [existing])[0]
 
-    def delete_template(self, form_id: int) -> bool:
+    def delete_form(self, form_id: int) -> bool:
         with engine.begin() as conn:
             self._assert_no_active_period(conn)
             
@@ -135,14 +133,14 @@ form_service = FormService()
 def get_forms_by_role(role_name: str):
     return form_service.get_forms_by_role(role_name)
 
-def get_template(form_id: int):
-    return form_service.get_template(form_id)
+def get_form(form_id: int):
+    return form_service.get_form(form_id)
 
-def create_template(payload: TemplateCreate):
-    return form_service.create_template(payload)
+def create_form(payload: FormCreate):
+    return form_service.create_form(payload)
 
-def update_template(form_id: int, payload: TemplateUpdate):
-    return form_service.update_template(form_id, payload)
+def update_form(form_id: int, payload: FormUpdate):
+    return form_service.update_form(form_id, payload)
 
-def delete_template(form_id: int):
-    return form_service.delete_template(form_id)
+def delete_form(form_id: int):
+    return form_service.delete_form(form_id)

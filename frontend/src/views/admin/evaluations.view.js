@@ -1,15 +1,16 @@
 import { navBarComponent } from "../../components/navbar";
 import { statusBadgeComponent } from "../../components/statusBadge.js";
-import { showToast } from "../../components/alerts";
+import { showToast, showConfirm } from "../../components/alerts";
 import { escapeHtml } from "../../utils/validators";
 import { dropdownComponent, setupDropdown } from "../../components/dropdown";
-import { templatesService } from "../../services/templates.service.js";
+import { formsService } from "../../services/forms.service.js";
 import { categoryService } from "../../services/categories.service.js";
 import { periodService } from "../../services/periods.service.js";
 import { authService } from "../../services/auth.service";
 import { formatDate } from "../../utils/date";
 import { searchBoxComponent, setupSearch } from "../../components/searchBox";
 import { activePeriodBannerComponent } from "../../components/active_period_banner.js";
+import { emptyStateComponent } from "../../components/emptyState.js";
 
 export const renderAdminEvaluations = () => `
   ${navBarComponent()}
@@ -22,7 +23,7 @@ export const renderAdminEvaluations = () => `
           Crea, edita y duplica los formularios de evaluación. Los formularios se pueden reutilizar en múltiples ciclos de evaluación.
         </p>
       </div>
-      <button id="btn-new-template"
+      <button id="btn-new-form"
         class="inline-flex items-center gap-2 rounded-2xl bg-[var(--brand-bg)] px-5 py-3 text-sm font-bold text-[var(--brand-text)] transition-all hover:bg-[var(--brand-hover)] hover:shadow-lg hover:shadow-[var(--brand-bg)]/20 focus:ring-4 focus:ring-[var(--border-main)]">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
         Nuevo Formulario
@@ -32,8 +33,8 @@ export const renderAdminEvaluations = () => `
     
     <!-- 1. VISTA LISTA DE PLANTILLAS -->
     <div id="list-view" class="block transition-all duration-300">
-      <div id="template-search-slot" class="mb-6 max-w-sm"></div>
-      <div id="templates-container">
+      <div id="form-search-slot" class="mb-6 max-w-sm"></div>
+      <div id="forms-container">
         <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <div class="h-48 animate-pulse rounded-[2rem] bg-[var(--bg-panel)]"></div>
           <div class="h-48 animate-pulse rounded-[2rem] bg-[var(--bg-panel)]"></div>
@@ -56,9 +57,9 @@ export const renderAdminEvaluations = () => `
           <div id="weight-counter" class="text-sm font-bold text-[var(--text-muted)] bg-[var(--bg-base)] px-4 py-2 rounded-2xl border border-[var(--border-main)]">
             Puntos: <span id="total-weight-value" class="text-lg">0</span> / 100
           </div>
-          <button id="btn-save-template" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--brand-bg)] px-6 py-3 text-sm font-bold text-[var(--brand-text)] transition-all duration-300 ease-in-out hover:bg-[var(--brand-hover)] hover:shadow-md cursor-pointer">
+          <button id="btn-save-form" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--brand-bg)] px-6 py-3 text-sm font-bold text-[var(--brand-text)] transition-all duration-300 ease-in-out hover:bg-[var(--brand-hover)] hover:shadow-md cursor-pointer">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-            Guardar Plantilla
+            Guardar Formulario
           </button>
         </div>
       </section>
@@ -68,11 +69,11 @@ export const renderAdminEvaluations = () => `
         <div class="grid gap-6">
           <div>
             <label class="mb-2 block text-sm font-bold text-[var(--text-main)]">Título de la Evaluación</label>
-            <input type="text" id="template-title" placeholder="Ej. Evaluación de Desempeño Q3" class="w-full rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] px-4 py-3 text-[var(--text-main)] focus:border-[var(--brand-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-hover)]/20 text-lg font-medium" />
+            <input type="text" id="form-title" placeholder="Ej. Evaluación de Desempeño Q3" class="w-full rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] px-4 py-3 text-[var(--text-main)] focus:border-[var(--brand-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-hover)]/20 text-lg font-medium" />
           </div>
           <div>
             <label class="mb-2 block text-sm font-bold text-[var(--text-main)]">Descripción / Instrucciones (Opcional)</label>
-            <textarea id="template-desc" rows="2" placeholder="Instrucciones para quien llena el formulario..." class="w-full resize-none rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] p-4 text-[var(--text-main)] focus:border-[var(--brand-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-hover)]/20"></textarea>
+            <textarea id="form-desc" rows="2" placeholder="Instrucciones para quien llena el formulario..." class="w-full resize-none rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] p-4 text-[var(--text-main)] focus:border-[var(--brand-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-hover)]/20"></textarea>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -88,7 +89,7 @@ export const renderAdminEvaluations = () => `
             <div>
               <label class="mb-2 block text-sm font-bold text-[var(--text-main)]">Rol a Evaluar (A quién se evalúa)</label>
               <div>
-                ${dropdownComponent('template-role', [
+                ${dropdownComponent('form-role', [
   { value: 'tutor', label: 'Tutores' },
   { value: 'team_leader', label: 'Team Leaders' }
 ], 'tutor')}
@@ -117,17 +118,17 @@ export const setupAdminEvaluations = () => {
   // --- ELEMENTOS DOM ---
   const viewList = document.getElementById("list-view");
   const viewBuilder = document.getElementById("builder-view");
-  const btnCreate = document.getElementById("btn-new-template");
+  const btnCreate = document.getElementById("btn-new-form");
   const btnBack = document.getElementById("btn-back");
   const btnAddQuestion = document.getElementById("btn-add-question");
-  const btnSave = document.getElementById("btn-save-template");
+  const btnSave = document.getElementById("btn-save-form");
   const questionsContainer = document.getElementById("questions-container");
-  const templatesContainer = document.getElementById("templates-container");
+  const formsContainer = document.getElementById("forms-container");
 
   // Inputs principales
-  const inputTitle = document.getElementById("template-title");
-  const inputDesc = document.getElementById("template-desc");
-  const selectRole = document.getElementById("template-role");
+  const inputTitle = document.getElementById("form-title");
+  const inputDesc = document.getElementById("form-desc");
+  const selectRole = document.getElementById("form-role");
 
   // --- ESTADO (Memoria) ---
   let questions = [];
@@ -158,11 +159,11 @@ export const setupAdminEvaluations = () => {
         const closeBtn = document.getElementById("btn-close-period");
         if (closeBtn) {
           closeBtn.addEventListener("click", async () => {
-            if (confirm("¿Estás seguro de que deseas cerrar este periodo? Las evaluaciones pendientes ya no se podrán responder.")) {
+            if (await showConfirm("¿Estás seguro de que deseas cerrar este periodo? Las evaluaciones pendientes ya no se podrán responder.")) {
               try {
                 await periodService.update(activePeriod.id, { is_active: false });
                 import("../../components/alerts.js").then(({ showToast }) => {
-                  showToast("Periodo cerrado", "success", "Ya puedes gestionar las plantillas libremente.");
+                  showToast("Periodo cerrado", "success", "Ya puedes gestionar las formularios libremente.");
                 });
                 refreshPeriodGate();
               } catch (e) {
@@ -195,7 +196,7 @@ export const setupAdminEvaluations = () => {
   const showBuilder = async () => {
     viewList.classList.add("hidden");
     viewBuilder.classList.remove("hidden");
-    setupDropdown('template-role');
+    setupDropdown('form-role');
     setupDropdown('evaluator-role');
     updateWeightCounter();
     await refreshPeriodGate();
@@ -213,7 +214,7 @@ export const setupAdminEvaluations = () => {
   const showList = async () => {
     viewBuilder.classList.add("hidden");
     viewList.classList.remove("hidden");
-    await renderTemplatesList();
+    await renderFormsList();
   };
 
   btnCreate.addEventListener("click", async () => {
@@ -221,14 +222,14 @@ export const setupAdminEvaluations = () => {
       showToast("Periodo activo", "warning", "Cierra el periodo activo para poder crear formularios.");
       return;
     }
-    // Resetear constructor para nueva plantilla
+    // Resetear constructor para nueva formulario
     editId = null;
     originalQuestions = [];
     inputTitle.value = "";
     inputDesc.value = "";
     selectRole.value = "tutor";
     document.getElementById("evaluator-role").value = "coder";
-    questions = [{ id: Date.now().toString(), text: "", input_type: "scale_1_5", category_id: 1, weight: 100 }];
+    questions = [{ id: Date.now().toString(), text: "", type: "scale_1_5", categoryId: 1, weight: 100 }];
     await showBuilder();
   });
 
@@ -295,27 +296,27 @@ export const setupAdminEvaluations = () => {
         { value: 'scale_1_5', label: 'Escala (1-5)' },
         { value: 'yes_no', label: 'Sí / No' },
         { value: 'open_text', label: 'Texto Abierto' }
-      ], q.input_type)}
+      ], q.type)}
                 <div class="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none z-10">
-                  ${getQuestionIcon(q.input_type)}
+                  ${getQuestionIcon(q.type)}
                 </div>
               </div>
               
               <div class="flex items-center gap-2">
                 <label class="text-sm font-bold text-[var(--text-muted)]">Categoría:</label>
                 <div class="w-48 relative">
-                  ${dropdownComponent(`q-category-${q.id}`, categoriesData.map(c => ({ value: c.id, label: c.name })), q.category_id || (categoriesData[0]?.id || 1))}
+                  ${dropdownComponent(`q-category-${q.id}`, categoriesData.map(c => ({ value: c.id, label: c.name })), q.categoryId || (categoriesData[0]?.id || 1))}
                 </div>
               </div>
 
               <div class="flex items-center gap-2">
                 <label class="text-sm font-bold text-[var(--text-muted)]">Puntos:</label>
-                <input type="number" min="0" max="100" class="q-weight-input w-24 rounded-xl border border-[var(--border-main)] bg-[var(--bg-base)] px-3 py-2 text-[var(--text-main)] font-bold focus:border-[var(--brand-bg)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-bg)]/20 disabled:opacity-50" placeholder="0-100" value="${q.input_type === 'scale_1_5' ? (q.weight || 0) : 0}" data-id="${q.id}" ${q.input_type !== 'scale_1_5' ? 'disabled' : ''}>
+                <input type="number" min="0" max="100" class="q-weight-input w-24 rounded-xl border border-[var(--border-main)] bg-[var(--bg-base)] px-3 py-2 text-[var(--text-main)] font-bold focus:border-[var(--brand-bg)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-bg)]/20 disabled:opacity-50" placeholder="0-100" value="${q.type === 'scale_1_5' ? (q.weight || 0) : 0}" data-id="${q.id}" ${q.type !== 'scale_1_5' ? 'disabled' : ''}>
               </div>
             </div>
             
             <!-- Vista Previa Visual -->
-            ${getQuestionPreview(q.input_type)}
+            ${getQuestionPreview(q.type)}
           </div>
           
           <button class="btn-delete-q p-2 text-[var(--text-muted)] hover:bg-[var(--danger-bg)] hover:text-[var(--danger-text)] rounded-xl transition-colors cursor-pointer" data-id="${q.id}" title="Eliminar pregunta">
@@ -355,13 +356,13 @@ export const setupAdminEvaluations = () => {
     // Re-initialize dropdown logic for newly rendered components
     questions.forEach(q => {
       setupDropdown(`q-type-${q.id}`, (val) => {
-        q.input_type = val;
-        if (q.input_type !== 'scale_1_5') q.weight = 0;
+        q.type = val;
+        if (q.type !== 'scale_1_5') q.weight = 0;
         renderQuestions();
         updateWeightCounter();
       });
       setupDropdown(`q-category-${q.id}`, (val) => {
-        q.category_id = parseInt(val);
+        q.categoryId = parseInt(val);
       });
 
       const btn = document.getElementById(`q-type-${q.id}-btn`);
@@ -382,8 +383,8 @@ export const setupAdminEvaluations = () => {
     questions.push({
       id: Date.now().toString(),
       text: "",
-      input_type: "scale_1_5",
-      category_id: categoriesData.length > 0 ? categoriesData[0].id : 1,
+      type: "scale_1_5",
+      categoryId: categoriesData.length > 0 ? categoriesData[0].id : 1,
       weight: 0
     });
     renderQuestions();
@@ -399,12 +400,12 @@ export const setupAdminEvaluations = () => {
 
     const title = inputTitle.value.trim();
     if (!title) {
-      showToast("Falta el título", "error", "Debes darle un título a la plantilla.");
+      showToast("Falta el título", "error", "Debes darle un título a la formulario.");
       return;
     }
 
     if (questions.length === 0) {
-      showToast("Sin preguntas", "error", "La plantilla debe tener al menos una pregunta.");
+      showToast("Sin preguntas", "error", "La formulario debe tener al menos una pregunta.");
       return;
     }
 
@@ -417,7 +418,7 @@ export const setupAdminEvaluations = () => {
 
     // Validar suma de puntos (100)
     const totalWeight = questions.reduce((sum, q) => sum + (parseInt(q.weight) || 0), 0);
-    const hasScale = questions.some(q => q.input_type === 'scale_1_5');
+    const hasScale = questions.some(q => q.type === 'scale_1_5');
 
     if (hasScale && totalWeight !== 100) {
       if (totalWeight < 100) {
@@ -428,25 +429,25 @@ export const setupAdminEvaluations = () => {
       return;
     }
 
-    // Preparar objeto para enviar a la BD (pasando por templates.service.js)
+    // Preparar objeto para enviar a la BD (pasando por forms.service.js)
     const formattedQuestions = questions.map(q => ({
       id: q.id,
       text: q.text,
-      categoryId: parseInt(q.category_id),
-      type: q.input_type,
+      categoryId: parseInt(q.categoryId),
+      type: q.type,
       weight: parseFloat(q.weight) || 0
     }));
 
-    const templateData = {
+    const formData = {
       title,
       description: inputDesc.value.trim(),
-      targetRole: document.getElementById("template-role").value,
+      targetRole: document.getElementById("form-role").value,
       questions: formattedQuestions,
       adminId: authService.getSession()?.id,
     };
     if (editId) {
-      templateData.id = editId;
-      templateData.originalQuestions = originalQuestions;
+      formData.id = editId;
+      formData.originalQuestions = originalQuestions;
 
       // El texto de una pregunta ya usada no se sobreescribe: se versiona
       // (fila nueva, la vieja queda is_active=FALSE) -- es irreversible desde
@@ -456,7 +457,7 @@ export const setupAdminEvaluations = () => {
         return original && original.text !== q.text;
       });
       if (changedTexts.length > 0) {
-        const confirmed = confirm(
+        const confirmed = await showConfirm(
           `Vas a reformular el texto de ${changedTexts.length} pregunta(s) ya usada(s). ` +
           `Esto crea una nueva versión y no se puede deshacer (la anterior queda inactiva). ¿Continuar?`
         );
@@ -470,59 +471,73 @@ export const setupAdminEvaluations = () => {
 
       if (editId) {
         // Se llama solo si la IA objeta la coherencia texto<->categoria de
-        // una pregunta puntual (ver templates.service.js.updateTemplate) --
+        // una pregunta puntual (ver forms.service.js.updateForm) --
         // muestra su razon real, no un aviso generico.
-        const onCoherenceConfirm = async (question, aiMessage) => confirm(
+        const onCoherenceConfirm = async (question, aiMessage) => await showConfirm(
           `${aiMessage || "La IA no está segura de que el nuevo texto siga encajando en su categoría."}\n\n` +
           `¿Guardar de todas formas?`
         );
-        await templatesService.updateTemplate(editId, templateData, onCoherenceConfirm);
+        await formsService.updateForm(editId, formData, onCoherenceConfirm);
       } else {
-        await templatesService.createTemplate(templateData);
+        await formsService.createForm(formData);
       }
 
-      showToast("Plantilla Guardada", "success");
+      showToast("Formulario Guardada", "success");
       await showList();
     } catch (error) {
-      if (error.message?.startsWith("Guardado cancelado")) {
+      if (error.message && error.message.includes("cancelado")) {
         showToast("Guardado cancelado", "warning", "No se confirmó el cambio de texto; no se guardó nada.");
+      } else if (error.status === 409) {
+        const closeIt = await showConfirm("Periodo Activo", "Para editar este formulario, primero debes cerrar el periodo activo actual. ¿Deseas cerrarlo automáticamente ahora?", "warning");
+        if (closeIt) {
+          try {
+            const { periodService } = await import("../../services/periods.service.js");
+            const periods = await periodService.get();
+            const activePeriod = periods.find(p => p.is_active);
+            if (activePeriod) {
+              await periodService.update(activePeriod.id, { is_active: false });
+              await formsService.updateForm(editId, formData, onCoherenceConfirm);
+              showToast("Periodo cerrado y formulario guardado", "success");
+              closeBuilder();
+              renderFormsList();
+            }
+          } catch (err) {
+            showToast("Error", "error", "No se pudo cerrar el periodo o guardar el formulario.");
+            console.error(err);
+          }
+        }
       } else {
-        showToast("Error", "error", "No se pudo guardar la plantilla.");
+        showToast("Error", "error", "No se pudo guardar el formulario.");
       }
       console.error(error);
     } finally {
       btnSave.disabled = false;
-      btnSave.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Guardar Plantilla`;
+      btnSave.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Guardar Formulario`;
     }
   });
 
 
   // --- RENDERIZADO DE LA LISTA ---
-  let allTemplates = [];
-  const templateSearchSlot = document.getElementById("template-search-slot");
+  let allForms = [];
+  const formSearchSlot = document.getElementById("form-search-slot");
 
-  const renderTemplateCards = (templates) => {
-    if (templates.length === 0) {
-      templatesContainer.innerHTML = `
-        <section class="rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-12 text-center shadow-sm">
-          <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[var(--bg-base)] text-[var(--brand-bg)] mb-4">
-            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-          </div>
-          <h3 class="text-xl font-bold text-[var(--text-main)]">${allTemplates.length === 0 ? "No hay plantillas" : "Sin resultados"}</h3>
-          <p class="mt-2 text-[var(--text-muted)] max-w-md mx-auto">${allTemplates.length === 0 ? "Comienza creando una nueva plantilla de evaluación para asignar a tu equipo." : "Ningún formulario coincide con la búsqueda."}</p>
-        </section>
-      `;
+  const renderFormCards = (forms) => {
+    if (forms.length === 0) {
+      formsContainer.innerHTML = emptyStateComponent(
+        allForms.length === 0 ? "No hay formularios" : "Sin resultados",
+        allForms.length === 0 ? "Comienza creando un nuevo formulario de evaluación." : "Ningún formulario coincide con la búsqueda."
+      );
       return;
     }
 
-    templatesContainer.innerHTML = `
+    formsContainer.innerHTML = `
       <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        ${templates.map(t => {
+        ${forms.map(t => {
       const statusText = t.is_active ? 'Activa' : 'Inactiva';
       const dateStr = formatDate(t.created_at) || 'Fecha no disponible';
 
       return `
-          <div class="group flex flex-col justify-between rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm hover:border-[var(--brand-hover)] transition-all duration-300 hover:shadow-md cursor-pointer btn-edit-template" data-id="${t.id}">
+          <div class="group flex flex-col justify-between rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm hover:border-[var(--brand-hover)] transition-all duration-300 hover:shadow-md cursor-pointer btn-edit-form" data-id="${t.id}">
             <div>
               <div class="flex items-center justify-between mb-4">
                 <span class="inline-flex items-center rounded-full bg-[var(--brand-bg)]/10 px-3 py-1 text-xs font-bold text-[var(--brand-bg)] capitalize">
@@ -532,9 +547,9 @@ export const setupAdminEvaluations = () => {
                   ${t.questions ? t.questions.length : 0} preg.
                 </span>
               </div>
-              ${t.is_template ? `
-                <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-950/20 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400 mb-2" title="Es una plantilla base: no recibe respuestas hasta que se use para crear un formulario activo.">
-                  📋 Plantilla base
+              ${t.is_form ? `
+                <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-950/20 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400 mb-2" title="Es una formulario base: no recibe respuestas hasta que se use para crear un formulario activo.">
+                  📋 Formulario base
                 </span>
               ` : ''}
               <h3 class="text-xl font-bold text-[var(--text-main)] font-heading leading-tight">${escapeHtml(t.title)}</h3>
@@ -547,10 +562,10 @@ export const setupAdminEvaluations = () => {
                 ${dateStr ? `<span class="text-xs font-medium text-[var(--text-muted)]">${dateStr}</span>` : ''}
               </div>
               <div class="flex items-center">
-                <button class="btn-clone-template text-[var(--text-muted)] hover:text-[var(--brand-bg)] transition-colors p-2" data-id="${t.id}" title="Duplicar Formulario">
+                <button class="btn-clone-form text-[var(--text-muted)] hover:text-[var(--brand-bg)] transition-colors p-2" data-id="${t.id}" title="Duplicar Formulario">
                   <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                 </button>
-                <button class="btn-delete-template text-[var(--text-muted)] hover:text-[var(--danger-text)] transition-colors p-2 -mr-2" data-id="${t.id}" title="Eliminar">
+                <button class="btn-delete-form text-[var(--text-muted)] hover:text-[var(--danger-text)] transition-colors p-2 -mr-2" data-id="${t.id}" title="Eliminar">
                   <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                 </button>
               </div>
@@ -562,37 +577,37 @@ export const setupAdminEvaluations = () => {
     `;
 
     // Eventos para editar
-    document.querySelectorAll(".btn-edit-template").forEach(card => {
+    document.querySelectorAll(".btn-edit-form").forEach(card => {
       card.addEventListener("click", async (e) => {
         // Evitar que el click en el botón de borrar o duplicar active la edición normal
-        if (e.target.closest('.btn-delete-template') || e.target.closest('.btn-clone-template')) return;
+        if (e.target.closest('.btn-delete-form') || e.target.closest('.btn-clone-form')) return;
 
         const id = card.dataset.id;
         try {
-          const templates = await templatesService.getTemplates();
-          const template = templates.find(t => t.id === id || t.id === parseInt(id));
+          const forms = await formsService.getForms();
+          const form = forms.find(t => t.id === id || t.id === parseInt(id));
 
-          if (template) {
-            editId = template.id;
-            inputTitle.value = template.title;
-            inputDesc.value = template.description || "";
+          if (form) {
+            editId = form.id;
+            inputTitle.value = form.title;
+            inputDesc.value = form.description || "";
 
             // dropdownComponent update requires us to use the specific DOM ID and maybe dispatch change
             const evaluatorRoleEl = document.getElementById("evaluator-role");
-            if (evaluatorRoleEl) { evaluatorRoleEl.value = template.evaluatorRole || "coder"; }
-            if (selectRole) { selectRole.value = template.targetRole || template.target_role || "tutor"; }
+            if (evaluatorRoleEl) { evaluatorRoleEl.value = form.evaluatorRole || "coder"; }
+            if (selectRole) { selectRole.value = form.targetRole || form.target_role || "tutor"; }
 
-            // getTemplateForEdit trae el weight_percent real (GET /forms no lo expone) y
+            // getFormForEdit trae el weight_percent real (GET /forms no lo expone) y
             // convierte input_type/category_id al formato que usa el constructor visual.
-            const editData = await templatesService.getTemplateForEdit(template);
+            const editData = await formsService.getFormForEdit(form);
             questions = editData.questions.map(q => ({
               id: q.id,
               text: q.text,
-              input_type: q.type,
-              category_id: q.categoryId,
+              type: q.type,
+              categoryId: q.categoryId,
               weight: q.weight,
             }));
-            // Snapshot para que updateTemplate() pueda diferenciar qué preguntas
+            // Snapshot para que updateForm() pueda diferenciar qué preguntas
             // se agregaron/quitaron/reformularon al guardar.
             originalQuestions = editData.questions.map(q => ({ id: q.id, text: q.text }));
 
@@ -600,38 +615,38 @@ export const setupAdminEvaluations = () => {
             showBuilder();
           }
         } catch (error) {
-          showToast("Error", "error", "Error al cargar la plantilla para editar.");
+          showToast("Error", "error", "Error al cargar la formulario para editar.");
         }
       });
     });
 
     // Eventos para duplicar
-    document.querySelectorAll(".btn-clone-template").forEach(btn => {
+    document.querySelectorAll(".btn-clone-form").forEach(btn => {
       btn.addEventListener("click", async (e) => {
         e.stopPropagation(); // Prevenir que abra modo edición
         const id = btn.dataset.id;
         try {
-          const templates = await templatesService.getTemplates();
-          const template = templates.find(t => t.id === id || t.id === parseInt(id));
+          const forms = await formsService.getForms();
+          const form = forms.find(t => t.id === id || t.id === parseInt(id));
 
-          if (template) {
+          if (form) {
             editId = null; // Important: this makes it a new form!
             originalQuestions = [];
-            inputTitle.value = "Copia de " + template.title;
-            inputDesc.value = template.description || "";
+            inputTitle.value = "Copia de " + form.title;
+            inputDesc.value = form.description || "";
 
             const evaluatorRoleEl = document.getElementById("evaluator-role");
-            if (evaluatorRoleEl) { evaluatorRoleEl.value = template.evaluatorRole || "coder"; }
-            if (selectRole) { selectRole.value = template.targetRole || template.target_role || "tutor"; }
+            if (evaluatorRoleEl) { evaluatorRoleEl.value = form.evaluatorRole || "coder"; }
+            if (selectRole) { selectRole.value = form.targetRole || form.target_role || "tutor"; }
 
             // Reset IDs for the cloned questions (mismo mapeo que el modo edición,
-            // ver getTemplateForEdit, pero con IDs nuevos para que se creen como preguntas nuevas)
-            const editData = await templatesService.getTemplateForEdit(template);
+            // ver getFormForEdit, pero con IDs nuevos para que se creen como preguntas nuevas)
+            const editData = await formsService.getFormForEdit(form);
             questions = editData.questions.map(q => ({
               id: (Date.now() + Math.random()).toString(),
               text: q.text,
-              input_type: q.type,
-              category_id: q.categoryId,
+              type: q.type,
+              categoryId: q.categoryId,
               weight: q.weight,
             }));
 
@@ -646,51 +661,70 @@ export const setupAdminEvaluations = () => {
     });
 
     // Eventos para borrar
-    document.querySelectorAll(".btn-delete-template").forEach(btn => {
+    document.querySelectorAll(".btn-delete-form").forEach(btn => {
       btn.addEventListener("click", async (e) => {
         e.stopPropagation();
-        const id = e.target.dataset.id;
-        if (confirm("¿Estás seguro de que deseas eliminar esta plantilla?")) {
+        const id = e.target.dataset.id || e.target.closest('.btn-delete-form').dataset.id;
+        if (await showConfirm("¿Estás seguro de que deseas eliminar este formulario?")) {
           try {
-            await templatesService.deleteTemplate(id);
-            showToast("Plantilla eliminada", "success");
-            renderTemplatesList();
+            await formsService.deleteForm(id);
+            showToast("Formulario eliminado", "success");
+            renderFormsList();
           } catch (error) {
-            showToast("Error", "error", "No se pudo eliminar la plantilla.");
+            if (error.status === 409) {
+              const closeIt = await showConfirm("Periodo Activo", "Para eliminar este formulario, primero debes cerrar el periodo activo actual. ¿Deseas cerrarlo automáticamente ahora?", "warning");
+              if (closeIt) {
+                try {
+                  const { periodService } = await import("../../services/periods.service.js");
+                  const periods = await periodService.get();
+                  const activePeriod = periods.find(p => p.is_active);
+                  if (activePeriod) {
+                    await periodService.update(activePeriod.id, { is_active: false });
+                    await formsService.deleteForm(id);
+                    showToast("Periodo cerrado y formulario eliminado", "success");
+                    renderFormsList();
+                  }
+                } catch (err) {
+                  showToast("Error", "error", "No se pudo cerrar el periodo o eliminar el formulario.");
+                }
+              }
+            } else {
+              showToast("Error", "error", "No se pudo eliminar el formulario.");
+            }
           }
         }
       });
     });
   };
 
-  const renderTemplatesList = async () => {
+  const renderFormsList = async () => {
     try {
-      allTemplates = await templatesService.getTemplates();
+      allForms = await formsService.getForms();
     } catch (error) {
-      showToast("Error", "error", "No se pudieron cargar las plantillas.");
+      showToast("Error", "error", "No se pudieron cargar las formularios.");
       console.error(error);
-      templatesContainer.innerHTML = `
+      formsContainer.innerHTML = `
         <section class="rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-12 text-center shadow-sm">
           <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[var(--danger-bg)] text-[var(--danger-text)] mb-4">
             <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
           </div>
-          <h3 class="text-xl font-bold text-[var(--text-main)]">No se pudieron cargar las plantillas</h3>
+          <h3 class="text-xl font-bold text-[var(--text-main)]">No se pudieron cargar las formularios</h3>
           <p class="mt-2 text-[var(--text-muted)] max-w-md mx-auto">Revisa tu conexión e intenta de nuevo.</p>
-          <button id="btn-retry-templates" class="mt-6 inline-flex items-center gap-2 rounded-2xl bg-[var(--brand-bg)] px-5 py-3 text-sm font-bold text-[var(--brand-text)] transition-all hover:bg-[var(--brand-hover)] cursor-pointer">
+          <button id="btn-retry-forms" class="mt-6 inline-flex items-center gap-2 rounded-2xl bg-[var(--brand-bg)] px-5 py-3 text-sm font-bold text-[var(--brand-text)] transition-all hover:bg-[var(--brand-hover)] cursor-pointer">
             Reintentar
           </button>
         </section>
       `;
-      document.getElementById("btn-retry-templates")?.addEventListener("click", renderTemplatesList);
+      document.getElementById("btn-retry-forms")?.addEventListener("click", renderFormsList);
       return;
     }
 
-    renderTemplateCards(allTemplates);
+    renderFormCards(allForms);
 
-    if (templateSearchSlot) {
+    if (formSearchSlot) {
       // Se regenera para no acumular listeners de recargas anteriores.
-      templateSearchSlot.innerHTML = searchBoxComponent('template-search', 'Buscar formulario por título...');
-      setupSearch('template-search', allTemplates, ['title', 'description'], renderTemplateCards);
+      formSearchSlot.innerHTML = searchBoxComponent('form-search', 'Buscar formulario por título...');
+      setupSearch('form-search', allForms, ['title', 'description'], renderFormCards);
     }
   };
 
@@ -701,6 +735,6 @@ export const setupAdminEvaluations = () => {
   if (urlParams.get('action') === 'create') {
     showBuilder();
   } else {
-    renderTemplatesList();
+    renderFormsList();
   }
 };

@@ -19,7 +19,7 @@ This skill is self-contained: direction, visual hierarchy, design-system archite
 
 # The Problem
 
-You will generate generic output. Your training has seen thousands of dashboards, and the patterns are strong. You can follow this entire process — explore the domain, name a signature, state your intent — and still produce a template: warm colors on cold structures, friendly fonts on generic layouts.
+You will generate generic output. Your training has seen thousands of dashboards, and the patterns are strong. You can follow this entire process — explore the domain, name a signature, state your intent — and still produce a form: warm colors on cold structures, friendly fonts on generic layouts.
 
 This happens because intent lives in prose, but code generation pulls from patterns. The gap between them is where defaults win. Process helps, but it doesn't guarantee craft. You have to catch yourself, and you have to know the concrete moves that defaults don't.
 
@@ -34,7 +34,7 @@ Defaults disguise themselves as infrastructure — the parts that feel like they
 - **Typography feels like a container.** But type isn't holding your design, it *is* your design. The weight of a headline, the personality of a label, the texture of a paragraph shape how the product feels before anyone reads a word. Reaching for your usual font means you're not designing.
 - **Navigation feels like scaffolding.** But navigation *is* the product — where you are, where you can go, what matters. A page floating in space is a component demo, not software.
 - **Data feels like presentation.** But a number on screen is not design. What does it *mean* to the person looking? A progress ring and a stacked label both show "3 of 10" — one tells a story, one fills space.
-- **Token names feel like implementation detail.** But `--ink` and `--parchment` evoke a world; `--gray-700` and `--surface-2` evoke a template. Someone reading only your tokens should guess what product this is.
+- **Token names feel like implementation detail.** But `--ink` and `--parchment` evoke a world; `--gray-700` and `--surface-2` evoke a form. Someone reading only your tokens should guess what product this is.
 
 There are no structural decisions. Everything is design. The moment you stop asking "why this?" is the moment defaults take over.
 
@@ -56,7 +56,7 @@ If the prompt is too vague to identify the human, task, and feel, ask one concis
 
 # Product Domain Exploration
 
-This is where defaults get caught — or don't. Generic path: Task type → visual template → theme. Crafted path: Task type → product domain → signature → structure + expression. The difference is time spent in the product's world before any visual thinking.
+This is where defaults get caught — or don't. Generic path: Task type → visual form → theme. Crafted path: Task type → product domain → signature → structure + expression. The difference is time spent in the product's world before any visual thinking.
 
 **Produce all four before proposing any direction:**
 
@@ -291,7 +291,7 @@ Then ask: "Does that direction feel right?" If an inline render tool is availabl
 ## The checks (before showing)
 Run these against your output; if any fails, iterate before presenting.
 
-- **Swap test** — swap your typeface for the usual one, your layout for a standard template: would anything feel different? Where swapping wouldn't matter is where you defaulted.
+- **Swap test** — swap your typeface for the usual one, your layout for a standard form: would anything feel different? Where swapping wouldn't matter is where you defaulted.
 - **Squint test** — blur your eyes: hierarchy still readable? Nothing jumping out harshly?
 - **Signature test** — point to five specific elements where your signature appears. "The overall feel" doesn't count.
 - **Token test** — read your CSS variables aloud: do they belong to this product's world, or any project?

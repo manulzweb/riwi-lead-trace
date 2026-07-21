@@ -9,7 +9,7 @@ export const activePeriodBannerComponent = (activePeriod) => {
         </div>
         <div>
           <p class="font-bold text-sm tracking-wide">Periodo Activo: <span class="text-[#b71c1c] dark:text-amber-400">${activePeriod.name}</span></p>
-          <p class="text-xs font-medium opacity-90 mt-0.5">No puedes modificar ni eliminar plantillas mientras haya un periodo en curso.</p>
+          <p class="text-xs font-medium opacity-90 mt-0.5">No puedes modificar ni eliminar formularios mientras haya un periodo en curso.</p>
         </div>
       </div>
       <button id="btn-close-period" class="shrink-0 rounded-xl bg-[#ffe082] px-5 py-2.5 text-sm font-bold text-amber-900 transition hover:bg-amber-400/70 shadow-sm dark:bg-amber-800/50 dark:text-white dark:hover:bg-amber-600/70">

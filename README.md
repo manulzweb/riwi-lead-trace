@@ -17,7 +17,7 @@ Si una evaluacion es anonima, el `evaluator_id` no se guarda en la base de datos
 
 El backend revisa el `evaluator_id` antes de insertar, para que un Coder no evalue dos veces a la misma persona en el mismo periodo. Ese id llega en el body de la peticion, no de un token.
 
-El ICP (Indice de Calidad Percibida) se calcula al consultar, no se guarda en tablas. Es un promedio ponderado por pregunta (`questions.weight_percent`, que las preguntas de escala activas de un template deben sumar 100). Con menos del minimo de evaluaciones no se publica puntaje. El estado (Solido, Estable, En riesgo) sale de comparar contra dos umbrales fijos en el codigo.
+El ICP (Indice de Calidad Percibida) se calcula al consultar, no se guarda en tablas. Es un promedio ponderado por pregunta (`questions.weight_percent`, que las preguntas de escala activas de un form deben sumar 100). Con menos del minimo de evaluaciones no se publica puntaje. El estado (Solido, Estable, En riesgo) sale de comparar contra dos umbrales fijos en el codigo.
 
 El login valida la contrasena con bcrypt en el servidor. No usamos JWT: el front recibe el usuario ya validado y decide que mostrar segun el rol que le llega.
 

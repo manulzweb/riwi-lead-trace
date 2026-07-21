@@ -9,7 +9,7 @@ from sqlalchemy import text
 from app.config.database import conn
 
 SEED_ACTIVE_PERIOD_ID = 1
-TUTOR_TEMPLATE_ID = 2  # 'Evaluación a Tutor' en database/schema.sql
+TUTOR_FORM_ID = 2  # 'Evaluación a Tutor' en database/schema.sql
 
 
 def _close_seed_period():
@@ -22,7 +22,7 @@ def _reopen_seed_period():
     conn.commit()
 
 
-def _delete_template_and_questions(form_id):
+def _delete_form_and_questions(form_id):
     conn.execute(text("DELETE FROM questions WHERE form_id = :id"), {"id": form_id})
     conn.execute(text("DELETE FROM forms WHERE id = :id"), {"id": form_id})
     conn.commit()
@@ -114,7 +114,7 @@ def test_crear_plantilla_ok_y_desactiva_la_anterior_del_mismo_rol(client):
         assert not vieja
     finally:
         if new_id is not None:
-            _delete_template_and_questions(new_id)
+            _delete_form_and_questions(new_id)
         conn.execute(text("UPDATE forms SET is_active = TRUE WHERE id = 1"))
         conn.commit()
         _reopen_seed_period()
@@ -148,7 +148,7 @@ def test_tipo_yes_no_se_acepta_y_no_entra_al_icp(client):
         assert float(db_weight) == 0.0
     finally:
         if new_id is not None:
-            _delete_template_and_questions(new_id)
+            _delete_form_and_questions(new_id)
         conn.execute(text("UPDATE forms SET is_active = TRUE WHERE id = 1"))
         conn.commit()
         _reopen_seed_period()
@@ -157,11 +157,11 @@ def test_tipo_yes_no_se_acepta_y_no_entra_al_icp(client):
 def test_actualizar_metadata_de_plantilla(client):
     _close_seed_period()
     try:
-        response = client.put(f"/forms/{TUTOR_TEMPLATE_ID}", json={"description": "Nueva descripcion de prueba"})
+        response = client.put(f"/forms/{TUTOR_FORM_ID}", json={"description": "Nueva descripcion de prueba"})
         assert response.status_code == 200
         assert response.json()["description"] == "Nueva descripcion de prueba"
     finally:
-        conn.execute(text("UPDATE forms SET description = NULL WHERE id = :id"), {"id": TUTOR_TEMPLATE_ID})
+        conn.execute(text("UPDATE forms SET description = NULL WHERE id = :id"), {"id": TUTOR_FORM_ID})
         conn.commit()
         _reopen_seed_period()
 
@@ -189,7 +189,7 @@ def test_borrar_plantilla_la_desactiva_sin_borrarla_fisicamente(client):
         assert not row  # sigue en la tabla, solo desactivada
     finally:
         if new_id is not None:
-            _delete_template_and_questions(new_id)
+            _delete_form_and_questions(new_id)
         conn.execute(text("UPDATE forms SET is_active = TRUE WHERE id = 1"))
         conn.commit()
         _reopen_seed_period()
@@ -200,7 +200,7 @@ def test_agregar_pregunta_a_plantilla_existente(client):
     new_question_id = None
     try:
         payload = {
-            "form_id": TUTOR_TEMPLATE_ID,
+            "form_id": TUTOR_FORM_ID,
             "text": "Pregunta agregada por pytest",
             "category_id": _general_category_id(),
             "input_type": "text",
@@ -211,7 +211,7 @@ def test_agregar_pregunta_a_plantilla_existente(client):
         body = response.json()
         new_question_id = body["id"]
 
-        assert body["form_id"] == TUTOR_TEMPLATE_ID
+        assert body["form_id"] == TUTOR_FORM_ID
         assert body["is_active"] is True
         assert body["category"] == "General"
     finally:
@@ -241,7 +241,7 @@ def test_agregar_pregunta_con_categoria_inexistente_da_404(client):
     _close_seed_period()
     try:
         payload = {
-            "form_id": TUTOR_TEMPLATE_ID,
+            "form_id": TUTOR_FORM_ID,
             "text": "No deberia crearse",
             "category_id": 999999,
             "input_type": "text",
@@ -258,7 +258,7 @@ def test_borrar_pregunta_es_idempotente(client):
     new_question_id = None
     try:
         created = client.post("/questions", json={
-            "form_id": TUTOR_TEMPLATE_ID,
+            "form_id": TUTOR_FORM_ID,
             "text": "Pregunta a borrar",
             "category_id": _general_category_id(),
             "input_type": "text",

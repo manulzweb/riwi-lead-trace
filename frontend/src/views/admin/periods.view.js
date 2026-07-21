@@ -1,11 +1,12 @@
 import { navBarComponent } from "../../components/navbar";
 import { statusBadgeComponent } from "../../components/statusBadge.js";
-import { showToast } from "../../components/alerts";
+import { showToast, showConfirm } from "../../components/alerts";
 import { periodService } from "../../services/periods.service.js";
 import { escapeHtml } from "../../utils/validators";
 import { setupModalA11y } from "../../utils/modalA11y";
 import { authService } from "../../services/auth.service";
 import { searchBoxComponent, setupSearch } from "../../components/searchBox";
+import { emptyStateComponent } from "../../components/emptyState.js";
 
 export const renderAdminPeriods = () => `
   ${navBarComponent()}
@@ -61,7 +62,7 @@ export const renderAdminPeriods = () => `
 export const setupAdminPeriods = () => {
   const modal = document.getElementById("period-modal");
   const modalTitle = document.getElementById("period-modal-title");
-  const btnCreate = document.getElementById("btn-create-template") || document.getElementById("btn-create-period");
+  const btnCreate = document.getElementById("btn-create-form") || document.getElementById("btn-create-period");
   const btnCancel = document.getElementById("btn-cancel-period");
   const form = document.getElementById("form-period");
   const listContainer = document.getElementById("periods-list");
@@ -119,14 +120,10 @@ export const setupAdminPeriods = () => {
 
   const renderPeriodsList = (list) => {
       if (!list || list.length === 0) {
-        listContainer.innerHTML = `
-          <div class="flex flex-col items-center justify-center py-16 text-center">
-            <div class="mb-4 rounded-full bg-gray-100 p-4 dark:bg-zinc-800">
-              <svg class="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-            </div>
-            <h3 class="mb-2 font-heading text-xl font-bold text-[var(--text-main)]">${allPeriods.length === 0 ? "No hay ciclos" : "Sin resultados"}</h3>
-            <p class="text-sm text-[var(--text-muted)]">${allPeriods.length === 0 ? "Abre un nuevo ciclo para que tu equipo empiece a evaluar." : "Ningún ciclo coincide con la búsqueda."}</p>
-          </div>`;
+        listContainer.innerHTML = emptyStateComponent(
+          allPeriods.length === 0 ? "No hay periodos" : "Sin resultados",
+          allPeriods.length === 0 ? "Abre un nuevo periodo para que tu equipo empiece a evaluar." : "Ningún periodo coincide con la búsqueda."
+        );
         return;
       }
 
@@ -194,7 +191,7 @@ export const setupAdminPeriods = () => {
       document.querySelectorAll(".btn-delete-period").forEach(btn => {
         btn.addEventListener("click", async (e) => {
           const id = e.currentTarget.dataset.id;
-          if (!confirm("¿Estás seguro de que deseas eliminar este ciclo? Esta acción no se puede deshacer.")) return;
+          if (!(await showConfirm("¿Estás seguro de que deseas eliminar este ciclo? Esta acción no se puede deshacer."))) return;
 
           try {
             await periodService.remove(id);

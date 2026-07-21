@@ -85,7 +85,7 @@ El detalle completo, con diagramas y el contrato REST, está en
 ## 8. Modelo de datos
 
 Base de datos relacional en MySQL, normalizada hasta 3FN, con las entidades principales: `users`,
-`roles`, `user_roles`, `team_leader_clans`, `periods`, `form_templates` + `questions`,
+`roles`, `user_roles`, `team_leader_clans`, `periods`, `forms` + `questions`,
 `evaluations` + `evaluation_answers`, y `ai_feedback_cache`. El **ICP no se persiste**: se calcula
 al momento a partir de las evaluaciones, así siempre refleja los datos más recientes.
 

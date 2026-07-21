@@ -8,7 +8,7 @@ from app.config.database import conn
 from app.services.metrics_service import calculate_average_score, classify_status, MIN_EVALUATIONS
 
 TEAM_LEADER_ID = 2
-TEMPLATE_TEAM_LEADER = 1
+FORM_TEAM_LEADER = 1
 SCALE_QUESTION_ID = 1
 # 3 evaluadores distintos (usuarios semilla: coder, tutor, admin) para
 # respetar el indice unico (evaluator_id, evaluatee_id, period_id) de
@@ -41,7 +41,7 @@ def test_score_entre_0_y_100_con_evaluaciones_suficientes(temp_period):
         """), {
             "evaluator_id": evaluator_id,
             "evaluatee_id": TEAM_LEADER_ID,
-            "form_id": TEMPLATE_TEAM_LEADER,
+            "form_id": FORM_TEAM_LEADER,
             "period_id": temp_period
         })
         conn.execute(text("""

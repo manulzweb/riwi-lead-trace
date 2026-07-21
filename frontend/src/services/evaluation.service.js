@@ -1,9 +1,9 @@
 import { request, jsonOptions } from './api.service.js'
 
 const getForm = async (targetRole) => {
-    const templates = await request(`/forms?target_role=${targetRole}`);
-    if (templates && templates.length > 0) {
-        return templates[0];
+    const forms = await request(`/forms?target_role=${targetRole}`);
+    if (forms && forms.length > 0) {
+        return forms[0];
     }
     throw new Error("No hay un formulario activo para este rol.");
 }

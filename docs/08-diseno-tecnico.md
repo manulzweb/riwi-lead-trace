@@ -29,8 +29,8 @@
 - **Mobile-first**: estilos base para móvil, `@media (min-width: ...)` para ampliar.
 
 ### Base de datos / API
-- Tablas y columnas en **snake_case** (`form_templates`, `created_at`).
-- Endpoints REST en **kebab/plural** (`/evaluations`, `/form-templates`).
+- Tablas y columnas en **snake_case** (`forms`, `created_at`).
+- Endpoints REST en **kebab/plural** (`/evaluations`, `/form-forms`).
 
 ## Estrategia de ramas Git (GitFlow) — equipo de 5
 
@@ -112,7 +112,7 @@ riwi-lead-trace/
 
 ### Configuración recomendada del repo
 - **Branch protection** en `main` y `develop` (no push directo; PR + 1 review requeridos).
-- **PR template** con checklist de Definition of Done.
+- **PR form** con checklist de Definition of Done.
 - **Issues** vinculados a las historias del backlog (un issue por ID).
 - **Milestones** = Sprints (Sprint 0, 1, 2).
 - **GitHub Projects** (tablero Kanban) como herramienta de seguimiento Scrum.

@@ -151,8 +151,8 @@ CREATE TABLE forms (
     target_role_id INT NOT NULL,
     is_active      BOOLEAN NOT NULL DEFAULT TRUE,
     -- TRUE = plantilla base reutilizable; FALSE = formulario activo para
-    -- recibir respuestas (ver form_service.create_template / is_template).
-    is_template    BOOLEAN NOT NULL DEFAULT FALSE,
+    -- recibir respuestas (ver form_service.create_form / is_form).
+    is_form    BOOLEAN NOT NULL DEFAULT FALSE,
     created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_form_role
         FOREIGN KEY (target_role_id)
@@ -173,7 +173,7 @@ CREATE TABLE questions (
     sort_order    INT NOT NULL DEFAULT 0,
     -- Peso de la pregunta en el ICP ponderado (ADMIN-02). Solo aplica a
     -- preguntas 'scale'; las 'text' quedan en 0. Los pesos de las preguntas
-    -- de escala ACTIVAS de un mismo template deben sumar exactamente 100
+    -- de escala ACTIVAS de un mismo form deben sumar exactamente 100
     -- (se valida en question_service antes de guardar, ver PUT /questions/weights).
     weight_percent DECIMAL(5,2) NOT NULL DEFAULT 0,
     -- Edición del Admin (ADMIN-02): editar texto = versionar (fila nueva +

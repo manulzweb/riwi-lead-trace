@@ -35,6 +35,10 @@ class EvaluationService:
             raise InvalidRoleException("El usuario a evaluar debe tener rol de Tutor o Team Leader.")
         
         evaluator_info = self.repo.get_user_clan_and_roles(conn, evaluator_id)
+        
+        if evaluatee_info and evaluator_info and evaluatee_info["email"] == evaluator_info["email"]:
+            raise InvalidRoleException("No puedes evaluarte a ti mismo.")
+            
         evaluator_clan = evaluator_info["clan_id"] if evaluator_info else None
 
         if ROLE_TEAM_LEADER in evaluatee_roles:

@@ -30,7 +30,7 @@ const evaluationAnswersSchema = z.array(answerSchema).min(1, "La evaluación deb
 
 let allUsers = [];
 let activePeriod = null;
-let currentTemplate = null;
+let currentForm = null;
 
 export const renderEvaluate = () => `
   ${navBarComponent()}
@@ -153,7 +153,7 @@ export const setupEvaluate = async () => {
   const handleRoleChange = async () => {
     const role = targetRole.value;
     qContainer.innerHTML = "";
-    currentTemplate = null;
+    currentForm = null;
     progressContainer.classList.add("hidden");
 
     if (!role) {
@@ -169,14 +169,14 @@ export const setupEvaluate = async () => {
     try {
       qContainer.innerHTML = '<div class="text-center py-4 text-[var(--text-muted)] animate-pulse">Cargando datos...</div>';
 
-      const [template, previousEvaluations] = await Promise.all([
+      const [form, previousEvaluations] = await Promise.all([
         evaluationService.getForm(role),
         evaluationService.getByEvaluator(currentUser.id)
       ]);
-      currentTemplate = template;
+      currentForm = form;
 
       const evaluatedIds = previousEvaluations
-        .filter(e => e.period_id === activePeriod.id && e.form_id === currentTemplate.id)
+        .filter(e => e.period_id === activePeriod.id && e.form_id === currentForm.id)
         .map(e => String(e.evaluatee_id));
 
       const filtered = allUsers.filter(u => u.roles?.includes(role) && u.id !== currentUser.id && !evaluatedIds.includes(String(u.id)));
@@ -204,7 +204,7 @@ export const setupEvaluate = async () => {
         </div>`;
       setupDropdown('evaluatee');
 
-      renderQuestions(currentTemplate.questions);
+      renderQuestions(currentForm.questions);
 
       progressContainer.classList.remove("hidden");
       updateProgress();
@@ -221,7 +221,7 @@ export const setupEvaluate = async () => {
         evaluatee.disabled = true;
         evaluatee.innerHTML = '<option value="">Sin formulario disponible</option>';
       } else {
-        qContainer.innerHTML = '<div class="text-[var(--danger-text)] bg-[var(--danger-bg)] p-4 rounded-xl text-center">Error al cargar preguntas de la plantilla.</div>';
+        qContainer.innerHTML = '<div class="text-[var(--danger-text)] bg-[var(--danger-bg)] p-4 rounded-xl text-center">Error al cargar preguntas de la formulario.</div>';
         console.error(err);
       }
     }
@@ -415,8 +415,8 @@ export const setupEvaluate = async () => {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    if (!currentTemplate || !activePeriod) {
-      showToast("Error", "error", "No se ha cargado la plantilla o periodo activo.");
+    if (!currentForm || !activePeriod) {
+      showToast("Error", "error", "No se ha cargado la formulario o periodo activo.");
       return;
     }
 
@@ -450,7 +450,7 @@ export const setupEvaluate = async () => {
     const evaluationData = {
       evaluator_id: currentUser.id,
       evaluatee_id: parseInt(evaluatee.value),
-      form_id: currentTemplate.id,
+      form_id: currentForm.id,
       period_id: activePeriod.id,
       is_anonymous: anonCheck.checked,
       status: "submitted",

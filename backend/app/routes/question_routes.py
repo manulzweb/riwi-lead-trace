@@ -23,7 +23,7 @@ def get_questions(
 ):
     """Consulta anidada sobre `questions` filtrando por `form_id` e `is_active=TRUE`."""
     try:
-        return question_service.get_questions_by_template(form_id, only_active=True)
+        return question_service.get_questions_by_form(form_id, only_active=True)
     except Exception as e:
         logger.error(f"Error fetching questions: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
@@ -36,7 +36,7 @@ def get_questions(
     response_description="La pregunta creada"
 )
 def post_question(payload: QuestionCreate):
-    """Inserta una nueva tupla en `questions` y la asocia al template. Valida el state del periodo global (debe estar inactivo)."""
+    """Inserta una nueva tupla en `questions` y la asocia al form. Valida el state del periodo global (debe estar inactivo)."""
     try:
         return question_service.create_question(payload)
     except ActivePeriodExistsException as e:
@@ -97,6 +97,7 @@ def put_question_weights(payload: WeightsUpdate):
     except ActivePeriodExistsException as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except InvalidWeightsException as e:
+        logger.error(f"InvalidWeightsException: {e}. Payload: {payload}")
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
     except Exception as e:
         logger.error(f"Error updating weights: {e}")

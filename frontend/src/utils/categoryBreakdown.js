@@ -1,4 +1,4 @@
-import { templatesService } from "../services/templates.service";
+import { formsService } from "../services/forms.service";
 import { evaluationService } from "../services/evaluation.service";
 import { request } from "../services/api.service";
 
@@ -9,13 +9,13 @@ const to100Scale = (avg1to5) => Math.round(((avg1to5 - 1) / 4) * 100);
 
 // Desglose de puntaje promedio por categoria para una persona en un periodo.
 // No hay endpoint dedicado en el backend para esto -- se arma en el cliente
-// cruzando las respuestas de evaluations con las preguntas de sus templates.
+// cruzando las respuestas de evaluations con las preguntas de sus forms.
 export const getCategoryBreakdown = async (evaluateeId, periodId) => {
   try {
-    const templates = await templatesService.getTemplates();
+    const forms = await formsService.getForms();
     const questionsMap = new Map();
 
-    for (const temp of templates) {
+    for (const temp of forms) {
       try {
         const questions = await request(`/questions?form_id=${temp.id}`);
         questions.forEach((q) => questionsMap.set(q.id, q));

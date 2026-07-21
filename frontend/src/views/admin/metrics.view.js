@@ -6,6 +6,7 @@ import { periodService } from "../../services/periods.service";
 import { showToast } from "../../components/alerts";
 import { getCategoryBreakdown } from "../../utils/categoryBreakdown";
 import { formatDate } from "../../utils/date";
+import { emptyStateComponent } from "../../components/emptyState.js";
 import {
   Chart, LineController, LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Filler,
 } from "chart.js";
@@ -245,11 +246,10 @@ export const setupMetrics = async () => {
       renderHighlights(list);
 
       if (list.length === 0) {
-        gridContainer.innerHTML = `
-          <div class="col-span-full rounded-3xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-10 text-center text-[var(--text-muted)]">
-            No se encontraron líderes o tutores con este filtro.
-          </div>
-        `;
+        gridContainer.innerHTML = emptyStateComponent(
+          "Sin resultados",
+          "No se encontraron líderes o tutores con este filtro."
+        );
         return;
       }
 

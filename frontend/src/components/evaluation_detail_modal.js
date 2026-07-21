@@ -1,6 +1,6 @@
 import Swal from 'sweetalert2';
 
-export const showEvaluationDetailModal = (evaluation, evaluateeName, template, questionsMap) => {
+export const showEvaluationDetailModal = (evaluation, evaluateeName, form, questionsMap) => {
   const answersHtml = evaluation.answers.map(ans => {
     const questionData = questionsMap.get(String(ans.question_id));
     const questionText = questionData ? questionData.text : `Pregunta #${ans.question_id}`;

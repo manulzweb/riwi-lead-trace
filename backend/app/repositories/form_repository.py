@@ -18,7 +18,7 @@ class FormRepository:
     def get_forms_by_role_id(self, conn: Connection, role_id: int) -> List[Dict[str, Any]]:
         try:
             query = text("""
-                SELECT id, title, description, target_role_id, is_active, is_template, created_at
+                SELECT id, title, description, target_role_id, is_active, is_form, created_at
                 FROM forms
                 WHERE target_role_id = :role_id
                 ORDER BY id DESC
@@ -32,7 +32,7 @@ class FormRepository:
     def get_form_by_id(self, conn: Connection, form_id: int) -> Optional[Dict[str, Any]]:
         try:
             query = text("""
-                SELECT id, title, description, target_role_id, is_active, is_template, created_at
+                SELECT id, title, description, target_role_id, is_active, is_form, created_at
                 FROM forms
                 WHERE id = :id
             """)
@@ -70,8 +70,8 @@ class FormRepository:
     def insert_form(self, conn: Connection, form_data: Dict[str, Any]) -> int:
         try:
             query = text("""
-                INSERT INTO forms (title, description, target_role_id, is_active, is_template)
-                VALUES (:title, :description, :target_role_id, TRUE, :is_template)
+                INSERT INTO forms (title, description, target_role_id, is_active, is_form)
+                VALUES (:title, :description, :target_role_id, TRUE, :is_form)
             """)
             result = conn.execute(query, form_data)
             return result.lastrowid
