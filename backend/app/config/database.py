@@ -20,3 +20,7 @@ engine = create_engine(
 # previo puede quedarse con una foto vieja y no ver cambios ya confirmados
 # por otra conexion.
 conn = engine.connect().execution_options(isolation_level="AUTOCOMMIT")
+
+def get_db():
+    with engine.connect() as connection:
+        yield connection
