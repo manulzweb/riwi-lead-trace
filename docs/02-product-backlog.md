@@ -4,7 +4,7 @@ Backlog **full-stack** del MVP (frontend SPA + backend FastAPI + MySQL). Estimac
 
 | ID | Nombre | Descripcion | Epica | Prioridad | SP | Dependencias |
 |----|--------|-------------|-------|-----------|:--:|--------------|
-| CORE-01 | Preparar repo + estructura base de la SPA | Monorepo, estructura `frontend/`, router, store y `http.js` | CORE | Must | 5 | — |
+| CORE-01 | Preparar repo + estructura base de la SPA | Monorepo, estructura `frontend/`, router y `api.service.js` (sin store centralizado, ver `06-arquitectura.md`) | CORE | Must | 5 | — |
 | CORE-02 | Estructura base del backend + BD | FastAPI, capas routes/services/repositories (sin `models/`), conexion MySQL, seed | CORE | Must | 5 | — |
 | CORE-03 | Layout y navegacion responsive | Shell SPA, nav por rol, estilos base mobile-first | CORE | Must | 5 | CORE-01 |
 | AUTH-01 | Inicio de sesion | UI login + `POST /auth/login`: verifica hash bcrypt en servidor, sin emitir token | AUTH | Must | 3 | CORE-02, CORE-03 |

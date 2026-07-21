@@ -124,13 +124,18 @@ class EvaluationRepository:
             raise
 
     def get_submissions_by_evaluator(self, conn, evaluator_id: int, skip: int, limit: int) -> List[Dict[str, Any]]:
-        """Historial de participacion de un evaluador.
+        """Historial de participacion de un evaluador, con su contenido.
 
-        El LEFT JOIN es deliberado y NO recupera contenido anonimo: en las
-        submissions anonimas `evaluation_id` es NULL, asi que el join no encaja
-        con ninguna fila de `evaluations` y las columnas de contenido salen en
-        NULL. Es exactamente lo que se busca -- si desde aqui se pudiera
-        recuperar el contenido, el admin tambien podria, y se acabo el anonimato.
+        El LEFT JOIN recupera tambien el contenido de las anonimas: `evaluation_id`
+        se guarda siempre (regla 1), asi que el Coder puede releer lo que escribio.
+        El LEFT (y no INNER) cubre el caso de una evaluacion borrada, donde la FK
+        deja `evaluation_id` en NULL y las columnas de contenido salen vacias.
+
+        OJO: esta query devuelve el vinculo evaluador->contenido sin filtrar por
+        `is_anonymous`. Es correcto aqui porque el evaluador solo ve lo suyo
+        (`WHERE s.evaluator_id = :evaluator_id`). Cualquier query nueva que no
+        acote por evaluador DEBE filtrar `is_anonymous` a mano -- el esquema no
+        lo impide.
         """
         try:
             query = text("""
@@ -176,16 +181,20 @@ class EvaluationRepository:
 
     def get_evaluations_by_evaluatee(self, conn, evaluatee_id: int, period_id: Optional[int], skip: int, limit: int) -> List[Dict[str, Any]]:
         try:
+            # status = 'submitted': un borrador es feedback a medio escribir que el
+            # evaluador nunca confirmo; el evaluado no debe verlo. Mismo criterio que
+            # vw_period_metrics y get_total_evaluations.
             query_str = """
                 SELECT id, evaluatee_id, form_id, period_id, is_anonymous, status, created_at, submitted_at
-                FROM evaluations WHERE evaluatee_id = :evaluatee_id
+                FROM evaluations WHERE evaluatee_id = :evaluatee_id AND status = 'submitted'
             """
             params = {"evaluatee_id": evaluatee_id, "limit": limit, "skip": skip}
             if period_id is not None:
                 query_str += " AND period_id = :period_id"
                 params["period_id"] = period_id
-            
-            query_str += " LIMIT :limit OFFSET :skip"
+
+            # Sin ORDER BY, MySQL no garantiza orden estable entre paginas.
+            query_str += " ORDER BY submitted_at DESC, id DESC LIMIT :limit OFFSET :skip"
             
             rows = conn.execute(text(query_str), params).mappings().all()
             return [dict(r) for r in rows]

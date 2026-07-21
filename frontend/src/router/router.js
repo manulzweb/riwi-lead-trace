@@ -1,6 +1,6 @@
 import { authService } from "../services/auth.service";
 import { ROUTES } from "./routes";
-import { navBarComponent, setupNavBar } from "../components/navbar";
+import { setupNavBar } from "../components/navbar";
 import { showToast } from "../components/alerts";
 
 export function initRouter() {

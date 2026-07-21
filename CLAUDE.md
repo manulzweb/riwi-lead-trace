@@ -185,27 +185,38 @@ mecanismo de sesion verificable en servidor (JWT u otro), no maquillar el front.
 
 ## Reglas de negocio que NO debes romper
 
-1. **Anonimato real (estructural, no por convencion):** la tabla `evaluations` **ya no tiene
+1. **Anonimato por convencion de aplicacion (NO estructural):** la tabla `evaluations` **ya no tiene
    columna `evaluator_id`**. Quien participo se registra en una tabla aparte,
    `evaluation_submissions(id, evaluator_id, evaluatee_id, period_id, evaluation_id NULL, created_at)`,
-   y el vinculo persona↔contenido es la columna `evaluation_id`:
-   - **No anonima** → la submission guarda `evaluation_id` = id de la fila de `evaluations`. El
-     admin puede saber quien evaluo (regla 8).
-   - **Anonima** → la submission guarda `evaluation_id = NULL`. **El enlace no llega a existir.**
-     No hay ninguna fila, columna ni join que conecte al evaluador con su contenido: es
-     irreconstruible incluso con acceso directo y total a la base de datos.
+   y el vinculo persona↔contenido es la columna `evaluation_id`. **Ese vinculo se guarda siempre**,
+   sea la evaluacion anonima o no (`evaluation_service.create_evaluation`), para que el Coder pueda
+   releer su propio historial completo.
 
-   **Por que esto es mas fuerte que el modelo anterior:** antes el anonimato era una *convencion que
-   el codigo tenia que respetar en cada query* — la columna `evaluations.evaluator_id` existia y
-   simplemente se dejaba en `NULL`, asi que bastaba una consulta descuidada, un `JOIN` de mas o un
-   futuro cambio que rellenara esa columna para romperlo, y nada en el esquema lo impedia. Ahora es
-   una **propiedad estructural del modelo de datos**: la informacion sencillamente **no esta
-   almacenada**, asi que ninguna query puede filtrarla, ni por error ni a proposito.
+   **Que significa esto exactamente — hay que saber sustentarlo:** el anonimato **no** es una
+   propiedad del esquema. El dato *si* esta almacenado, y esta consulta lo revela:
 
-   **Efecto secundario deliberado:** el Coder ve en su historial **que** participo de forma anonima,
-   pero **no puede recuperar sus propias respuestas**. Es intencional — si el autor pudiera
-   recuperarlas por su `evaluator_id`, el admin tambien podria, y el anonimato dejaria de ser real.
-   No "arregles" esto devolviendo el contenido anonimo al autor.
+   ```sql
+   SELECT s.evaluator_id, e.* FROM evaluation_submissions s
+   JOIN evaluations e ON e.id = s.evaluation_id WHERE e.is_anonymous = TRUE;
+   ```
+
+   Lo que protege el anonimato son **dos filtros de aplicacion** que hay que respetar en cada query
+   nueva:
+   - `vw_evaluations_summary` enmascara el evaluador con `CASE WHEN e.is_anonymous THEN NULL`.
+   - `evaluation_repository.get_evaluator_ids_for_evaluations` filtra `AND e.is_anonymous = FALSE`.
+
+   **Consecuencia practica:** basta un `JOIN` descuidado, un endpoint nuevo que lea la tabla cruda o
+   un dump de la BD para romperlo. Al escribir cualquier query que toque `evaluation_submissions`,
+   el filtro `is_anonymous` es responsabilidad tuya — el esquema no te va a salvar.
+
+   **En la sustentacion:** describir esto como "anonimato frente a los usuarios de la aplicacion",
+   nunca como "irreconstruible incluso con acceso a la base de datos". Lo segundo es falso.
+
+   > **Alternativa descartada por el equipo (2026-07-21):** guardar `evaluation_id = NULL` en las
+   > anonimas haria el anonimato estructural e irreconstruible, pero el Coder perderia el acceso a
+   > sus propias respuestas anonimas. El equipo priorizo el historial del Coder. Si algun dia se
+   > invierte esa decision, hay que arreglar antes `EvaluationHistoryOut.is_anonymous`, que hoy es
+   > `bool` no-opcional y reventaria con `None` en cuanto el `LEFT JOIN` no encaje.
 2. **Un Coder no evalua dos veces** al mismo evaluado en el mismo **periodo**, y ahora la regla
    **cubre por igual anonimas y no anonimas**. La unicidad vive en `evaluation_submissions`, que
    siempre guarda el `evaluator_id` real (sea o no anonima la evaluacion), bajo el constraint:
@@ -255,9 +266,10 @@ mecanismo de sesion verificable en servidor (JWT u otro), no maquillar el front.
      `evaluation_submissions WHERE evaluation_id IN (...)` y devuelve el mapa
      `evaluation_id -> evaluator_id`. El servicio solo adjunta ese dato cuando
      `viewer_role == "admin"`; para cualquier otro rol se omite.
-   - **Anonimas:** su submission tiene `evaluation_id = NULL`, asi que **no aparecen en ese mapa**
-     — no hay nada que ocultar porque no hay nada que consultar. La proteccion ya no depende de que
-     el servicio se acuerde de enmascarar el campo (regla 1).
+   - **Anonimas:** su submission **si tiene** `evaluation_id` (regla 1), asi que el enmascarado es
+     activo, no automatico: la query filtra `AND e.is_anonymous = FALSE` para dejarlas fuera del
+     mapa, y el servicio vuelve a enmascarar el campo en la respuesta. Son **dos capas de
+     aplicacion**; si ambas se olvidan en un endpoint nuevo, el evaluador anonimo queda expuesto.
 9. **Seguridad:** contrasenas siempre hasheadas (passlib/bcrypt), nunca en texto plano ni devueltas en responses.
 10. **Respeta el alcance MVP** (`docs/09-mvp-alcance.md`): no implementes lo marcado "fuera del MVP" sin que el usuario lo pida. El formulario de evaluacion es **interactivo "una pregunta a la vez" en JS Vanilla + CSS** — sin paquetes de formularios (SurveyJS y similares cuentan como framework de UI prohibido).
 
@@ -355,9 +367,9 @@ npm run build                            # bundle de produccion
 | POST | `/auth/login` | login -> `{ user }` (sin token) | hash bcrypt en servidor |
 | GET | `/users?role=team_leader` | evaluables por rol | filtro por rol |
 | GET | `/forms?target_role=team_leader` | plantilla de formulario | — |
-| POST | `/evaluations` | registrar evaluacion | escribe **dos** filas: contenido en `evaluations` + participacion en `evaluation_submissions` (con `evaluation_id = NULL` si es anonima). No-duplicado garantizado por `uq_submission_once` → `409`; + **periodo activo** + validacion |
-| GET | `/evaluations?evaluator_id=:id` | historial del Coder | lee `evaluation_submissions` (LEFT JOIN a `evaluations`): incluye **tambien** las participaciones anonimas, pero **sin su contenido** (viene en NULL, ver regla 1) |
-| GET | `/evaluations?evaluatee_id=:id` | historico por evaluado | `viewer_role` del front; el admin ve el evaluador de las **no anonimas** via `evaluation_submissions.evaluation_id`; las anonimas no tienen enlace |
+| POST | `/evaluations` | registrar evaluacion | escribe **dos** filas: contenido en `evaluations` + participacion en `evaluation_submissions` (con `evaluation_id` poblado **siempre**, tambien en anonimas — regla 1). No-duplicado garantizado por `uq_submission_once` → `409`; + **periodo activo** + validacion |
+| GET | `/evaluations?evaluator_id=:id` | historial del Coder | lee `evaluation_submissions` (LEFT JOIN a `evaluations`): incluye las participaciones anonimas **con su contenido**, porque el Coder puede releer lo que escribio (regla 1) |
+| GET | `/evaluations?evaluatee_id=:id` | historico por evaluado | `viewer_role` del front; el admin ve el evaluador de las **no anonimas**; las anonimas se enmascaran con `is_anonymous = FALSE` en la query + en el servicio (regla 8). **Nota:** el front nunca manda `viewer_role`, asi que esa rama admin hoy es inalcanzable desde la SPA |
 | GET | `/periods` | listar periodos | el activo habilita los formularios |
 | PUT | `/periods/:id` | activar/cerrar periodo | **solo uno activo** a la vez |
 | PATCH | `/questions/:id` | editar texto de una pregunta | **solo periodo cerrado**, versionado + chequeo IA de coherencia |

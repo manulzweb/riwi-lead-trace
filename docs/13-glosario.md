@@ -45,17 +45,18 @@ trae una analogía o ejemplo.
 
 ---
 
-## 3. Backend (FastAPI) y sus 4 capas
+## 3. Backend (FastAPI) y sus capas
 
 El backend está organizado en **capas**: cada una tiene **un solo trabajo**. Una petición pasa por
 ellas en orden (como una fábrica en línea):
 
 ```
-router  →  service  →  (MySQL)
+route  →  service  →  repository  →  MySQL
 ```
 
-En este proyecto son **2 capas** de código propio (no 4): no hay `repository` ni `model` separados
-— el `service` escribe el SQL directo y lo ejecuta él mismo.
+En este proyecto son **3 capas** de código propio (no hay `model` separado): `route` valida y
+delega, `service` tiene las reglas de negocio, y `repository` es quien de verdad escribe y ejecuta
+el SQL contra MySQL.
 
 | Capa / término | En simple |
 |----------------|-----------|
@@ -96,7 +97,7 @@ En este proyecto son **2 capas** de código propio (no 4): no hay `repository` n
 | **MySQL** | El motor de base de datos que guarda todo en **tablas** (filas y columnas). |
 | **Tabla** | Una "hoja de Excel": cada fila es un registro (un usuario), cada columna un dato (su correo). |
 | **ORM** | "Object-Relational Mapping": una traducción para manejar las tablas como **objetos de Python** en vez de escribir SQL a mano. |
-| **SQLAlchemy** | El ORM que usamos en Python. |
+| **SQLAlchemy** | La libreria que usamos para hablarle a MySQL desde Python. Tiene una capa ORM completa, pero en este proyecto **solo usamos su motor de conexion y `text()`** (SQL plano) — no mapeamos tablas a clases ni usamos su ORM declarativo. |
 | **PyMySQL** | El "cable" que conecta SQLAlchemy con MySQL. |
 | **FK (Foreign Key / llave foránea)** | Una columna que **apunta** a otra tabla. Ej: una evaluación guarda el `id` del usuario evaluado. Mantiene los datos conectados y consistentes. |
 | **3FN (Tercera Forma Normal)** | Regla de diseño para **no repetir datos** y evitar inconsistencias. En resumen: cada dato vive en un solo lugar. |

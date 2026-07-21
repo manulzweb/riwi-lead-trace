@@ -3,9 +3,10 @@
 ## Convenciones de nombres
 
 ### Frontend — archivos y carpetas
-- Carpetas y archivos en **kebab-case**: `evaluation-form.view.js`, `auth.service.js`.
-- Sufijos por tipo: `*.view.js` (vistas), `*.service.js` (servicios), `*.store.js` (stores).
-- Componentes reutilizables sin sufijo en `components/`: `navbar.js`, `rating-input.js`.
+- Carpetas y archivos en **kebab-case**: `my-evaluations.view.js`, `auth.service.js`.
+- Sufijos por tipo: `*.view.js` (vistas), `*.service.js` (servicios). **No hay `*.store.js`**: el
+  proyecto no tiene una capa de store centralizado (ver `06-arquitectura.md`, "Gestion de estado").
+- Componentes reutilizables sin sufijo en `components/`: `navbar.js`, `sidebar.js`, `badge.js`.
 
 ### Frontend — código JavaScript
 - **Variables y funciones:** `camelCase` (`getEvaluables`, `currentUser`).
@@ -30,7 +31,8 @@
 
 ### Base de datos / API
 - Tablas y columnas en **snake_case** (`forms`, `created_at`).
-- Endpoints REST en **kebab/plural** (`/evaluations`, `/form-forms`).
+- Endpoints REST en **plural** (`/evaluations`, `/periods`); recursos compuestos por más de una
+  palabra en **kebab-case** (`/activity-log`).
 
 ## Estrategia de ramas Git (GitFlow) — equipo de 5
 
@@ -105,8 +107,10 @@ riwi-lead-trace/
 │   └── .env.example
 ├── database/
 │   ├── 01_ddl.sql             # estructura (DDL)
-│   └── 02_dml.sql             # datos semilla (DML)
-├── docs/                     # documentación Scrum + técnica (01..12)
+│   ├── 02_dml.sql             # datos semilla (DML)
+│   ├── 03_mock_history.sql   # historico simulado (opcional)
+│   └── 04_views.sql           # vistas SQL (requerido: /metrics depende de ellas)
+├── docs/                     # documentación Scrum + técnica (00..13, ver índice en README.md)
 └── mockups/                  # exports/enlaces Figma
 ```
 

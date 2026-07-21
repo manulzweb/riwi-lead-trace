@@ -86,9 +86,12 @@ El detalle completo, con diagramas y el contrato REST, está en
 ## 8. Modelo de datos
 
 Base de datos relacional en MySQL, normalizada hasta 3FN, con las entidades principales: `users`,
-`roles`, `user_roles`, `team_leader_clans`, `periods`, `forms` + `questions`,
-`evaluations` + `evaluation_details`, y `ai_feedback_cache`. El **ICP no se persiste**: se calcula
-al momento a partir de las evaluaciones, así siempre refleja los datos más recientes.
+`roles`, `user_roles`, `team_leader_clans`, `periods`, `forms` + `categories` + `questions`,
+`evaluations` + `evaluation_submissions` + `evaluation_details`, y `ai_feedback_cache`. El
+contenido de una evaluación (`evaluations`) y quién la envió (`evaluation_submissions`) viven en
+tablas separadas — así el anonimato es una propiedad estructural del modelo (ver sección 5). El
+**ICP no se persiste**: se calcula al momento a partir de las evaluaciones, así siempre refleja los
+datos más recientes.
 
 **Roles múltiples por usuario:** un usuario puede tener más de un rol a la vez (relación N:M
 `users`↔`roles` vía `user_roles`, no un `role_id` único). Un Team Leader puede además tener **dos

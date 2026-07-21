@@ -1,8 +1,10 @@
 import logging
 from typing import List, Dict, Any, Optional
 from sqlalchemy import text
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.engine import Connection
+
+from app.exceptions.user_exceptions import UserInUseException
 
 logger = logging.getLogger(__name__)
 
@@ -106,6 +108,14 @@ class UserRepository:
             query = text("DELETE FROM users WHERE id = :id")
             result = conn.execute(query, {"id": user_id})
             return result.rowcount > 0
+        except IntegrityError:
+            # Las FK hacia evaluations y evaluation_submissions son RESTRICT a
+            # proposito: borrar en cascada destruiria el historico. Es un conflicto
+            # de estado (409), no un fallo del servidor.
+            logger.warning(f"IntegrityError deleting user {user_id}")
+            raise UserInUseException(
+                "No se puede eliminar: este usuario tiene evaluaciones o participaciones registradas. Desactivalo en su lugar."
+            )
         except SQLAlchemyError as e:
             logger.error(f"Error deleting user {user_id}: {e}")
             raise

@@ -23,6 +23,8 @@ Filosofia: **startup validando una idea**. El MVP debe ser lo minimo para compro
 | **Resumen de feedback con IA** (Google Gemini) para el Admin | Diferenciador; sintesis accionable y anonimizada |
 | SPA responsive y navegable | Restriccion tecnica + usabilidad basica |
 | Despliegue accesible (front + back) | Requisito: app funcional disponible para la sustentacion |
+| **Configuracion global** (Admin) | Ajustar desde la UI los umbrales del ICP, la tolerancia de pesos y la temperatura de IA (`system_settings`) en vez de dejarlos hardcodeados |
+| **Bitacora basica de acciones administrativas** (Admin) | Trazabilidad minima de acciones sensibles (abrir/cerrar periodo, editar preguntas, borrar categorias), con export a CSV |
 
 **Seguimiento historico (admin)** se incluye como `Should`: aporta a la validacion pero puede recortarse si la capacidad aprieta.
 
@@ -43,7 +45,7 @@ Filosofia: **startup validando una idea**. El MVP debe ser lo minimo para compro
 | Comparativas avanzadas, benchmarking entre cohortes | Requiere volumen de datos; post-validacion |
 | Despliegue en contenedores (Docker) y multi-sede | Se aborda en un plan/iteracion aparte |
 | Internacionalizacion (i18n) | El piloto es en espanol |
-| Auditoria detallada / logs de actividad | Mas alla de la trazabilidad basica de evaluaciones |
+| Auditoria detallada (busqueda avanzada, alertas, purga automatica por retencion) | El MVP ya incluye una bitacora basica de acciones administrativas (`GET /activity-log` + export CSV en `admin_activity_log`); lo que queda fuera es la retencion automatica (el ajuste `log_retention_days` se guarda pero no purga nada) y cualquier busqueda/alerta mas alla del listado cronologico |
 | Roles y permisos granulares (mas alla de los 4) | Los 4 roles cubren el piloto |
 | App movil nativa / PWA offline | La SPA responsive es suficiente para validar |
 

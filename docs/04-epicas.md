@@ -39,11 +39,11 @@ Detalle y justificacion en `CLAUDE.md` y `06-arquitectura.md`.
 
 ---
 
-## DASHBOARD — Metricas e ICA
-**Objetivo:** transformar las evaluaciones en informacion accionable: **ICA** (indice ponderado) e indicadores.
+## DASHBOARD — Metricas e ICP
+**Objetivo:** transformar las evaluaciones en informacion accionable: **ICP** (indice ponderado) e indicadores.
 **Valor:** soporte a la toma de decisiones academicas.
 **Historias:** DASH-01, DASH-02
-**Done:** el Admin visualiza el ICA, indicadores y participacion.
+**Done:** el Admin visualiza el ICP, indicadores y participacion.
 
 ---
 

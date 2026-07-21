@@ -8,13 +8,14 @@ Cada historia incluye criterios de aceptacion (CA), prioridad y Story Points.
 ## CORE
 
 ### CORE-01 — Preparar repo + estructura base de la SPA · `Must` · `5 SP`
-**Como** developer **quiero** una base de proyecto SPA modular con router, store y cliente HTTP **para** construir las funcionalidades de forma ordenada y rapida.
+**Como** developer **quiero** una base de proyecto SPA modular con router y cliente HTTP **para** construir las funcionalidades de forma ordenada y rapida.
 
 **Criterios de aceptacion**
 - [ ] Monorepo con `frontend/` y `backend/` segun [`06-arquitectura.md`](./06-arquitectura.md).
 - [ ] El frontend arranca con `npm run dev` y muestra una vista inicial.
 - [ ] Existe un router cliente que cambia de vista sin recargar la pagina.
-- [ ] Hay un modulo `store` (estado) y un modulo `http` (fetch) reutilizables.
+- [ ] Hay un modulo `api.service.js` (fetch) reutilizable. **Sin store centralizado**: el estado de
+      sesion vive directamente en `localStorage` (ver `06-arquitectura.md`, "Gestion de estado").
 
 ### CORE-02 — Estructura base del backend (FastAPI) + BD · `Must` · `5 SP`
 **Como** developer **quiero** un backend FastAPI por capas conectado a MySQL **para** exponer la API REST que consumira la SPA.
@@ -256,7 +257,9 @@ mejorar el formulario entre rondas sin depender del equipo tecnico.
 **Criterios de aceptacion**
 - [ ] Backend FastAPI desplegado (Render/Railway/Fly) y accesible por HTTPS.
 - [ ] Frontend SPA desplegado (Vercel/Netlify/GitHub Pages) y conectado al backend.
-- [ ] MySQL hospedado y poblado con el seed (`database/01_ddl.sql` + `database/02_dml.sql`).
+- [ ] MySQL hospedado y poblado con el seed (`database/01_ddl.sql` + `database/02_dml.sql`), con
+      `database/04_views.sql` ejecutado tambien (**requerido**: sin sus vistas, `/metrics` y el
+      resumen IA fallan).
 - [ ] Variables de entorno configuradas en produccion (`DATABASE_URL`, `GEMINI_API_KEY`,
       `FRONTEND_ORIGIN`; no hay `JWT_SECRET` — el proyecto no usa JWT, ver `06-arquitectura.md`).
 - [ ] README con la URL publica, credenciales de usuarios demo y pasos para correr en local.

@@ -483,17 +483,22 @@ export const setupEvaluate = async () => {
     submitBtn.disabled = true;
     submitBtn.textContent = "Enviando...";
 
-    // Optimistic UI: Mostramos éxito y redirigimos inmediatamente sin esperar al servidor
-    showToast("¡Evaluación enviada!", "success", "Tu feedback ha sido registrado exitosamente.");
-    localStorage.removeItem("evaluation_draft");
-    window.history.pushState({}, "", "/evaluations");
-    renderRoute();
-
     try {
+      // Se espera al servidor antes de anunciar exito: el periodo puede haberse
+      // cerrado o la evaluacion estar duplicada, y ahi la SPA no es la autoridad
+      // (regla 5). Confirmar antes de tiempo dejaba al coder creyendo que evaluo.
       await evaluationService.create(evaluationData);
+
+      showToast("¡Evaluación enviada!", "success", "Tu feedback ha sido registrado exitosamente.");
+      localStorage.removeItem("evaluation_draft");
+      window.history.pushState({}, "", "/evaluations");
+      renderRoute();
     } catch (err) {
-      // Rollback visual informando al usuario en caso de error
-      // Guardamos de vuelta el borrador para que no pierda su trabajo
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Enviar evaluación";
+
+      // El borrador nunca se borro, pero se reescribe con lo ultimo respondido
+      // por si el usuario cambio algo despues de cargarlo.
       localStorage.setItem("evaluation_draft", JSON.stringify({
         role: targetRole.value,
         evaluatee: evaluatee.value,

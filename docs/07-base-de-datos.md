@@ -385,6 +385,8 @@ ai_feedback_cache(id, evaluatee_id->users, period_id->periods, summary, model,
 - **Analitica de talento:** Talent Score derivado para ranking de futuros TL.
 - **N—N Coder-Clanes:** si un Coder puede estar en varias cohortes a la vez, migrar a tabla intermedia `coder_clanes(user_id, clan_id)`.
 
-Los scripts ejecutables están divididos en dos archivos:
+Los scripts ejecutables están divididos en cuatro archivos, en este orden:
 - DDL (Estructura): [`/database/01_ddl.sql`](../database/01_ddl.sql)
 - DML (Datos semilla): [`/database/02_dml.sql`](../database/02_dml.sql)
+- Histórico simulado (opcional): [`/database/03_mock_history.sql`](../database/03_mock_history.sql)
+- Vistas (requerido — `/metrics` depende de ellas): [`/database/04_views.sql`](../database/04_views.sql)

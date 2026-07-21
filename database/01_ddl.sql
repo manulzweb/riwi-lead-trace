@@ -247,9 +247,14 @@ CREATE TABLE evaluations (
 --   Es el "libro de asistencia" del sistema: registra que un evaluador YA
 --   participo sobre un evaluado en un periodo. 
 --   El `evaluation_id` siempre apunta a la evaluación, incluso en anónimas,
---   para permitir al coder consultar su propio historial de respuestas. El anonimato
---   se protege en las vistas de la BD (`vw_evaluations_summary`) y en la capa
---   de aplicación (repositorio).
+--   para permitir al coder consultar su propio historial de respuestas.
+--
+--   ATENCION: esto implica que el anonimato NO es estructural. El vinculo
+--   evaluador->contenido esta almacenado y un JOIN sin filtrar lo revela. Lo
+--   tapan dos filtros de aplicacion (`vw_evaluations_summary` y
+--   `get_evaluator_ids_for_evaluations`), asi que cualquier query nueva sobre
+--   esta tabla debe filtrar `is_anonymous` por su cuenta. Decision consciente
+--   del equipo (2026-07-21): historial del coder por encima de anonimato duro.
 --
 --   Semantica de evaluation_id:
 --     - Apunta a la evaluacion siempre.
@@ -267,9 +272,9 @@ CREATE TABLE evaluations (
 --     - CASCADE borraria la participacion junto con la evaluacion y reabriria
 --       el agujero: el evaluador podria volver a evaluar.
 --     - RESTRICT impediria borrar evaluaciones para siempre.
---     - SET NULL conserva el registro de participacion y lo degrada a la misma
---       forma que una anonima ("participo, contenido no disponible"), que es
---       exactamente la semantica deseada.
+--     - SET NULL conserva el registro de participacion y lo degrada a
+--       "participo, contenido no disponible", que es la semantica deseada.
+--       Es el UNICO caso en que evaluation_id queda en NULL.
 -- ---------------------------------------------------------------------
 CREATE TABLE evaluation_submissions (
     id            INT AUTO_INCREMENT PRIMARY KEY,

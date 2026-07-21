@@ -3,7 +3,7 @@ from typing import List, Optional
 import logging
 from app.schemas.user import UserCreate, UserUpdate, UserOut
 from app.services.user_service import user_service
-from app.exceptions.user_exceptions import UserNotFoundException, EmailAlreadyExistsException
+from app.exceptions.user_exceptions import UserNotFoundException, EmailAlreadyExistsException, UserInUseException
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -97,12 +97,19 @@ def patch_user(user_id: int, user: UserUpdate):
 
 @router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_user(user_id: int):
-    """Hard delete sobre `users`. Falla si existen dependencias referenciales en cascada no manejadas (e.g., evaluaciones existentes)."""
+    """Hard delete sobre `users`.
+
+    Devuelve 409 si el usuario tiene evaluaciones o participaciones: las FK son
+    RESTRICT para no perder historico, asi que el flujo correcto es desactivarlo
+    (`is_active = FALSE`) en vez de borrarlo.
+    """
     try:
         user_service.delete_user(user_id)
         return None
     except UserNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except UserInUseException as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except Exception as e:
         logger.error(f"Error deleting user: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="No se puede eliminar el usuario. Es posible que tenga dependencias (evaluaciones) en el sistema.")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")

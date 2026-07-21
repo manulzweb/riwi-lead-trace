@@ -35,6 +35,7 @@ export const renderAdminEvaluations = () => `
           Nuevo Formulario
         </button>
       </div>
+    </div>
     <div id="active-period-banner-container"></div>
     
     <!-- 1. VISTA LISTA DE PLANTILLAS -->

@@ -61,9 +61,19 @@ const comingSoonNote = (id, text) => `
 const DISABLED_CONTROL_CLASSES = "opacity-60 cursor-not-allowed";
 
 const renderLoadingState = () => `
-    <div class="flex items-center justify-center h-40">
-        <div class="h-8 w-8 animate-spin rounded-full border-4 border-[var(--brand-bg)] border-t-transparent"></div>
-    </div>
+    ${Array(2).fill(`
+      <div class="rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="h-10 w-10 skeleton-shimmer rounded-xl"></div>
+          <div class="h-6 w-48 skeleton-shimmer rounded-sm"></div>
+        </div>
+        <div class="space-y-6">
+          <div class="h-16 skeleton-shimmer rounded-2xl"></div>
+          <div class="h-16 skeleton-shimmer rounded-2xl"></div>
+          <div class="h-16 skeleton-shimmer rounded-2xl"></div>
+        </div>
+      </div>
+    `).join("")}
 `;
 
 const renderErrorState = () => `

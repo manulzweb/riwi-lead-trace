@@ -14,8 +14,8 @@ Es **un monolito**: un solo backend desplegable y una sola SPA desplegable (no m
 que no se vuelva espagueti.
 
 La organizacion interna es **horizontal (por capa tecnica)**, no vertical (por feature): todo lo de
-rutas vive junto (`routes/`), toda la logica de negocio (incluido el acceso a datos) vive junta
-(`services/`). La alternativa (**vertical**: una carpeta por feature con su propio router+service
+rutas vive junto (`routes/`), toda la logica de negocio vive junta (`services/`), y todo el acceso
+a datos vive junto (`repositories/`). La alternativa (**vertical**: una carpeta por feature con su propio router+service
 adentro, ej. `features/evaluations/`) se descarta a proposito: con ~7 entidades y ~8 endpoints,
 separar por feature agrega carpetas y decisiones sin beneficio real para un equipo de 5 en un MVP
 corto. Horizontal es mas facil de explicar y de encontrar codigo ("¿donde esta la logica? en
@@ -57,8 +57,9 @@ funcion pura hace lo mismo con menos codigo.
 
 **Vistas, componentes y `*.service.js` se quedan como funciones**, no clases: no guardan estado propio
 entre llamadas (reciben datos, devuelven HTML o hacen un `fetch`), asi que una clase ahi solo anadiria
-`this.` sin ganar nada. El unico candado a OOP real en frontend es el **store**, porque es el unico
-sitio con estado que varias partes necesitan compartir y observar.
+`this.` sin ganar nada. No hay ningun objeto con estado compartido en el frontend (no existe un
+`store`, ver "Gestion de estado" mas abajo): el unico estado que persiste entre pantallas es la
+sesion en `localStorage`.
 
 ## Arquitectura general (full-stack)
 
@@ -68,10 +69,10 @@ sitio con estado que varias partes necesitan compartir y observar.
 │  Router ─> Vistas <─> Componentes                            │
 │             │                                                 │
 │             v                                                 │
-│          Store (pub/sub: auth, ui)                           │
+│          localStorage (sesion; sin store pub/sub central)   │
 │             │                                                 │
 │             v                                                 │
-│          Services ─> http.js (fetch: baseURL, errores)       │
+│          Services ─> api.service.js (fetch: baseURL, errores) │
 └───────────────────────────┬─────────────────────────────────┘
                             │ HTTPS · REST (JSON) · sin JWT (ver nota mas abajo)
                             v
@@ -116,12 +117,17 @@ riwi-lead-trace/
 │       │   ├── users.service.js · periods.service.js · categories.service.js
 │       │   ├── settings.service.js · activityLog.service.js · theme.service.js
 │       │   └── metrics.service.js       # ICP + resumen IA
-│       ├── views/              # login, home, evaluables, evaluation-form,
-│       │                       # history, dashboard, not-found (*.view.js)
-│       ├── components/         # navbar, form-field, rating-input, card,
-│       │                       # toast, loader
-│       ├── utils/              # dom.js, validators.js, format.js
-│       └── styles/             # variables, base, layout, components (.css)
+│       ├── views/              # auth/login.js · dashboard.view.js · profile.view.js ·
+│       │                       # coder/{evaluables,evaluate,my-evaluations}.view.js ·
+│       │                       # team-leader/my-results.view.js · tutor/my-results.view.js ·
+│       │                       # admin/{evaluations,periods,categories,metrics,ai-summary,
+│       │                       #   activity-log,settings}.view.js · notFound.js (*.view.js)
+│       ├── components/         # navbar.js · sidebar.js · badge.js · statusBadge.js ·
+│       │                       # dropdown.js · cards_ui.js · searchBox.js ·
+│       │                       # evaluation_detail_modal.js · period_management.js ·
+│       │                       # active_period_banner.js · alerts.js · background.js · lang-switcher.js
+│       ├── utils/              # validators.js · formUtils.js · date.js · modalA11y.js · categoryBreakdown.js
+│       └── styles/             # global.css (Tailwind CSS, un solo archivo)
 │
 ├── backend/
 │   ├── app/
@@ -143,34 +149,35 @@ riwi-lead-trace/
 │   ├── 02_dml.sql              # DML (seed minimo de datos)
 │   ├── 03_mock_history.sql     # datos historicos simulados (opcional, para poblar historial/dashboard/IA)
 │   └── 04_views.sql            # vistas SQL (requerido: /metrics depende de vw_period_metrics)
-├── docs/                       # documentacion Scrum + tecnica (01..12)
+├── docs/                       # documentacion Scrum + tecnica (00..13, ver indice en README.md)
 └── mockups/                    # exports/enlaces Figma
 ```
 
 ## Sistema de rutas SPA (frontend)
 
 - Router propio sobre **History API** (`pushState` + `popstate`).
-- `routes.js` declara ruta -> vista -> roles autorizados:
+- `routes.js` declara un objeto `ROUTES` que mapea cada path a su vista y a los roles autorizados:
 
 ```js
-export const routes = [
-  { path: '/login',        view: 'login',           public: true },
-  { path: '/',             view: 'home',            roles: ['coder','team_leader','tutor','admin'] },
-  { path: '/evaluables',   view: 'evaluables',      roles: ['coder'] },
-  { path: '/evaluar/:id',  view: 'evaluation-form', roles: ['coder'] },
-  { path: '/historial',    view: 'history',         roles: ['coder','admin'] },
-  { path: '/dashboard',    view: 'dashboard',       roles: ['admin'] },
-  { path: '*',             view: 'not-found',       public: true },
-];
+export const ROUTES = {
+  "/login":     { renderView: renderLogin, initSetup: setupLogin, requireAuth: false, redirectIfAuth: true, allowedRoles: [...] },
+  "/dashboard": { renderView: renderDashboard, initSetup: setupDashboard, requireAuth: true, allowedRoles: ["coder","tutor","team_leader","admin"] },
+  "/evaluables":{ renderView: renderEvaluables, initSetup: setupEvaluables, requireAuth: true, allowedRoles: ["coder"] },
+  "/my-results":{ renderView: renderMyResults, initSetup: setupMyResults, requireAuth: true, allowedRoles: ["team_leader","tutor"] },
+  "/admin/metrics": { renderView: renderMetrics, initSetup: setupMetrics, requireAuth: true, allowedRoles: ["admin"] },
+  "/404":       { renderView: renderNotFound, initSetup: setupNotFound, requireAuth: false, allowedRoles: [...] },
+};
 ```
 
-- **Guards:** antes de renderizar se valida sesion (`auth.store`) y rol. Sin sesion -> `/login`; rol no autorizado -> "no autorizado".
+- **Guards:** antes de renderizar se valida sesion (`authService.getSession()`) y rol. Sin sesion -> `/login`; rol no autorizado -> "no autorizado".
 
 ## Gestion de estado (frontend)
 
-- Store **pub/sub** sin librerias: `getState()`, `setState(patch)`, `subscribe(fn)`.
-- Slices por dominio: `auth.store` (usuario, rol — sin token, ver "Manejo de autenticacion"), `ui.store` (loading, toasts).
-- La sesion se **hidrata** desde `localStorage` al arrancar (`main.js`).
+No hay store centralizado ni pub/sub (ver nota mas arriba: `store/` no existe). El estado de
+sesion es simplemente lo que hay en `localStorage`: `auth.service.js` expone `getSession()` /
+`setSession()` / `clearSession()` sobre una unica clave (`SESSION_ACTUAL`), y componentes puntuales
+que necesitan reaccionar a cambios (`sidebar.js`, `navbar.js`) leen esa clave y resuelven su propio
+render de forma local, sin un mecanismo de suscripcion compartido.
 
 ## Backend — arquitectura por capas (FastAPI)
 
@@ -261,7 +268,7 @@ extensiones puntuales sobre `vw_period_metrics`/`metrics_service`, no un redisen
 
 ## Comunicacion con la API
 
-- En frontend, **toda** llamada pasa por `services/http.js`: prefija `API_BASE_URL`, serializa/parsea JSON y **normaliza errores** a `{ status, message }`. No inyecta ningun header `Authorization` — no hay token que mandar (ver "Manejo de autenticacion").
+- En frontend, **toda** llamada pasa por `services/api.service.js` (`request` + `jsonOptions`): prefija `VITE_API_BASE_URL`, serializa/parsea JSON y adjunta `status`/`detail` al error si la respuesta no es 2xx. No inyecta ningun header `Authorization` — no hay token que mandar (ver "Manejo de autenticacion").
 - Cada `*.service.js` expone funciones de dominio; nunca `fetch` directo en vistas.
 - **Contrato REST del MVP:**
 
@@ -279,6 +286,10 @@ extensiones puntuales sobre `vw_period_metrics`/`metrics_service`, no un redisen
 | PUT | `/questions/weights` | **Admin:** actualizar los pesos (`weight_percent`) de las preguntas de escala de un form (deben sumar 100, solo con periodo cerrado) |
 | GET | `/metrics/summary?period_id=:p` | KPIs + **ICP** |
 | GET | `/metrics/ai-summary?evaluatee_id=:e&period_id=:p` | Resumen IA (Google Gemini, anonimizado) — admin |
+| GET | `/activity-log?limit=` | Bitacora de acciones administrativas, mas reciente primero — admin |
+| GET | `/activity-log/export` | Descarga la bitacora en CSV (trunca a 10000 filas) — admin |
+| GET / PUT | `/settings` | Leer/actualizar la configuracion global (`system_settings`) — admin |
+| GET | `/settings/defaults` | Valores de fabrica de la configuracion, solo lectura — admin |
 
 > FastAPI expone documentacion interactiva automatica en `/docs` (Swagger) y `/redoc`, util para pruebas y sustentacion.
 
@@ -288,13 +299,13 @@ extensiones puntuales sobre `vw_period_metrics`/`metrics_service`, no un redisen
 > ver `CLAUDE.md` ("Sin JWT").
 
 - Login -> `POST /auth/login`: el backend solo verifica el hash bcrypt (`auth_service.login`) y
-  devuelve `{ user }`. **No emite token.** Frontend guarda `user` en `localStorage` + `auth.store`
-  (no hay `token` que guardar).
+  devuelve `{ user }`. **No emite token.** El frontend guarda `user` en `localStorage`
+  (`auth.service.js` — `setSession`/`getSession`/`clearSession`), no hay `token` que guardar.
 - Cada peticion que necesita saber "quien soy" o "que rol tengo" manda ese dato **en el propio
   request** — como parametro de query (`viewer_role`) o campo del body (`evaluator_id`) — y el
   backend lo usa **tal cual, sin verificarlo criptograficamente**.
 - No hay `401` por sesion expirada (no hay sesion que expire en el backend); el frontend solo
-  redirige a `/login` si no hay `user` hidratado en el store.
+  redirige a `/login` si no hay `user` guardado en `localStorage`.
 - **Autorizacion por rol:** en **frontend** (guards de `router.js`) es la unica capa que oculta
   rutas/opciones por rol — es **solo UX**. En **backend** no hay verificacion de rol real: los
   filtros por rol (`?role=`, `viewer_role`) son conveniencia sobre el dato que manda el cliente,
@@ -343,11 +354,10 @@ Consecuencias de diseno:
 - Manejadores globales para excepciones no controladas -> `500` con cuerpo JSON consistente; logging.
 
 **Frontend**
-- `http.js` normaliza errores de red y codigos no-2xx.
-- Las vistas muestran `toast` (`ui.store`) o estado de error; nunca dejan la pantalla en blanco.
+- `api.service.js` adjunta `status`/`detail` a los errores de red y codigos no-2xx.
+- Las vistas muestran un toast (`components/alerts.js`, sobre SweetAlert2) o un estado de error; nunca dejan la pantalla en blanco.
 - Validacion de formularios en cliente (`utils/validators.js`) antes de enviar.
-- Estados de **carga** y **vacio** estandarizados (`loader`, estado vacio).
-- `window.onerror` / `unhandledrejection` -> toast generico + log.
+- Estados de **carga** y **vacio** manejados por cada vista (ver `components/emptyState.js`).
 
 ## Justificacion tecnologica
 

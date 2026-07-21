@@ -12,7 +12,6 @@ class UserService:
 
     def _format_user(self, row_dict: Dict[str, Any]) -> Dict[str, Any]:
         user_dict = dict(row_dict)
-        user_dict["id"] = str(user_dict["id"])
         user_dict["roles"] = user_dict["roles"].split(",") if user_dict["roles"] else []
         return user_dict
 

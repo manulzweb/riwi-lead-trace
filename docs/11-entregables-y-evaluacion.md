@@ -21,7 +21,7 @@ Cubierto por `/docs` (este conjunto):
 | Alcance | 09 (MVP) |
 | Historias de usuario | 03 |
 | Arquitectura de la solución | 06 |
-| Modelo de datos | 07 + `database/01_ddl.sql` + `database/02_dml.sql` |
+| Modelo de datos | 07 + `database/01_ddl.sql` + `database/02_dml.sql` + `database/04_views.sql` |
 | Evidencias Scrum | 02, 03, 05 + tablero |
 | MVP definido | 09 |
 | Justificación tecnológica | 06 |

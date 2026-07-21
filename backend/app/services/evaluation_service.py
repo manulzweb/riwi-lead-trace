@@ -1,4 +1,3 @@
-import logging
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 from sqlalchemy.exc import IntegrityError
@@ -10,8 +9,6 @@ from app.exceptions.evaluation_exceptions import (
     PeriodNotFoundException, PeriodNotActiveException, EvaluationAlreadyExistsException,
     EvaluateeNotFoundException, InvalidRoleException, InvalidClanException
 )
-
-logger = logging.getLogger(__name__)
 
 class EvaluationService:
     def __init__(self, repository: EvaluationRepository = None):
@@ -71,9 +68,12 @@ class EvaluationService:
             evaluation_id = self.repo.insert_evaluation(conn, eval_dict)
 
             # Registro de participacion, en la MISMA transaccion que el contenido.
-            # Conservamos evaluation_id siempre, para que el evaluador pueda ver
-            # su propio historial, aunque haya sido anonima. El anonimato se protege
-            # en las vistas de BD y en la respuesta a los admins.
+            # `evaluation_id` se guarda siempre, tambien en anonimas: el equipo
+            # priorizo que el Coder pueda releer su propio historial por encima de
+            # un anonimato estructural (regla 1). El precio es que el vinculo SI
+            # existe en la BD y solo lo tapan dos filtros de aplicacion
+            # (vw_evaluations_summary y get_evaluator_ids_for_evaluations). Toda
+            # query nueva sobre esta tabla debe filtrar `is_anonymous` a mano.
             submission_dict = {
                 "evaluator_id": eval_data.evaluator_id,
                 "evaluatee_id": eval_data.evaluatee_id,

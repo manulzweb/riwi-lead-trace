@@ -85,19 +85,17 @@ class EvaluationDetailOut(EvaluationOut):
 class EvaluationHistoryOut(BaseModel):
     """Una participación vista desde el lado del EVALUADOR (su historial).
 
-    Representa "participé", no "esto respondí". Cuando `is_anonymous` es True el
-    vínculo con el contenido no existe en la BD (`evaluation_id` NULL), así que
-    `evaluation_id`, `form_id`, `status` y `submitted_at` vienen en None y
-    `answers` vacío. No es un fallo de la consulta: es la garantía de anonimato
-    (regla 1). El front debe mostrar la participación sin ofrecer "ver detalle".
+    El contenido viene poblado también en las anónimas: el evaluador puede releer
+    lo que escribió (regla 1). Los campos opcionales solo quedan en None si la
+    evaluación fue borrada, en cuyo caso la FK deja `evaluation_id` en NULL.
     """
     participation_id: int = Field(description="ID de la fila en evaluation_submissions")
     evaluatee_id: int
     period_id: int
-    is_anonymous: bool = Field(description="True => el contenido no es recuperable")
+    is_anonymous: bool = Field(description="True => el evaluado no sabe quién evaluó")
     created_at: datetime = Field(description="Cuándo participó el evaluador")
 
-    evaluation_id: Optional[int] = Field(default=None, description="None si fue anónima")
+    evaluation_id: Optional[int] = Field(default=None, description="None solo si la evaluación fue borrada")
     form_id: Optional[int] = None
     status: Optional[str] = None
     submitted_at: Optional[datetime] = None

@@ -1,5 +1,5 @@
 import { authService } from "../services/auth.service";
-import { navBarComponent, setupNavBar } from "../components/navbar";
+import { navBarComponent } from "../components/navbar";
 import { escapeHtml } from "../utils/validators";
 import { Card, StatsCard } from "../components/cards_ui";
 import { metricsService } from "../services/metrics.service";
@@ -40,8 +40,17 @@ export const renderDashboard = () => {
     ${navBarComponent()}
     <main class="min-h-screen bg-[var(--bg-base)] p-6 transition-all duration-300 ease-in-out">
       <div id="dashboard-content" class="max-w-7xl mx-auto space-y-6" aria-live="polite" aria-busy="true">
-        <div class="flex items-center justify-center h-64">
-          <div class="animate-spin rounded-full h-12 w-12 border-4 border-[var(--brand-bg)] border-t-transparent"></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          ${Array(4).fill(`
+            <div class="h-32 rounded-[2rem] bg-[var(--bg-panel)] p-6 shadow-sm border border-[var(--border-main)] flex flex-col justify-between">
+              <div class="h-4 w-24 skeleton-shimmer rounded-sm"></div>
+              <div class="h-8 w-16 skeleton-shimmer rounded-sm"></div>
+            </div>
+          `).join("")}
+        </div>
+        <div class="h-64 rounded-[2rem] bg-[var(--bg-panel)] p-6 shadow-sm border border-[var(--border-main)] flex flex-col">
+          <div class="h-6 w-48 skeleton-shimmer rounded-sm mb-6"></div>
+          <div class="flex-1 skeleton-shimmer rounded-xl"></div>
         </div>
       </div>
     </main>
@@ -398,13 +407,21 @@ const renderDashboardContent = async (content, user, name, role) => {
       setupDropdown('dashboard-period-filter', async (val) => {
         selectedPeriodId = val;
         content.innerHTML = `
-          <div class="flex items-center justify-center h-64">
-            <div class="animate-spin rounded-full h-12 w-12 border-4 border-[var(--brand-bg)] border-t-transparent"></div>
-          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          ${Array(4).fill(`
+            <div class="h-32 rounded-[2rem] bg-[var(--bg-panel)] p-6 shadow-sm border border-[var(--border-main)] flex flex-col justify-between">
+              <div class="h-4 w-24 skeleton-shimmer rounded-sm"></div>
+              <div class="h-8 w-16 skeleton-shimmer rounded-sm"></div>
+            </div>
+          `).join("")}
+        </div>
+        <div class="h-64 rounded-[2rem] bg-[var(--bg-panel)] p-6 shadow-sm border border-[var(--border-main)] flex flex-col mt-6">
+          <div class="h-6 w-48 skeleton-shimmer rounded-sm mb-6"></div>
+          <div class="flex-1 skeleton-shimmer rounded-xl"></div>
+        </div>
         `;
         await renderDashboardContent(content, user, name, role);
       });
     }
   }
-};
 

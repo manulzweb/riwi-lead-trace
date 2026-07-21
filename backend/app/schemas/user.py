@@ -1,4 +1,3 @@
-from pydantic import BaseModel, EmailStr
 from typing import List, Optional
 
 from pydantic import BaseModel, EmailStr, Field
@@ -48,7 +47,7 @@ class UserUpdate(BaseModel):
     password: Optional[str] = None
 
 class UserOut(BaseModel):
-    id: str
+    id: int
     name: str
     email: str
     roles: List[str]

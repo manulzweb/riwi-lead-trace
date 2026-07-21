@@ -1,8 +1,6 @@
 import { authService } from "../services/auth.service";
-import { escapeHtml } from "../utils/validators"
 import { renderRoute } from "../router/router";
 import { themeService } from "../services/theme.service";
-import { dropdownComponent, setupDropdown } from "./dropdown";
 import { sidebarComponent, setupSidebar } from "./sidebar";
 
 export const navBarComponent = () => {

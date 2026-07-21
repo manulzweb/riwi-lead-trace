@@ -32,8 +32,11 @@ class SettingsService:
         self.repo = SettingsRepository()
 
     def get_settings(self):
-        with engine.begin() as conn:
-            return self.repo.get_settings(conn)
+        with engine.connect() as conn:
+            # Sin la fila semilla de 02_dml.sql el repo devuelve {}, y SystemSettingsOut
+            # exige los 8 campos -> ResponseValidationError -> 500. Degradamos a los
+            # valores de fabrica, igual que metrics_service._load_policy.
+            return self.repo.get_settings(conn) or dict(SYSTEM_SETTINGS_DEFAULTS)
 
     def get_defaults(self):
         # Solo devuelve los valores de fabrica: no toca la BD ni persiste nada.

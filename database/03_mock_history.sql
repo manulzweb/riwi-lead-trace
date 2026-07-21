@@ -2,6 +2,22 @@
 -- Datos Históricos Simulados (Periodos pasados y evaluaciones)
 -- Ejecutar después de 01_ddl.sql y 02_dml.sql
 -- =====================================================================
+--
+-- DIVERGENCIA CONOCIDA CON EL RUNTIME (pendiente, ver reporte de auditoría
+-- 2026-07-21). Las participaciones anónimas de este archivo insertan
+-- `evaluation_id = NULL`, que era el modelo original. La aplicación hoy guarda
+-- el `evaluation_id` SIEMPRE, también en anónimas (regla 1 de CLAUDE.md), así
+-- que estas filas simulan un estado que el código ya no produce.
+--
+-- Efecto práctico: el historial del Coder ("Mis evaluaciones") sale vacío de
+-- contenido para estas filas de prueba, mientras que con datos reales sale
+-- poblado. No corrompe métricas ni ICP — `vw_period_metrics` no usa esta tabla.
+--
+-- No se corrigió aquí porque los INSERT de `evaluation_details` dependen de IDs
+-- autoincrementales hardcodeados (11, 13, ...): cambiar los NULL por esos IDs a
+-- ciegas arriesga adjuntar respuestas a la evaluación equivocada en silencio.
+-- Hay que rehacerlo con LAST_INSERT_ID() o variables, no con literales.
+-- =====================================================================
 
 USE riwi_lead_trace;
 
