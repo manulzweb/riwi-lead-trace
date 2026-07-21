@@ -2,6 +2,8 @@ import { navBarComponent } from "../../components/navbar";
 import { dropdownComponent, setupDropdown } from "../../components/dropdown";
 import { metricsService } from "../../services/metrics.service";
 import { periodService } from "../../services/periods.service";
+import { cohortsService } from "../../services/cohorts.service";
+import { clansService } from "../../services/clans.service";
 import { showToast } from "../../components/alerts";
 import { getCategoryBreakdown } from "../../utils/categoryBreakdown";
 import { formatDate } from "../../utils/date";
@@ -139,7 +141,15 @@ export const setupMetrics = async () => {
   // reejecutar la carga completa sin recargar la pagina.
   async function initPeriods() {
     try {
-      periods = await periodService.get();
+      [periods, masterCohorts, masterClans] = await Promise.all([
+        periodService.get(),
+        cohortsService.get(),
+        clansService.get()
+      ]);
+      
+      // Init static filters
+      initMasterFilters();
+      
 
       if (periods.length === 0) {
         periodContainer.innerHTML = '<p class="text-sm text-[var(--text-muted)]">No hay periodos</p>';
@@ -233,6 +243,54 @@ export const setupMetrics = async () => {
       : "";
 
     highlightsContainer.innerHTML = bestCard + opportunityCard;
+  }
+
+  function initMasterFilters() {
+    const realCohortContainer = document.getElementById("real-cohort-dropdown-container");
+    const clanContainer = document.getElementById("clan-dropdown-container");
+
+    if (realCohortContainer) {
+      const cohortOptions = [
+        { value: 'all', label: 'Todas las cohortes' },
+        ...masterCohorts.map(c => ({ value: c.name, label: c.name }))
+      ];
+      realCohortContainer.innerHTML = dropdownComponent('filter-real-cohort', cohortOptions, currentRealCohortFilter);
+      setupDropdown('filter-real-cohort');
+      const cohortSelector = document.getElementById("filter-real-cohort");
+      if (cohortSelector) {
+        cohortSelector.addEventListener("change", async (e) => {
+          currentRealCohortFilter = e.target.value;
+          currentClanFilter = "all";
+          updateClanDropdown();
+          await loadMetrics(currentPeriodId, currentRoleFilter);
+        });
+      }
+    }
+    updateClanDropdown();
+  }
+
+  function updateClanDropdown() {
+    const clanContainer = document.getElementById("clan-dropdown-container");
+    if (!clanContainer) return;
+    
+    let possibleClans = masterClans;
+    if (currentRealCohortFilter !== 'all') {
+      possibleClans = possibleClans.filter(c => c.cohort_name === currentRealCohortFilter);
+    }
+    
+    const clanOptions = [
+      { value: 'all', label: 'Todos los clanes' },
+      ...possibleClans.map(c => ({ value: c.name, label: c.name }))
+    ];
+    clanContainer.innerHTML = dropdownComponent('filter-clan', clanOptions, currentClanFilter);
+    setupDropdown('filter-clan');
+    const clanSelector = document.getElementById("filter-clan");
+    if (clanSelector) {
+      clanSelector.addEventListener("change", async (e) => {
+        currentClanFilter = e.target.value;
+        await loadMetrics(currentPeriodId, currentRoleFilter);
+      });
+    }
   }
 
   async function loadMetrics(periodId, roleFilter) {
