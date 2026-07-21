@@ -115,28 +115,9 @@ export const setupMetrics = async () => {
   if (!kpiEvals || !kpiIcp || !kpiPart || !gridContainer || !periodContainer) return;
 
   downloadBtn?.addEventListener("click", async () => {
-    downloadBtn.disabled = true;
-    showToast("Generando PDF...", "info");
-    try {
-      const periodName = periods.find(p => p.id === currentPeriodId)?.name ?? "periodo";
-      await html2pdf()
-        .set({
-          filename: `metricas-icp-${periodName}.pdf`,
-          margin: 10,
-          // Literal a proposito: el PDF debe salir siempre con fondo blanco
-          // aunque la app este en dark mode. NO cambiar por var(--bg-base):
-          // en oscuro generaria un PDF de fondo negro. No es un token olvidado.
-          html2canvas: { backgroundColor: "#ffffff" }
-        })
-        .from(reportElement)
-        .save();
-      showToast("PDF descargado", "success");
-    } catch (err) {
-      showToast("Error", "error", "No se pudo generar el PDF.");
-      console.error(err);
-    } finally {
-      downloadBtn.disabled = false;
-    }
+    // Usar la impresión nativa del navegador es mucho más robusto
+    // que html2pdf para interpretar CSS moderno (Grid, Flex, Oklch, variables).
+    window.print();
   });
 
   let periods = [];
