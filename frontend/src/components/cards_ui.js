@@ -1,6 +1,7 @@
 export const Card = ({ children, className = "" }) => `
-  <div class="bg-[var(--bg-panel)] rounded-xl border border-[var(--border-main)] shadow-sm overflow-hidden ${className}">
-    ${children}
+  <div class="group bg-[var(--bg-panel)] rounded-[2rem] border border-[var(--border-main)] shadow-sm overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-[var(--brand-hover)] relative ${className}">
+    <div class="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent dark:from-white/5 pointer-events-none"></div>
+    <div class="relative z-10">${children}</div>
   </div>
 `;
 
@@ -22,20 +23,20 @@ export const StatsCard = ({ title, value, icon, description = "", trend = null }
   }
 
   return Card({
-    className: "p-6",
+    className: "p-6 sm:p-8 flex flex-col justify-between hover:-translate-y-1",
     children: `
-      <div class="flex items-center justify-between">
-        <div class="p-2 bg-[var(--bg-base)] rounded-lg">
+      <div class="flex items-start justify-between">
+        <div class="p-3 bg-[var(--bg-base)] rounded-2xl border border-[var(--border-main)] text-[var(--brand-bg)] shadow-sm group-hover:bg-[var(--brand-bg)] group-hover:bg-opacity-10 group-hover:text-[var(--brand-hover)] group-hover:border-[var(--brand-bg)] group-hover:border-opacity-30 transition-all duration-300">
           ${icon}
         </div>
         ${trendHtml}
       </div>
-      <div class="mt-4">
-        <h3 class="text-[var(--text-muted)] text-sm font-medium">${title}</h3>
-        <div class="flex items-baseline gap-2 mt-1">
-          <p class="text-2xl font-bold text-[var(--text-main)]">${value}</p>
+      <div class="mt-6">
+        <h3 class="text-[var(--text-muted)] text-sm font-bold uppercase tracking-wider">${title}</h3>
+        <div class="flex items-baseline gap-2 mt-2">
+          <p class="text-4xl font-black text-[var(--text-main)] tracking-tight">${value}</p>
         </div>
-        ${description ? `<p class="text-[var(--text-muted)] text-xs mt-1">${description}</p>` : ''}
+        ${description ? `<p class="text-[var(--text-muted)] text-sm mt-2 font-medium opacity-80">${description}</p>` : ''}
       </div>
     `
   });

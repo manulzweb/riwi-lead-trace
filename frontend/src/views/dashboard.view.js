@@ -6,6 +6,7 @@ import { metricsService } from "../services/metrics.service";
 import { request } from "../services/api.service";
 import { periodService } from "../services/periods.service";
 import { dropdownComponent, setupDropdown } from "../components/dropdown";
+import { Chart } from 'chart.js/auto';
 
 const icons = {
   check: `<svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
@@ -15,17 +16,12 @@ const icons = {
   chartPie: `<svg class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/></svg>`
 };
 
-const renderDoughnut = (percentage) => {
-  const dashArray = `${percentage} ${100 - percentage}`;
+const renderDoughnutContainer = (percentage) => {
   return `
-    <div class="relative flex flex-col items-center justify-center">
-      <svg viewBox="0 0 36 36" class="w-28 h-28">
-        <path class="text-[var(--border-main)]" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4"/>
-        <path class="text-[var(--brand-bg)]" stroke-dasharray="${dashArray}" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4"/>
-      </svg>
-      <div class="absolute inset-0 flex flex-col items-center justify-center pt-1">
-        <span class="text-2xl font-bold text-[var(--text-main)] leading-none">${percentage}%</span>
-        <span class="text-[8px] font-medium text-[var(--text-muted)] uppercase tracking-wider mt-1">Participación</span>
+    <div class="relative flex flex-col items-center justify-center h-48 w-48 mx-auto">
+      <canvas id="participation-chart"></canvas>
+      <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+        <span class="text-2xl font-black text-[var(--text-main)] leading-none">${percentage}%</span>
       </div>
     </div>
   `;
@@ -80,45 +76,77 @@ const renderDashboardContent = async (content, user, name, role) => {
         <p class="text-[var(--text-muted)] mt-1">Aquí tienes un resumen de tu actividad en LeadTrace.</p>
       </div>
       ${role === 'admin' && currentPeriods.length > 0 ? `
-        <div class="w-full sm:w-64 z-20 relative">
-          <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider">Filtrar por Periodo</label>
-          ${dropdownComponent('dashboard-period-filter', currentPeriods.map(p => ({
-            value: String(p.id), 
-            label: p.name + (p.is_active ? ' (Activo)' : '')
-          })), selectedPeriodId)}
+        <div class="flex flex-col sm:flex-row gap-4 z-20 relative w-full sm:w-auto">
+          <div class="w-full sm:w-48">
+            <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider">Periodo</label>
+            ${dropdownComponent('dashboard-period-filter', currentPeriods.map(p => ({
+              value: String(p.id), 
+              label: p.name + (p.is_active ? ' (Activo)' : '')
+            })), selectedPeriodId)}
+          </div>
+          <div class="w-full sm:w-48">
+            <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider">Cohorte</label>
+            ${dropdownComponent('dashboard-cohort-filter', [{value: 'all', label: 'Todas'}], 'all')}
+          </div>
         </div>
       ` : ''}
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="dashboard-cards">
   `;
 
+  let currentKpis = null;
+
   if (role === "admin") {
     // Admin View
     const summary = selectedPeriodId ? await metricsService.getSummary(selectedPeriodId) : { kpis: { total_evaluations: 0, average_score: 0, participation_rate: 0 }, evaluatees: [] };
     const kpis = summary.kpis || { total_evaluations: 0, average_score: 0, participation_rate: 0 };
+    currentKpis = kpis;
+    
+    // Alertas Activas logic
+    let alertMsg = "Ninguna por el momento";
+    let alertIconColor = "text-green-500";
+    if (selectedPeriodId) {
+      const p = currentPeriods.find(x => String(x.id) === String(selectedPeriodId));
+      if (p && p.is_active) {
+        const daysLeft = Math.ceil((new Date(p.ends_at) - new Date()) / (1000 * 60 * 60 * 24));
+        if (daysLeft <= 5 && kpis.participation_rate < 50) {
+          alertMsg = "¡Cierre próximo y baja participación!";
+          alertIconColor = "text-rose-500";
+        } else if (daysLeft <= 5) {
+          alertMsg = `Cierre en ${daysLeft} días.`;
+          alertIconColor = "text-amber-500";
+        }
+      }
+    }
     
     html += `
-      ${StatsCard({ title: "Encuestas Resueltas", value: kpis.total_evaluations, icon: icons.check, description: "En el periodo seleccionado" })}
+      ${StatsCard({ 
+        title: "Alertas Activas", 
+        value: alertIconColor === "text-green-500" ? "Todo OK" : "Atención", 
+        icon: `<svg class="w-6 h-6 ${alertIconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`, 
+        description: alertMsg 
+      })}
       ${StatsCard({ title: "ICP Global Promedio", value: kpis.average_score + "/100", icon: icons.star, description: "Desempeño de la plataforma" })}
       
       <div class="col-span-1 md:col-span-2 lg:col-span-1">
         ${Card({
           className: "h-full flex flex-col p-6",
           children: `
-            <h3 class="text-sm font-medium text-[var(--text-muted)] text-left w-full mb-4">Tasa de Participación</h3>
+            <h3 class="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider text-left w-full mb-4">Tasa de Participación</h3>
             <div class="flex-1 flex flex-col items-center justify-center w-full">
-              ${renderDoughnut(kpis.participation_rate)}
-              <p class="text-xs text-[var(--text-muted)] mt-6 text-center">(${kpis.total_evaluations} evaluaciones realizadas)</p>
+              ${renderDoughnutContainer(kpis.participation_rate)}
             </div>
           `
         })}
       </div>
     `;
 
-    // Añadir tabla de Top Evaluados por rol
+    // Extract unique clans
     const validEvaluatees = summary.evaluatees?.filter(e => e.average_score !== null) || [];
-    const topTutors = validEvaluatees.filter(e => e.role === "tutor").sort((a, b) => b.average_score - a.average_score).slice(0, 3);
-    const topLeaders = validEvaluatees.filter(e => e.role === "team_leader").sort((a, b) => b.average_score - a.average_score).slice(0, 3);
+    const clans = [...new Set(validEvaluatees.map(e => e.clan_name).filter(Boolean))].sort();
+    
+    // Store data globally to handle clan filter without fetching API again
+    window.__dashboardEvaluatees = validEvaluatees;
     
     const renderTable = (title, data) => `
       <div class="bg-[var(--bg-panel)] rounded-3xl border border-[var(--border-main)] shadow-sm overflow-hidden flex-1">
@@ -135,11 +163,29 @@ const renderDashboardContent = async (content, user, name, role) => {
           </thead>
           <tbody class="divide-y divide-[var(--border-main)]">
             ${data.length > 0 ? data.map((e, index) => {
-              let medal = index === 0 ? "🥇" : index === 1 ? "🥈" : "🥉";
+              let medalIcon = "";
+              let rowClass = "hover:bg-[var(--bg-base)] transition-colors";
+              
+              if (index === 0) {
+                medalIcon = '<svg class="w-6 h-6 mx-auto text-yellow-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7.4-6.3-4.8-6.3 4.8 2.3-7.4-6-4.6h7.6z"/></svg>';
+                rowClass = "bg-amber-500/10 hover:bg-amber-500/20 transition-colors";
+              } else if (index === 1) {
+                medalIcon = '<svg class="w-6 h-6 mx-auto text-gray-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7.4-6.3-4.8-6.3 4.8 2.3-7.4-6-4.6h7.6z"/></svg>';
+                rowClass = "bg-gray-500/10 hover:bg-gray-500/20 transition-colors";
+              } else if (index === 2) {
+                medalIcon = '<svg class="w-6 h-6 mx-auto text-orange-700" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7.4-6.3-4.8-6.3 4.8 2.3-7.4-6-4.6h7.6z"/></svg>';
+                rowClass = "bg-orange-500/10 hover:bg-orange-500/20 transition-colors";
+              } else {
+                medalIcon = `<span class="font-bold text-[var(--text-muted)]">${index + 1}</span>`;
+              }
+              
               return `
-                <tr class="hover:bg-[var(--bg-base)] transition-colors">
-                  <td class="px-4 py-3 font-medium text-lg text-center">${medal}</td>
-                  <td class="px-4 py-3 font-bold text-[var(--text-main)] truncate">${escapeHtml(e.name)}</td>
+                <tr class="${rowClass}">
+                  <td class="px-4 py-3 text-center">${medalIcon}</td>
+                  <td class="px-4 py-3 font-bold text-[var(--text-main)] truncate">
+                    ${escapeHtml(e.name)}
+                    <span class="block text-xs font-normal text-[var(--text-muted)]">${escapeHtml(e.clan_name || 'Sin clan')}</span>
+                  </td>
                   <td class="px-4 py-3 text-right font-black text-[var(--text-main)]">${e.average_score}</td>
                 </tr>
               `;
@@ -153,10 +199,19 @@ const renderDashboardContent = async (content, user, name, role) => {
       </div>
     `;
 
+    const topTutors = validEvaluatees.filter(e => e.role === "tutor").sort((a, b) => b.average_score - a.average_score).slice(0, 3);
+    const topLeaders = validEvaluatees.filter(e => e.role === "team_leader").sort((a, b) => b.average_score - a.average_score).slice(0, 3);
+
     html += `
       <div class="col-span-1 md:col-span-2 lg:col-span-3 mt-4">
-        <h2 class="text-xl font-bold text-[var(--text-main)] mb-4">Top Rendimiento (ICP)</h2>
-        <div class="flex flex-col md:flex-row gap-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+          <h2 class="text-xl font-bold text-[var(--text-main)]">Top Rendimiento (ICP)</h2>
+          <div class="w-full sm:w-64 z-10 relative">
+            <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider">Filtrar por Clan</label>
+            ${dropdownComponent('dashboard-clan-filter', [{value: 'all', label: 'Todos los clanes'}, ...clans.map(c => ({value: c, label: c}))], 'all')}
+          </div>
+        </div>
+        <div class="flex flex-col md:flex-row gap-6" id="dashboard-top-tables">
           ${renderTable("Top Team Leaders", topLeaders)}
           ${renderTable("Top Tutores", topTutors)}
         </div>
@@ -192,16 +247,131 @@ const renderDashboardContent = async (content, user, name, role) => {
   html += `</div>`;
   content.innerHTML = html;
   
-  if (role === "admin" && currentPeriods.length > 0) {
-    setupDropdown('dashboard-period-filter', async (val) => {
-      selectedPeriodId = val;
-      content.innerHTML = `
-        <div class="flex items-center justify-center h-64">
-          <div class="animate-spin rounded-full h-12 w-12 border-4 border-[var(--brand-bg)] border-t-transparent"></div>
+  if (role === "admin") {
+    const ctx = document.getElementById('participation-chart');
+    if (ctx && currentKpis) {
+      const rootStyle = getComputedStyle(document.documentElement);
+      const brandColor = rootStyle.getPropertyValue('--brand-bg').trim() || '#4f46e5';
+      const emptyColor = rootStyle.getPropertyValue('--border-main').trim() || '#e5e7eb';
+      
+      const total = currentKpis.total_evaluations;
+      const rate = currentKpis.participation_rate;
+      const possible = rate > 0 ? Math.round((total / rate) * 100) : 0;
+      const pending = possible - total;
+      
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Participación', 'Pendiente'],
+          datasets: [{
+            data: [total, pending],
+            backgroundColor: [brandColor, emptyColor],
+            borderWidth: 0,
+            hoverOffset: 4
+          }]
+        },
+        options: {
+          cutout: '80%',
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  let label = context.label || '';
+                  if (label) {
+                    label += ': ';
+                  }
+                  if (context.parsed !== null) {
+                    label += context.parsed + ' ';
+                    const p = context.dataIndex === 0 ? rate : (100 - rate);
+                    label += '(' + p + '%)';
+                  }
+                  return label;
+                }
+              }
+            }
+          },
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: {
+            animateScale: true,
+            animateRotate: true
+          }
+        }
+      });
+    }
+
+    setupDropdown('dashboard-clan-filter', (val) => {
+      const evaluatees = window.__dashboardEvaluatees || [];
+      const filtered = val === 'all' ? evaluatees : evaluatees.filter(e => e.clan_name === val);
+      
+      const topTutors = filtered.filter(e => e.role === "tutor").sort((a, b) => b.average_score - a.average_score).slice(0, 3);
+      const topLeaders = filtered.filter(e => e.role === "team_leader").sort((a, b) => b.average_score - a.average_score).slice(0, 3);
+      
+      // We must extract renderTable again locally or just re-render tables
+      // For simplicity, we just rebuild the HTML for tables here.
+      const buildTable = (title, data) => `
+        <div class="bg-[var(--bg-panel)] rounded-3xl border border-[var(--border-main)] shadow-sm overflow-hidden flex-1">
+          <div class="p-4 border-b border-[var(--border-main)] bg-[var(--bg-base)]">
+            <h3 class="text-lg font-bold text-[var(--text-main)]">${title}</h3>
+          </div>
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-[var(--border-main)] text-[var(--text-muted)] text-sm bg-[var(--bg-panel)]">
+                <th class="px-4 py-3 font-semibold w-16 text-center">#</th>
+                <th class="px-4 py-3 font-semibold">Nombre</th>
+                <th class="px-4 py-3 font-semibold text-right">ICP</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[var(--border-main)]">
+              ${data.length > 0 ? data.map((e, index) => {
+                let medalIcon = "";
+                let rowClass = "hover:bg-[var(--bg-base)] transition-colors";
+                if (index === 0) {
+                  medalIcon = '<svg class="w-6 h-6 mx-auto text-yellow-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7.4-6.3-4.8-6.3 4.8 2.3-7.4-6-4.6h7.6z"/></svg>';
+                  rowClass = "bg-amber-500/10 hover:bg-amber-500/20 transition-colors";
+                } else if (index === 1) {
+                  medalIcon = '<svg class="w-6 h-6 mx-auto text-gray-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7.4-6.3-4.8-6.3 4.8 2.3-7.4-6-4.6h7.6z"/></svg>';
+                  rowClass = "bg-gray-500/10 hover:bg-gray-500/20 transition-colors";
+                } else if (index === 2) {
+                  medalIcon = '<svg class="w-6 h-6 mx-auto text-orange-700" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7.4-6.3-4.8-6.3 4.8 2.3-7.4-6-4.6h7.6z"/></svg>';
+                  rowClass = "bg-orange-500/10 hover:bg-orange-500/20 transition-colors";
+                } else {
+                  medalIcon = `<span class="font-bold text-[var(--text-muted)]">${index + 1}</span>`;
+                }
+                return `
+                  <tr class="${rowClass}">
+                    <td class="px-4 py-3 text-center">${medalIcon}</td>
+                    <td class="px-4 py-3 font-bold text-[var(--text-main)] truncate">
+                      ${escapeHtml(e.name)}
+                      <span class="block text-xs font-normal text-[var(--text-muted)]">${escapeHtml(e.clan_name || 'Sin clan')}</span>
+                    </td>
+                    <td class="px-4 py-3 text-right font-black text-[var(--text-main)]">${e.average_score}</td>
+                  </tr>
+                `;
+              }).join('') : `
+                <tr>
+                  <td colspan="3" class="px-4 py-6 text-center text-[var(--text-muted)]">No hay suficientes datos.</td>
+                </tr>
+              `}
+            </tbody>
+          </table>
         </div>
       `;
-      await renderDashboardContent(content, user, name, role);
+      document.getElementById('dashboard-top-tables').innerHTML = buildTable("Top Team Leaders", topLeaders) + buildTable("Top Tutores", topTutors);
     });
+
+    if (currentPeriods.length > 0) {
+      setupDropdown('dashboard-period-filter', async (val) => {
+        selectedPeriodId = val;
+        content.innerHTML = `
+          <div class="flex items-center justify-center h-64">
+            <div class="animate-spin rounded-full h-12 w-12 border-4 border-[var(--brand-bg)] border-t-transparent"></div>
+          </div>
+        `;
+        await renderDashboardContent(content, user, name, role);
+      });
+    }
   }
 };
 
