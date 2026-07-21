@@ -19,7 +19,8 @@ const renderCategoriesError = () => `
 
 export const renderAdminCategories = () => `
   ${navBarComponent()}
-  <main class="mx-auto max-w-4xl px-6 py-10 relative">
+  <main class="px-6 py-10 relative transition-all duration-300 ease-in-out">
+    <div class="mx-auto max-w-4xl">
 
     <section class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
       <div>
@@ -64,6 +65,7 @@ export const renderAdminCategories = () => `
       `).join("")}
     </section>
 
+    </div>
   </main>
 `;
 

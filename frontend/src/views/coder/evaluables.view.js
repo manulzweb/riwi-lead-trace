@@ -15,7 +15,8 @@ let currentFilter = "all"; // 'all' | 'team_leader' | 'tutor'
 export const renderEvaluables = () => {
   return `
     ${navBarComponent()}
-    <main class="mx-auto max-w-6xl px-6 py-10">
+    <main class="px-6 py-10 transition-all duration-300 ease-in-out">
+      <div class="mx-auto max-w-6xl">
       <section class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <p class="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--brand-bg)]">Coder</p>
@@ -54,6 +55,7 @@ export const renderEvaluables = () => {
           </article>
         `).join("")}
       </section>
+      </div>
     </main>
   `;
 };

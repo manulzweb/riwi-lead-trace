@@ -8,7 +8,8 @@ import { escapeHtml } from "../../utils/validators";
 
 export const renderAiSummary = () => `
   ${navBarComponent()}
-  <main class="mx-auto max-w-4xl px-6 py-10">
+  <main class="px-6 py-10 transition-all duration-300 ease-in-out">
+    <div class="mx-auto max-w-4xl">
     <section>
       <p class="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--brand-bg)]">Admin · IA</p>
       <h1 class="mt-1 text-4xl font-black tracking-tight text-[var(--text-main)]">Resumen con IA</h1>
@@ -56,6 +57,7 @@ export const renderAiSummary = () => `
         <ul id="ai-batch-list" class="mt-4 flex flex-col gap-2 text-sm"></ul>
       </div>
     </section>
+    </div>
   </main>
 `;
 

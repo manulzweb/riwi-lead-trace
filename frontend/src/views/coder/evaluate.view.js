@@ -34,7 +34,8 @@ let currentForm = null;
 
 export const renderEvaluate = () => `
   ${navBarComponent()}
-  <main class="mx-auto max-w-4xl px-6 py-10">
+  <main class="px-6 py-10 transition-all duration-300 ease-in-out">
+    <div class="mx-auto max-w-4xl">
     <div class="mb-8">
       <h1 class="text-3xl font-bold text-[var(--text-main)]">Nueva evaluación</h1>
       <p class="mt-2 text-[var(--text-muted)]">Completa el formulario estructurado para evaluar a tu Team Leader o Tutor.</p>
@@ -106,6 +107,7 @@ export const renderEvaluate = () => `
         </button>
       </div>
     </form>
+    </div>
   </main>
 `;
 

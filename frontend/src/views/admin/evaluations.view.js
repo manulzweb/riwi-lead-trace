@@ -14,7 +14,8 @@ import { emptyStateComponent } from "../../components/emptyState.js";
 
 export const renderAdminEvaluations = () => `
   ${navBarComponent()}
-  <main class="mx-auto max-w-7xl px-6 py-10 relative">
+  <main class="px-6 py-10 relative transition-all duration-300 ease-in-out">
+    <div class="mx-auto max-w-7xl">
     <div class="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
         <p class="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--brand-bg)]">Admin · Formularios</p>
@@ -161,6 +162,7 @@ export const renderAdminEvaluations = () => `
           </div>
         </form>
       </div>
+    </div>
     </div>
   </main>
 `;

@@ -31,7 +31,8 @@ const renderMetricsError = () => `
 
 export const renderMetrics = () => `
   ${navBarComponent()}
-  <main class="mx-auto max-w-6xl px-6 py-10">
+  <main class="px-6 py-10 transition-all duration-300 ease-in-out">
+    <div class="mx-auto max-w-6xl">
     <section class="flex items-start justify-between gap-4">
       <div>
         <p class="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--brand-bg)]">Admin</p>
@@ -99,6 +100,7 @@ export const renderMetrics = () => `
           <div class="h-32 skeleton-shimmer rounded-3xl"></div>
         </div>
       </section>
+    </div>
     </div>
   </main>
 `;

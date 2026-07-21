@@ -10,7 +10,8 @@ import { escapeHtml } from "../../utils/validators";
 
 export const renderMyResults = () => `
   ${navBarComponent()}
-  <main class="mx-auto max-w-6xl px-6 py-10">
+  <main class="px-6 py-10 transition-all duration-300 ease-in-out">
+    <div class="mx-auto max-w-6xl">
     <section class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
         <p class="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--brand-bg)]">Retroalimentación</p>
@@ -44,6 +45,7 @@ export const renderMyResults = () => `
         <div class="h-20 skeleton-shimmer rounded-3xl"></div>
       </div>
     </section>
+    </div>
   </main>
 `;
 

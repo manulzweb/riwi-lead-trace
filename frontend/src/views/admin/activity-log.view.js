@@ -15,7 +15,8 @@ const ACTION_LABELS = {
 
 export const renderActivityLog = () => `
   ${navBarComponent()}
-  <main class="mx-auto max-w-4xl px-6 py-10">
+  <main class="px-6 py-10 transition-all duration-300 ease-in-out">
+    <div class="mx-auto max-w-4xl">
     <section class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
       <div>
         <p class="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--brand-bg)]">Admin</p>
@@ -54,6 +55,7 @@ export const renderActivityLog = () => `
       <span id="page-indicator" class="text-sm font-medium text-[var(--text-muted)]">Página 1</span>
       <button id="btn-next-page" class="px-4 py-2 rounded-xl bg-[var(--bg-panel)] border border-[var(--border-main)] text-[var(--text-main)] hover:bg-[var(--bg-base)] transition-colors text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed">Siguiente</button>
     </section>
+    </div>
   </main>
 `;
 
