@@ -40,13 +40,18 @@ export const renderEvaluate = () => `
       <p class="mt-2 text-[var(--text-muted)]">Completa el formulario estructurado para evaluar a tu Team Leader o Tutor.</p>
     </div>
 
-    <div class="mb-8 hidden" id="progress-container">
-      <div class="h-2 w-full rounded-full bg-[var(--border-main)]">
-        <div id="progress-bar-fill" class="h-2 w-0 rounded-full bg-[var(--brand-bg)] transition-all duration-300"></div>
+    <div class="mb-8 hidden sticky top-0 z-40 bg-[var(--bg-base)]/80 py-4 backdrop-blur-md border-b border-[var(--border-main)] -mx-6 px-6" id="progress-container">
+      <div class="flex justify-between items-center mb-2">
+        <div class="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
+          <span id="progress-text">0 de 0 respondidas</span> (<span id="progress-percentage">0%</span>)
+        </div>
+        <div id="autosave-indicator" class="text-xs font-bold text-[var(--brand-bg)] opacity-0 transition-opacity duration-300 flex items-center gap-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+          Guardado
+        </div>
       </div>
-      <div class="mt-2 flex justify-between text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
-        <span id="progress-text">0 de 0 respondidas</span>
-        <span id="progress-percentage">0%</span>
+      <div class="h-2 w-full rounded-full bg-[var(--border-main)] overflow-hidden">
+        <div id="progress-bar-fill" class="h-full w-0 rounded-full bg-[var(--brand-bg)] transition-all duration-300"></div>
       </div>
     </div>
 
@@ -124,6 +129,35 @@ export const setupEvaluate = async () => {
 
   const currentUser = authService.getSession();
 
+  // Lógica centralizada para auto-guardado
+  let autosaveTimeout;
+  const saveDraftLocally = () => {
+    const answers = {};
+    qContainer.querySelectorAll("[data-question-id]").forEach(el => {
+      if (el.dataset.selectedValue) {
+        answers[el.dataset.questionId] = el.dataset.selectedValue;
+      }
+    });
+
+    const draft = {
+      role: targetRole.value,
+      evaluatee: evaluatee.value,
+      anonymous: anonCheck.checked,
+      answers: answers
+    };
+    localStorage.setItem("evaluation_draft", JSON.stringify(draft));
+
+    // Feedback visual
+    const indicator = document.getElementById("autosave-indicator");
+    if (indicator) {
+      indicator.classList.remove("opacity-0");
+      clearTimeout(autosaveTimeout);
+      autosaveTimeout = setTimeout(() => {
+        indicator.classList.add("opacity-0");
+      }, 2000);
+    }
+  };
+
   // Función para actualizar la barra de progreso
   const updateProgress = () => {
     const questionElements = qContainer.querySelectorAll("[data-question-id]");
@@ -138,6 +172,9 @@ export const setupEvaluate = async () => {
     progressBarFill.style.width = `${percentage}%`;
     progressText.textContent = `${answered} de ${questionElements.length} respondidas`;
     progressPercent.textContent = `${percentage}%`;
+
+    // Disparar auto-guardado cada vez que cambia el progreso
+    saveDraftLocally();
   };
 
   try {
@@ -378,24 +415,10 @@ export const setupEvaluate = async () => {
     }
   };
 
-  // Lógica de guardado de borrador
+  // Lógica de guardado manual del borrador (mantiene el toast original)
   if (draftBtn) {
     draftBtn.addEventListener("click", () => {
-      const answers = {};
-      qContainer.querySelectorAll("[data-question-id]").forEach(el => {
-        if (el.dataset.selectedValue) {
-          answers[el.dataset.questionId] = el.dataset.selectedValue;
-        }
-      });
-
-      const draft = {
-        role: targetRole.value,
-        evaluatee: evaluatee.value,
-        anonymous: anonCheck.checked,
-        answers: answers
-      };
-
-      localStorage.setItem("evaluation_draft", JSON.stringify(draft));
+      saveDraftLocally();
       showToast("Borrador guardado", "success", "Tu progreso ha sido guardado localmente.");
     });
   }
