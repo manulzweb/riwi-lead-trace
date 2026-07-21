@@ -135,8 +135,8 @@ INSERT INTO users (id, full_name, email, password_hash, clan_id) VALUES
     (41, 'Samuel Roncancio Bertel', 'sroncanciobertel41@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
     (42, 'Axel David Ruiz Polo', 'aruizpolo42@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
     (43, 'Manuel Andrés Vásquez Mendoza', 'mvsquezmendoza43@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (44, 'Cesar Julio Vega Morales', 'cvegamorales44@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (45, 'Daniela Zapata Jiménez', 'dzapatajimnez45@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1);
+    (44, 'Cesar Julio Vega Morales', 'cjulio@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (45, 'Daniela Zapata Jiménez', 'dzapata@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1);
 
 INSERT INTO user_roles (user_id, role_id) VALUES
     (12, 1),
