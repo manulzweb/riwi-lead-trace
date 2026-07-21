@@ -7,6 +7,15 @@ import { authService } from "../../services/auth.service";
 import { searchBoxComponent, setupSearch } from "../../components/searchBox";
 import { emptyStateComponent } from "../../components/emptyState.js";
 
+// Estado de error del listado: ofrece reintentar en vez de pedir recargar la
+// pagina. El listener del boton se engancha en loadCategories().
+const renderCategoriesError = () => `
+  <div class="text-center py-8">
+    <p class="text-[var(--danger-text)] text-sm">No se pudieron cargar las categorías.</p>
+    <button id="btn-retry-categories" class="mt-4 rounded-xl bg-[var(--brand-bg)] px-5 py-2.5 text-sm font-bold text-[var(--brand-text)] transition-all hover:bg-[var(--brand-hover)] cursor-pointer">Reintentar</button>
+  </div>
+`;
+
 export const renderAdminCategories = () => `
   ${navBarComponent()}
   <main class="mx-auto max-w-4xl px-6 py-10 relative">
@@ -18,23 +27,23 @@ export const renderAdminCategories = () => `
         <p class="mt-4 text-[var(--text-muted)]">Agrupan las preguntas de escala de los formularios de evaluación.</p>
       </div>
       <button id="btn-create-category" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--brand-bg)] px-6 py-3 text-sm font-bold text-[var(--brand-text)] transition-all duration-300 ease-in-out hover:bg-[var(--brand-hover)] hover:shadow-md hover:-translate-y-0.5 cursor-pointer">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        <svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
         Nueva Categoría
       </button>
     </section>
 
     <!-- Modal Form -->
     <div id="category-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300">
-      <div class="w-full max-w-md scale-95 transform rounded-3xl bg-white p-8 shadow-2xl transition-transform duration-300 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800">
+      <div role="dialog" aria-modal="true" aria-labelledby="category-modal-title" class="w-full max-w-md scale-95 transform rounded-3xl bg-[var(--bg-panel)] p-8 shadow-2xl transition-transform duration-300 border border-[var(--border-main)]">
         <h2 id="category-modal-title" class="mb-6 text-2xl font-bold font-heading text-[var(--text-main)]">Nueva Categoría</h2>
         <form id="form-category">
           <div class="mb-6">
-            <label class="mb-2 block text-sm font-semibold text-[var(--text-main)]">Nombre</label>
-            <input required maxlength="60" id="category-name" type="text" placeholder="Ej. Comunicación" class="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-sm transition-all focus:border-[var(--brand-bg)] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[var(--brand-bg)]/10 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-white" />
+            <label for="category-name" class="mb-2 block text-sm font-semibold text-[var(--text-main)]">Nombre</label>
+            <input required maxlength="60" id="category-name" type="text" placeholder="Ej. Comunicación" class="w-full rounded-xl border border-[var(--border-main)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text-main)] transition-all focus:border-[var(--brand-bg)] focus:bg-[var(--bg-panel)] focus:outline-none focus:ring-4 focus:ring-[var(--brand-bg)]/10" />
           </div>
           <div class="flex items-center gap-3">
-            <button type="button" id="btn-cancel-category" class="w-full rounded-xl border border-gray-200 bg-white py-3 font-semibold text-gray-600 transition-all hover:bg-gray-50 hover:text-gray-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-gray-300 dark:hover:bg-zinc-700 cursor-pointer">Cancelar</button>
-            <button type="submit" class="w-full rounded-xl bg-[var(--brand-bg)] py-3 font-bold text-white transition-all hover:bg-[var(--brand-hover)] cursor-pointer">Guardar</button>
+            <button type="button" id="btn-cancel-category" class="w-full rounded-xl border border-[var(--border-main)] bg-[var(--bg-panel)] py-3 font-semibold text-[var(--text-muted)] transition-all hover:bg-[var(--bg-base)] hover:text-[var(--text-main)] cursor-pointer">Cancelar</button>
+            <button type="submit" class="w-full rounded-xl bg-[var(--brand-bg)] py-3 font-bold text-[var(--brand-text)] transition-all hover:bg-[var(--brand-hover)] cursor-pointer">Guardar</button>
           </div>
         </form>
       </div>
@@ -42,7 +51,7 @@ export const renderAdminCategories = () => `
 
     <div id="category-search-slot" class="mt-8 max-w-sm"></div>
 
-    <section id="categories-list" class="flex flex-col gap-3">
+    <section id="categories-list" aria-live="polite" class="flex flex-col gap-3">
       <div class="h-16 animate-pulse rounded-2xl bg-[var(--bg-panel)]"></div>
       <div class="h-16 animate-pulse rounded-2xl bg-[var(--bg-panel)]"></div>
       <div class="h-16 animate-pulse rounded-2xl bg-[var(--bg-panel)]"></div>
@@ -117,14 +126,14 @@ export const setupAdminCategories = () => {
     }
 
     listContainer.innerHTML = categories.map(c => `
-      <div class="flex items-center justify-between gap-4 rounded-2xl bg-[var(--bg-panel)] p-4 shadow-sm border border-gray-100 dark:border-zinc-800 transition-all hover:shadow-md">
+      <div class="flex items-center justify-between gap-4 rounded-2xl bg-[var(--bg-panel)] p-4 shadow-sm border border-[var(--border-main)] transition-all hover:shadow-md">
         <h3 class="font-bold text-[var(--text-main)]">${escapeHtml(c.name)}</h3>
         <div class="flex items-center gap-2">
           <button class="btn-edit-category rounded-lg px-4 py-2 text-xs font-bold text-[var(--text-muted)] bg-[var(--bg-base)] hover:bg-[var(--border-main)] transition-colors cursor-pointer" data-id="${c.id}" title="Editar categoría">
             Editar
           </button>
           <button class="btn-delete-category p-2 text-[var(--text-muted)] hover:bg-[var(--danger-bg)] hover:text-[var(--danger-text)] rounded-lg transition-colors cursor-pointer" data-id="${c.id}" title="Eliminar categoría">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
           </button>
         </div>
       </div>
@@ -143,12 +152,20 @@ export const setupAdminCategories = () => {
         const id = e.currentTarget.dataset.id;
         if (!(await showConfirm("¿Estás seguro de que deseas eliminar esta categoría?"))) return;
 
+        // Optimistic UI: Eliminar de la lista inmediatamente
+        const originalCategories = [...allCategories];
+        allCategories = allCategories.filter(c => c.id != id);
+        renderCategoriesList(allCategories);
+
         try {
           await categoryService.remove(id, authService.getSession()?.id);
           showToast("Categoría eliminada", "success");
-          loadCategories();
         } catch (error) {
-          const msg = error?.message?.includes("409")
+          // Rollback en caso de error
+          allCategories = originalCategories;
+          renderCategoriesList(allCategories);
+          
+          const msg = error?.status === 409
             ? "No se puede eliminar: hay preguntas que usan esta categoría."
             : "Error al eliminar la categoría.";
           showToast(msg, "error");
@@ -170,11 +187,8 @@ export const setupAdminCategories = () => {
     } catch (error) {
       console.error(error);
       showToast("No se pudieron cargar las categorías", "error");
-      listContainer.innerHTML = `
-        <div class="text-center py-8 text-[var(--danger-text)] text-sm">
-          No se pudieron cargar las categorías. Recarga la página para reintentar.
-        </div>
-      `;
+      listContainer.innerHTML = renderCategoriesError();
+      document.getElementById("btn-retry-categories")?.addEventListener("click", loadCategories);
     }
   };
 
@@ -182,6 +196,20 @@ export const setupAdminCategories = () => {
     e.preventDefault();
     const name = nameInput.value.trim();
     if (!name) return;
+
+    // Optimistic UI: Actualizar o agregar a la lista inmediatamente
+    const originalCategories = [...allCategories];
+    
+    if (editCategoryId) {
+      const idx = allCategories.findIndex(c => c.id === editCategoryId);
+      if (idx !== -1) allCategories[idx] = { ...allCategories[idx], name };
+    } else {
+      // Fake ID temporal para el renderizado optimista
+      allCategories.push({ id: Date.now(), name });
+    }
+    
+    renderCategoriesList(allCategories);
+    closeModal();
 
     try {
       if (editCategoryId) {
@@ -191,10 +219,14 @@ export const setupAdminCategories = () => {
         await categoryService.create(name);
         showToast("Categoría Creada", "success");
       }
-      closeModal();
+      // Refrescar para obtener los IDs reales de la base de datos
       loadCategories();
     } catch (error) {
-      const msg = error?.message?.includes("409")
+      // Rollback en caso de error
+      allCategories = originalCategories;
+      renderCategoriesList(allCategories);
+      
+      const msg = error?.status === 409
         ? "Ya existe una categoría con ese nombre."
         : (editCategoryId ? "Error al actualizar la categoría." : "Error al crear la categoría.");
       showToast(msg, "error");
