@@ -49,11 +49,12 @@ class MetricsRepository:
                         e.email,
                         e.role,
                         e.clan_name,
+                        e.cohort_name,
                         CASE WHEN SUM(COALESCE(m.n_evals, 0)) >= :required_evaluations THEN AVG(m.average_score) ELSE NULL END as average_score,
                         SUM(COALESCE(m.n_evals, 0)) as n_evals
                     FROM vw_evaluatees_summary e
                     LEFT JOIN vw_period_metrics m ON e.id = m.evaluatee_id
-                    GROUP BY e.id, e.name, e.email, e.role, e.clan_name
+                    GROUP BY e.id, e.name, e.email, e.role, e.clan_name, e.cohort_name
                 """)
                 rows = conn.execute(
                     query,
@@ -67,6 +68,7 @@ class MetricsRepository:
                         e.email,
                         e.role,
                         e.clan_name,
+                        e.cohort_name,
                         m.average_score,
                         COALESCE(m.n_evals, 0) as n_evals
                     FROM vw_evaluatees_summary e

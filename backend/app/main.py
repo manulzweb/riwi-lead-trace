@@ -5,7 +5,7 @@ import traceback
 import uuid
 
 from app.config.config import settings
-from app.routes import auth_routes, category_routes, check, period_routes, user_routes, form_routes, evaluation_routes, metrics_routes, question_routes, activity_log_routes, settings_routes
+from app.routes import auth_routes, category_routes, check, period_routes, user_routes, form_routes, evaluation_routes, metrics_routes, question_routes, activity_log_routes, settings_routes, cohort_routes, clan_routes
 
 tags_metadata = [
     {"name": "auth", "description": "Validación de credenciales (bcrypt). No emite JWT; el cliente asume el estado de sesión."},
@@ -98,4 +98,5 @@ app.include_router(metrics_routes.router, tags=["metrics"])
 app.include_router(question_routes.router, tags=["questions"])
 app.include_router(category_routes.router, tags=["categories"])
 app.include_router(activity_log_routes.router, tags=["activity-log"])
+app.include_router(cohort_routes, clan_routes.router, tags=["master-data"])
 app.include_router(settings_routes.router, tags=["settings"])
