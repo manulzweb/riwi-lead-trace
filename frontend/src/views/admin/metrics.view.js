@@ -1,4 +1,4 @@
-import domtoimage from "dom-to-image";
+import { toPng } from "html-to-image";
 import { jsPDF } from "jspdf";
 import { navBarComponent } from "../../components/navbar";
 import { dropdownComponent, setupDropdown } from "../../components/dropdown";
@@ -121,11 +121,15 @@ export const setupMetrics = async () => {
     
     // Escondemos botones temporalmente
     downloadBtn.style.display = 'none';
-    const originalBorder = reportElement.style.border;
     
     try {
-      // Necesitamos fondo blanco porque dom-to-image respetará transparencias
-      const dataUrl = await domtoimage.toPng(reportElement, { bgcolor: '#ffffff' });
+      // Necesitamos fondo blanco porque html-to-image respetará transparencias
+      // La propiedad fetchRequest nos salta problemas de CORS con Google Fonts
+      const dataUrl = await toPng(reportElement, { 
+        backgroundColor: '#ffffff',
+        skipFonts: true, // Ignorar intentos fallidos de descargar fuentes si hay CORS
+        pixelRatio: 2 // Mejor calidad
+      });
       
       const pdf = new jsPDF('p', 'mm', 'a4');
       const imgProps = pdf.getImageProperties(dataUrl);
@@ -138,9 +142,9 @@ export const setupMetrics = async () => {
       const periodName = periods.find(p => p.id === currentPeriodId)?.name ?? "periodo";
       pdf.save(`metricas-icp-${periodName}.pdf`);
       
-      showToast("PDF descargado con dom-to-image", "success");
+      showToast("PDF descargado correctamente", "success");
     } catch (err) {
-      showToast("Error", "error", "No se pudo generar el PDF con dom-to-image.");
+      showToast("Error", "error", "No se pudo generar el PDF.");
       console.error(err);
     } finally {
       downloadBtn.style.display = '';
