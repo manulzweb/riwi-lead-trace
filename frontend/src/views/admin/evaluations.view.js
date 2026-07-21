@@ -102,7 +102,7 @@ export const renderAdminEvaluations = () => `
             <label class="mb-2 block text-sm font-bold text-[var(--text-main)]">Descripción / Instrucciones (Opcional)</label>
             <textarea id="form-desc" rows="2" placeholder="Instrucciones para quien llena el formulario..." class="w-full resize-none rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] p-4 text-[var(--text-main)] focus:border-[var(--brand-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-hover)]/20"></textarea>
           </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label class="mb-2 block text-sm font-bold text-[var(--text-main)]">Rol Evaluador (Quién llena la encuesta)</label>
               <div>
@@ -120,6 +120,13 @@ export const renderAdminEvaluations = () => `
   { value: 'tutor', label: 'Tutores' },
   { value: 'team_leader', label: 'Team Leaders' }
 ], 'tutor')}
+              </div>
+            </div>
+            <div>
+              <label class="mb-2 block text-sm font-bold text-[var(--text-main)]">Tipo de Formulario</label>
+              <div class="flex items-center gap-3 mt-4">
+                <input type="checkbox" id="is-form-checkbox" class="w-5 h-5 rounded border-[var(--border-main)] text-[var(--brand-bg)] focus:ring-[var(--brand-bg)]">
+                <label for="is-form-checkbox" class="text-sm font-bold text-[var(--text-main)] cursor-pointer">Guardar como Plantilla Base</label>
               </div>
             </div>
           </div>
@@ -345,6 +352,7 @@ export const setupAdminEvaluations = () => {
     inputDesc.value = "";
     selectRole.value = "tutor";
     document.getElementById("evaluator-role").value = "coder";
+    document.getElementById("is-form-checkbox").checked = false;
     questions = [{ id: Date.now().toString(), text: "", type: "scale_1_5", categoryId: 1, weight: 100 }];
     await showBuilder();
   });
@@ -601,6 +609,7 @@ export const setupAdminEvaluations = () => {
       targetRole: document.getElementById("form-role").value,
       questions: formattedQuestions,
       adminId: authService.getSession()?.id,
+      isForm: document.getElementById("is-form-checkbox").checked,
     };
     if (editId) {
       formData.id = editId;
@@ -762,6 +771,8 @@ export const setupAdminEvaluations = () => {
             const evaluatorRoleEl = document.getElementById("evaluator-role");
             if (evaluatorRoleEl) { evaluatorRoleEl.value = form.evaluatorRole || "coder"; }
             if (selectRole) { selectRole.value = form.targetRole || form.target_role || "tutor"; }
+            const isFormCheckbox = document.getElementById("is-form-checkbox");
+            if (isFormCheckbox) { isFormCheckbox.checked = !!form.is_form; }
 
             // getFormForEdit trae el weight_percent real (GET /forms no lo expone) y
             // convierte input_type/category_id al formato que usa el constructor visual.
@@ -804,6 +815,8 @@ export const setupAdminEvaluations = () => {
             const evaluatorRoleEl = document.getElementById("evaluator-role");
             if (evaluatorRoleEl) { evaluatorRoleEl.value = form.evaluatorRole || "coder"; }
             if (selectRole) { selectRole.value = form.targetRole || form.target_role || "tutor"; }
+            const isFormCheckbox = document.getElementById("is-form-checkbox");
+            if (isFormCheckbox) { isFormCheckbox.checked = false; } // Por defecto no es plantilla al duplicar
 
             // Reset IDs for the cloned questions (mismo mapeo que el modo edición,
             // ver getFormForEdit, pero con IDs nuevos para que se creen como preguntas nuevas)

@@ -15,15 +15,20 @@ GROUP BY u.id;
 -- Vista que resuelve la complejidad de saber a qué clan(es) pertenece un Tutor o Team Leader.
 CREATE OR REPLACE VIEW vw_evaluatees_summary AS
 SELECT u.id, u.full_name AS name, u.email, r.name AS role,
-       COALESCE(tutor_clan.name, tl_clans.clan_names) AS clan_name
+       COALESCE(tutor_clan.name, tl_clans.clan_names) AS clan_name,
+       COALESCE(tutor_cohort.name, tl_clans.cohort_names) AS cohort_name
 FROM users u
 JOIN user_roles ur ON u.id = ur.user_id
 JOIN roles r ON ur.role_id = r.id
 LEFT JOIN clans tutor_clan ON tutor_clan.id = u.clan_id
+LEFT JOIN cohorts tutor_cohort ON tutor_cohort.id = tutor_clan.cohort_id
 LEFT JOIN (
-    SELECT tlc.user_id, GROUP_CONCAT(c.name SEPARATOR ', ') AS clan_names
+    SELECT tlc.user_id, 
+           GROUP_CONCAT(c.name SEPARATOR ', ') AS clan_names,
+           GROUP_CONCAT(DISTINCT ch.name SEPARATOR ', ') AS cohort_names
     FROM team_leader_clans tlc
     JOIN clans c ON c.id = tlc.clan_id
+    JOIN cohorts ch ON ch.id = c.cohort_id
     GROUP BY tlc.user_id
 ) tl_clans ON tl_clans.user_id = u.id
 WHERE r.name IN ('team_leader', 'tutor')

@@ -74,7 +74,8 @@ class FormService:
             if not role_id:
                 raise InvalidRoleException(f"Rol '{payload.target_role}' no existe en BD.")
 
-            self.repo.deactivate_forms_for_role(conn, role_id)
+            if not payload.is_form:
+                self.repo.deactivate_forms_for_role(conn, role_id)
 
             form_data = {
                 "title": payload.title,

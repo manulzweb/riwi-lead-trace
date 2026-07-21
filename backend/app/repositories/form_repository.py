@@ -61,7 +61,7 @@ class FormRepository:
 
     def deactivate_forms_for_role(self, conn: Connection, role_id: int) -> None:
         try:
-            query = text("UPDATE forms SET is_active = FALSE WHERE target_role_id = :role_id")
+            query = text("UPDATE forms SET is_active = FALSE WHERE target_role_id = :role_id AND is_form = FALSE")
             conn.execute(query, {"role_id": role_id})
         except SQLAlchemyError as e:
             logger.error(f"Error deactivating forms for role {role_id}: {e}")

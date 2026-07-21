@@ -84,6 +84,7 @@ const createForm = async (formData) => {
     title: formData.title,
     description: formData.description || null,
     target_role: formData.targetRole,
+    is_form: formData.isForm || false,
     questions: await Promise.all(formData.questions.map(toQuestionPayload)),
   };
   return await request('/forms', jsonOptions('POST', payload));
