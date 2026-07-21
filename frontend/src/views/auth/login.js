@@ -31,6 +31,8 @@ export const renderLogin = () => `
             required
             id="email"
             type="email"
+            name="email"
+            autocomplete="email"
             placeholder="Ingresa tu correo"
             class="w-full rounded-2xl border border-gray-200 px-4 py-3 transition-all focus:outline-none focus:ring-2 focus:ring-[var(--brand-bg)]"
           />
@@ -47,6 +49,8 @@ export const renderLogin = () => `
             required
             id="password"
             type="password"
+            name="password"
+            autocomplete="current-password"
             placeholder="Tu contraseña"
             class="w-full rounded-2xl border border-gray-200 px-4 py-3 transition-all focus:outline-none focus:ring-2 focus:ring-[var(--brand-bg)]"
           />
