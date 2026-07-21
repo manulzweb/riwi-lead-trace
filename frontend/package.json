@@ -19,9 +19,7 @@
     "dayjs": "^1.11.21",
     "focus-trap": "^8.2.2",
     "fuse.js": "^7.5.0",
-    "html-to-image": "^1.11.13",
     "html2pdf.js": "^0.14.0",
-    "jspdf": "^4.2.1",
     "sweetalert2": "^11.26.25",
     "tailwindcss": "^4.3.0",
     "zod": "^4.4.3"
