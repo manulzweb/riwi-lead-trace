@@ -7,7 +7,7 @@ import { backgroundComponent } from "../../components/background.js";
 import { langSwitcherComponent, setupLangSwitcher } from "../../components/lang-switcher.js";
 
 export const renderLogin = () => `
-  <main class="relative min-h-screen w-full overflow-hidden">
+  <div class="relative min-h-screen w-full overflow-hidden bg-slate-50 dark:bg-slate-900">
 
     ${backgroundComponent()}
     ${langSwitcherComponent("es")}
@@ -16,7 +16,6 @@ export const renderLogin = () => `
       <form class="w-full max-w-md rounded-3xl border border-white/30 bg-white/95 p-6 sm:p-10 shadow-2xl backdrop-blur-xl transition-all sm:hover:scale-[1.02]">
 
         <h1 class="mb-3 text-center text-2xl sm:text-3xl font-bold text-[var(--brand-bg)]">Riwi LeadTrace</h1>
-        <p class="mb-1 text-center text-sm sm:text-base text-[var(--text-muted)]">Evaluación 360</p>
         <p class="mb-6 text-center text-sm sm:text-base text-[var(--text-muted)]">Acompaña, evalúa y crece con tu equipo</p>
 
         <div class="mb-4">
@@ -60,7 +59,7 @@ export const renderLogin = () => `
         </button>
       </form>
     </div>
-  </main>`;
+  </div>`;
 
 
 const getViewElements = () => ({
