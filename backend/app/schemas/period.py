@@ -35,7 +35,8 @@ class PeriodUpdate(BaseModel):
     is_active: Optional[bool] = None
     # Quien hace la peticion, para la bitacora (admin_activity_log). Sin JWT,
     # es el id que manda el propio front -- mismo tradeoff de confianza que
-    # evaluator_id en evaluations (ver CLAUDE.md). No se persiste en `periods`.
+    # evaluator_id en evaluation_submissions (ver CLAUDE.md). No se persiste
+    # en `periods`.
     admin_id: Optional[int] = None
 
 class PeriodOut(PeriodBase):

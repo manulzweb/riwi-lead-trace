@@ -19,7 +19,7 @@
 - **Módulos y paquetes:** `snake_case` (`evaluation_service.py`, `metrics.py`).
 - **Funciones y variables:** `snake_case` (`build_summary`, `current_user`).
 - **Clases** (modelos SQLAlchemy, schemas Pydantic): `PascalCase` (`Evaluation`, `EvaluationCreate`).
-- **Constantes:** `UPPER_SNAKE_CASE` (`MIN_EVALUATIONS`, `ANTHROPIC_API_KEY`).
+- **Constantes:** `UPPER_SNAKE_CASE` (`WEIGHT_SUM_TOLERANCE`, `COHERENCE_TEMPERATURE`, `GEMINI_API_KEY`).
 - Schemas Pydantic con sufijo de intención: `EvaluationCreate`, `EvaluationOut`.
 - Type hints obligatorios; formateo con **Black** + lint con **Ruff/Flake8**.
 

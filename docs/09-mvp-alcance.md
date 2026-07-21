@@ -20,7 +20,7 @@ Filosofia: **startup validando una idea**. El MVP debe ser lo minimo para compro
 | Historial de evaluaciones (Coder) | Trazabilidad minima para el evaluador |
 | Dashboard de resultados (Admin) | Convierte datos en decision; razon de negocio |
 | **ICP** e indicadores | Mide calidad del acompanamiento con un indice accionable |
-| **Resumen de feedback con IA** (Claude) para el Admin | Diferenciador; sintesis accionable y anonimizada |
+| **Resumen de feedback con IA** (Google Gemini) para el Admin | Diferenciador; sintesis accionable y anonimizada |
 | SPA responsive y navegable | Restriccion tecnica + usabilidad basica |
 | Despliegue accesible (front + back) | Requisito: app funcional disponible para la sustentacion |
 
@@ -57,9 +57,9 @@ Definidos con criterio MVP: suficientes para un piloto confiable, sin sobreingen
 
 | RNF | Que exige | Objetivo verificable |
 |---|---|---|
-| **Seguridad** | Contrasenas hasheadas (bcrypt); anonimato real (sin `evaluator_id`); **sin JWT** — el rol/ID de quien llama lo manda el propio front y el backend lo confia (filtro de datos, no verificacion criptografica, ver `06-arquitectura.md`); HTTPS en produccion; sanear entradas (evitar XSS). | 0 contrasenas en texto plano; anonimas sin `evaluator_id` |
+| **Seguridad** | Contrasenas hasheadas (bcrypt); anonimato real y **estructural** (el vinculo evaluador↔contenido no se crea: `evaluation_submissions.evaluation_id = NULL`); **sin JWT** — el rol/ID de quien llama lo manda el propio front y el backend lo confia (filtro de datos, no verificacion criptografica, ver `06-arquitectura.md`); HTTPS en produccion; sanear entradas (evitar XSS). | 0 contrasenas en texto plano; 0 filas de `evaluation_submissions` anonimas con `evaluation_id` distinto de NULL |
 | **Escalabilidad** | Frontend desacoplado via contrato REST; arquitectura modular; plantillas de formulario en BD. | — |
 | **Rendimiento** | Bundle ligero (Vite, sin frameworks pesados); estados de carga; evitar peticiones redundantes. | FCP < 2s; bundle inicial liviano |
 | **Usabilidad** | Responsive mobile-first (>=320px); feedback inmediato (carga/vacio/error/exito); validacion clara por campo. | Completar evaluacion en <=3 clics |
-| **Mantenibilidad** | Capas separadas (router/store/services en front; routes/services en back, sin `repositories/` ni `models/` — ver `06-arquitectura.md`); Conventional Commits; docs vivos. | Logica de negocio aislada en `services` |
+| **Mantenibilidad** | Capas separadas (router/services en front; `routes/ → services/ → repositories/` en back, sin capa `models/` — ver `06-arquitectura.md`); Conventional Commits; docs vivos. | Logica de negocio aislada en `services`, acceso a datos en `repositories` |
 | **Accesibilidad** | HTML semantico; navegacion por teclado; contraste WCAG AA; `aria-*` donde falte semantica. | Navegable 100% por teclado; contraste AA |

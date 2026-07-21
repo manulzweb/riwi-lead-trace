@@ -71,12 +71,13 @@ habla con MySQL vía SQLAlchemy (SQL plano con `text()`, sin ORM declarativo).
 SPA (frontend/)  ──HTTP/REST (JSON, sin JWT)──>  API (backend/ FastAPI)  ──SQLAlchemy `text()`──>  MySQL
 ```
 
-El backend está organizado en capas — `routes` (validan entrada/salida con Pydantic) y `services`
-(la lógica de negocio: ICP, anonimato, no-duplicado, filtros por rol, **y** las queries SQL) —
-para que cada pieza tenga una sola responsabilidad y nadie mezcle reglas de negocio con endpoints.
-**No hay capas `repositories/` ni `models/`** (se eliminaron a propósito por ser indirección sin
-beneficio en un MVP de este tamaño: las queries viven directo en `services/` y la forma de las
-tablas vive solo en `database/01_ddl.sql`). Tampoco hay JWT: el login solo verifica el hash con
+El backend está organizado en tres capas — `routes` (validan entrada/salida con Pydantic),
+`services` (la lógica de negocio: ICP, anonimato, no-duplicado, filtros por rol) y `repositories`
+(las queries SQL con `text()`, un archivo por entidad) — para que cada pieza tenga una sola
+responsabilidad y nadie mezcle reglas de negocio con endpoints ni con SQL. El flujo es
+`routes/ → services/ → repositories/ → MySQL`. **No hay `models/`** (la forma de las tablas vive
+solo en `database/01_ddl.sql`; `repositories/` no reintroduce SQLAlchemy Core ni `Table`, solo
+agrupa las mismas queries `text()` por entidad). Tampoco hay JWT: el login solo verifica el hash con
 bcrypt, no emite token, y el rol/ID de quien llama se confía al valor que manda el propio front
 (tradeoff de seguridad para mantener el MVP simple, ver `06-arquitectura.md`).
 El detalle completo, con diagramas y el contrato REST, está en
@@ -86,7 +87,7 @@ El detalle completo, con diagramas y el contrato REST, está en
 
 Base de datos relacional en MySQL, normalizada hasta 3FN, con las entidades principales: `users`,
 `roles`, `user_roles`, `team_leader_clans`, `periods`, `forms` + `questions`,
-`evaluations` + `evaluation_answers`, y `ai_feedback_cache`. El **ICP no se persiste**: se calcula
+`evaluations` + `evaluation_details`, y `ai_feedback_cache`. El **ICP no se persiste**: se calcula
 al momento a partir de las evaluaciones, así siempre refleja los datos más recientes.
 
 **Roles múltiples por usuario:** un usuario puede tener más de un rol a la vez (relación N:M
@@ -106,7 +107,7 @@ script SQL ejecutable en [`07-base-de-datos.md`](./07-base-de-datos.md) y
 | Backend | Python + FastAPI | Alineado a lo aprendido en la Ruta Básica; validación y docs automáticas |
 | Base de datos | MySQL | Dominio naturalmente relacional; consultas agregadas para el dashboard |
 | Auth | Sin JWT | El rol/ID lo manda el propio front y el backend lo confía; simplifica el MVP a costa de no verificar identidad criptográficamente |
-| IA | Claude API | Resume el feedback en lenguaje natural para el Admin |
+| IA | Google Gemini | Resume el feedback en lenguaje natural para el Admin |
 
 Justificación ampliada, comparación contra alternativas y las decisiones que evitan sobreingeniería en
 [`06-arquitectura.md`](./06-arquitectura.md).

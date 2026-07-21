@@ -11,7 +11,7 @@ Las historias se organizan en 7 epicas. `CORE` es transversal (habilitadora); la
 | **EVALUACIONES** | Nucleo del producto: Coders evaluan TL/Tutores (con opcion anonima), persistido con sus reglas de negocio. | EVAL-01..05 |
 | **HISTORIAL** | Trazabilidad: consultar evaluaciones pasadas y su evolucion. | HIST-01/02 |
 | **DASHBOARD** | Transformar evaluaciones en informacion accionable: **ICP** e indicadores. | DASH-01/02 |
-| **AIFEED** | Resumen de feedback con **Claude API** para el Admin (diferenciador). | AIFEED-01 |
+| **AIFEED** | Resumen de feedback con **Google Gemini** para el Admin (diferenciador). | AIFEED-01 |
 | **ENTREGA** | Entregables no-codigo: despliegue, pitches y documento tecnico. | DELIV-01..04 |
 
 ### Mapa epica -> sprint
@@ -110,7 +110,7 @@ Las historias se organizan en 7 epicas. `CORE` es transversal (habilitadora); la
 | HIST-02 | Seguimiento historico (admin) | 3 | Backend Dev |
 | DASH-01 | Dashboard + ICP | 5 | SM/Fullstack |
 | DASH-02 | ICP por criterio e indicadores | 3 | Backend Dev |
-| AIFEED-01 | Resumen de feedback con IA (Claude) | 5 | Backend Dev |
+| AIFEED-01 | Resumen de feedback con IA (Google Gemini) | 5 | Backend Dev |
 
 **Justificacion:** convierte los datos de evaluaciones en informacion accionable. El ICP es la logica de negocio "fuerte" para la rubrica; el resumen IA es el diferenciador. AIFEED-01 es `Should` y puede recortarse si aprieta.
 
@@ -152,7 +152,7 @@ Las historias se organizan en 7 epicas. `CORE` es transversal (habilitadora); la
 | Integracion front/back tardia | Contrato REST acordado en Sprint 1; `/docs` de FastAPI desde el inicio |
 | Reparto desigual de contribucion | Asignacion por historia + evidencia GitFlow por integrante |
 | Sprint 2 sobrecargado (29 SP > velocidad) | Paralelizar front/back; EVAL-04 es `Should` y puede posponerse |
-| Dependencia externa de IA (Claude API) | `ANTHROPIC_API_KEY` por `.env`; degradacion elegante; cache para costo; el dashboard funciona sin IA |
+| Dependencia externa de IA (Google Gemini) | `GEMINI_API_KEY` por `.env`; degradacion elegante; cache para costo; el dashboard funciona sin IA |
 | Privacidad del feedback con IA | Solo agregados anonimizados al modelo; nunca identidades (regla de negocio + test) |
 | Sobreingenieria | Sin frameworks de UI; capas simples; reutilizar motor de formularios; ICP derivado |
 | Quedar en "solo CRUD" | Priorizar logica de negocio (ICP, anonimato, no-duplicado, RBAC) como criterios de DoD |

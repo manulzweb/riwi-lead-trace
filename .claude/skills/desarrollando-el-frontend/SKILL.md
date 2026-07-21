@@ -25,20 +25,21 @@ reescribas**.
 | Mostrar/limpiar error inline de un input | `showFieldError(input, msg, errorEl)` / `clearFieldError(input, errorEl)` | `utils/formUtils.js` |
 | Validar mientras se escribe | `createDebouncedValidator(input, errorEl, rules, delay)` | `utils/formUtils.js` |
 | Validar al hacer submit | `validateSync(input, errorEl, rules)` | `utils/formUtils.js` |
-| Botón en estado "Guardando..." + disabled | `setButtonLoadingState(btn, isLoading, loadingText, originalText)` | `utils/formUtils.js` |
+| Botón en estado "Guardando..." + disabled | `setButtonLoadingState(btn, isLoading, loadingText, originalText)` — al salir de carga restaura el markup que el botón tenía (conserva el `<svg>` del icono). `originalText` es solo el **fallback** para cuando se resetea un botón que nunca pasó por carga | `utils/formUtils.js` |
 | Notificación efímera | `showToast(title, icon, text)` — `icon`: `success`\|`error`\|`warning`\|`info` | `components/alerts.js` |
 | Confirmar una acción destructiva **cuando el equipo ya pidió esa confirmación** | `await showConfirm(title, html, icon)` → `boolean` | `components/alerts.js` |
 | Error bloqueante (modal, no toast) | `showError(title, text)` | `components/alerts.js` |
 | Select estilizado | `dropdownComponent(id, options, selected, placeholder)` + `setupDropdown(id, onChange)` | `components/dropdown.js` |
-| Estado vacío de una lista | `emptyStateComponent({ title, message, actionLabel?, actionHref?, actionId? })` — sin `actionLabel` no pinta botón | `components/emptyState.js` |
+| Estado vacío de una lista | `emptyStateComponent(title, message, actionLabel?, actionHref?)` — **argumentos posicionales, no un objeto**. El botón solo se pinta si pasas `actionLabel` **y** `actionHref` (falta uno → sin botón). No existe `actionId`. Llamarlo con un objeto no lanza error: renderiza `[object Object]` como título | `components/emptyState.js` |
 | Badge de rol | `badgeComponent(role)` | `components/badge.js` |
 | Badge de estado | `statusBadgeComponent({ status, variant })` — `variant`: `text`\|`dot` | `components/statusBadge.js` |
 | Barra superior | `navBarComponent()` — el router ya llama `setupNavBar()` por ti | `components/navbar.js` |
 
-**Subutilizados, a propósito de aviso:** `showError`, `getTitleRules` y `emptyStateComponent` no los
-usa **ninguna** vista todavía, y el toolkit de `formUtils` solo lo usa `views/auth/login.js`. Que
-estén sin usar no significa que estén mal — significa que las vistas siguientes los ignoraron y
-rehicieron el trabajo a mano. Si tu vista tiene formulario, **`login.js` es el modelo a copiar**,
+**Subutilizados, a propósito de aviso:** `showError` y `getTitleRules` no los usa **ninguna** vista
+todavía. Que estén sin usar no significa que estén mal — significa que las vistas siguientes los
+ignoraron y rehicieron el trabajo a mano. `emptyStateComponent` sí está adoptado ya en la mayoría de
+las vistas con listas, y el toolkit de `formUtils` lo usan `views/auth/login.js` y
+`views/admin/settings.view.js`. Si tu vista tiene formulario, **`login.js` es el modelo a copiar**,
 no `periods.view.js`.
 
 ## El contrato render/setup
@@ -108,9 +109,8 @@ try {
 Pydantic. Puede venir vacío si la respuesta no traía JSON, así que **no lo uses como único texto**
 de un mensaje al usuario: acompáñalo siempre de una frase propia.
 
-> Quedan tres sitios con el patrón viejo `err.message.includes("404")` — `templates.service.js`,
-> `views/auth/login.js` y `views/coder/evaluate.view.js`. Siguen funcionando porque el `message`
-> conserva el formato, pero **son el patrón a abandonar**, no a copiar. Migra el que toques.
+> El patrón viejo `err.message.includes("404")` ya **no queda en ninguna parte** del front: la
+> migración a `err.status` / `err.detail` está completa. No lo reintroduzcas.
 
 ### Dónde poner constantes y helpers de markup
 
@@ -161,8 +161,16 @@ Todo dato que venga del backend o del usuario y entre en un template pasa por `e
 Aplica también a **SweetAlert2**: `showConfirm(title, html)` renderiza `html` como HTML. Un nombre
 de periodo sin escapar ahí se ejecuta igual.
 
-Hoy solo 5 de las 8 vistas que interpolan datos de API usan `escapeHtml`. **No tomes las otras 3
-como referencia.**
+Hoy **todas** las vistas que meten datos de API en un `innerHTML` pasan por `escapeHtml`, y los
+componentes compartidos que reciben datos (`dropdown.js`, `emptyState.js`, `navbar.js`, `sidebar.js`)
+también escapan por dentro. Las pocas vistas que no importan `escapeHtml` es porque no lo necesitan:
+o no interpolan datos de API (`login.js`, `notFound.js`), o los escriben con `textContent`
+(`evaluate.view.js`), o son un re-export de una línea (`tutor/my-results.view.js`). **Mantén la
+racha:** el helper que rompa esto será el próximo agujero.
+
+Ojo con `escapeHtml` en un `href`: no basta. `javascript:alert(1)` no tiene ningún carácter que
+escapar y se ejecuta igual al hacer clic — hay que validar el **esquema** (ver `toSafeHref` en
+`components/emptyState.js` como referencia).
 
 ## Estilos: tokens, no colores sueltos
 

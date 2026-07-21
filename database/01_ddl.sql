@@ -10,9 +10,11 @@ CREATE DATABASE IF NOT EXISTS riwi_lead_trace
 USE riwi_lead_trace;
 
 -- Idempotencia para entorno de desarrollo
+DROP TABLE IF EXISTS system_settings;
 DROP TABLE IF EXISTS admin_activity_log;
 DROP TABLE IF EXISTS ai_feedback_cache;
-DROP TABLE IF EXISTS evaluation_answers;
+DROP TABLE IF EXISTS evaluation_details;
+DROP TABLE IF EXISTS evaluation_submissions;
 DROP TABLE IF EXISTS evaluations;
 DROP TABLE IF EXISTS questions;
 DROP TABLE IF EXISTS categories;
@@ -197,11 +199,23 @@ CREATE TABLE questions (
 
 -- ---------------------------------------------------------------------
 -- Evaluaciones
---   evaluator_id es NULL cuando la evaluación es anónima (anonimato real)
+--   Contiene SOLO el contenido de la evaluacion (a quien, con que formulario,
+--   en que periodo y su estado). NO guarda quien evaluo: esa informacion vive
+--   en evaluation_submissions (ver mas abajo).
+--
+--   Por que se separo: cuando evaluator_id vivia aqui, una evaluacion anonima
+--   lo guardaba en NULL (regla 1, anonimato real). Eso rompia dos cosas:
+--     1. El chequeo de duplicado filtraba por evaluator_id, asi que una
+--        evaluacion anonima era invisible -> un coder podia evaluar a la misma
+--        persona ilimitadas veces de forma anonima. El indice unico tampoco lo
+--        detectaba, porque MySQL admite multiples NULL en un indice UNIQUE.
+--     2. El historial propio del coder (filtrado por evaluator_id) no mostraba
+--        sus propias evaluaciones anonimas.
+--   Al separar "quien participo" de "que se respondio", el anti-duplicado pasa
+--   a ser un constraint real de BD y el anonimato sigue siendo real.
 -- ---------------------------------------------------------------------
 CREATE TABLE evaluations (
     id           INT AUTO_INCREMENT PRIMARY KEY,
-    evaluator_id INT NULL,
     evaluatee_id INT NOT NULL,
     form_id      INT NOT NULL,
     period_id    INT NOT NULL,
@@ -209,11 +223,6 @@ CREATE TABLE evaluations (
     status       ENUM('draft', 'submitted') NOT NULL DEFAULT 'draft',
     submitted_at TIMESTAMP NULL,
     created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_eval_evaluator
-        FOREIGN KEY (evaluator_id)
-        REFERENCES users(id)
-        ON UPDATE CASCADE
-        ON DELETE RESTRICT,
     CONSTRAINT fk_eval_evaluatee
         FOREIGN KEY (evaluatee_id)
         REFERENCES users(id)
@@ -232,15 +241,77 @@ CREATE TABLE evaluations (
     CONSTRAINT chk_status CHECK (status IN ('draft','submitted'))
 );
 
--- Evita doble evaluación del mismo evaluado en el mismo periodo (solo no anónimas)
-CREATE UNIQUE INDEX uq_eval_once
-    ON evaluations (evaluator_id, evaluatee_id, period_id);
+-- ---------------------------------------------------------------------
+-- Participaciones (quien evaluo a quien, en que periodo)
+--
+--   Es el "libro de asistencia" del sistema: registra que un evaluador YA
+--   participo sobre un evaluado en un periodo. 
+--   El `evaluation_id` siempre apunta a la evaluación, incluso en anónimas,
+--   para permitir al coder consultar su propio historial de respuestas. El anonimato
+--   se protege en las vistas de la BD (`vw_evaluations_summary`) y en la capa
+--   de aplicación (repositorio).
+--
+--   Semantica de evaluation_id:
+--     - Apunta a la evaluacion siempre.
+--     - Queda en NULL solamente si la evaluacion original es eliminada (ON DELETE SET NULL)
+--       para conservar el registro de participacion (anti-duplicado).
+--
+--   uq_submission_once es el anti-duplicado REAL: ninguna de sus tres columnas
+--   admite NULL, asi que MySQL si lo hace cumplir tambien para las anonimas
+--   (a diferencia del antiguo indice uq_eval_once sobre evaluations, que era
+--   inutil en ese caso). La validacion de aplicacion en evaluation_service
+--   sigue existiendo para devolver un 409 con mensaje claro, pero ya no es la
+--   unica linea de defensa: la BD es ahora la autoridad.
+--
+--   ON DELETE del FK a evaluations: SET NULL (no CASCADE, no RESTRICT).
+--     - CASCADE borraria la participacion junto con la evaluacion y reabriria
+--       el agujero: el evaluador podria volver a evaluar.
+--     - RESTRICT impediria borrar evaluaciones para siempre.
+--     - SET NULL conserva el registro de participacion y lo degrada a la misma
+--       forma que una anonima ("participo, contenido no disponible"), que es
+--       exactamente la semantica deseada.
+-- ---------------------------------------------------------------------
+CREATE TABLE evaluation_submissions (
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    evaluator_id  INT NOT NULL,
+    evaluatee_id  INT NOT NULL,
+    period_id     INT NOT NULL,
+    -- NULL solo cuando la evaluacion es eliminada (ON DELETE SET NULL)
+    evaluation_id INT NULL,
+    created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_submission_evaluator
+        FOREIGN KEY (evaluator_id)
+        REFERENCES users(id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+    CONSTRAINT fk_submission_evaluatee
+        FOREIGN KEY (evaluatee_id)
+        REFERENCES users(id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+    CONSTRAINT fk_submission_period
+        FOREIGN KEY (period_id)
+        REFERENCES periods(id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+    CONSTRAINT fk_submission_evaluation
+        FOREIGN KEY (evaluation_id)
+        REFERENCES evaluations(id)
+        ON UPDATE CASCADE
+        ON DELETE SET NULL,
+    -- Anti-duplicado real: aplica TAMBIEN a las evaluaciones anonimas
+    CONSTRAINT uq_submission_once UNIQUE (evaluator_id, evaluatee_id, period_id),
+    -- Una evaluacion pertenece a UN solo evaluador. Sin esto, dos
+    -- participaciones podrian apuntar a la misma evaluacion y vw_evaluations_summary
+    -- duplicaria filas. Si las evaluaciones se borran, los NULL conviven.
+    CONSTRAINT uq_submission_evaluation UNIQUE (evaluation_id)
+);
 
 
 -- ---------------------------------------------------------------------
 -- Respuestas por pregunta
 -- ---------------------------------------------------------------------
-CREATE TABLE evaluation_answers (
+CREATE TABLE evaluation_details (
     id            INT AUTO_INCREMENT PRIMARY KEY,
     evaluation_id INT NOT NULL,
     question_id   INT NOT NULL,
@@ -286,7 +357,7 @@ CREATE TABLE ai_feedback_cache (
 -- Bitacora de acciones administrativas (auditoria basica)
 --   admin_id es NULL si la accion se registro sin sesion identificada
 --   (no hay JWT: el id que llega es el que el propio front manda, igual
---   que evaluator_id en evaluations -- ver seccion "Roles del sistema"
+--   que evaluator_id en evaluation_submissions -- ver seccion "Roles del sistema"
 --   de CLAUDE.md). No es prueba criptografica de autoria, es un registro
 --   de conveniencia para trazabilidad.
 -- ---------------------------------------------------------------------
@@ -303,4 +374,47 @@ CREATE TABLE admin_activity_log (
         REFERENCES users(id)
         ON UPDATE CASCADE
         ON DELETE SET NULL
+);
+
+-- ---------------------------------------------------------------------
+-- Configuracion global del sistema (fila unica, id = 1)
+--   Tabla "singleton": settings_repository.py siempre lee/escribe WHERE id = 1.
+--   El CHECK sobre id la mantiene como una sola fila a nivel de BD, para que
+--   nadie inserte una segunda configuracion que el backend nunca leeria.
+--   Los DEFAULT de cada columna son los valores de fabrica acordados por el
+--   equipo; el seed de 02_dml.sql crea la fila id = 1 con esos mismos valores.
+--
+--   OJO: estos valores de fabrica viven DUPLICADOS en TRES sitios:
+--     1. Los DEFAULT de columna de aqui abajo.
+--     2. El INSERT semilla de database/02_dml.sql.
+--     3. La constante SYSTEM_SETTINGS_DEFAULTS en
+--        backend/app/services/settings_service.py, que es lo que sirve
+--        GET /settings/defaults (el boton "Valores por Defecto" del admin).
+--   Si cambias un valor, cambialo en los tres o divergen en silencio.
+-- ---------------------------------------------------------------------
+CREATE TABLE system_settings (
+    id                        TINYINT UNSIGNED NOT NULL DEFAULT 1 PRIMARY KEY,
+    -- Motor de IA
+    ai_temperature            DECIMAL(3,2) NOT NULL DEFAULT 0.70,
+    ai_auto_summary           BOOLEAN NOT NULL DEFAULT TRUE,
+    -- Politicas de evaluacion (umbrales de ICP y validacion de pesos)
+    -- OJO: estos dos umbrales van en la MISMA escala que el ICP, que es 0-100
+    -- (vw_period_metrics normaliza con ((media_ponderada) - 1) / 4 * 100).
+    -- DECIMAL(5,2), no (4,2): con (4,2) el tope es 99.99 y un admin no podria
+    -- guardar 100. Los consume metrics_service.classify_status.
+    score_risk_threshold      DECIMAL(5,2) NOT NULL DEFAULT 60.00,
+    score_excellent_threshold DECIMAL(5,2) NOT NULL DEFAULT 80.00,
+    weight_tolerance          DECIMAL(4,2) NOT NULL DEFAULT 0.01,
+    strict_entity_lock        BOOLEAN NOT NULL DEFAULT TRUE,
+    required_evaluations      SMALLINT UNSIGNED NOT NULL DEFAULT 3,
+    -- Mantenimiento / auditoria
+    log_retention_days        SMALLINT UNSIGNED NOT NULL DEFAULT 90,
+    updated_at                TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                              ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT chk_settings_singleton CHECK (id = 1),
+    CONSTRAINT chk_ai_temperature CHECK (ai_temperature BETWEEN 0 AND 1),
+    CONSTRAINT chk_score_risk_threshold CHECK (score_risk_threshold BETWEEN 0 AND 100),
+    CONSTRAINT chk_score_excellent_threshold CHECK (score_excellent_threshold BETWEEN 0 AND 100),
+    CONSTRAINT chk_required_evaluations CHECK (required_evaluations >= 1),
+    CONSTRAINT chk_log_retention_days CHECK (log_retention_days >= 1)
 );

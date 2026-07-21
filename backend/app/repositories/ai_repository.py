@@ -22,7 +22,7 @@ class AIRepository:
         try:
             query = text("""
                 SELECT a.comment
-                FROM evaluation_answers a
+                FROM evaluation_details a
                 JOIN evaluations e ON a.evaluation_id = e.id
                 JOIN questions q ON a.question_id = q.id
                 WHERE e.evaluatee_id = :evaluatee_id

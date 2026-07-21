@@ -16,11 +16,18 @@ class EvaluationRepository:
             raise
 
     def check_evaluation_exists(self, conn, evaluator_id: int, evaluatee_id: int, period_id: int) -> bool:
+        """Un evaluador participa una sola vez por evaluado y periodo.
+
+        La participacion vive en `evaluation_submissions`, no en `evaluations`:
+        asi el chequeo tambien cubre las evaluaciones anonimas (antes, con
+        `evaluations.evaluator_id` en NULL, las anonimas eran invisibles aqui y
+        se podian repetir sin limite).
+        """
         try:
             query = text("""
-                SELECT 1 FROM evaluations 
-                WHERE evaluator_id = :evaluator_id 
-                  AND evaluatee_id = :evaluatee_id 
+                SELECT 1 FROM evaluation_submissions
+                WHERE evaluator_id = :evaluator_id
+                  AND evaluatee_id = :evaluatee_id
                   AND period_id = :period_id
                 LIMIT 1
             """)
@@ -60,10 +67,12 @@ class EvaluationRepository:
             raise
 
     def insert_evaluation(self, conn, eval_data: Dict[str, Any]) -> int:
+        """Inserta el CONTENIDO de la evaluacion. Ya no guarda `evaluator_id`:
+        quien participo se registra aparte, en `evaluation_submissions`."""
         try:
             query = text("""
-                INSERT INTO evaluations (evaluator_id, evaluatee_id, form_id, period_id, is_anonymous, status, submitted_at)
-                VALUES (:evaluator_id, :evaluatee_id, :form_id, :period_id, :is_anonymous, :status, :submitted_at)
+                INSERT INTO evaluations (evaluatee_id, form_id, period_id, is_anonymous, status, submitted_at)
+                VALUES (:evaluatee_id, :form_id, :period_id, :is_anonymous, :status, :submitted_at)
             """)
             result = conn.execute(query, eval_data)
             return result.lastrowid
@@ -71,12 +80,29 @@ class EvaluationRepository:
             logger.error(f"Error inserting evaluation: {e}")
             raise
 
-    def insert_evaluation_answers(self, conn, answers_data: List[Dict[str, Any]]) -> None:
+    def insert_evaluation_submission(self, conn, submission_data: Dict[str, Any]) -> int:
+        """Registra la PARTICIPACION del evaluador.
+
+        Lanza `IntegrityError` si se viola `uq_submission_once`; el servicio lo
+        traduce a 409.
+        """
+        try:
+            query = text("""
+                INSERT INTO evaluation_submissions (evaluator_id, evaluatee_id, period_id, evaluation_id)
+                VALUES (:evaluator_id, :evaluatee_id, :period_id, :evaluation_id)
+            """)
+            result = conn.execute(query, submission_data)
+            return result.lastrowid
+        except SQLAlchemyError as e:
+            logger.error(f"Error inserting evaluation submission: {e}")
+            raise
+
+    def insert_evaluation_details(self, conn, answers_data: List[Dict[str, Any]]) -> None:
         if not answers_data:
             return
         try:
             query = text("""
-                INSERT INTO evaluation_answers (evaluation_id, question_id, score, comment)
+                INSERT INTO evaluation_details (evaluation_id, question_id, score, comment)
                 VALUES (:evaluation_id, :question_id, :score, :comment)
             """)
             # Pass a list of dicts to SQLAlchemy to trigger an executemany (bulk insert)
@@ -88,7 +114,7 @@ class EvaluationRepository:
     def get_evaluation_by_id(self, conn, evaluation_id: int) -> Optional[Dict[str, Any]]:
         try:
             query = text("""
-                SELECT id, evaluator_id, evaluatee_id, form_id, period_id, is_anonymous, status, created_at, submitted_at
+                SELECT id, evaluatee_id, form_id, period_id, is_anonymous, status, created_at, submitted_at
                 FROM evaluations WHERE id = :id
             """)
             row = conn.execute(query, {"id": evaluation_id}).mappings().first()
@@ -97,23 +123,61 @@ class EvaluationRepository:
             logger.error(f"Error fetching evaluation by id {evaluation_id}: {e}")
             raise
 
-    def get_evaluations_by_evaluator(self, conn, evaluator_id: int, skip: int, limit: int) -> List[Dict[str, Any]]:
+    def get_submissions_by_evaluator(self, conn, evaluator_id: int, skip: int, limit: int) -> List[Dict[str, Any]]:
+        """Historial de participacion de un evaluador.
+
+        El LEFT JOIN es deliberado y NO recupera contenido anonimo: en las
+        submissions anonimas `evaluation_id` es NULL, asi que el join no encaja
+        con ninguna fila de `evaluations` y las columnas de contenido salen en
+        NULL. Es exactamente lo que se busca -- si desde aqui se pudiera
+        recuperar el contenido, el admin tambien podria, y se acabo el anonimato.
+        """
         try:
             query = text("""
-                SELECT id, evaluator_id, evaluatee_id, form_id, period_id, is_anonymous, status, created_at, submitted_at
-                FROM evaluations WHERE evaluator_id = :evaluator_id
+                SELECT
+                    s.id            AS participation_id,
+                    s.evaluatee_id  AS evaluatee_id,
+                    s.period_id     AS period_id,
+                    s.evaluation_id AS evaluation_id,
+                    s.created_at    AS created_at,
+                    e.form_id       AS form_id,
+                    e.is_anonymous  AS eval_is_anonymous,
+                    e.status        AS status,
+                    e.submitted_at  AS submitted_at
+                FROM evaluation_submissions s
+                LEFT JOIN evaluations e ON e.id = s.evaluation_id
+                WHERE s.evaluator_id = :evaluator_id
+                ORDER BY s.id DESC
                 LIMIT :limit OFFSET :skip
             """)
             rows = conn.execute(query, {"evaluator_id": evaluator_id, "limit": limit, "skip": skip}).mappings().all()
             return [dict(r) for r in rows]
         except SQLAlchemyError as e:
-            logger.error(f"Error fetching evaluations by evaluator {evaluator_id}: {e}")
+            logger.error(f"Error fetching submissions by evaluator {evaluator_id}: {e}")
+            raise
+
+    def get_evaluator_ids_for_evaluations(self, conn, evaluation_ids: List[int]) -> Dict[int, int]:
+        """Mapa evaluation_id -> evaluator_id, SOLO para evaluaciones no anonimas."""
+        if not evaluation_ids:
+            return {}
+        try:
+            query = text("""
+                SELECT s.evaluation_id, s.evaluator_id
+                FROM evaluation_submissions s
+                JOIN evaluations e ON e.id = s.evaluation_id
+                WHERE s.evaluation_id IN :eval_ids
+                  AND e.is_anonymous = FALSE
+            """)
+            rows = conn.execute(query, {"eval_ids": tuple(evaluation_ids)}).mappings().all()
+            return {r["evaluation_id"]: r["evaluator_id"] for r in rows}
+        except SQLAlchemyError as e:
+            logger.error(f"Error fetching evaluator ids for evaluations {evaluation_ids}: {e}")
             raise
 
     def get_evaluations_by_evaluatee(self, conn, evaluatee_id: int, period_id: Optional[int], skip: int, limit: int) -> List[Dict[str, Any]]:
         try:
             query_str = """
-                SELECT id, evaluator_id, evaluatee_id, form_id, period_id, is_anonymous, status, created_at, submitted_at
+                SELECT id, evaluatee_id, form_id, period_id, is_anonymous, status, created_at, submitted_at
                 FROM evaluations WHERE evaluatee_id = :evaluatee_id
             """
             params = {"evaluatee_id": evaluatee_id, "limit": limit, "skip": skip}
@@ -133,7 +197,7 @@ class EvaluationRepository:
         if not evaluation_ids:
             return []
         try:
-            query = text("SELECT id, evaluation_id, question_id, score, comment FROM evaluation_answers WHERE evaluation_id IN :eval_ids")
+            query = text("SELECT id, evaluation_id, question_id, score, comment FROM evaluation_details WHERE evaluation_id IN :eval_ids")
             # Tuple binding allows SQLAlchemy to correctly format the IN clause
             rows = conn.execute(query, {"eval_ids": tuple(evaluation_ids)}).mappings().all()
             return [dict(r) for r in rows]

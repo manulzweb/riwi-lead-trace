@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime
 from typing import Optional, List, Dict, Any
+from sqlalchemy.exc import IntegrityError
 from app.config.database import engine
 from app.schemas.evaluation import EvaluationCreate
 from app.repositories.evaluation_repository import EvaluationRepository
@@ -58,11 +59,8 @@ class EvaluationService:
             
             if eval_data.evaluator_id is not None:
                 self._validate_permissions(conn, eval_data.evaluator_id, eval_data.evaluatee_id)
-            
-            db_evaluator_id = None if eval_data.is_anonymous else eval_data.evaluator_id
-            
+
             eval_dict = {
-                "evaluator_id": db_evaluator_id,
                 "evaluatee_id": eval_data.evaluatee_id,
                 "form_id": eval_data.form_id,
                 "period_id": eval_data.period_id,
@@ -71,7 +69,34 @@ class EvaluationService:
                 "submitted_at": datetime.now() if eval_data.status == EVALUATION_STATUS_SUBMITTED else None
             }
             evaluation_id = self.repo.insert_evaluation(conn, eval_dict)
-            
+
+            # Registro de participacion, en la MISMA transaccion que el contenido.
+            # Conservamos evaluation_id siempre, para que el evaluador pueda ver
+            # su propio historial, aunque haya sido anonima. El anonimato se protege
+            # en las vistas de BD y en la respuesta a los admins.
+            submission_dict = {
+                "evaluator_id": eval_data.evaluator_id,
+                "evaluatee_id": eval_data.evaluatee_id,
+                "period_id": eval_data.period_id,
+                "evaluation_id": evaluation_id,
+            }
+            try:
+                self.repo.insert_evaluation_submission(conn, submission_dict)
+            except IntegrityError:
+                # Red de seguridad contra la condicion de carrera del SELECT previo:
+                # dos peticiones concurrentes del mismo evaluador pueden pasar ambas
+                # el check_evaluation_exists, pero solo una gana el INSERT porque
+                # `uq_submission_once` (evaluator_id, evaluatee_id, period_id) es un
+                # constraint de BD. La perdedora cae aqui y recibe el mismo 409 que
+                # en el caso normal. El SELECT previo sigue existiendo para dar el
+                # mensaje limpio sin depender de un error de driver; el constraint es
+                # el que de verdad garantiza la unicidad.
+                # engine.begin() revierte la transaccion completa, asi que la
+                # evaluacion y sus respuestas no quedan huerfanas.
+                raise EvaluationAlreadyExistsException(
+                    "Ya has evaluado a esta persona en el periodo seleccionado."
+                )
+
             answers_data = [
                 {
                     "evaluation_id": evaluation_id,
@@ -81,9 +106,14 @@ class EvaluationService:
                 }
                 for ans in eval_data.answers
             ]
-            self.repo.insert_evaluation_answers(conn, answers_data)
-            
-            return self._get_evaluation_detail(conn, evaluation_id)
+            self.repo.insert_evaluation_details(conn, answers_data)
+
+            created = self._get_evaluation_detail(conn, evaluation_id)
+            if created is not None:
+                # Se devuelve al propio evaluador su id (no revela nada: es quien
+                # hizo la peticion). En anonima va None, como en la BD.
+                created["evaluator_id"] = None if eval_data.is_anonymous else eval_data.evaluator_id
+            return created
 
     def _attach_answers(self, conn, evaluations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         eval_ids = [e["id"] for e in evaluations]
@@ -108,18 +138,55 @@ class EvaluationService:
         return self._attach_answers(conn, [eval_dict])[0]
 
     def get_evaluations_by_evaluator(self, evaluator_id: int, skip: int = 0, limit: int = 100) -> List[Dict[str, Any]]:
+        """Historial del evaluador: participaciones y sus respuestas.
+
+        El coder siempre puede ver su propio historial completo, incluyendo
+        respuestas, incluso de sus evaluaciones anónimas.
+        """
         with engine.connect() as conn:
-            evaluations = self.repo.get_evaluations_by_evaluator(conn, evaluator_id, skip, limit)
-            return self._attach_answers(conn, evaluations)
+            submissions = self.repo.get_submissions_by_evaluator(conn, evaluator_id, skip, limit)
+
+            visible = []
+            for s in submissions:
+                s["is_anonymous"] = s.pop("eval_is_anonymous", False)
+                s["answers"] = []
+                if s["evaluation_id"] is not None:
+                    visible.append(s)
+
+            # Solo se cargan respuestas de las participaciones con contenido visible.
+            if visible:
+                answers = self.repo.get_answers_for_evaluations(
+                    conn, [s["evaluation_id"] for s in visible]
+                )
+                answers_map: Dict[int, List[Dict[str, Any]]] = {s["evaluation_id"]: [] for s in visible}
+                for ans in answers:
+                    answers_map[ans["evaluation_id"]].append(ans)
+                for s in visible:
+                    s["answers"] = answers_map[s["evaluation_id"]]
+
+            return submissions
 
     def get_evaluations_by_evaluatee(self, evaluatee_id: int, period_id: Optional[int] = None, hide_evaluator: bool = False, skip: int = 0, limit: int = 100) -> List[Dict[str, Any]]:
+        """Evaluaciones recibidas por una persona.
+
+        `evaluator_id` ya no vive en `evaluations`; para las no anonimas se
+        resuelve via `evaluation_submissions`. Reglas 1 y 8 de CLAUDE.md:
+        - anonima  -> no existe el dato, para nadie (ni para el admin);
+        - hide_evaluator (el propio TL/Tutor consultando) -> nunca ve quien lo
+          evaluo, ni siquiera en las no anonimas. Solo el admin lo ve.
+        """
         with engine.connect() as conn:
             evaluations = self.repo.get_evaluations_by_evaluatee(conn, evaluatee_id, period_id, skip, limit)
-            
+
+            evaluator_map: Dict[int, int] = {}
+            if not hide_evaluator:
+                # Ni siquiera se consulta el dato si quien mira no puede verlo.
+                identifiable = [ev["id"] for ev in evaluations if not ev["is_anonymous"]]
+                evaluator_map = self.repo.get_evaluator_ids_for_evaluations(conn, identifiable)
+
             for ev in evaluations:
-                if ev["is_anonymous"] or hide_evaluator:
-                    ev["evaluator_id"] = None
-                    
+                ev["evaluator_id"] = None if (ev["is_anonymous"] or hide_evaluator) else evaluator_map.get(ev["id"])
+
             return self._attach_answers(conn, evaluations)
 
 # We export a singleton instance for backward compatibility with other routes

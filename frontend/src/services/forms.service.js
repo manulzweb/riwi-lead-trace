@@ -43,8 +43,9 @@ const getForms = async () => {
         return forms.map(t => ({ ...t, targetRole }));
       } catch (error) {
         // Si la API arroja 404 porque todavía no hay formularios creadas para este rol,
-        // devolvemos un array vacío para no romper nada.
-        if (error.message.includes("404")) return [];
+        // devolvemos un array vacío para no romper nada. Se compara el status
+        // real que expone api.service.js, no el texto del mensaje.
+        if (error.status === 404) return [];
         throw error; 
       }
     })
@@ -133,7 +134,12 @@ const updateForm = async (id, formData, onCoherenceConfirm) => {
         if (err.status === 409 && onCoherenceConfirm) {
           const confirmed = await onCoherenceConfirm(q, err.detail);
           if (!confirmed) {
-            throw new Error(`Guardado cancelado: no se confirmo el cambio de texto de "${original.text}".`);
+            // Aborto interno del flujo (el admin dijo "no"), NO un error HTTP:
+            // por eso no tiene .status. Se marca con .cancelled para que la
+            // vista lo distinga sin leer el texto del mensaje.
+            const cancelled = new Error(`Guardado cancelado: no se confirmo el cambio de texto de "${original.text}".`);
+            cancelled.cancelled = true;
+            throw cancelled;
           }
           const updatedQ = await request(`/questions/${q.id}`, jsonOptions('PATCH', { text: q.text, confirm: true, admin_id: formData.adminId }));
           q.id = String(updatedQ.id);

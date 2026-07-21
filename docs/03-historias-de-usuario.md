@@ -21,7 +21,7 @@ Cada historia incluye criterios de aceptacion (CA), prioridad y Story Points.
 
 **Criterios de aceptacion**
 - [ ] `uvicorn app.main:app --reload` levanta la API y expone `/docs` (Swagger).
-- [ ] Estructura por capas: `routes/`, `services/` (logica de negocio + queries SQL, sin capa `repositories/` ni `models/` separadas), `schemas/`, `config/`.
+- [ ] Estructura por capas: `routes/`, `services/` (logica de negocio), `repositories/` (queries SQL), `schemas/`, `config/` — sin capa `models/` separada.
 - [ ] Conexion a MySQL configurable por `.env`; la BD se crea con `database/01_ddl.sql` + `database/02_dml.sql` (seed incluido en el DML).
 - [ ] Endpoint de salud (`GET /health`) responde `200`.
 - [ ] CORS habilitado para el origen del frontend.
@@ -110,8 +110,12 @@ Cada historia incluye criterios de aceptacion (CA), prioridad y Story Points.
 
 **Criterios de aceptacion**
 - [ ] Toggle "Enviar de forma anonima" visible antes de enviar.
-- [ ] Si esta activo, la evaluacion se registra sin asociar la identidad del evaluador.
-- [ ] El sistema informa que el anonimato es irreversible una vez enviado.
+- [ ] Si esta activo, la participacion se registra en `evaluation_submissions` **sin crear el vinculo**
+      con el contenido (`evaluation_id = NULL`): la identidad no queda asociada a las respuestas en
+      ninguna parte de la BD.
+- [ ] El sistema informa que el anonimato es irreversible una vez enviado, **y que el propio autor no
+      podra volver a ver sus respuestas** (es el precio de que nadie mas pueda).
+- [ ] La participacion anonima **si** cuenta para el no-duplicado del periodo (`uq_submission_once`).
 
 ### EVAL-05 — Registrar evaluacion (API) · `Must` · `5 SP`
 **Como** Coder **quiero** que mi evaluacion se guarde de forma confiable **para** que cuente en las metricas.
@@ -160,8 +164,10 @@ mejorar el formulario entre rondas sin depender del equipo tecnico.
 - [ ] **Regla de negocio (versionado):** editar el texto **no sobrescribe**: crea una pregunta
       nueva (misma categoria y orden) y desactiva la anterior. Las respuestas historicas siguen
       apuntando a la pregunta original con su texto intacto.
-- [ ] Las evaluaciones nuevas cargan **solo preguntas activas**; el calculo del ICP agrega por
-      **categoria** con pesos fijos, por lo que la edicion de redaccion no altera el indice.
+- [ ] Las evaluaciones nuevas cargan **solo preguntas activas**; el calculo del ICP pondera cada
+      pregunta de escala por su `weight_percent` (los pesos son ajustables aparte, con
+      `PUT /questions/weights`, y deben sumar 100), por lo que la edicion de redaccion no altera
+      el indice.
 - [ ] **Regla de negocio (anti deriva semantica — "reformular, no re-temar"):** editar el texto
       sirve para mejorar la redaccion **dentro de la misma categoria**. Una pregunta **no se
       convierte** en una de otro tema: si el admin necesita preguntar otra cosa, **desactiva** la
@@ -174,13 +180,15 @@ mejorar el formulario entre rondas sin depender del equipo tecnico.
 - [ ] **Reversibilidad garantizada:** como la edicion solo ocurre con periodo cerrado y versiona,
       una edicion desviada se corrige **antes de reabrir**: se desactiva la version mala y se
       reactiva la original. Ninguna respuesta llega a registrarse contra una pregunta desviada.
-- [ ] **Chequeo de coherencia con IA:** al guardar una edicion, el backend pide a Claude validar
+- [ ] **Chequeo de coherencia con IA:** al guardar una edicion, el backend pide a Google Gemini
+      (modelo ligero `gemini-2.5-flash-lite`, temperatura fija en 0.0 para que el chequeo sea
+      reproducible) validar
       si el texto nuevo sigue midiendo su categoria (via `ai_service`; solo se envia el texto de
       la pregunta y la definicion de la categoria — ningun dato personal). Si la IA detecta que la
       pregunta se salio de su categoria, el admin ve una **advertencia clara** y debe **confirmar
       explicitamente** para guardar de todos modos (la IA advierte y exige confirmacion; la
       decision final es humana).
-- [ ] Si la IA no esta disponible (sin `ANTHROPIC_API_KEY` o error de la API), la edicion
+- [ ] Si la IA no esta disponible (sin `GEMINI_API_KEY` o error de la API), la edicion
       funciona igual **sin el chequeo** (degradacion elegante, mismo patron que AIFEED-01).
 
 ---
@@ -192,8 +200,10 @@ mejorar el formulario entre rondas sin depender del equipo tecnico.
 
 **Criterios de aceptacion**
 - [ ] Lista de evaluaciones propias con fecha, evaluado y estado.
-- [ ] Detalle de cada evaluacion enviada (no editable).
-- [ ] Las anonimas se muestran al propio autor pero marcadas como anonimas.
+- [ ] Detalle de cada evaluacion enviada **no anonima** (no editable).
+- [ ] Las anonimas **si aparecen** en la lista, marcadas como anonimas, pero **sin detalle
+      consultable**: el contenido no es recuperable ni para el propio autor (ver EVAL-04). La UI debe
+      explicarlo en vez de mostrar un detalle vacio o un error.
 
 ### HIST-02 — Seguimiento historico · `Should` · `3 SP`
 **Como** Admin **quiero** consultar el historico de evaluaciones por lider/tutor y periodo **para** dar seguimiento a su evolucion.
@@ -212,7 +222,7 @@ mejorar el formulario entre rondas sin depender del equipo tecnico.
 
 **Criterios de aceptacion**
 - [ ] Tarjetas resumen: no de evaluaciones, promedio general, participacion.
-- [ ] Ranking/listado de lideres y tutores con su **ICP (0-100)**, o **"Datos insuficientes"** si tiene menos de `MIN_EVALUATIONS` evaluaciones enviadas en el periodo.
+- [ ] Ranking/listado de lideres y tutores con su **ICP (0-100)**, o **"Datos insuficientes"** si tiene menos evaluaciones enviadas en el periodo que el ajuste `required_evaluations` (configurable por el admin en `system_settings`, por defecto 3).
 - [ ] Filtro por **periodo**.
 
 ### DASH-02 — ICP por criterio e indicadores · `Should` · `3 SP`
@@ -221,7 +231,7 @@ mejorar el formulario entre rondas sin depender del equipo tecnico.
 **Criterios de aceptacion**
 - [ ] Promedio por categoria/criterio (componentes del ICP) para una persona seleccionada.
 - [ ] Indicador de participacion (% de Coders que evaluaron) y nivel de **confianza**.
-- [ ] **Datos insuficientes** cuando `n < N_MIN`: no se publica el ICP (se indica explicitamente).
+- [ ] **Datos insuficientes** cuando `n < required_evaluations`: no se publica el ICP (se indica explicitamente).
 
 ---
 
@@ -231,10 +241,10 @@ mejorar el formulario entre rondas sin depender del equipo tecnico.
 **Como** Admin **quiero** un resumen en lenguaje natural del feedback de una persona **para** decidir mas rapido.
 
 **Criterios de aceptacion**
-- [ ] `GET /metrics/ai-summary?evaluatee_id=...&period_id=...` (solo admin) devuelve texto generado por Claude API.
+- [ ] `GET /metrics/ai-summary?evaluatee_id=...&period_id=...` (solo admin) devuelve texto generado por Google Gemini (`gemini-3.5-flash`).
 - [ ] **Regla de privacidad:** el prompt solo incluye agregados anonimizados; nunca `evaluator_id` ni identidades.
 - [ ] El resumen se **cachea** (`ai_feedback_cache`); una segunda consulta no vuelve a llamar al modelo.
-- [ ] Si falta `ANTHROPIC_API_KEY` o la API falla, responde un mensaje claro (no `500` sin contexto); el dashboard funciona sin IA.
+- [ ] Si falta `GEMINI_API_KEY` o la API falla, responde un mensaje claro (no `500` sin contexto); el dashboard funciona sin IA.
 
 ---
 
@@ -247,7 +257,7 @@ mejorar el formulario entre rondas sin depender del equipo tecnico.
 - [ ] Backend FastAPI desplegado (Render/Railway/Fly) y accesible por HTTPS.
 - [ ] Frontend SPA desplegado (Vercel/Netlify/GitHub Pages) y conectado al backend.
 - [ ] MySQL hospedado y poblado con el seed (`database/01_ddl.sql` + `database/02_dml.sql`).
-- [ ] Variables de entorno configuradas en produccion (`DATABASE_URL`, `ANTHROPIC_API_KEY`,
+- [ ] Variables de entorno configuradas en produccion (`DATABASE_URL`, `GEMINI_API_KEY`,
       `FRONTEND_ORIGIN`; no hay `JWT_SECRET` — el proyecto no usa JWT, ver `06-arquitectura.md`).
 - [ ] README con la URL publica, credenciales de usuarios demo y pasos para correr en local.
 

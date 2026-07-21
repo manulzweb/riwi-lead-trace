@@ -3,12 +3,40 @@ from typing import List
 from app.config.database import engine
 from app.config.config import settings
 from app.services.metrics_service import metrics_service
+from app.services.settings_service import settings_service, SYSTEM_SETTINGS_DEFAULTS
 from app.repositories.ai_repository import AIRepository
 from app.exceptions.ai_exceptions import InsufficientDataException, AIServiceUnavailableException
 
 AI_SUMMARY_MODEL = "gemini-3.5-flash"
 AI_LITE_MODEL = "gemini-2.5-flash-lite"
 MIN_EVALUATIONS = 3
+
+# Temperatura FIJA para el chequeo de coherencia texto<->categoria (AI_LITE_MODEL).
+#
+# Por que NO usa `ai_temperature` de system_settings: ese chequeo es una decision
+# binaria (SI/NO) que puede BLOQUEAR al admin al editar el texto de una pregunta
+# (regla de negocio 6). Con temperatura alta la MISMA pregunta se aprobaria o se
+# rechazaria segun la tirada, y el admin no podria reproducir ni sustentar el
+# resultado. Un control de integridad tiene que ser determinista, asi que va en 0.0
+# y no se expone en la UI. El ajuste configurable gobierna solo el RESUMEN, que es
+# texto redactado y donde variar el tono si es una preferencia legitima del admin.
+COHERENCE_TEMPERATURE = 0.0
+
+# AJUSTE SIN FUNCIONALIDAD DETRAS: `ai_auto_summary` (system_settings).
+#
+# La UI de Configuracion Global lo describe como "si esta activo el sistema genera
+# los resumenes automaticamente". Hoy eso NO ocurre y el ajuste no tiene ningun
+# consumidor: se persiste y se lee, nada mas.
+#
+# El unico camino que genera resumenes es GET /metrics/ai-summary -> el admin lo
+# pide explicitamente desde la vista y el resultado queda cacheado en
+# `ai_feedback_cache`. No hay scheduler, ni BackgroundTasks, ni hook de startup,
+# ni disparo al cerrar un periodo en todo el backend.
+#
+# Deliberadamente NO se implementa la generacion automatica aqui: seria una feature
+# nueva (cuando se dispara, para quien, con que coste de API) y esa decision es del
+# equipo, no de un cambio de cableado. Mientras tanto el toggle es cosmetico y la
+# UI promete un comportamiento que no existe.
 
 _CATEGORY_DEFINITIONS = {
     "Comunicación efectiva": "que tan claro y oportuno se comunica el Team Leader con el Coder",
@@ -59,7 +87,7 @@ class AIService:
             comments=comments,
         )
 
-        summary = self._ask_gemini(prompt, AI_SUMMARY_MODEL)
+        summary = self._ask_gemini(prompt, AI_SUMMARY_MODEL, self._get_summary_temperature())
         
         with engine.begin() as conn:
             self.repo.cache_summary(conn, evaluatee_id, period_id, summary, AI_SUMMARY_MODEL)
@@ -87,14 +115,39 @@ Por favor, proporciona un resumen estructurado con un tono constructivo y profes
 2. Areas de oportunidad (qué puede mejorar en su rol de {role})
 3. Recomendaciones de accion (pasos prácticos enfocados a su rol de {role})"""
 
-    def _ask_gemini(self, prompt: str, model_name: str) -> str:
+    def _get_summary_temperature(self) -> float:
+        """Lee `ai_temperature` de system_settings para la generacion de resumenes.
+
+        Se llama FUERA de cualquier `with engine.connect()` abierto: get_settings()
+        hace su propio checkout del pool y anidarlo dentro de otra conexion abierta
+        gastaria dos conexiones por request sin necesidad.
+
+        Si la tabla esta vacia o el valor es invalido se cae al valor de fabrica en
+        vez de reventar: un ajuste corrupto no debe tumbar el resumen.
+        """
+        default = SYSTEM_SETTINGS_DEFAULTS["ai_temperature"]
+        try:
+            value = settings_service.get_settings().get("ai_temperature", default)
+            # La columna es DECIMAL(3,2), asi que llega como Decimal y el SDK espera float.
+            temperature = float(value)
+        except (TypeError, ValueError, KeyError):
+            return default
+        # El CHECK de la BD ya limita 0..1; se reafirma aqui por si el dato entro por otra via.
+        return min(max(temperature, 0.0), 1.0)
+
+    def _ask_gemini(self, prompt: str, model_name: str, temperature: float) -> str:
         if not settings.GEMINI_API_KEY:
             return "[Servicio de IA deshabilitado: GEMINI_API_KEY no configurado en el archivo .env]"
 
         try:
             genai.configure(api_key=settings.GEMINI_API_KEY)
             model = genai.GenerativeModel(model_name)
-            response = model.generate_content(prompt)
+            # Sin GenerationConfig el SDK aplica la temperatura por defecto del modelo
+            # y el ajuste del admin no llegaba nunca a la API.
+            response = model.generate_content(
+                prompt,
+                generation_config=genai.types.GenerationConfig(temperature=temperature),
+            )
             return response.text
         except Exception as e:
             raise AIServiceUnavailableException(f"Error al conectar con el servicio de IA de Gemini: {str(e)}")
@@ -112,7 +165,7 @@ Por favor, proporciona un resumen estructurado con un tono constructivo y profes
         )
 
         try:
-            answer = self._ask_gemini(prompt, AI_LITE_MODEL)
+            answer = self._ask_gemini(prompt, AI_LITE_MODEL, COHERENCE_TEMPERATURE)
             return answer.strip().upper().startswith("S")
         except Exception:
             return True

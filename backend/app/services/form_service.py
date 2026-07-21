@@ -2,7 +2,8 @@ from typing import List, Dict, Any, Optional
 from app.config.database import engine
 from app.schemas.form import FormCreate, FormUpdate
 from app.repositories.form_repository import FormRepository
-from app.constants.form_constants import EVALUABLE_ROLES, WEIGHT_SUM_TOLERANCE
+from app.services.settings_service import settings_service
+from app.constants.form_constants import EVALUABLE_ROLES, resolve_weight_tolerance
 from app.exceptions.form_exceptions import (
     ActivePeriodExistsException, InvalidRoleException, InvalidWeightException, 
     CategoryNotFoundException, FormNotFoundException
@@ -47,18 +48,21 @@ class FormService:
                 return None
             return self._attach_questions(conn, [form_dict])[0]
 
-    def _validate_creation_payload(self, payload: FormCreate):
+    def _validate_creation_payload(self, payload: FormCreate, tolerance: float):
         if payload.target_role not in EVALUABLE_ROLES:
             raise InvalidRoleException(f"target_role debe ser uno de {EVALUABLE_ROLES}.")
 
         scale_weights = [q.weight_percent for q in payload.questions if q.input_type == "scale"]
         if scale_weights:
             total = sum(scale_weights)
-            if abs(total - 100) > WEIGHT_SUM_TOLERANCE:
+            if abs(total - 100) > tolerance:
                 raise InvalidWeightException(f"Los pesos de las preguntas de escala deben sumar 100 (suma actual: {total}).")
 
     def create_form(self, payload: FormCreate) -> Dict[str, Any]:
-        self._validate_creation_payload(payload)
+        # Se lee ANTES de abrir la conexion: settings_service abre la suya y
+        # anidar dos checkouts del pool en la misma peticion lo agota.
+        tolerance = resolve_weight_tolerance(settings_service.get_settings())
+        self._validate_creation_payload(payload, tolerance)
 
         with engine.begin() as conn:
             role_id = self.repo.get_role_id_by_name(conn, payload.target_role)

@@ -4,7 +4,8 @@ from app.schemas.question import QuestionCreate, WeightsUpdate
 from app.services.ai_service import check_question_category_coherence
 from app.services import activity_log_service
 from app.repositories.question_repository import QuestionRepository
-from app.constants.form_constants import WEIGHT_SUM_TOLERANCE
+from app.services.settings_service import settings_service
+from app.constants.form_constants import resolve_weight_tolerance
 from app.exceptions.question_exceptions import (
     ActivePeriodExistsException, QuestionNotFoundException, QuestionAlreadyReplacedException,
     InvalidQuestionTypeException, SemanticsNotCoherentException, FormNotFoundException,
@@ -16,6 +17,16 @@ class QuestionService:
         self.repo = repository or QuestionRepository()
 
     def _assert_no_active_period(self, conn):
+        # NO se condiciona al ajuste `strict_entity_lock` de la configuracion
+        # global, a pesar de que la UI de admin lo describe como si lo hiciera.
+        # La regla ADMIN-02 (CLAUDE.md) es incondicional: las preguntas solo se
+        # editan con el periodo CERRADO. Este metodo protege create/delete/
+        # versionado/reponderacion, es decir toda mutacion del instrumento; si
+        # un flag pudiera apagarlo, se podria cambiar el cuestionario mientras
+        # hay evaluaciones en curso y las respuestas ya enviadas quedarian
+        # atadas a preguntas o pesos distintos de los que se respondieron.
+        # Queda sin cablear a proposito: es un conflicto UI <-> regla 6 que
+        # decide el equipo, no una vuelta que se pueda dar en el codigo.
         if self.repo.has_active_period(conn):
             raise ActivePeriodExistsException("No se pueden editar preguntas mientras haya un periodo activo. Cierra el periodo primero.")
 
@@ -80,7 +91,25 @@ class QuestionService:
                 raise CategoryNotFoundException("Categoria no encontrada.")
 
             next_sort_order = self.repo.get_next_sort_order(conn, payload.form_id)
-            weight = payload.weight_percent if payload.input_type == "scale" else 0
+
+            # ADMIN-02: los pesos de las preguntas de escala ACTIVAS de un form
+            # deben sumar 100. Antes se insertaba `payload.weight_percent` tal
+            # cual, asi que crear una pregunta de escala dejaba la suma en 100+N
+            # en silencio y el ICP quedaba ponderado sobre una base equivocada.
+            #
+            # Se entra SIEMPRE con peso 0 (sumar 0 no altera el total, luego el
+            # invariante no se rompe) y el admin reequilibra despues con
+            # PUT /questions/weights, que es el unico punto donde se valida la
+            # suma. Alternativas descartadas:
+            #   - Exigir que la suma resultante sea 100 aqui: imposible agregar
+            #     una pregunta a un form que ya suma 100 sin bajar antes otra, y
+            #     rompe el flujo del front (crea las preguntas una a una y
+            #     reequilibra al final).
+            #   - Dejar crear y solo reportar el descuadre: no arregla nada,
+            #     la BD queda invalida igual.
+            # Efecto: la pregunta se responde pero pesa 0 en el ICP hasta que se
+            # reponderen los pesos. Es recuperable y no distorsiona a las demas.
+            weight = 0
 
             question_data = {
                 "form_id": payload.form_id,
@@ -95,6 +124,13 @@ class QuestionService:
             return self.repo.get_question_by_id(conn, new_id)
 
     def delete_question(self, question_id: int) -> bool:
+        # LIMITACION CONOCIDA: desactivar una pregunta de escala baja la suma de
+        # pesos activos por debajo de 100 y no se valida aqui. Es deliberado y
+        # coherente con create_question: el front borra, crea y recien al final
+        # reequilibra con PUT /questions/weights, que es el unico punto donde se
+        # exige la suma 100. Rechazar el borrado que descuadra romperia ese
+        # flujo. El descuadre solo persiste si el admin abandona la edicion a
+        # medias -- reportado al equipo, no se arregla por cuenta propia.
         with engine.begin() as conn:
             self._assert_no_active_period(conn)
             
@@ -108,6 +144,10 @@ class QuestionService:
         return True
 
     def update_weights(self, payload: WeightsUpdate) -> List[Dict[str, Any]]:
+        # Se lee ANTES de abrir la conexion: settings_service abre la suya y
+        # anidar dos checkouts del pool en la misma peticion lo agota.
+        tolerance = resolve_weight_tolerance(settings_service.get_settings())
+
         with engine.begin() as conn:
             self._assert_no_active_period(conn)
 
@@ -124,7 +164,7 @@ class QuestionService:
                 )
 
             total = sum(w.weight_percent for w in payload.weights)
-            if abs(total - 100) > WEIGHT_SUM_TOLERANCE:
+            if abs(total - 100) > tolerance:
                 raise InvalidWeightsException(f"Los pesos deben sumar 100 (suma actual: {total}).")
 
             weights_data = [{"weight_percent": w.weight_percent, "id": w.question_id} for w in payload.weights]

@@ -48,7 +48,7 @@ Detalle y justificacion en `CLAUDE.md` y `06-arquitectura.md`.
 ---
 
 ## AIFEED — Resumen de feedback con IA
-**Objetivo:** generar, con **Claude API**, un resumen en lenguaje natural del feedback agregado por persona/periodo para el Admin.
+**Objetivo:** generar, con **Google Gemini** (`gemini-3.5-flash`), un resumen en lenguaje natural del feedback agregado por persona/periodo para el Admin.
 **Valor:** sintesis accionable; diferenciador. Privacidad: solo agregados anonimizados.
 **Historias:** AIFEED-01
 **Done:** el Admin obtiene un resumen IA cacheado; el prompt nunca incluye identidades.

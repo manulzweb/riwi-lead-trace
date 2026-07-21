@@ -175,3 +175,17 @@ INSERT INTO user_roles (user_id, role_id) VALUES
     (45, 1);
 
 
+-- ---------------------------------------------------------------------
+-- Configuracion global: fila unica id = 1 con los valores de fabrica.
+--   settings_repository.py hace SELECT/UPDATE ... WHERE id = 1, asi que sin
+--   esta fila GET /settings devuelve {} y la vista de admin no puede pintar.
+--   Los valores coinciden con los DEFAULT declarados en 01_ddl.sql.
+-- ---------------------------------------------------------------------
+INSERT INTO system_settings (
+    id, ai_temperature, ai_auto_summary,
+    score_risk_threshold, score_excellent_threshold, weight_tolerance,
+    strict_entity_lock, required_evaluations, log_retention_days
+) VALUES
+    (1, 0.70, TRUE, 60.00, 80.00, 0.01, TRUE, 3, 90);
+
+

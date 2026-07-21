@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Literal, Optional
 from datetime import datetime
 
 class EvaluationAnswerCreate(BaseModel):
@@ -10,7 +10,12 @@ class EvaluationAnswerCreate(BaseModel):
 class EvaluationCreate(BaseModel):
     evaluator_id: int = Field(
         title="ID del Evaluador",
-        description="ID del usuario que realiza la evaluación",
+        description=(
+            "ID del usuario que realiza la evaluación. Lo manda el front (sin JWT "
+            "no hay otra forma). Se persiste en `evaluation_submissions`, NO en "
+            "`evaluations`: si `is_anonymous` es True el vínculo con el contenido "
+            "nunca llega a guardarse."
+        ),
         examples=[1]
     )
     evaluatee_id: int = Field(
@@ -33,7 +38,7 @@ class EvaluationCreate(BaseModel):
         title="Es Anónima",
         description="Si es True, el evaluado no sabrá quién lo evaluó"
     )
-    status: str = Field(
+    status: Literal["draft", "submitted"] = Field(
         default="draft",
         title="Estado",
         description="'draft' (borrador) o 'submitted' (enviada definitiva)",
@@ -54,8 +59,15 @@ class EvaluationAnswerOut(BaseModel):
         from_attributes = True
 
 class EvaluationOut(BaseModel):
+    """Una evaluación vista desde el lado del EVALUADO (o del admin).
+
+    `evaluator_id` ya no es una columna de `evaluations`: se resuelve vía
+    `evaluation_submissions` y solo para el admin en evaluaciones no anónimas.
+    Es None si la evaluación fue anónima (el dato no existe en la BD) o si quien
+    consulta no es admin (regla 8).
+    """
     id: int
-    evaluator_id: Optional[int]
+    evaluator_id: Optional[int] = None
     evaluatee_id: int
     form_id: int
     period_id: int
@@ -69,3 +81,27 @@ class EvaluationOut(BaseModel):
 
 class EvaluationDetailOut(EvaluationOut):
     answers: List[EvaluationAnswerOut] = []
+
+class EvaluationHistoryOut(BaseModel):
+    """Una participación vista desde el lado del EVALUADOR (su historial).
+
+    Representa "participé", no "esto respondí". Cuando `is_anonymous` es True el
+    vínculo con el contenido no existe en la BD (`evaluation_id` NULL), así que
+    `evaluation_id`, `form_id`, `status` y `submitted_at` vienen en None y
+    `answers` vacío. No es un fallo de la consulta: es la garantía de anonimato
+    (regla 1). El front debe mostrar la participación sin ofrecer "ver detalle".
+    """
+    participation_id: int = Field(description="ID de la fila en evaluation_submissions")
+    evaluatee_id: int
+    period_id: int
+    is_anonymous: bool = Field(description="True => el contenido no es recuperable")
+    created_at: datetime = Field(description="Cuándo participó el evaluador")
+
+    evaluation_id: Optional[int] = Field(default=None, description="None si fue anónima")
+    form_id: Optional[int] = None
+    status: Optional[str] = None
+    submitted_at: Optional[datetime] = None
+    answers: List[EvaluationAnswerOut] = []
+
+    class Config:
+        from_attributes = True

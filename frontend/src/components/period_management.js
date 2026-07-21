@@ -11,12 +11,12 @@ export const periodManagementComponent = () => `
       <p class="mt-2 text-[var(--text-muted)]">Crea nuevos ciclos de evaluación y controla cuál está activo.</p>
     </div>
     <button id="btn-create-period" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--text-main)] px-6 py-3 text-sm font-bold text-[var(--bg-base)] transition-all duration-300 ease-in-out hover:bg-[var(--text-muted)] hover:shadow-md hover:-translate-y-0.5 cursor-pointer">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      <svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
       Nuevo Periodo
     </button>
   </section>
 
-  <div id="periods-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  <div id="periods-container" aria-live="polite" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     <!-- Generado dinámicamente -->
   </div>
 `;
@@ -38,9 +38,11 @@ export const setupPeriodManagement = (onPeriodStateChanged) => {
       
       pContainer.innerHTML = periods.map(p => {
         const isActive = p.is_active;
-        const statusBadge = isActive 
-          ? `<span class="bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 px-3 py-1 rounded-full text-xs font-bold border border-emerald-200 dark:border-emerald-800">Activo</span>`
-          : `<span class="bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 px-3 py-1 rounded-full text-xs font-bold border border-gray-200 dark:border-gray-700">Inactivo</span>`;
+        // Tokens semanticos de global.css: sin variantes `dark:`, el token ya
+        // cambia solo con el tema.
+        const statusBadge = isActive
+          ? `<span class="bg-[var(--success-bg)] text-[var(--success-text)] px-3 py-1 rounded-full text-xs font-bold border border-[var(--success-text)]/30">Activo</span>`
+          : `<span class="bg-[var(--bg-base)] text-[var(--text-muted)] px-3 py-1 rounded-full text-xs font-bold border border-[var(--border-main)]">Inactivo</span>`;
           
         return `
           <div class="flex flex-col justify-between bg-[var(--bg-panel)] border border-[var(--border-main)] p-6 rounded-3xl shadow-sm transition-all hover:shadow-md hover:border-[var(--brand-hover)]">
@@ -53,8 +55,8 @@ export const setupPeriodManagement = (onPeriodStateChanged) => {
               <p class="text-sm text-[var(--text-muted)] font-medium mb-4"><span class="opacity-75">Fin:</span> ${p.ends_at}</p>
             </div>
             <button class="btn-toggle-period w-full py-2.5 rounded-xl text-sm font-bold transition-all ${
-              isActive 
-                ? 'bg-rose-100 text-rose-600 hover:bg-rose-200 dark:bg-rose-800/30 dark:text-rose-500 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800'
+              isActive
+                ? 'bg-[var(--danger-bg)] text-[var(--danger-text)] hover:opacity-80 transition-opacity border border-[var(--danger-border)]'
                 : 'bg-[var(--brand-bg)] text-[var(--brand-text)] hover:bg-[var(--brand-hover)]'
             }" data-id="${p.id}" data-active="${isActive}">
               ${isActive ? 'Desactivar Periodo' : 'Activar Periodo'}
@@ -86,7 +88,13 @@ export const setupPeriodManagement = (onPeriodStateChanged) => {
       
     } catch (e) {
       console.error(e);
-      pContainer.innerHTML = `<div class="col-span-full p-4 text-rose-500 text-center">Error al cargar periodos.</div>`;
+      pContainer.innerHTML = `
+        <div class="col-span-full p-4 text-center">
+          <p class="text-[var(--danger-text)] text-sm">Error al cargar periodos.</p>
+          <button id="btn-retry-periods-mgmt" class="mt-4 rounded-xl bg-[var(--brand-bg)] px-5 py-2.5 text-sm font-bold text-[var(--brand-text)] transition-all hover:bg-[var(--brand-hover)] cursor-pointer">Reintentar</button>
+        </div>
+      `;
+      document.getElementById("btn-retry-periods-mgmt")?.addEventListener("click", renderPeriodsList);
     }
   };
 
@@ -113,8 +121,8 @@ export const setupPeriodManagement = (onPeriodStateChanged) => {
         customClass: {
           popup: 'rounded-[2rem] bg-[var(--bg-panel)] border border-[var(--border-main)]',
           title: 'text-[var(--text-main)] font-black',
-          confirmButton: 'rounded-xl bg-[var(--brand-bg)] px-6 py-2.5 font-bold text-white',
-          cancelButton: 'rounded-xl bg-gray-200 text-gray-800 px-6 py-2.5 font-bold dark:bg-gray-700 dark:text-gray-200'
+          confirmButton: 'rounded-xl bg-[var(--brand-bg)] px-6 py-2.5 font-bold text-[var(--brand-text)]',
+          cancelButton: 'rounded-xl bg-[var(--bg-base)] text-[var(--text-main)] px-6 py-2.5 font-bold border border-[var(--border-main)]'
         },
         preConfirm: () => {
           const name = document.getElementById('swal-p-name').value;
