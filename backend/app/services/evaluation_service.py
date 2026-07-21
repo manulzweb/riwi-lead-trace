@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 from sqlalchemy.exc import IntegrityError
 from app.config.database import engine
-from app.schemas.detalles_evaluacion import EvaluationCreate
+from app.schemas.evaluation_details import EvaluationCreate
 from app.repositories.evaluation_repository import EvaluationRepository
 from app.constants.evaluation_constants import EVALUATION_STATUS_SUBMITTED, ROLE_TEAM_LEADER, ROLE_TUTOR
 from app.exceptions.evaluation_exceptions import (
@@ -106,7 +106,7 @@ class EvaluationService:
                 }
                 for ans in eval_data.answers
             ]
-            self.repo.insert_detalles_evaluacion(conn, answers_data)
+            self.repo.insert_evaluation_details(conn, answers_data)
 
             created = self._get_evaluation_detail(conn, evaluation_id)
             if created is not None:

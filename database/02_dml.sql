@@ -17,8 +17,12 @@ INSERT INTO clans (cohort_id, number, name) VALUES
     (1, 16, 'Malecón'),
     (1, 17, 'Cortissoz');
 
-INSERT INTO periods (name, starts_at, ends_at, is_active) VALUES
-    ('2026-T1', '2026-01-15', '2026-04-15', TRUE);
+INSERT INTO periods (id, name, starts_at, ends_at, is_active) VALUES
+    (1, 'Python', '2026-02-15', '2026-03-15', FALSE),
+    (2, 'HTML & CSS', '2026-03-15', '2026-04-15', FALSE),
+    (3, 'JavaScript', '2026-04-15', '2026-06-15', FALSE),
+    (4, 'Bases de Datos', '2026-06-15', '2026-07-15', FALSE),
+    (5, 'API TALKS', '2026-07-15', '2026-10-14', TRUE);
 
 -- Usuarios de ejemplo. password_hash es un hash bcrypt real para la contraseña "Riwi2026!"
 -- clan_id: NULL para team_leader/admin; asignado para coder/tutor
@@ -64,9 +68,9 @@ INSERT INTO categories (name) VALUES
     ('General');
 
 -- Plantillas: una para Team Leader, una para Tutor
-INSERT INTO forms (title, target_role_id) VALUES
-    ('Evaluación de Team Leader', 2),
-    ('Evaluación de Tutor', 3);
+INSERT INTO forms (id, title, target_role_id) VALUES
+    (1, 'Evaluación de Team Leader', 2),
+    (2, 'Evaluación de Tutor', 3);
 
 -- Preguntas de la plantilla de Team Leader (id=1)
 -- Categorías del ICP para TL, basadas en el MCA-21 (competencias de mentoría).
@@ -103,40 +107,40 @@ INSERT INTO questions (form_id, text, category_id, input_type, sort_order, weigh
 
 -- Usuarios reales exportados de Esthercita
 INSERT INTO users (id, full_name, email, password_hash, clan_id) VALUES
-    (12, 'Juan José Álvarez Manjarrez', 'jlvarezmanjarrez12@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (13, 'Javier Alexander Ávila Rodríguez', 'jvilarodrguez13@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (14, 'Kerin Enrique Barranco Martínez', 'kbarrancomartnez14@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (15, 'Marlon José Castillo De La Hoz', 'mlahoz15@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (16, 'Yuranys Paola Castro Ruiz', 'ycastroruiz16@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (17, 'Carlos Eduardo Charris Yepes', 'ccharrisyepes17@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (18, 'Jorge Luis Corrales Barraza', 'jcorralesbarraza18@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (19, 'Andrés Felipe Cortés Zambrano', 'acortszambrano19@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (20, 'Cristian David Del Castillo Ruiz', 'ccastilloruiz20@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (21, 'José del Carmen Díaz Díaz', 'jdazdaz21@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (22, 'Milton Daniel Escamilla Carreño', 'mescamillacarreo22@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (23, 'Thomas Eaton García Navas', 'tgarcanavas23@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (24, 'Jorel Yessith Hernandez Muñoz', 'jhernandezmuoz24@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (25, 'Juan David Hernández Viana', 'jhernndezviana25@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (26, 'Brandon Styl Herrera', 'bstylherrera26@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (27, 'Jair Daniel Lastre Arrieta', 'jlastrearrieta27@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (28, 'Maria Jose Leal Brochero', 'mlealbrochero28@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (29, 'Jhon Michael Lopera Velasquez', 'jloperavelasquez29@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (30, 'Juan José Maldonado Navarro', 'jmaldonadonavarro30@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (31, 'Juan Diego Marchena Comas', 'jmarchenacomas31@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (32, 'Iván David Mejía Mendez', 'imejamendez32@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (33, 'Sebastian Mendoza Brieva', 'smendozabrieva33@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (34, 'Leonela Isabel Miranda López', 'lmirandalpez34@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (35, 'Ibrahim Monroy', 'iibrahimmonroy35@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (36, 'Dilant Antonio Murillo', 'dantoniomurillo36@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (37, 'Yesid Palacio', 'yyesidpalacio37@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (38, 'Lians Dylan Paternina Lopez', 'lpaterninalopez38@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (39, 'Manuel David Rincón Clavijo', 'mrincnclavijo39@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (40, 'Elian David Rivera Guaca', 'eriveraguaca40@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (41, 'Samuel Roncancio Bertel', 'sroncanciobertel41@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (42, 'Axel David Ruiz Polo', 'aruizpolo42@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (43, 'Manuel Andrés Vásquez Mendoza', 'mvsquezmendoza43@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (44, 'Cesar Julio Vega Morales', 'cvegamorales44@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (45, 'Daniela Zapata Jiménez', 'dzapatajimnez45@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1);
+    (12, 'Juan José Álvarez Manjarrez', 'jlvarezmanjarrez12@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (13, 'Javier Alexander Ávila Rodríguez', 'jvilarodrguez13@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (14, 'Kerin Enrique Barranco Martínez', 'kbarrancomartnez14@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (15, 'Marlon José Castillo De La Hoz', 'mlahoz15@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (16, 'Yuranys Paola Castro Ruiz', 'ycastroruiz16@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (17, 'Carlos Eduardo Charris Yepes', 'ccharrisyepes17@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (18, 'Jorge Luis Corrales Barraza', 'jcorralesbarraza18@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (19, 'Andrés Felipe Cortés Zambrano', 'acortszambrano19@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (20, 'Cristian David Del Castillo Ruiz', 'ccastilloruiz20@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (21, 'José del Carmen Díaz Díaz', 'jdazdaz21@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (22, 'Milton Daniel Escamilla Carreño', 'mescamillacarreo22@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (23, 'Thomas Eaton García Navas', 'tgarcanavas23@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (24, 'Jorel Yessith Hernandez Muñoz', 'jhernandezmuoz24@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (25, 'Juan David Hernández Viana', 'jhernndezviana25@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (26, 'Brandon Styl Herrera', 'bstylherrera26@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (27, 'Jair Daniel Lastre Arrieta', 'jlastrearrieta27@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (28, 'Maria Jose Leal Brochero', 'mlealbrochero28@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (29, 'Jhon Michael Lopera Velasquez', 'jloperavelasquez29@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (30, 'Juan José Maldonado Navarro', 'jmaldonadonavarro30@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (31, 'Juan Diego Marchena Comas', 'jmarchenacomas31@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (32, 'Iván David Mejía Mendez', 'imejamendez32@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (33, 'Sebastian Mendoza Brieva', 'smendozabrieva33@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (34, 'Leonela Isabel Miranda López', 'lmirandalpez34@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (35, 'Ibrahim Monroy', 'iibrahimmonroy35@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (36, 'Dilant Antonio Murillo', 'dantoniomurillo36@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (37, 'Yesid Palacio', 'yyesidpalacio37@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (38, 'Lians Dylan Paternina Lopez', 'lpaterninalopez38@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (39, 'Manuel David Rincón Clavijo', 'mrincnclavijo39@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (40, 'Elian David Rivera Guaca', 'eriveraguaca40@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (41, 'Samuel Roncancio Bertel', 'sroncanciobertel41@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (42, 'Axel David Ruiz Polo', 'aruizpolo42@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (43, 'Manuel Andrés Vásquez Mendoza', 'mvsquezmendoza43@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (44, 'Cesar Julio Vega Morales', 'cjulio@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (45, 'Daniela Zapata Jiménez', 'dzapata@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1);
 
 INSERT INTO user_roles (user_id, role_id) VALUES
     (12, 1),

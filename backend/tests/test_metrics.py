@@ -49,7 +49,7 @@ def test_score_entre_0_y_100_con_evaluaciones_suficientes(temp_period):
             "evaluation_id": result.lastrowid
         })
         conn.execute(text("""
-            INSERT INTO detalles_evaluacion (evaluation_id, question_id, score, comment)
+            INSERT INTO evaluation_details (evaluation_id, question_id, score, comment)
             VALUES (:evaluation_id, :question_id, 4, NULL)
         """), {"evaluation_id": result.lastrowid, "question_id": SCALE_QUESTION_ID})
     conn.commit()

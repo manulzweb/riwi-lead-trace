@@ -304,45 +304,22 @@ mysql -u root -p riwi_lead_trace < database/04_views.sql            # REQUERIDO:
 #    sigue con la vista vieja, ese ajuste solo surte efecto hacia arriba. Ver el bloque de
 #    estado de `system_settings` mas abajo.
 
-# --- Migracion a evaluation_submissions (anonimato estructural, reglas 1 y 2) ---
+# --- NO hay script de migracion ---
 #
-# BD NUEVA DESDE CERO: no ejecutes la migracion. `01_ddl.sql` ya crea `evaluation_submissions`
-#   y ya NO crea `evaluations.evaluator_id` ni el indice `uq_eval_once`. Basta el orden 01→04.
+# El equipo retiro `05_migration_submissions.sql`. La unica ruta soportada es RECREAR la BD
+# desde cero con el orden 01 → 02 → 03 (opcional) → 04. `01_ddl.sql` arranca con
+# `DROP TABLE IF EXISTS` de todas las tablas, asi que es reejecutable tal cual.
 #
-# BD QUE YA TIENE DATOS (Railway): HAZ BACKUP PRIMERO — el script borra una columna con datos.
-mysqldump -h <host> -P <port> -u <user> -p riwi_lead_trace > backup_pre_submissions.sql
-mysql -u root -p riwi_lead_trace < database/05_migration_submissions.sql
-mysql -u root -p riwi_lead_trace < database/04_views.sql   # OBLIGATORIO despues de migrar
+# Para un entorno con datos que valga la pena conservar (Railway): HAZ BACKUP ANTES,
+# porque recrear borra todo.
+mysqldump -h <host> -P <port> -u <user> -p riwi_lead_trace > backup.sql
 ```
 
-**Sobre `05_migration_submissions.sql`** (crea la tabla → diagnostica → rellena → recien al final
-destruye; no reordenes ni ejecutes trozos sueltos):
-- **Es idempotente:** se puede re-ejecutar entero sin romper nada (cada paso comprueba si ya se
-  aplico, colgando de `@has_col`).
-- **Tiene freno de mano:** el bug viejo pudo dejar duplicados no anonimos; si los encuentra, el
-  script **aborta a proposito** referenciando una tabla inexistente. Si ves
-  `Table '...ABORTADO_hay_duplicados...' doesn't exist`, **es intencional** — resuelve los
-  duplicados que lista el paso 2 y vuelve a empezar.
-- **Solo migra las no anonimas** (`WHERE evaluator_id IS NOT NULL`), enlazandolas con
-  `evaluation_id = e.id`. El `INSERT IGNORE` esta ahi por idempotencia, no para tolerar duplicados.
-- **Hay que re-ejecutar `04_views.sql` si o si:** `vw_evaluations_summary` leia
-  `evaluations.evaluator_id`; en MySQL una vista invalida no falla al borrar la columna, **falla al
-  consultarla**.
-
-> ⚠️ **Perdida de datos irreversible en la migracion (no es un defecto del diseno nuevo).**
-> Las evaluaciones anonimas que ya existen en Railway se guardaron con `evaluations.evaluator_id =
-> NULL`: **su evaluador se perdio para siempre y no hay forma de rellenarlo**, porque ese dato nunca
-> se almaceno. La migracion solo puede reconstruir filas de `evaluation_submissions` para las
-> evaluaciones **no anonimas** (ahi si hay `evaluator_id` que copiar).
->
-> **Consecuencia practica:** un coder que habia evaluado a alguien de forma anonima **podra volver a
-> evaluar a esa persona una vez** en ese mismo periodo, porque no queda rastro de su participacion
-> anterior que `uq_submission_once` pueda bloquear. Es un **efecto unico de la migracion sobre datos
-> historicos**, no una debilidad del modelo nuevo: a partir de la migracion, toda evaluacion
-> —anonima o no— crea su fila en `evaluation_submissions` y el constraint aplica sin excepciones.
->
-> No intentes "recuperar" esos evaluadores cruzando timestamps, clanes o cualquier otra heuristica:
-> reconstruir la identidad de un evaluador anonimo viola la regla 1, aunque sea con datos viejos.
+**Por que se elimino la migracion:** el rename de `detalles_evaluacion` → `evaluation_details` la
+dejaba desactualizada, y mantener una ruta de migracion que nadie ejercita es peor que no tenerla —
+da una falsa sensacion de que existe un camino de upgrade probado. Si algun dia hace falta migrar
+en vez de recrear, se escribe una nueva contra el esquema vigente. **No la reintroduzcas por tu
+cuenta.**
 
 ```bash
 # Backend (FastAPI)
