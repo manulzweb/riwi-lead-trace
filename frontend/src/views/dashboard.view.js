@@ -121,13 +121,13 @@ const renderDashboardContent = async (content, user, name, role) => {
           <div class="w-full sm:w-48">
             <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="dashboard-period-filter-btn">Periodo</label>
             ${dropdownComponent('dashboard-period-filter', currentPeriods.map(p => ({
-              value: String(p.id), 
-              label: p.name + (p.is_active ? ' (Activo)' : '')
-            })), selectedPeriodId)}
+    value: String(p.id),
+    label: p.name + (p.is_active ? ' (Activo)' : '')
+  })), selectedPeriodId)}
           </div>
           <div class="w-full sm:w-48">
             <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="dashboard-cohort-filter-btn">Cohorte</label>
-            ${dropdownComponent('dashboard-cohort-filter', [{value: 'all', label: 'Todas'}], 'all')}
+            ${dropdownComponent('dashboard-cohort-filter', [{ value: 'all', label: 'Todas' }], 'all')}
           </div>
         </div>
       ` : ''}
@@ -142,7 +142,7 @@ const renderDashboardContent = async (content, user, name, role) => {
     const summary = selectedPeriodId ? await metricsService.getSummary(selectedPeriodId) : { kpis: { total_evaluations: 0, average_score: 0, participation_rate: 0 }, evaluatees: [] };
     const kpis = summary.kpis || { total_evaluations: 0, average_score: 0, participation_rate: 0 };
     currentKpis = kpis;
-    
+
     // Alertas Activas logic
     let alertMsg = "Ninguna por el momento";
     let alertIconColor = "text-green-500";
@@ -159,36 +159,36 @@ const renderDashboardContent = async (content, user, name, role) => {
         }
       }
     }
-    
+
     html += `
-      ${StatsCard({ 
-        title: "Alertas Activas", 
-        value: alertIconColor === "text-green-500" ? "Todo OK" : "Atención", 
-        icon: `<svg aria-hidden="true" focusable="false" class="w-6 h-6 ${alertIconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`, 
-        description: alertMsg 
-      })}
+      ${StatsCard({
+      title: "Alertas Activas",
+      value: alertIconColor === "text-green-500" ? "Todo OK" : "Atención",
+      icon: `<svg aria-hidden="true" focusable="false" class="w-6 h-6 ${alertIconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
+      description: alertMsg
+    })}
       ${StatsCard({ title: "ICP Global Promedio", value: kpis.average_score + "/100", icon: icons.star, description: "Desempeño de la plataforma" })}
       
       <div class="col-span-1 md:col-span-2 lg:col-span-1">
         ${Card({
-          className: "h-full flex flex-col p-6",
-          children: `
+      className: "h-full flex flex-col p-6",
+      children: `
             <h3 class="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider text-left w-full mb-4">Tasa de Participación</h3>
             <div class="flex-1 flex flex-col items-center justify-center w-full">
               ${renderDoughnutContainer(kpis.participation_rate)}
             </div>
           `
-        })}
+    })}
       </div>
     `;
 
     // Extract unique clans
     const validEvaluatees = summary.evaluatees?.filter(e => e.average_score !== null) || [];
     const clans = [...new Set(validEvaluatees.map(e => e.clan_name).filter(Boolean))].sort();
-    
+
     // Se guarda para que el filtro por clan no vuelva a pedir la API.
     dashboardEvaluatees = validEvaluatees;
-    
+
     const renderTable = (title, data) => `
       <div class="bg-[var(--bg-panel)] rounded-3xl border border-[var(--border-main)] shadow-sm overflow-hidden flex-1">
         <div class="p-4 border-b border-[var(--border-main)] bg-[var(--bg-base)]">
@@ -204,23 +204,23 @@ const renderDashboardContent = async (content, user, name, role) => {
           </thead>
           <tbody class="divide-y divide-[var(--border-main)]">
             ${data.length > 0 ? data.map((e, index) => {
-              let medalIcon = "";
-              let rowClass = "hover:bg-[var(--bg-base)] transition-colors";
-              
-              if (index === 0) {
-                medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"><path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/><path d="M11 12 5.12 2.2"/><path d="m13 12 5.88-9.8"/><path d="M8 7h8"/><circle cx="12" cy="17" r="5"/><path d="M12 14.7v4.6"/></svg>';
-                //rowClass = "bg-amber-500/10 hover:bg-amber-400/20 transition-colors";
-              } else if (index === 1) {
-                medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B8B8B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"> <path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/> <path d="M11 12 5.12 2.2"/> <path d="m13 12 5.88-9.8"/> <path d="M8 7h8"/> <circle cx="12" cy="17" r="5"/> <path d="M10.4 15.6c.4-.6 1-.9 1.7-.9.8 0 1.4.4 1.4 1 0 .6-.3.9-1.1 1.5l-1.8 1.3H14"/> </svg>';
-                //rowClass = "bg-gray-500/10 hover:bg-gray-400/20 transition-colors";
-              } else if (index === 2) {
-                medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B87333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"> <path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/> <path d="M11 12 5.12 2.2"/> <path d="m13 12 5.88-9.8"/> <path d="M8 7h8"/> <circle cx="12" cy="17" r="5"/> <path d="M10.5 15h2c.6 0 1 .3 1 .8s-.4.8-1 .8"/> <path d="M12.5 16.6c.8 0 1.2.4 1.2 1s-.5 1-1.4 1c-.6 0-1.1-.2-1.5-.6"/> </svg>';
-                //rowClass = "bg-orange-500/10 hover:bg-orange-400/20 transition-colors";
-              } else {
-                medalIcon = `<span class="font-bold text-[var(--text-muted)]">${index + 1}</span>`;
-              }
-              
-              return `
+      let medalIcon = "";
+      let rowClass = "hover:bg-[var(--bg-base)] transition-colors";
+
+      if (index === 0) {
+        medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"><path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/><path d="M11 12 5.12 2.2"/><path d="m13 12 5.88-9.8"/><path d="M8 7h8"/><circle cx="12" cy="17" r="5"/><path d="M12 14.7v4.6"/></svg>';
+        //rowClass = "bg-amber-500/10 hover:bg-amber-400/20 transition-colors";
+      } else if (index === 1) {
+        medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B8B8B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"> <path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/> <path d="M11 12 5.12 2.2"/> <path d="m13 12 5.88-9.8"/> <path d="M8 7h8"/> <circle cx="12" cy="17" r="5"/> <path d="M10.4 15.6c.4-.6 1-.9 1.7-.9.8 0 1.4.4 1.4 1 0 .6-.3.9-1.1 1.5l-1.8 1.3H14"/> </svg>';
+        //rowClass = "bg-gray-500/10 hover:bg-gray-400/20 transition-colors";
+      } else if (index === 2) {
+        medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B87333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"> <path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/> <path d="M11 12 5.12 2.2"/> <path d="m13 12 5.88-9.8"/> <path d="M8 7h8"/> <circle cx="12" cy="17" r="5"/> <path d="M10.5 15h2c.6 0 1 .3 1 .8s-.4.8-1 .8"/> <path d="M12.5 16.6c.8 0 1.2.4 1.2 1s-.5 1-1.4 1c-.6 0-1.1-.2-1.5-.6"/> </svg>';
+        //rowClass = "bg-orange-500/10 hover:bg-orange-400/20 transition-colors";
+      } else {
+        medalIcon = `<span class="font-bold text-[var(--text-muted)]">${index + 1}</span>`;
+      }
+
+      return `
                 <tr class="${rowClass}">
                   <td class="px-4 py-3 text-center">${medalIcon}</td>
                   <td class="px-4 py-3 font-bold text-[var(--text-main)] truncate">
@@ -230,7 +230,7 @@ const renderDashboardContent = async (content, user, name, role) => {
                   <td class="px-4 py-3 text-right font-black text-[var(--text-main)]">${e.average_score}</td>
                 </tr>
               `;
-            }).join('') : `
+    }).join('') : `
               <tr>
                 <td colspan="3" class="px-4 py-6 text-center text-[var(--text-muted)]">No hay suficientes datos.</td>
               </tr>
@@ -249,7 +249,7 @@ const renderDashboardContent = async (content, user, name, role) => {
           <h2 class="text-xl font-bold text-[var(--text-main)]">Top Rendimiento (ICP)</h2>
           <div class="w-full sm:w-64 z-10 relative">
             <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="dashboard-clan-filter-btn">Filtrar por Clan</label>
-            ${dropdownComponent('dashboard-clan-filter', [{value: 'all', label: 'Todos los clanes'}, ...clans.map(c => ({value: c, label: c}))], 'all')}
+            ${dropdownComponent('dashboard-clan-filter', [{ value: 'all', label: 'Todos los clanes' }, ...clans.map(c => ({ value: c, label: c }))], 'all')}
           </div>
         </div>
         <div class="flex flex-col md:flex-row gap-6" id="dashboard-top-tables">
@@ -262,12 +262,12 @@ const renderDashboardContent = async (content, user, name, role) => {
     // Leader / Tutor View
     const summary = selectedPeriodId ? await metricsService.getSummary(selectedPeriodId) : { evaluatees: [] };
     const myStats = summary.evaluatees?.find(e => e.id === user.id) || { n_evals: 0, average_score: 0, status: "Sin datos" };
-    
+
     html += `
       ${StatsCard({ title: "Evaluaciones Recibidas", value: myStats.n_evals, icon: icons.users, description: "En el periodo actual" })}
       ${StatsCard({ title: "Puntaje Promedio ICP", value: (myStats.average_score ?? 0) + "/100", icon: icons.star, description: "Estado: " + myStats.status })}
     `;
-    
+
     if (role === "tutor") {
       const myEvals = await evaluationService.getByEvaluator(user.id, 100);
       const pending = myEvals.filter(isPendingParticipation).length;
@@ -279,25 +279,25 @@ const renderDashboardContent = async (content, user, name, role) => {
     const completed = myEvals.filter(e => !isPendingParticipation(e)).length;
     const drafts = myEvals.filter(isPendingParticipation);
     const pending = drafts.length;
-    
+
     window.__coderStats = { completed, pending };
-    
+
     html += `
       ${StatsCard({ title: "Completadas", value: completed, icon: icons.check, description: "Evaluaciones enviadas" })}
       ${StatsCard({ title: "Borradores", value: pending, icon: icons.clock, description: "Evaluaciones en curso" })}
       
       ${Card({
-        className: "h-full flex flex-col p-6 lg:row-span-2 shadow-sm border border-[var(--border-main)]",
-        children: `
+      className: "h-full flex flex-col p-6 lg:row-span-2 shadow-sm border border-[var(--border-main)]",
+      children: `
           <h3 class="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider text-left w-full mb-4">Progreso Actual</h3>
           <div class="flex-1 flex flex-col items-center justify-center w-full min-h-[200px]">
-            ${completed + pending === 0 
-              ? `<div class="text-center text-[var(--text-muted)] italic my-auto">Aún no hay datos para graficar.</div>`
-              : `<div class="relative w-48 h-48 my-4"><canvas id="coder-participation-chart"></canvas></div>`
-            }
+            ${completed + pending === 0
+          ? `<div class="text-center text-[var(--text-muted)] italic my-auto">Aún no hay datos para graficar.</div>`
+          : `<div class="relative w-48 h-48 my-4"><canvas id="coder-participation-chart"></canvas></div>`
+        }
           </div>
         `
-      })}
+    })}
       
       <div class="col-span-1 md:col-span-2 lg:col-span-2 mt-4 lg:mt-0">
         <div class="bg-[var(--bg-panel)] rounded-3xl border border-[var(--border-main)] p-8 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6 h-full">
@@ -327,22 +327,22 @@ const renderDashboardContent = async (content, user, name, role) => {
       </div>
     `;
   }
-  
+
   html += `</div>`;
   content.innerHTML = html;
-  
+
   if (role === "admin") {
     const ctx = document.getElementById('participation-chart');
     if (ctx && currentKpis) {
       const rootStyle = getComputedStyle(document.documentElement);
       const brandColor = rootStyle.getPropertyValue('--brand-bg').trim() || '#4f46e5';
       const emptyColor = rootStyle.getPropertyValue('--border-main').trim() || '#e5e7eb';
-      
+
       const total = currentKpis.total_evaluations;
       const rate = currentKpis.participation_rate;
       const possible = rate > 0 ? Math.round((total / rate) * 100) : 0;
       const pending = possible - total;
-      
+
       new Chart(ctx, {
         type: 'doughnut',
         data: {
@@ -361,7 +361,7 @@ const renderDashboardContent = async (content, user, name, role) => {
             legend: { display: false },
             tooltip: {
               callbacks: {
-                label: function(context) {
+                label: function (context) {
                   let label = context.label || '';
                   if (label) {
                     label += ': ';
@@ -389,10 +389,10 @@ const renderDashboardContent = async (content, user, name, role) => {
     setupDropdown('dashboard-clan-filter', (val) => {
       const evaluatees = dashboardEvaluatees;
       const filtered = val === 'all' ? evaluatees : evaluatees.filter(e => e.clan_name === val);
-      
+
       const topTutors = filtered.filter(e => e.role === "tutor").sort((a, b) => b.average_score - a.average_score).slice(0, 3);
       const topLeaders = filtered.filter(e => e.role === "team_leader").sort((a, b) => b.average_score - a.average_score).slice(0, 3);
-      
+
       // We must extract renderTable again locally or just re-render tables
       // For simplicity, we just rebuild the HTML for tables here.
       const buildTable = (title, data) => `
@@ -410,21 +410,21 @@ const renderDashboardContent = async (content, user, name, role) => {
             </thead>
             <tbody class="divide-y divide-[var(--border-main)]">
               ${data.length > 0 ? data.map((e, index) => {
-                let medalIcon = "";
-                let rowClass = "hover:bg-[var(--bg-base)] transition-colors";
-                if (index === 0) {
-                  medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"><path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/><path d="M11 12 5.12 2.2"/><path d="m13 12 5.88-9.8"/><path d="M8 7h8"/><circle cx="12" cy="17" r="5"/><path d="M12 14.7v4.6"/></svg>';
-                  //rowClass = "bg-amber-500/10 hover:bg-amber-400/20 transition-colors";
-                } else if (index === 1) {
-                  medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B8B8B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"> <path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/> <path d="M11 12 5.12 2.2"/> <path d="m13 12 5.88-9.8"/> <path d="M8 7h8"/> <circle cx="12" cy="17" r="5"/> <path d="M10.4 15.6c.4-.6 1-.9 1.7-.9.8 0 1.4.4 1.4 1 0 .6-.3.9-1.1 1.5l-1.8 1.3H14"/> </svg>';
-                  //rowClass = "bg-gray-500/10 hover:bg-gray-400/20 transition-colors";
-                } else if (index === 2) {
-                  medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B87333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"> <path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/> <path d="M11 12 5.12 2.2"/> <path d="m13 12 5.88-9.8"/> <path d="M8 7h8"/> <circle cx="12" cy="17" r="5"/> <path d="M10.5 15h2c.6 0 1 .3 1 .8s-.4.8-1 .8"/> <path d="M12.5 16.6c.8 0 1.2.4 1.2 1s-.5 1-1.4 1c-.6 0-1.1-.2-1.5-.6"/> </svg>';
-                  //rowClass = "bg-orange-500/10 hover:bg-orange-400/20 transition-colors";
-                } else {
-                  medalIcon = `<span class="font-bold text-[var(--text-muted)]">${index + 1}</span>`;
-                }
-                return `
+        let medalIcon = "";
+        let rowClass = "hover:bg-[var(--bg-base)] transition-colors";
+        if (index === 0) {
+          medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"><path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/><path d="M11 12 5.12 2.2"/><path d="m13 12 5.88-9.8"/><path d="M8 7h8"/><circle cx="12" cy="17" r="5"/><path d="M12 14.7v4.6"/></svg>';
+          //rowClass = "bg-amber-500/10 hover:bg-amber-400/20 transition-colors";
+        } else if (index === 1) {
+          medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B8B8B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"> <path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/> <path d="M11 12 5.12 2.2"/> <path d="m13 12 5.88-9.8"/> <path d="M8 7h8"/> <circle cx="12" cy="17" r="5"/> <path d="M10.4 15.6c.4-.6 1-.9 1.7-.9.8 0 1.4.4 1.4 1 0 .6-.3.9-1.1 1.5l-1.8 1.3H14"/> </svg>';
+          //rowClass = "bg-gray-500/10 hover:bg-gray-400/20 transition-colors";
+        } else if (index === 2) {
+          medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B87333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"> <path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/> <path d="M11 12 5.12 2.2"/> <path d="m13 12 5.88-9.8"/> <path d="M8 7h8"/> <circle cx="12" cy="17" r="5"/> <path d="M10.5 15h2c.6 0 1 .3 1 .8s-.4.8-1 .8"/> <path d="M12.5 16.6c.8 0 1.2.4 1.2 1s-.5 1-1.4 1c-.6 0-1.1-.2-1.5-.6"/> </svg>';
+          //rowClass = "bg-orange-500/10 hover:bg-orange-400/20 transition-colors";
+        } else {
+          medalIcon = `<span class="font-bold text-[var(--text-muted)]">${index + 1}</span>`;
+        }
+        return `
                   <tr class="${rowClass}">
                     <td class="px-4 py-3 text-center">${medalIcon}</td>
                     <td class="px-4 py-3 font-bold text-[var(--text-main)] truncate">
@@ -434,7 +434,7 @@ const renderDashboardContent = async (content, user, name, role) => {
                     <td class="px-4 py-3 text-right font-black text-[var(--text-main)]">${e.average_score}</td>
                   </tr>
                 `;
-              }).join('') : `
+      }).join('') : `
                 <tr>
                   <td colspan="3" class="px-4 py-6 text-center text-[var(--text-muted)]">No hay suficientes datos.</td>
                 </tr>
@@ -472,10 +472,10 @@ const renderDashboardContent = async (content, user, name, role) => {
       const rootStyle = getComputedStyle(document.documentElement);
       const brandColor = rootStyle.getPropertyValue('--brand-bg').trim() || '#4f46e5';
       const draftColor = rootStyle.getPropertyValue('--accent-amber').trim() || '#f59e0b';
-      
+
       const { completed, pending } = window.__coderStats;
       const total = completed + pending;
-      
+
       import('chart.js/auto').then(({ default: Chart }) => {
         new Chart(ctx, {
           type: 'doughnut',
@@ -499,7 +499,7 @@ const renderDashboardContent = async (content, user, name, role) => {
                 padding: 12,
                 cornerRadius: 12,
                 callbacks: {
-                  label: function(context) {
+                  label: function (context) {
                     const label = context.label || '';
                     const value = context.parsed || 0;
                     return ` ${label}: ${value}`;
@@ -510,10 +510,10 @@ const renderDashboardContent = async (content, user, name, role) => {
           },
           plugins: [{
             id: 'centerTextCoder',
-            beforeDraw: function(chart) {
+            beforeDraw: function (chart) {
               const width = chart.width,
-                    height = chart.height,
-                    ctx = chart.ctx;
+                height = chart.height,
+                ctx = chart.ctx;
 
               ctx.restore();
               const fontSize = (height / 110).toFixed(2);
@@ -522,17 +522,17 @@ const renderDashboardContent = async (content, user, name, role) => {
               ctx.fillStyle = rootStyle.getPropertyValue('--text-main').trim() || "#000";
 
               const text = completed.toString(),
-                    textX = Math.round((width - ctx.measureText(text).width) / 2),
-                    textY = height / 2;
+                textX = Math.round((width - ctx.measureText(text).width) / 2),
+                textY = height / 2;
 
               ctx.fillText(text, textX, textY);
-              
+
               ctx.font = "normal " + (fontSize * 0.4).toFixed(2) + "em sans-serif";
               ctx.fillStyle = rootStyle.getPropertyValue('--text-muted').trim() || "#666";
               const label = "Enviadas";
               const labelX = Math.round((width - ctx.measureText(label).width) / 2);
               ctx.fillText(label, labelX, textY + 25);
-              
+
               ctx.save();
             }
           }]

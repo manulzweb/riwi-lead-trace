@@ -243,14 +243,14 @@ export const setupAdminEvaluations = () => {
     btnCreate.classList.toggle("opacity-50", hasActivePeriod);
     btnCreate.classList.toggle("cursor-not-allowed", hasActivePeriod);
     btnCreate.title = hasActivePeriod ? "Cierra el periodo activo para poder crear formularios." : "";
-    
+
     if (btnQuickPeriod) {
       btnQuickPeriod.disabled = hasActivePeriod;
       btnQuickPeriod.classList.toggle("opacity-50", hasActivePeriod);
       btnQuickPeriod.classList.toggle("cursor-not-allowed", hasActivePeriod);
       btnQuickPeriod.title = hasActivePeriod ? "Ya hay un periodo activo. Ciérralo primero." : "";
     }
-    
+
     if (btnSave) {
       btnSave.disabled = hasActivePeriod;
       btnSave.classList.toggle("opacity-50", hasActivePeriod);

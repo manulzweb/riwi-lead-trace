@@ -63,17 +63,17 @@ export const renderEvaluate = () => `
           <div id="target-role-container">
             <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="target-role">¿A quién evalúas?</label>
             ${dropdownComponent('target-role', [
-              { value: '', label: 'Selecciona un rol...' },
-              { value: 'team_leader', label: 'Team Leader' },
-              { value: 'tutor', label: 'Tutor' }
-            ], '')}
+  { value: '', label: 'Selecciona un rol...' },
+  { value: 'team_leader', label: 'Team Leader' },
+  { value: 'tutor', label: 'Tutor' }
+], '')}
           </div>
 
           <div id="evaluatee-container">
             <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="evaluatee">Persona a evaluar</label>
             ${dropdownComponent('evaluatee', [
-              { value: '', label: 'Primero selecciona un rol...' }
-            ], '')}
+  { value: '', label: 'Primero selecciona un rol...' }
+], '')}
           </div>
         </div>
 
@@ -256,7 +256,7 @@ export const setupEvaluate = async () => {
         { value: '', label: 'Selecciona una persona...' },
         ...filtered.map(u => ({ value: u.id, label: `${u.name} (${u.email})` }))
       ];
-      
+
       document.getElementById('evaluatee-container').outerHTML = `
         <div id="evaluatee-container">
           <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="evaluatee">Persona a evaluar</label>
