@@ -4,6 +4,7 @@ import { activityLogService } from "../../services/activityLog.service";
 import { escapeHtml } from "../../utils/validators";
 import { formatDateTime } from "../../utils/date";
 import { emptyStateComponent } from "../../components/emptyState.js";
+import { dropdownComponent, setupDropdown } from "../../components/dropdown.js";
 
 const ACTION_LABELS = {
   period_opened: "Abrió un ciclo",
@@ -29,10 +30,17 @@ export const renderActivityLog = () => `
 
     <section class="mt-8 flex flex-col sm:flex-row gap-4 items-center">
       <input type="text" id="search-log" placeholder="Buscar por usuario o detalle..." class="w-full sm:w-2/3 rounded-xl border border-[var(--border-main)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text-main)] outline-none focus:border-[var(--brand-bg)] transition-colors">
-      <select id="filter-action" class="w-full sm:w-1/3 rounded-xl border border-[var(--border-main)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text-main)] outline-none focus:border-[var(--brand-bg)] transition-colors cursor-pointer">
-        <option value="all">Todas las acciones</option>
-        ${Object.entries(ACTION_LABELS).map(([val, label]) => `<option value="${val}">${label}</option>`).join("")}
-      </select>
+      <div class="w-full sm:w-1/3 z-10 relative">
+        ${dropdownComponent(
+          "filter-action",
+          [
+            { value: "all", label: "Todas las acciones" },
+            ...Object.entries(ACTION_LABELS).map(([value, label]) => ({ value, label }))
+          ],
+          "all",
+          "Todas las acciones"
+        )}
+      </div>
     </section>
 
     <section id="activity-log-list" aria-live="polite" class="mt-6 flex flex-col gap-3 min-h-[400px]">
@@ -67,6 +75,8 @@ export const setupActivityLog = async () => {
   const listContainer = document.getElementById("activity-log-list");
   const searchInput = document.getElementById("search-log");
   const filterAction = document.getElementById("filter-action");
+  
+  setupDropdown("filter-action");
 
   if (!listContainer) return;
 
