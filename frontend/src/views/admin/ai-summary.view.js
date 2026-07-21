@@ -5,6 +5,9 @@ import { periodService } from "../../services/periods.service";
 import { metricsService } from "../../services/metrics.service";
 import { showToast } from "../../components/alerts";
 import { escapeHtml } from "../../utils/validators";
+import { marked } from "marked";
+
+const SPINNER_SVG = `<svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
 
 export const renderAiSummary = () => `
   ${navBarComponent()}
@@ -32,7 +35,7 @@ export const renderAiSummary = () => `
         </div>
         <div class="flex flex-wrap gap-3">
           <button id="generate-btn" disabled
-            class="inline-flex items-center justify-center rounded-2xl bg-[var(--brand-bg)] px-5 py-3 text-sm font-bold text-[var(--brand-text)] transition-all duration-300 ease-in-out hover:bg-[var(--brand-hover)] hover:shadow-md hover:cursor-pointer focus:ring-4 focus:ring-[var(--border-main)] disabled:opacity-50 disabled:cursor-not-allowed">
+            class="inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--brand-bg)] px-5 py-3 text-sm font-bold text-[var(--brand-text)] transition-all duration-300 ease-in-out hover:bg-[var(--brand-hover)] hover:shadow-md hover:cursor-pointer focus:ring-4 focus:ring-[var(--border-main)] disabled:opacity-50 disabled:cursor-not-allowed">
             Cargando...
           </button>
           <button id="generate-all-btn" disabled type="button"
@@ -47,7 +50,7 @@ export const renderAiSummary = () => `
       <div id="ai-result" class="mt-8 hidden" aria-live="polite">
         <hr class="border-[var(--border-main)]" />
         <p class="mt-6 text-sm font-semibold uppercase tracking-[0.3em] text-[var(--brand-bg)]">Resultado</p>
-        <div id="ai-content" class="mt-4 text-[var(--text-main)] leading-8 whitespace-pre-wrap"></div>
+        <div id="ai-content" class="mt-4 text-[var(--text-main)] leading-8 markdown-body"></div>
       </div>
 
       <div id="ai-batch-results" class="mt-8 hidden">
@@ -148,18 +151,18 @@ export const setupAiSummary = async () => {
 
     resultSection.classList.add("hidden");
     generateBtn.disabled = true;
-    generateBtn.textContent = "Generando...";
+    generateBtn.innerHTML = `${SPINNER_SVG} <span>Generando...</span>`;
 
     try {
       const { summary } = await metricsService.getAiSummary(evaluateeId, periodId);
-      resultContent.textContent = summary;
+      resultContent.innerHTML = marked.parse(summary);
       resultSection.classList.remove("hidden");
     } catch (err) {
       showToast("Error", "error", "No se pudo generar el resumen (¿hay suficientes evaluaciones enviadas en ese periodo?).");
       console.error(err);
     } finally {
       generateBtn.disabled = false;
-      generateBtn.textContent = "Generar resumen";
+      generateBtn.innerHTML = "Generar resumen";
     }
   });
 
