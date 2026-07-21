@@ -52,9 +52,15 @@ export const renderAdminCategories = () => `
     <div id="category-search-slot" class="mt-8 max-w-sm"></div>
 
     <section id="categories-list" aria-live="polite" class="flex flex-col gap-3">
-      <div class="h-16 skeleton-shimmer rounded-2xl"></div>
-      <div class="h-16 skeleton-shimmer rounded-2xl"></div>
-      <div class="h-16 skeleton-shimmer rounded-2xl"></div>
+      ${Array(3).fill(`
+        <div class="flex items-center justify-between gap-4 rounded-2xl bg-[var(--bg-panel)] p-4 shadow-sm border border-[var(--border-main)]">
+          <div class="h-6 w-1/3 skeleton-shimmer rounded-md"></div>
+          <div class="flex items-center gap-2">
+            <div class="h-8 w-16 skeleton-shimmer rounded-lg"></div>
+            <div class="h-8 w-8 skeleton-shimmer rounded-lg"></div>
+          </div>
+        </div>
+      `).join("")}
     </section>
 
   </main>

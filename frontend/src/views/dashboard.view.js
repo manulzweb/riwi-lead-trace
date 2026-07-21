@@ -16,6 +16,14 @@ const icons = {
   chartPie: `<svg aria-hidden="true" focusable="false" class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/></svg>`
 };
 
+// El historial del evaluador devuelve PARTICIPACIONES, y las anonimas llegan
+// con `status` en null: el vinculo con el contenido no existe, asi que no hay
+// estado que consultar. Una participacion anonima SI esta hecha -- contarla
+// como pendiente (que es lo que hacia `e.status !== "submitted"`) inflaba el
+// contador de pendientes y le decia al coder que le faltaba trabajo ya hecho.
+const isPendingParticipation = (entry) =>
+  !evaluationService.isAnonymousParticipation(entry) && entry.status !== "submitted";
+
 const renderDoughnutContainer = (percentage) => {
   return `
     <div class="relative flex flex-col items-center justify-center h-48 w-48 mx-auto">
@@ -253,15 +261,15 @@ const renderDashboardContent = async (content, user, name, role) => {
     
     if (role === "tutor") {
       const myEvals = await evaluationService.getByEvaluator(user.id, 100);
-      const pending = myEvals.filter(e => e.status !== "submitted").length;
+      const pending = myEvals.filter(isPendingParticipation).length;
       html += StatsCard({ title: "Evaluaciones por Hacer", value: pending, icon: icons.clock, description: "Pendientes de enviar" });
     }
   } else {
     // Coder View
     const myEvals = await evaluationService.getByEvaluator(user.id, 100);
-    const completed = myEvals.filter(e => e.status === "submitted").length;
-    const pending = myEvals.filter(e => e.status !== "submitted").length;
-    
+    const completed = myEvals.filter(e => !isPendingParticipation(e)).length;
+    const pending = myEvals.filter(isPendingParticipation).length;
+
     html += `
       ${StatsCard({ title: "Evaluaciones Completadas", value: completed, icon: icons.check, description: "Historial total" })}
       ${StatsCard({ title: "Evaluaciones Pendientes", value: pending, icon: icons.clock, description: "En borrador o por hacer" })}

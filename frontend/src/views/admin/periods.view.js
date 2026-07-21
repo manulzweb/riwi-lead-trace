@@ -65,8 +65,25 @@ export const renderAdminPeriods = () => `
     <div id="period-search-slot" class="mt-8 max-w-sm"></div>
 
     <section id="periods-list" aria-live="polite" class="flex flex-col gap-4">
-      <div class="h-24 skeleton-shimmer rounded-3xl"></div>
-      <div class="h-24 skeleton-shimmer rounded-3xl"></div>
+      ${Array(2).fill(`
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-2xl bg-[var(--bg-panel)] p-5 shadow-sm border border-[var(--border-main)]">
+          <div class="w-full sm:w-1/2">
+            <div class="flex items-center gap-3 mb-2">
+              <div class="h-6 w-48 skeleton-shimmer rounded-md"></div>
+              <div class="h-5 w-20 skeleton-shimmer rounded-full"></div>
+            </div>
+            <div class="flex gap-2 mt-3">
+              <div class="h-4 w-28 skeleton-shimmer rounded-sm"></div>
+              <div class="h-4 w-28 skeleton-shimmer rounded-sm"></div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="h-8 w-16 skeleton-shimmer rounded-lg"></div>
+            <div class="h-8 w-24 skeleton-shimmer rounded-lg"></div>
+            <div class="h-8 w-8 skeleton-shimmer rounded-lg"></div>
+          </div>
+        </div>
+      `).join("")}
     </section>
 
   </main>

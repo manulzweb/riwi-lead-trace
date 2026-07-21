@@ -76,12 +76,17 @@ export const renderEvaluate = () => `
 
       <section class="flex flex-col sm:flex-row sm:items-center gap-4 rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm">
         <label class="relative inline-flex cursor-pointer items-center">
-          <input type="checkbox" id="is-anonymous" name="anonymous" class="peer sr-only" />
-          <div class="peer h-6 w-11 rounded-full bg-[var(--border-main)] after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-[var(--brand-bg)] peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--brand-hover)]"></div>
+          <input type="checkbox" id="is-anonymous" name="anonymous" class="peer sr-only" aria-describedby="anon-help" />
+          <span class="sr-only">Enviar esta evaluación de forma anónima</span>
+          <div aria-hidden="true" class="peer h-6 w-11 rounded-full bg-[var(--border-main)] after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-[var(--brand-bg)] peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--brand-hover)]"></div>
         </label>
         <div>
           <h3 class="text-base font-bold text-[var(--text-main)]">Envío Anónimo</h3>
-          <p class="text-sm text-[var(--text-muted)]">Si lo activas, nadie (incluyendo coordinadores y administradores) sabrá quién envió esta evaluación. El anonimato es irreversible.</p>
+          <p id="anon-help" class="text-sm text-[var(--text-muted)]">
+            Si lo activas, tus respuestas se guardan sin ningún vínculo con tu identidad: ni el equipo administrador
+            puede saber quién las envió. Queda registrado que participaste, pero no qué respondiste — por eso el
+            detalle tampoco aparecerá en tu historial. Es irreversible.
+          </p>
         </div>
       </section>
 
@@ -181,8 +186,18 @@ export const setupEvaluate = async () => {
       ]);
       currentForm = form;
 
+      // Personas ya evaluadas en este periodo, para sacarlas del selector.
+      //
+      // El filtro es solo por periodo, sin `form_id`, por dos razones: (1) la
+      // regla real de no-duplicado es (evaluador, evaluado, periodo) --el
+      // constraint `uq_submission_once`--, el formulario no entra; (2) las
+      // participaciones anonimas llegan con `form_id` en null (no hay vinculo
+      // con el contenido), asi que compararlo las descartaba y el coder volvia
+      // a ver en la lista a alguien que ya evaluo anonimamente, para chocar
+      // luego contra un 409. La lista de candidatos ya viene filtrada por rol,
+      // asi que no hace falta desambiguar por formulario.
       const evaluatedIds = previousEvaluations
-        .filter(e => e.period_id === activePeriod.id && e.form_id === currentForm.id)
+        .filter(e => e.period_id === activePeriod.id)
         .map(e => String(e.evaluatee_id));
 
       const filtered = allUsers.filter(u => u.roles?.includes(role) && u.id !== currentUser.id && !evaluatedIds.includes(String(u.id)));
@@ -490,7 +505,14 @@ export const setupEvaluate = async () => {
       }));
 
       if (err.status === 409) {
-        showToast("No se pudo enviar la evaluación", "error", err.detail || "Ya evaluaste a esta persona en este periodo, o el periodo de evaluación no está activo.");
+        // El backend usa 409 para DOS conflictos distintos: ya evaluaste a esa
+        // persona en el periodo, o el periodo no esta activo. Lo unico que los
+        // distingue es `err.detail`, que puede venir vacio -- por eso siempre va
+        // acompanado de una frase propia y nunca se usa como texto unico.
+        const reason = err.detail
+          ? err.detail
+          : "Puede que ya hayas evaluado a esta persona en este periodo, o que el periodo de evaluación ya no esté activo.";
+        showToast("No se pudo enviar la evaluación", "error", `${reason} Tu progreso se guardó en borradores.`);
       } else {
         showToast("Error", "error", "Hubo un problema al enviar la evaluación. Tu progreso se guardó en borradores.");
       }

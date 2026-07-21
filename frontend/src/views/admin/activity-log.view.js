@@ -25,10 +25,19 @@ export const renderActivityLog = () => `
       </p>
     </section>
 
-    <section id="activity-log-list" class="mt-8 flex flex-col gap-3" aria-live="polite" aria-busy="true">
-      <div class="h-16 skeleton-shimmer rounded-2xl"></div>
-      <div class="h-16 skeleton-shimmer rounded-2xl"></div>
-      <div class="h-16 skeleton-shimmer rounded-2xl"></div>
+    <section id="activity-log-list" aria-live="polite" class="mt-8 flex flex-col gap-3">
+      ${Array(4).fill(`
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl bg-[var(--bg-panel)] p-4 shadow-sm border border-[var(--border-main)]">
+          <div>
+            <div class="h-4 w-48 skeleton-shimmer rounded-sm mb-2"></div>
+            <div class="h-3 w-32 skeleton-shimmer rounded-sm"></div>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="h-6 w-6 skeleton-shimmer rounded-full"></div>
+            <div class="h-4 w-24 skeleton-shimmer rounded-sm"></div>
+          </div>
+        </div>
+      `).join("")}
     </section>
   </main>
 `;

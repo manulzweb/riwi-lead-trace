@@ -34,11 +34,30 @@ export const renderAdminEvaluations = () => `
     <!-- 1. VISTA LISTA DE PLANTILLAS -->
     <div id="list-view" class="block transition-all duration-300">
       <div id="form-search-slot" class="mb-6 max-w-sm"></div>
-      <div id="forms-container">
+      <div id="forms-container" class="mt-8" aria-live="polite" aria-busy="true">
         <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <div class="h-48 skeleton-shimmer rounded-[2rem]"></div>
-          <div class="h-48 skeleton-shimmer rounded-[2rem]"></div>
-          <div class="h-48 skeleton-shimmer rounded-[2rem]"></div>
+          ${Array(3).fill(`
+            <div class="flex flex-col justify-between rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm h-48">
+              <div>
+                <div class="flex items-center justify-between mb-4">
+                  <div class="h-6 w-24 skeleton-shimmer rounded-full"></div>
+                  <div class="h-4 w-12 skeleton-shimmer rounded-sm"></div>
+                </div>
+                <div class="h-7 w-3/4 skeleton-shimmer rounded-md"></div>
+                <div class="h-4 w-full skeleton-shimmer rounded-sm mt-2"></div>
+              </div>
+              <div class="mt-6 pt-4 border-t border-[var(--border-main)] flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="h-4 w-16 skeleton-shimmer rounded-full"></div>
+                  <div class="h-4 w-20 skeleton-shimmer rounded-sm"></div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <div class="h-6 w-6 skeleton-shimmer rounded-full"></div>
+                  <div class="h-6 w-6 skeleton-shimmer rounded-full"></div>
+                </div>
+              </div>
+            </div>
+          `).join("")}
         </div>
       </div>
     </div>

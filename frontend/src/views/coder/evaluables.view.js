@@ -38,9 +38,21 @@ export const renderEvaluables = () => {
       </section>
 
       <section id="evaluables-list" class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" aria-live="polite" aria-busy="true">
-        <div class="h-44 skeleton-shimmer rounded-3xl"></div>
-        <div class="h-44 skeleton-shimmer rounded-3xl"></div>
-        <div class="h-44 skeleton-shimmer rounded-3xl"></div>
+        ${Array(6).fill(`
+          <article class="flex flex-col justify-between rounded-3xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-md h-44">
+            <div>
+              <div class="flex items-center justify-between gap-3">
+                <div class="h-6 w-20 skeleton-shimmer rounded-full"></div>
+                <div class="h-6 w-20 skeleton-shimmer rounded-full"></div>
+              </div>
+              <div class="h-6 w-3/4 skeleton-shimmer rounded-md mt-4"></div>
+              <div class="h-4 w-1/2 skeleton-shimmer rounded-md mt-2"></div>
+            </div>
+            <div class="mt-6 flex">
+              <div class="h-10 w-full skeleton-shimmer rounded-2xl"></div>
+            </div>
+          </article>
+        `).join("")}
       </section>
     </main>
   `;
