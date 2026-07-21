@@ -60,6 +60,13 @@ export const renderMetrics = () => `
   { value: 'tutor', label: 'Tutores' }
 ], 'all')}
       </div>
+
+      <div class="flex flex-col gap-1 w-48">
+        <label class="text-sm font-semibold text-[var(--text-muted)]">Filtrar por cohorte:</label>
+        <div id="cohort-dropdown-container">
+          <!-- Se llena dinámicamente -->
+        </div>
+      </div>
     </section>
 
     <div id="metrics-report" class="mt-8 bg-[var(--bg-base)]">
@@ -123,6 +130,7 @@ export const setupMetrics = async () => {
   let periods = [];
   let currentPeriodId = null;
   let currentRoleFilter = "all";
+  let currentCohortFilter = "all";
   const historyCharts = new Map(); // evaluateeId -> instancia de Chart.js activa, para destruirla antes de recrearla
 
   // Extraida a funcion para que el boton "Reintentar" del estado de error pueda
@@ -137,15 +145,17 @@ export const setupMetrics = async () => {
         return;
       }
 
-      const periodOptions = periods.map(p => ({
-        value: p.id,
-        label: p.name
-      }));
+      const periodOptions = [
+        { value: 0, label: 'Todos' },
+        ...periods.map(p => ({
+          value: p.id,
+          label: p.name
+        }))
+      ];
 
-      const activePeriod = periods.find(p => p.is_active) || periods[0];
-      currentPeriodId = activePeriod.id;
+      currentPeriodId = 0; // Default a Todos
 
-      periodContainer.innerHTML = dropdownComponent('filter-period', periodOptions, activePeriod.id);
+      periodContainer.innerHTML = dropdownComponent('filter-period', periodOptions, currentPeriodId);
 
       // 3. Inicializar el componente dinámico
       setupDropdown('filter-period');
@@ -248,8 +258,38 @@ export const setupMetrics = async () => {
       }
 
       let list = summary.evaluatees;
+
+      // Actualizar el dropdown de cohortes basándonos en los evaluatees disponibles
+      const cohortContainer = document.getElementById("cohort-dropdown-container");
+      if (cohortContainer) {
+        const uniqueCohorts = [...new Set(summary.evaluatees.map(e => e.clan_name).filter(Boolean))].sort();
+        const cohortOptions = [
+          { value: 'all', label: 'Todos los clanes' },
+          ...uniqueCohorts.map(c => ({ value: c, label: c }))
+        ];
+        
+        cohortContainer.innerHTML = dropdownComponent('filter-cohort', cohortOptions, currentCohortFilter);
+        setupDropdown('filter-cohort');
+        const cohortSelector = document.getElementById("filter-cohort");
+        if (cohortSelector) {
+          // Remover listeners previos
+          const newSelector = cohortSelector.cloneNode(true);
+          cohortSelector.parentNode.replaceChild(newSelector, cohortSelector);
+          newSelector.addEventListener("change", async (e) => {
+            currentCohortFilter = e.target.value;
+            // No hacemos un await de loadMetrics sino que recalculamos localmente para no saturar la BD
+            // O mejor, disparamos loadMetrics para recalcular el layout completo
+            await loadMetrics(currentPeriodId, currentRoleFilter);
+          });
+        }
+      }
+
       if (roleFilter !== "all") {
         list = list.filter(e => e.role === roleFilter);
+      }
+      
+      if (currentCohortFilter !== "all") {
+        list = list.filter(e => e.clan_name === currentCohortFilter);
       }
 
       renderHighlights(list);

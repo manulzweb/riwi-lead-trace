@@ -9,8 +9,12 @@ logger = logging.getLogger(__name__)
 class MetricsRepository:
     def get_total_evaluations(self, conn: Connection, period_id: int) -> int:
         try:
-            query = text("SELECT COUNT(DISTINCT id) FROM evaluations WHERE period_id = :period_id AND status = 'submitted'")
-            return conn.execute(query, {"period_id": period_id}).scalar() or 0
+            if period_id == 0:
+                query = text("SELECT COUNT(DISTINCT id) FROM evaluations WHERE status = 'submitted'")
+                return conn.execute(query).scalar() or 0
+            else:
+                query = text("SELECT COUNT(DISTINCT id) FROM evaluations WHERE period_id = :period_id AND status = 'submitted'")
+                return conn.execute(query, {"period_id": period_id}).scalar() or 0
         except SQLAlchemyError as e:
             logger.error(f"Error getting total evaluations for period {period_id}: {e}")
             raise
@@ -34,29 +38,47 @@ class MetricsRepository:
     ) -> List[Dict[str, Any]]:
         try:
             # We use the new views to resolve all complexity in a single query.
-            # El minimo de evaluaciones ya no esta hardcodeado en vw_period_metrics:
-            # va en el ON del LEFT JOIN (no en el WHERE) para que un evaluado que no
-            # llegue al minimo siga apareciendo en la lista con average_score = NULL,
-            # que es exactamente como se comportaba la vista filtrada.
-            query = text("""
-                SELECT
-                    e.id,
-                    e.name,
-                    e.email,
-                    e.role,
-                    e.clan_name,
-                    m.average_score,
-                    COALESCE(m.n_evals, 0) as n_evals
-                FROM vw_evaluatees_summary e
-                LEFT JOIN vw_period_metrics m
-                       ON e.id = m.evaluatee_id
-                      AND m.period_id = :period_id
-                      AND m.n_evals >= :required_evaluations
-            """)
-            rows = conn.execute(
-                query,
-                {"period_id": period_id, "required_evaluations": required_evaluations},
-            ).mappings().all()
+            # If period_id == 0, we aggregate across all periods. We can just use the underlying view or group by evaluatee_id.
+            # However, vw_period_metrics already groups by evaluatee_id AND period_id.
+            # So if period_id == 0, we need to sum/average the metrics over all periods for each evaluatee.
+            if period_id == 0:
+                query = text("""
+                    SELECT
+                        e.id,
+                        e.name,
+                        e.email,
+                        e.role,
+                        e.clan_name,
+                        CASE WHEN SUM(COALESCE(m.n_evals, 0)) >= :required_evaluations THEN AVG(m.average_score) ELSE NULL END as average_score,
+                        SUM(COALESCE(m.n_evals, 0)) as n_evals
+                    FROM vw_evaluatees_summary e
+                    LEFT JOIN vw_period_metrics m ON e.id = m.evaluatee_id
+                    GROUP BY e.id, e.name, e.email, e.role, e.clan_name
+                """)
+                rows = conn.execute(
+                    query,
+                    {"required_evaluations": required_evaluations},
+                ).mappings().all()
+            else:
+                query = text("""
+                    SELECT
+                        e.id,
+                        e.name,
+                        e.email,
+                        e.role,
+                        e.clan_name,
+                        m.average_score,
+                        COALESCE(m.n_evals, 0) as n_evals
+                    FROM vw_evaluatees_summary e
+                    LEFT JOIN vw_period_metrics m
+                           ON e.id = m.evaluatee_id
+                          AND m.period_id = :period_id
+                          AND m.n_evals >= :required_evaluations
+                """)
+                rows = conn.execute(
+                    query,
+                    {"period_id": period_id, "required_evaluations": required_evaluations},
+                ).mappings().all()
             return [dict(r) for r in rows]
         except SQLAlchemyError as e:
             logger.error(f"Error fetching evaluatees metrics for period {period_id}: {e}")

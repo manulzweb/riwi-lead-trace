@@ -1,4 +1,5 @@
 from typing import List, Dict, Any
+from sqlalchemy import text
 from app.config.database import engine
 from app.repositories.metrics_repository import MetricsRepository
 from app.services.settings_service import settings_service
@@ -111,7 +112,14 @@ class MetricsService:
         average_score_global = round(sum(scores) / len(scores)) if scores else 0
 
         # Asumimos 2 evaluaciones por coder activo como baseline ideal (ej. evalúan a su Tutor y a su TL)
+        # Si estamos viendo todos los periodos (period_id == 0), multiplicamos por la cantidad total de periodos
         possible_evaluations = total_coders * 2
+        if period_id == 0:
+            total_periods_query = text("SELECT COUNT(id) FROM periods")
+            with engine.connect() as conn:
+                total_periods = conn.execute(total_periods_query).scalar() or 1
+            possible_evaluations *= total_periods
+            
         participation_rate = round((total_evaluations / possible_evaluations) * 100) if possible_evaluations else 0
         participation_rate = min(participation_rate, 100)
 
