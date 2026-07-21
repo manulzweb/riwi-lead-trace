@@ -220,7 +220,7 @@ const renderDashboardContent = async (content, user, name, role) => {
   } else if (role === "team_leader" || role === "tutor") {
     // Leader / Tutor View
     const summary = selectedPeriodId ? await metricsService.getSummary(selectedPeriodId) : { evaluatees: [] };
-    const myStats = summary.evaluatees?.find(e => e.id === user.id) || { n_evals: 0, average_score: 0, status: "Sin datos" };
+    const myStats = summary.evaluatees?.find(e => String(e.id) === String(user.id)) || { n_evals: 0, average_score: 0, status: "Sin datos" };
     
     html += `
       ${StatsCard({ title: "Evaluaciones Recibidas", value: myStats.n_evals, icon: icons.users, description: "En el periodo actual" })}
@@ -236,11 +236,54 @@ const renderDashboardContent = async (content, user, name, role) => {
     // Coder View
     const myEvals = await request(`/evaluations?evaluator_id=${user.id}&limit=100`);
     const completed = myEvals.filter(e => e.status === "submitted").length;
-    const pending = myEvals.filter(e => e.status !== "submitted").length;
+    const drafts = myEvals.filter(e => e.status === "draft");
+    const pending = drafts.length;
+    
+    window.__coderStats = { completed, pending };
     
     html += `
-      ${StatsCard({ title: "Evaluaciones Completadas", value: completed, icon: icons.check, description: "Historial total" })}
-      ${StatsCard({ title: "Evaluaciones Pendientes", value: pending, icon: icons.clock, description: "En borrador o por hacer" })}
+      ${StatsCard({ title: "Completadas", value: completed, icon: icons.check, description: "Evaluaciones enviadas" })}
+      ${StatsCard({ title: "Borradores", value: pending, icon: icons.clock, description: "Evaluaciones en curso" })}
+      
+      ${Card({
+        className: "h-full flex flex-col p-6 lg:row-span-2 shadow-sm border border-[var(--border-main)]",
+        children: `
+          <h3 class="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider text-left w-full mb-4">Progreso Actual</h3>
+          <div class="flex-1 flex flex-col items-center justify-center w-full min-h-[200px]">
+            ${completed + pending === 0 
+              ? `<div class="text-center text-[var(--text-muted)] italic my-auto">Aún no hay datos para graficar.</div>`
+              : `<div class="relative w-48 h-48 my-4"><canvas id="coder-participation-chart"></canvas></div>`
+            }
+          </div>
+        `
+      })}
+      
+      <div class="col-span-1 md:col-span-2 lg:col-span-2 mt-4 lg:mt-0">
+        <div class="bg-[var(--bg-panel)] rounded-3xl border border-[var(--border-main)] p-8 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6 h-full">
+          <div>
+            <h2 class="text-2xl font-bold text-[var(--text-main)] mb-2">¡Hola, ${user.name.split(' ')[0]}!</h2>
+            ${drafts.length > 0 ? `
+              <p class="text-[var(--text-muted)]">Tienes <strong class="text-[var(--brand-bg)]">${drafts.length} evaluación(es)</strong> en borrador. Completa tus evaluaciones para seguir contribuyendo al crecimiento del equipo.</p>
+            ` : `
+              <p class="text-[var(--text-muted)]">Actualmente no tienes borradores pendientes. Anímate a iniciar una nueva evaluación.</p>
+            `}
+          </div>
+          <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto shrink-0">
+            ${drafts.length > 0 ? `
+              <a href="/evaluations?filter=draft" class="inline-flex items-center justify-center rounded-2xl bg-[var(--brand-bg)] px-6 py-3.5 text-sm font-bold text-white transition hover:bg-[var(--brand-hover)] shadow-md w-full sm:w-auto">
+                Continuar Borradores
+              </a>
+            ` : `
+              <a href="/evaluables" class="inline-flex items-center justify-center rounded-2xl bg-[var(--brand-bg)] px-6 py-3.5 text-sm font-bold text-white transition hover:bg-[var(--brand-hover)] shadow-md w-full sm:w-auto">
+                Elegir Evaluado
+              </a>
+            `}
+            <a href="/evaluations" class="inline-flex items-center justify-center rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] px-6 py-3.5 text-sm font-bold text-[var(--text-main)] transition hover:bg-[var(--border-main)] w-full sm:w-auto">
+              Ver Historial
+            </a>
+          </div>
+        </div>
+      </div>
     `;
   }
   
@@ -371,6 +414,79 @@ const renderDashboardContent = async (content, user, name, role) => {
         `;
         await renderDashboardContent(content, user, name, role);
       });
+    }
+  } else if (role === "coder" && window.__coderStats) {
+    const ctx = document.getElementById('coder-participation-chart');
+    if (ctx) {
+      const rootStyle = getComputedStyle(document.documentElement);
+      const brandColor = rootStyle.getPropertyValue('--brand-bg').trim() || '#4f46e5';
+      const draftColor = rootStyle.getPropertyValue('--accent-amber').trim() || '#f59e0b';
+      
+      const { completed, pending } = window.__coderStats;
+      const total = completed + pending;
+      
+      import('chart.js/auto').then(({ default: Chart }) => {
+        new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: ['Completadas', 'Borradores'],
+            datasets: [{
+              data: [completed, pending],
+              backgroundColor: [brandColor, draftColor],
+              borderWidth: 0,
+              hoverOffset: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '75%',
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: 'rgba(0,0,0,0.8)',
+                padding: 12,
+                cornerRadius: 12,
+                callbacks: {
+                  label: function(context) {
+                    const label = context.label || '';
+                    const value = context.parsed || 0;
+                    return ` ${label}: ${value}`;
+                  }
+                }
+              }
+            }
+          },
+          plugins: [{
+            id: 'centerTextCoder',
+            beforeDraw: function(chart) {
+              const width = chart.width,
+                    height = chart.height,
+                    ctx = chart.ctx;
+
+              ctx.restore();
+              const fontSize = (height / 110).toFixed(2);
+              ctx.font = "bold " + fontSize + "em sans-serif";
+              ctx.textBaseline = "middle";
+              ctx.fillStyle = rootStyle.getPropertyValue('--text-main').trim() || "#000";
+
+              const text = completed.toString(),
+                    textX = Math.round((width - ctx.measureText(text).width) / 2),
+                    textY = height / 2;
+
+              ctx.fillText(text, textX, textY);
+              
+              ctx.font = "normal " + (fontSize * 0.4).toFixed(2) + "em sans-serif";
+              ctx.fillStyle = rootStyle.getPropertyValue('--text-muted').trim() || "#666";
+              const label = "Enviadas";
+              const labelX = Math.round((width - ctx.measureText(label).width) / 2);
+              ctx.fillText(label, labelX, textY + 25);
+              
+              ctx.save();
+            }
+          }]
+        });
+      }).catch(err => console.error("Error loading Chart.js", err));
     }
   }
 };

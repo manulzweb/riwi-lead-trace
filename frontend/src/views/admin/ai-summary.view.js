@@ -18,15 +18,15 @@ export const renderAiSummary = () => `
       <div id="ai-summary-form" class="grid gap-5">
         <div>
           <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="target-user">Persona evaluada</label>
-          ${dropdownComponent('target-user', [
-  { value: '', label: 'Selecciona una persona...' }
-], '')}
+          <select id="target-user" class="w-full rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] px-4 py-3 text-sm font-medium text-[var(--text-main)] shadow-sm hover:border-[var(--brand-hover)] focus:outline-none focus:ring-4 focus:ring-[var(--border-main)] transition-all duration-200 cursor-pointer">
+            <option value="">Cargando personas...</option>
+          </select>
         </div>
         <div>
           <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="period">Periodo</label>
-          ${dropdownComponent('period', [
-  { value: '', label: 'Selecciona un periodo...' }
-], '')}
+          <select id="period" class="w-full rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] px-4 py-3 text-sm font-medium text-[var(--text-main)] shadow-sm hover:border-[var(--brand-hover)] focus:outline-none focus:ring-4 focus:ring-[var(--border-main)] transition-all duration-200 cursor-pointer">
+            <option value="">Cargando periodos...</option>
+          </select>
         </div>
         <div class="flex flex-wrap gap-3">
           <button id="generate-btn" disabled
@@ -59,8 +59,6 @@ export const renderAiSummary = () => `
 `;
 
 export const setupAiSummary = async () => {
-  setupDropdown('target-user');
-  setupDropdown('period');
 
   const generateBtn = document.getElementById("generate-btn");
   const generateAllBtn = document.getElementById("generate-all-btn");
@@ -88,20 +86,20 @@ export const setupAiSummary = async () => {
       return;
     }
 
-    const userOptions = [
-      { value: '', label: 'Selecciona una persona...' },
-      ...evaluables.map(u => ({ value: u.id, label: `${u.name} (${u.roles.map(r => r.replace('_', ' ')).join(' / ')})` }))
-    ];
-    document.getElementById('target-user-container').outerHTML = dropdownComponent('target-user', userOptions, '');
-    setupDropdown('target-user');
+    const userOptionsHtml = [
+      '<option value="">Selecciona una persona...</option>',
+      ...evaluables.map(u => `<option value="${u.id}">${u.name} (${u.roles.map(r => r.replace('_', ' ')).join(' / ')})</option>`)
+    ].join('');
+    targetUserSelect.innerHTML = userOptionsHtml;
 
-    const periodOptions = [
-      { value: '', label: 'Selecciona un periodo...' },
-      ...periods.map(p => ({ value: p.id, label: p.name }))
-    ];
+    const periodOptionsHtml = [
+      '<option value="">Selecciona un periodo...</option>',
+      ...periods.map(p => `<option value="${p.id}">${p.name}</option>`)
+    ].join('');
+    periodSelect.innerHTML = periodOptionsHtml;
+    
     const activePeriod = periods.find(p => p.is_active)?.id || '';
-    document.getElementById('period-container').outerHTML = dropdownComponent('period', periodOptions, activePeriod);
-    setupDropdown('period');
+    periodSelect.value = activePeriod;
 
     generateBtn.disabled = false;
     generateBtn.textContent = "Generar resumen";

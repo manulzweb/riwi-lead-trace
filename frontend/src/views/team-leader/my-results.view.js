@@ -5,6 +5,7 @@ import { evaluationService } from "../../services/evaluation.service";
 import { periodService } from "../../services/periods.service";
 import { authService } from "../../services/auth.service";
 import { showToast } from "../../components/alerts";
+import { request } from "../../services/api.service";
 
 export const renderMyResults = () => `
   ${navBarComponent()}
@@ -137,34 +138,36 @@ export const setupMyResults = async () => {
         return;
       }
 
-      // Recopilar comentarios de texto y puntajes
-      const allAnswers = [];
-      periodEvaluations.forEach(ev => {
-        ev.answers.forEach(ans => {
-          if (ans.comment || ans.score) {
-            allAnswers.push(ans);
-          }
-        });
-      });
-
-      const textAnswers = allAnswers.filter(ans => ans.comment);
-
-      if (textAnswers.length === 0) {
+      // Obtener el Resumen IA del backend
+      try {
+        const aiResponse = await request(`/metrics/ai-summary?evaluatee_id=${userId}&period_id=${periodId}`);
+        if (aiResponse && aiResponse.summary) {
+          feedbackList.innerHTML = `
+            <article class="rounded-3xl border border-[var(--brand-bg)] bg-[var(--brand-bg)]/5 p-8 text-[var(--text-main)] shadow-sm">
+              <div class="flex items-center gap-3 mb-4">
+                <svg class="w-6 h-6 text-[var(--brand-bg)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <h3 class="text-xl font-bold text-[var(--brand-bg)]">Resumen de Desempeño (IA)</h3>
+              </div>
+              <div class="prose prose-sm dark:prose-invert max-w-none text-[var(--text-main)]">
+                ${aiResponse.summary.replace(/\n/g, '<br>')}
+              </div>
+            </article>
+          `;
+        } else {
+          feedbackList.innerHTML = `
+            <article class="rounded-3xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-10 text-center text-[var(--text-muted)]">
+              El resumen de Inteligencia Artificial aún no está disponible para este periodo.
+            </article>
+          `;
+        }
+      } catch (err) {
+        console.error("Error fetching AI summary:", err);
         feedbackList.innerHTML = `
           <article class="rounded-3xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-10 text-center text-[var(--text-muted)]">
-            No hay comentarios escritos detallados todavía para este periodo.
+            El resumen de Inteligencia Artificial aún no está disponible o hubo un error al generarlo.
           </article>
         `;
-        return;
       }
-
-      feedbackList.innerHTML = textAnswers.map(ans => `
-        <article class="rounded-2xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-5 shadow-sm">
-          <p class="text-sm font-semibold uppercase tracking-wider text-[var(--brand-bg)] mb-2">Comentario de Coder</p>
-          <p class="text-[var(--text-main)] italic">"${ans.comment}"</p>
-        </article>
-      `).join("");
-
     } catch (err) {
       showToast("Error", "error", "No se pudieron obtener tus resultados.");
       console.error(err);

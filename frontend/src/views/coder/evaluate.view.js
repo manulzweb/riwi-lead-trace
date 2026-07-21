@@ -31,6 +31,7 @@ const evaluationAnswersSchema = z.array(answerSchema).min(1, "La evaluación deb
 let allUsers = [];
 let activePeriod = null;
 let currentTemplate = null;
+let currentPreviousEvaluations = [];
 
 export const renderEvaluate = () => `
   ${navBarComponent()}
@@ -119,8 +120,19 @@ export const setupEvaluate = async () => {
 
   const currentUser = authService.getSession();
 
-  // Función para actualizar la barra de progreso
-  const updateProgress = () => {
+  const setDropdownValue = (id, value) => {
+    const input = document.getElementById(id);
+    const text = document.getElementById(`${id}-text`);
+    if (!input || !text) return;
+    input.value = value;
+    // Disparar evento para que otras dependencias se actualicen (como estilos)
+    const option = document.querySelector(`.${id}-option[data-value="${value}"]`);
+    if (option) {
+      text.textContent = option.textContent.trim();
+    }
+  };
+
+  function updateProgress() {
     const questionElements = qContainer.querySelectorAll("[data-question-id]");
     if (questionElements.length === 0) return;
 
@@ -133,7 +145,7 @@ export const setupEvaluate = async () => {
     progressBarFill.style.width = `${percentage}%`;
     progressText.textContent = `${answered} de ${questionElements.length} respondidas`;
     progressPercent.textContent = `${percentage}%`;
-  };
+  }
 
   try {
     allUsers = await userService.get();
@@ -149,8 +161,7 @@ export const setupEvaluate = async () => {
     console.error(err);
   }
 
-  // Manejador de cambio de rol (funcion nombrada: se reutiliza para la preseleccion via query params)
-  const handleRoleChange = async () => {
+  async function handleRoleChange() {
     const role = targetRole.value;
     qContainer.innerHTML = "";
     currentTemplate = null;
@@ -174,9 +185,10 @@ export const setupEvaluate = async () => {
         evaluationService.getByEvaluator(currentUser.id)
       ]);
       currentTemplate = template;
+      currentPreviousEvaluations = previousEvaluations;
 
       const evaluatedIds = previousEvaluations
-        .filter(e => e.period_id === activePeriod.id && e.form_id === currentTemplate.id)
+        .filter(e => e.period_id === activePeriod.id && e.form_id === currentTemplate.id && e.status === "submitted")
         .map(e => String(e.evaluatee_id));
 
       const filtered = allUsers.filter(u => u.roles?.includes(role) && u.id !== currentUser.id && !evaluatedIds.includes(String(u.id)));
@@ -202,7 +214,9 @@ export const setupEvaluate = async () => {
           <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="evaluatee">Persona a evaluar</label>
           ${dropdownComponent('evaluatee', evaluateeOptions, '')}
         </div>`;
-      setupDropdown('evaluatee');
+      setupDropdown('evaluatee', (val) => {
+        if (val) loadDraft(role);
+      });
 
       renderQuestions(currentTemplate.questions);
 
@@ -229,18 +243,9 @@ export const setupEvaluate = async () => {
 
   targetRole.addEventListener("change", handleRoleChange);
 
-  // 2.5 Preselección por parámetros de consulta (query params)
-  const params = new URLSearchParams(window.location.search);
-  const preselectedRole = params.get("role");
-  const preselectedId = params.get("evaluatee_id");
+  // 2.5 Preselección logic moved to the bottom to avoid TDZ issues
 
-  if (preselectedRole && preselectedId) {
-    targetRole.value = preselectedRole;
-    await handleRoleChange();
-    evaluatee.value = preselectedId;
-  }
-
-  const renderQuestions = (questions) => {
+  function renderQuestions(questions) {
     qContainer.innerHTML = "";
     const grouped = {};
 
@@ -361,8 +366,10 @@ export const setupEvaluate = async () => {
     draftBtn.addEventListener("click", () => {
       const answers = {};
       qContainer.querySelectorAll("[data-question-id]").forEach(el => {
-        if (el.dataset.selectedValue) {
-          answers[el.dataset.questionId] = el.dataset.selectedValue;
+        const textarea = el.querySelector("textarea");
+        const val = textarea ? textarea.value : el.dataset.selectedValue;
+        if (val) {
+          answers[el.dataset.questionId] = val;
         }
       });
 
@@ -379,33 +386,69 @@ export const setupEvaluate = async () => {
   }
 
   // Lógica de carga de borrador
-  const loadDraft = (currentRole) => {
-    const savedDraft = localStorage.getItem("evaluation_draft");
-    if (savedDraft) {
-      try {
-        const draft = JSON.parse(savedDraft);
-        if (draft.role === currentRole) {
-          if (draft.evaluatee) evaluatee.value = draft.evaluatee;
-          if (draft.anonymous !== undefined) anonCheck.checked = draft.anonymous;
+  function loadDraft(currentRole) {
+    let draft = null;
+    const dbDraft = currentPreviousEvaluations.find(e => 
+      e.status === "draft" && 
+      e.period_id === activePeriod?.id && 
+      e.form_id === currentTemplate?.id &&
+      String(e.evaluatee_id) === String(evaluatee.value)
+    );
 
-          qContainer.querySelectorAll("[data-question-id]").forEach(el => {
-            const qId = el.dataset.questionId;
-            const savedVal = draft.answers[qId];
-
-            if (savedVal) {
-              el.dataset.selectedValue = savedVal;
-              if (el.dataset.inputType === "scale" || el.dataset.inputType === "scale_1_5" || el.dataset.inputType === "yes_no") {
-                const btn = el.querySelector(`button[data-value="${savedVal}"]`);
-                if (btn) btn.classList.add("border-[var(--brand-bg)]", "text-[var(--brand-bg)]", "shadow-sm", "bg-[var(--brand-bg)]/10");
-              } else {
-                const textarea = el.querySelector("textarea");
-                if (textarea) textarea.value = savedVal;
-              }
-            }
-          });
-          updateProgress();
-          showToast("Borrador recuperado", "info", "Se ha cargado tu información guardada.");
+    if (dbDraft) {
+      draft = {
+        role: currentRole,
+        evaluatee: dbDraft.evaluatee_id,
+        anonymous: dbDraft.is_anonymous,
+        answers: dbDraft.answers || {}
+      };
+      
+      // Adaptar el formato de answers del backend al formato esperado por el frontend
+      if (Array.isArray(draft.answers)) {
+        const answersObj = {};
+        draft.answers.forEach(a => {
+          answersObj[a.question_id] = a.score !== null ? String(a.score) : a.comment;
+        });
+        draft.answers = answersObj;
+      }
+    } else {
+      const savedDraft = localStorage.getItem("evaluation_draft");
+      if (savedDraft) {
+        try {
+          const parsed = JSON.parse(savedDraft);
+          if (parsed.role === currentRole && String(parsed.evaluatee) === String(evaluatee.value)) {
+            draft = parsed;
+          }
+        } catch (e) {
+          console.error("Error al parsear borrador local", e);
         }
+      }
+    }
+
+    if (draft) {
+      try {
+        if (draft.evaluatee) {
+          setDropdownValue('evaluatee', draft.evaluatee);
+        }
+        if (draft.anonymous !== undefined) anonCheck.checked = draft.anonymous;
+
+        qContainer.querySelectorAll("[data-question-id]").forEach(el => {
+          const qId = el.dataset.questionId;
+          const savedVal = draft.answers[qId];
+
+          if (savedVal) {
+            el.dataset.selectedValue = savedVal;
+            if (el.dataset.inputType === "scale" || el.dataset.inputType === "scale_1_5" || el.dataset.inputType === "yes_no") {
+              const btn = el.querySelector(`button[data-value="${savedVal}"]`);
+              if (btn) btn.classList.add("border-[var(--brand-bg)]", "text-[var(--brand-bg)]", "shadow-sm", "bg-[var(--brand-bg)]/10");
+            } else {
+              const textarea = el.querySelector("textarea");
+              if (textarea) textarea.value = savedVal;
+            }
+          }
+        });
+        updateProgress();
+        showToast("Borrador recuperado", "info", "Se ha cargado tu información guardada.");
       } catch (e) {
         console.error("Error al cargar borrador", e);
       }
@@ -423,7 +466,13 @@ export const setupEvaluate = async () => {
     const questionElements = qContainer.querySelectorAll("[data-question-id]");
     const draftAnswers = Array.from(questionElements).map(el => {
       const type = el.dataset.inputType;
-      const val = el.dataset.selectedValue;
+      let val = el.dataset.selectedValue;
+      
+      const textarea = el.querySelector("textarea");
+      if (textarea) {
+        val = textarea.value;
+      }
+      
       return {
         question_id: parseInt(el.dataset.questionId),
         type,
@@ -478,4 +527,19 @@ export const setupEvaluate = async () => {
       console.error(err);
     }
   });
+
+  // 2.5 Preselección por parámetros de consulta (query params)
+  const params = new URLSearchParams(window.location.search);
+  const preselectedRole = params.get("role");
+  const preselectedId = params.get("evaluatee_id");
+
+  if (preselectedRole && preselectedId) {
+    setDropdownValue('target-role', preselectedRole);
+    await handleRoleChange();
+    setDropdownValue('evaluatee', preselectedId);
+    
+    // Si el borrador cargado no pertenece a esta persona, podemos limpiar las preguntas o simplemente dejar que se sobreescriba.
+    // Lo más seguro es cargar el borrador de nuevo si coincide
+    loadDraft(preselectedRole);
+  }
 };

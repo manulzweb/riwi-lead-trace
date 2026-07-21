@@ -1,7 +1,7 @@
 export const Card = ({ children, className = "" }) => `
   <div class="group bg-[var(--bg-panel)] rounded-[2rem] border border-[var(--border-main)] shadow-sm overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-[var(--brand-hover)] relative ${className}">
     <div class="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent dark:from-white/5 pointer-events-none"></div>
-    <div class="relative z-10">${children}</div>
+    <div class="relative z-10 ">${children}</div>
   </div>
 `;
 
@@ -26,7 +26,7 @@ export const StatsCard = ({ title, value, icon, description = "", trend = null }
     className: "p-6 sm:p-8 flex flex-col justify-between hover:-translate-y-1",
     children: `
       <div class="flex items-start justify-between">
-        <div class="p-3 bg-[var(--bg-base)] rounded-2xl border border-[var(--border-main)] text-[var(--brand-bg)] shadow-sm group-hover:bg-[var(--brand-bg)] group-hover:bg-opacity-10 group-hover:text-[var(--brand-hover)] group-hover:border-[var(--brand-bg)] group-hover:border-opacity-30 transition-all duration-300">
+        <div class="p-3 bg-[var(--bg-base)] rounded-2xl border border-[var(--border-main)] text-[var(--brand-bg)] shadow-sm group-hover:bg-white/50 group-hover:bg-opacity-10 group-hover:text-[var(--brand-hover)] group-hover:border-[var(--brand-bg)] group-hover:border-opacity-30 transition-all duration-300">
           ${icon}
         </div>
         ${trendHtml}
