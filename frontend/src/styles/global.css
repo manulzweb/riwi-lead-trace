@@ -285,3 +285,38 @@ main {
   transition: margin-left 0.3s ease-in-out;
 }
 
+/* --- Print Styles para Exportar PDF Nativo --- */
+@media print {
+  body {
+    background-color: white !important;
+    color: black !important;
+  }
+  
+  /* Ocultar barra lateral y barra superior en PDFs */
+  nav, header, #main-sidebar {
+    display: none !important;
+  }
+  
+  /* Ocultar botones y selects que no deben verse impresos */
+  button, select, input[type="button"], .no-print {
+    display: none !important;
+  }
+
+  /* Resetear márgenes principales para aprovechar toda la hoja */
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+
+  /* Asegurarse de que los colores de fondo e imágenes se impriman */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Evitar saltos de página incómodos dentro de las tarjetas */
+  article, .break-inside-avoid {
+    break-inside: avoid;
+  }
+}
