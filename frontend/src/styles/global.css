@@ -320,3 +320,10 @@ main {
     break-inside: avoid;
   }
 }
+
+@layer base {
+  button {
+    cursor: pointer;
+  }
+}
+
