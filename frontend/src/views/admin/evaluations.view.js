@@ -23,12 +23,18 @@ export const renderAdminEvaluations = () => `
           Crea, edita y duplica los formularios de evaluación. Los formularios se pueden reutilizar en múltiples ciclos de evaluación.
         </p>
       </div>
-      <button id="btn-new-form"
-        class="inline-flex items-center gap-2 rounded-2xl bg-[var(--brand-bg)] px-5 py-3 text-sm font-bold text-[var(--brand-text)] transition-all hover:bg-[var(--brand-hover)] hover:shadow-lg hover:shadow-[var(--brand-bg)]/20 focus:ring-4 focus:ring-[var(--border-main)]">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-        Nuevo Formulario
-      </button>
-    </div>
+      <div class="flex items-center gap-3">
+        <button id="btn-quick-period"
+          class="inline-flex items-center gap-2 rounded-2xl border border-[var(--brand-bg)] bg-transparent px-5 py-3 text-sm font-bold text-[var(--brand-bg)] transition-all hover:bg-[var(--brand-bg)] hover:text-[var(--brand-text)] focus:ring-4 focus:ring-[var(--border-main)]">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          Abrir Nuevo Periodo
+        </button>
+        <button id="btn-new-form"
+          class="inline-flex items-center gap-2 rounded-2xl bg-[var(--brand-bg)] px-5 py-3 text-sm font-bold text-[var(--brand-text)] transition-all hover:bg-[var(--brand-hover)] hover:shadow-lg hover:shadow-[var(--brand-bg)]/20 focus:ring-4 focus:ring-[var(--border-main)]">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Nuevo Formulario
+        </button>
+      </div>
     <div id="active-period-banner-container"></div>
     
     <!-- 1. VISTA LISTA DE PLANTILLAS -->
@@ -130,6 +136,31 @@ export const renderAdminEvaluations = () => `
       </button>
 
     </div>
+
+    <!-- Modal Form for New Period (Quick Create) -->
+    <div id="quick-period-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300">
+      <div role="dialog" aria-modal="true" aria-labelledby="quick-period-modal-title" class="w-full max-w-md scale-95 transform rounded-3xl bg-[var(--bg-panel)] p-8 shadow-2xl transition-transform duration-300 border border-[var(--border-main)]">
+        <h2 id="quick-period-modal-title" class="mb-6 text-2xl font-bold font-heading text-[var(--text-main)]">Abrir Nuevo Ciclo Rápidamente</h2>
+        <form id="form-quick-period">
+          <div class="mb-4">
+            <label for="quick-period-name" class="mb-2 block text-sm font-semibold text-[var(--text-main)]">Nombre del Ciclo</label>
+            <input required id="quick-period-name" type="text" placeholder="Ej. Q3 2026" class="w-full rounded-xl border border-[var(--border-main)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text-main)] transition-all focus:border-[var(--brand-bg)] focus:bg-[var(--bg-panel)] focus:outline-none focus:ring-4 focus:ring-[var(--brand-bg)]/10" />
+          </div>
+          <div class="mb-4">
+            <label for="quick-period-start" class="mb-2 block text-sm font-semibold text-[var(--text-main)]">Fecha de Inicio</label>
+            <input required id="quick-period-start" type="date" class="w-full rounded-xl border border-[var(--border-main)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text-main)] transition-all focus:border-[var(--brand-bg)] focus:bg-[var(--bg-panel)] focus:outline-none focus:ring-4 focus:ring-[var(--brand-bg)]/10" />
+          </div>
+          <div class="mb-6">
+            <label for="quick-period-end" class="mb-2 block text-sm font-semibold text-[var(--text-main)]">Fecha de Fin</label>
+            <input required id="quick-period-end" type="date" class="w-full rounded-xl border border-[var(--border-main)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text-main)] transition-all focus:border-[var(--brand-bg)] focus:bg-[var(--bg-panel)] focus:outline-none focus:ring-4 focus:ring-[var(--brand-bg)]/10" />
+          </div>
+          <div class="flex items-center gap-3">
+            <button type="button" id="btn-cancel-quick-period" class="w-full rounded-xl border border-[var(--border-main)] bg-[var(--bg-panel)] py-3 font-semibold text-[var(--text-muted)] transition-all hover:bg-[var(--bg-base)] hover:text-[var(--text-main)] cursor-pointer">Cancelar</button>
+            <button type="submit" class="w-full rounded-xl bg-[var(--brand-bg)] py-3 font-bold text-[var(--brand-text)] transition-all hover:bg-[var(--brand-hover)] cursor-pointer">Guardar e Iniciar</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </main>
 `;
 
@@ -148,6 +179,12 @@ export const setupAdminEvaluations = () => {
   const inputTitle = document.getElementById("form-title");
   const inputDesc = document.getElementById("form-desc");
   const selectRole = document.getElementById("form-role");
+
+  // Modal rápido de periodos
+  const btnQuickPeriod = document.getElementById("btn-quick-period");
+  const quickPeriodModal = document.getElementById("quick-period-modal");
+  const formQuickPeriod = document.getElementById("form-quick-period");
+  const btnCancelQuickPeriod = document.getElementById("btn-cancel-quick-period");
 
   // --- ESTADO (Memoria) ---
   let questions = [];
@@ -203,6 +240,14 @@ export const setupAdminEvaluations = () => {
     btnCreate.classList.toggle("opacity-50", hasActivePeriod);
     btnCreate.classList.toggle("cursor-not-allowed", hasActivePeriod);
     btnCreate.title = hasActivePeriod ? "Cierra el periodo activo para poder crear formularios." : "";
+    
+    if (btnQuickPeriod) {
+      btnQuickPeriod.disabled = hasActivePeriod;
+      btnQuickPeriod.classList.toggle("opacity-50", hasActivePeriod);
+      btnQuickPeriod.classList.toggle("cursor-not-allowed", hasActivePeriod);
+      btnQuickPeriod.title = hasActivePeriod ? "Ya hay un periodo activo. Ciérralo primero." : "";
+    }
+    
     if (btnSave) {
       btnSave.disabled = hasActivePeriod;
       btnSave.classList.toggle("opacity-50", hasActivePeriod);
@@ -210,6 +255,55 @@ export const setupAdminEvaluations = () => {
       btnSave.title = hasActivePeriod ? "Cierra el periodo activo para poder guardar cambios." : "";
     }
   };
+
+  // --- Lógica del modal rápido de periodos ---
+  if (btnQuickPeriod && quickPeriodModal) {
+    const closeQuickModal = () => {
+      quickPeriodModal.classList.add("opacity-0");
+      quickPeriodModal.firstElementChild.classList.add("scale-95");
+      setTimeout(() => {
+        quickPeriodModal.classList.add("hidden");
+        formQuickPeriod.reset();
+      }, 300);
+    };
+
+    btnQuickPeriod.addEventListener("click", () => {
+      if (hasActivePeriod) return;
+      quickPeriodModal.classList.remove("hidden");
+      setTimeout(() => {
+        quickPeriodModal.classList.remove("opacity-0");
+        quickPeriodModal.firstElementChild.classList.remove("scale-95");
+      }, 10);
+    });
+
+    btnCancelQuickPeriod.addEventListener("click", closeQuickModal);
+
+    formQuickPeriod.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const payload = {
+        name: document.getElementById("quick-period-name").value.trim(),
+        starts_at: document.getElementById("quick-period-start").value,
+        ends_at: document.getElementById("quick-period-end").value,
+        is_active: true // Auto activar el periodo
+      };
+
+      const btnSubmit = formQuickPeriod.querySelector("button[type='submit']");
+      btnSubmit.disabled = true;
+      btnSubmit.textContent = "Guardando...";
+
+      try {
+        await periodService.create(payload);
+        showToast("¡Periodo abierto con éxito!", "success");
+        closeQuickModal();
+        await refreshPeriodGate(); // Refrescar el estado de la vista
+      } catch (err) {
+        showToast("Error", "error", err.message || "Error al crear el periodo");
+      } finally {
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = "Guardar e Iniciar";
+      }
+    });
+  }
 
   // --- LÓGICA DE VISTAS ---
   const showBuilder = async () => {
