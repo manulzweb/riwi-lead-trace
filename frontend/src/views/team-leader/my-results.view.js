@@ -76,51 +76,51 @@ export const setupMyResults = async () => {
 
   // Carga inicial extraida para poder reintentarla desde el estado de error.
   const init = async () => {
-  feedbackList.setAttribute("aria-busy", "true");
-  try {
-    periods = await periodService.get();
+    feedbackList.setAttribute("aria-busy", "true");
+    try {
+      periods = await periodService.get();
 
-    if (periods.length === 0) {
-      document.getElementById('period-selector-container').outerHTML = `
+      if (periods.length === 0) {
+        document.getElementById('period-selector-container').outerHTML = `
         <div id="period-selector-container" class="w-64">
           ${dropdownComponent('period-selector', [{ value: '', label: 'No hay periodos' }], '')}
         </div>`;
-      setupDropdown('period-selector');
-      feedbackList.innerHTML = '<p class="text-[var(--text-muted)]">No hay periodos registrados.</p>';
-      return;
-    }
+        setupDropdown('period-selector');
+        feedbackList.innerHTML = '<p class="text-[var(--text-muted)]">No hay periodos registrados.</p>';
+        return;
+      }
 
-    const activePeriod = periods.find(p => p.is_active) || periods[0];
-    const periodOptions = periods.map(p => ({ value: p.id, label: p.name }));
+      const activePeriod = periods.find(p => p.is_active) || periods[0];
+      const periodOptions = periods.map(p => ({ value: p.id, label: p.name }));
 
-    document.getElementById('period-selector-container').outerHTML = `
+      document.getElementById('period-selector-container').outerHTML = `
       <div id="period-selector-container" class="w-64">
         <label class="mb-2 block text-sm font-medium text-[var(--text-main)] sr-only" for="period-selector-btn">Periodo</label>
         ${dropdownComponent('period-selector', periodOptions, activePeriod.id)}
       </div>`;
-    setupDropdown('period-selector');
+      setupDropdown('period-selector');
 
-    // After re-rendering, get the new input
-    const periodInput = document.getElementById("period-selector");
+      // After re-rendering, get the new input
+      const periodInput = document.getElementById("period-selector");
 
-    // Cargar datos del periodo inicial
-    await loadResultsForPeriod(currentUser.id, activePeriod.id);
+      // Cargar datos del periodo inicial
+      await loadResultsForPeriod(currentUser.id, activePeriod.id);
 
-    if (periodInput) {
-      periodInput.addEventListener("change", async () => {
-        const selectedPeriodId = parseInt(periodInput.value);
-        await loadResultsForPeriod(currentUser.id, selectedPeriodId);
-      });
+      if (periodInput) {
+        periodInput.addEventListener("change", async () => {
+          const selectedPeriodId = parseInt(periodInput.value);
+          await loadResultsForPeriod(currentUser.id, selectedPeriodId);
+        });
+      }
+
+    } catch (err) {
+      showToast("Error", "error", "No se pudo cargar la información de resultados.");
+      console.error(err);
+      feedbackList.innerHTML = renderLoadError("No se pudo cargar la información de resultados.", "my-results-retry");
+      document.getElementById("my-results-retry")?.addEventListener("click", init);
+    } finally {
+      feedbackList.setAttribute("aria-busy", "false");
     }
-
-  } catch (err) {
-    showToast("Error", "error", "No se pudo cargar la información de resultados.");
-    console.error(err);
-    feedbackList.innerHTML = renderLoadError("No se pudo cargar la información de resultados.", "my-results-retry");
-    document.getElementById("my-results-retry")?.addEventListener("click", init);
-  } finally {
-    feedbackList.setAttribute("aria-busy", "false");
-  }
   };
 
   await init();
