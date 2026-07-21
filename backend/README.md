@@ -185,10 +185,31 @@ Detalle completo en [`CLAUDE.md`](../CLAUDE.md) y [`docs/`](../docs).
 
 ## Pruebas
 
+Las pruebas son de **integración**: usan una base MySQL real, no mocks. Por eso corren contra una
+**base de datos propia** (`backend/.env.test`), nunca contra la que apunta `backend/.env`.
+
+Preparación, una sola vez:
+
+```bash
+cp .env.test.example .env.test     # y ajustá DATABASE_URL
+python tests/bootstrap_test_db.py  # crea el esquema + seed en la BD de pruebas
+```
+
+Después, cada vez:
+
 ```bash
 pytest
 ```
 
+> **El nombre de la base en `.env.test` debe terminar en `_test`.** `conftest.py` lo verifica y
+> aborta si no. No es capricho: las pruebas insertan y **borran** filas, y `test_periods.py` activa
+> periodos, lo que dispara `deactivate_other_periods`. Corriéndolas contra la base compartida del
+> equipo se le **cierra el periodo activo** a los coders en plena evaluación — pasó de verdad, por
+> eso existe esta separación.
+
+`bootstrap_test_db.py` aplica `01_ddl.sql`, `02_dml.sql` y `04_views.sql` (no el mock: los tests
+crean sus propios datos). Reejecutalo cuando cambie el esquema.
+
 Suite en [`backend/tests/`](./tests): `test_auth.py`, `test_evaluations.py`, `test_metrics.py`,
-`test_periods.py`, `test_questions.py`, `test_forms.py`. También podés probar a mano en `http://localhost:8000/docs`
-(Swagger).
+`test_periods.py`, `test_questions.py`, `test_forms.py`, `test_users.py`. También podés probar a
+mano en `http://localhost:8000/docs` (Swagger).

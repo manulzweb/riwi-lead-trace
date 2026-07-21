@@ -326,13 +326,27 @@ cuenta.**
 cd backend && python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload          # http://localhost:8000  (Swagger: /docs)
-pytest                                   # pruebas
+
+# Pruebas: corren contra una BD APARTE (backend/.env.test), nunca contra la de .env.
+# Preparacion, una sola vez:
+cp .env.test.example .env.test         # y ajusta DATABASE_URL
+python tests/bootstrap_test_db.py      # crea esquema + seed en la BD de pruebas
+pytest                                 # pruebas
 
 # Frontend (SPA)
 cd frontend && npm install
 npm run dev                              # http://localhost:5173
 npm run build                            # bundle de produccion
 ```
+
+> ⚠️ **Las pruebas NUNCA corren contra la BD de desarrollo.** `backend/tests/conftest.py` carga
+> `backend/.env.test` **antes** de importar `app` (si no, `app.config.database` ya habria abierto el
+> engine contra el `.env` normal) y **aborta** si el nombre de la base no termina en `_test`.
+>
+> No es paranoia: las pruebas insertan y **borran** filas, y `test_periods.py` activa un periodo
+> temporal, lo que dispara `deactivate_other_periods` y **cierra el periodo activo real**. Ocurrio
+> de verdad contra la BD compartida de Railway (2026-07-21) — un `pytest` distraido deja a los
+> coders sin poder evaluar. No relajes el guard ni apuntes `.env.test` a la misma base que `.env`.
 
 ## Contrato REST del MVP (resumen)
 

@@ -5,7 +5,8 @@ INSERT INTO roles (name) VALUES
     ('coder'), ('team_leader'), ('tutor'), ('admin');
 
 INSERT INTO cohorts (number, name, city) VALUES
-    (5, 'Cohorte 5', 'Barranquilla');
+    (5, 'Cohorte 5', 'Barranquilla'),
+    (6, 'Cohorte 6', 'Medellín');
 
 INSERT INTO clans (cohort_id, number, name) VALUES
     (1, 10, 'Esthercita'),
@@ -15,7 +16,10 @@ INSERT INTO clans (cohort_id, number, name) VALUES
     (1, 14, 'Micaela'),
     (1, 15, 'Cayena'),
     (1, 16, 'Malecón'),
-    (1, 17, 'Cortissoz');
+    (1, 17, 'Cortissoz'),
+    (2, 18, 'Antioquia'),
+    (2, 19, 'Poblado'),
+    (2, 20, 'Bello');
 
 INSERT INTO periods (id, name, starts_at, ends_at, is_active) VALUES
     (1, 'Python', '2026-02-15', '2026-03-15', FALSE),
@@ -37,12 +41,18 @@ INSERT INTO users (id, full_name, email, password_hash, clan_id) VALUES
     (8, 'Sebastián',                'sebastian@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
     (9, 'Carlos',                   'carlos@riwi.io',    '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
     (10,'Yamit',                    'yamit@riwi.io',     '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
-    (11,'Saeb',                     'saeb@riwi.io',      '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1);
+    (11,'Saeb',                     'saeb@riwi.io',      '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (46, 'Andrés Silva', 'asilva@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', NULL),
+    (47, 'Laura Giraldo', 'lgiraldo@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', NULL),
+    (48, 'Camilo Pérez', 'cperez@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', NULL),
+    (49, 'Tutor Medellin 1', 'tmedellin1@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 9),
+    (50, 'Tutor Medellin 2', 'tmedellin2@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 10),
+    (51, 'Tutor Medellin 3', 'tmedellin3@riwi.io', '$2b$12$X3lXI8.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 11);
 
 INSERT INTO user_roles (user_id, role_id) VALUES
     (1, 4), -- Admin
-    (2, 2), (3, 2), (4, 2), -- Team Leaders
-    (5, 3), (6, 3), (7, 3), -- Tutores
+    (2, 2), (3, 2), (4, 2), (46, 2), (47, 2), (48, 2), -- Team Leaders
+    (5, 3), (6, 3), (7, 3), (49, 3), (50, 3), (51, 3), -- Tutores
     (8, 1), (9, 1), (10, 1), (11, 1); -- Coders
 
 -- Asignación de Team Leaders a Clanes (TL ID, Clan ID)
@@ -50,7 +60,10 @@ INSERT INTO user_roles (user_id, role_id) VALUES
 INSERT INTO team_leader_clans (user_id, clan_id) VALUES
     (2, 1),
     (3, 2),
-    (4, 3);
+    (4, 3),
+    (46, 9),
+    (47, 10),
+    (48, 11);
 
 -- Categorias usadas por las plantillas semilla (el Admin puede agregar mas
 -- desde /categories). Se referencian por nombre via subquery mas abajo para
