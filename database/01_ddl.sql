@@ -9,11 +9,18 @@ CREATE DATABASE IF NOT EXISTS riwi_lead_trace
     CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE riwi_lead_trace;
 
--- Idempotencia para entorno de desarrollo
+-- Idempotencia para entorno de desarrollo.
+-- El orden importa: hijos antes que padres, o las FK bloquean el DROP.
+--
+-- `detalles_evaluacion` es el nombre LEGADO de `evaluation_details` (se
+-- renombro a ingles). Se dropea aparte para que este script funcione tal cual
+-- sobre un entorno que todavia venga del esquema viejo -- sin esta linea, su FK
+-- `fk_answer_eval` impide dropear `evaluations` y el script muere a la mitad.
+DROP TABLE IF EXISTS detalles_evaluacion;
 DROP TABLE IF EXISTS system_settings;
 DROP TABLE IF EXISTS admin_activity_log;
 DROP TABLE IF EXISTS ai_feedback_cache;
-DROP TABLE IF EXISTS detalles_evaluacion;
+DROP TABLE IF EXISTS evaluation_details;
 DROP TABLE IF EXISTS evaluation_submissions;
 DROP TABLE IF EXISTS evaluations;
 DROP TABLE IF EXISTS questions;
@@ -316,7 +323,7 @@ CREATE TABLE evaluation_submissions (
 -- ---------------------------------------------------------------------
 -- Respuestas por pregunta
 -- ---------------------------------------------------------------------
-CREATE TABLE detalles_evaluacion (
+CREATE TABLE evaluation_details (
     id            INT AUTO_INCREMENT PRIMARY KEY,
     evaluation_id INT NOT NULL,
     question_id   INT NOT NULL,
@@ -336,7 +343,7 @@ CREATE TABLE detalles_evaluacion (
 );
 
 -- ---------------------------------------------------------------------
--- Cache de resúmenes generados por IA (Claude API) para el Admin
+-- Cache de resúmenes generados por IA (Google Gemini) para el Admin
 -- ---------------------------------------------------------------------
 CREATE TABLE ai_feedback_cache (
     id            INT AUTO_INCREMENT PRIMARY KEY,

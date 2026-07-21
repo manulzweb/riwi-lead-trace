@@ -1,1983 +1,2482 @@
--- Evaluaciones generadas
+-- Evaluaciones generadas dinamicamente con esquema corregido (evaluation_details)
+DELETE FROM evaluation_details;
+ALTER TABLE evaluation_details AUTO_INCREMENT = 1;
 DELETE FROM evaluation_submissions;
+ALTER TABLE evaluation_submissions AUTO_INCREMENT = 1;
 DELETE FROM evaluations;
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (1, 4, 1, 14, 2, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1, 1, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (2, 1, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (3, 1, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (4, 1, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (5, 1, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (6, 1, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (7, 1, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (8, 1, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (9, 1, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (10, 1, 10, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (11, 1, 11, NULL, 'Falta un poco de orden en las clases.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (2, 4, 1, 25, 2, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (12, 2, 1, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (13, 2, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (14, 2, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (15, 2, 4, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (16, 2, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (17, 2, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (18, 2, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (19, 2, 8, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (20, 2, 9, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (21, 2, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (22, 2, 11, NULL, 'Excelente, me ayuda mucho con mis dudas.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (3, 4, 1, 37, 2, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (23, 3, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (24, 3, 2, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (25, 3, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (26, 3, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (27, 3, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (28, 3, 6, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (29, 3, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (30, 3, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (31, 3, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (32, 3, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (33, 3, 11, NULL, 'Me gustaria que hiciera mas ejemplos practicos.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (4, 1, 1, 36, 2, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (34, 4, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (35, 4, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (36, 4, 3, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (37, 4, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (38, 4, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (39, 4, 6, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (40, 4, 7, 2, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (41, 4, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (42, 4, 9, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (43, 4, 10, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (44, 4, 11, NULL, 'Falta un poco de orden en las clases.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (5, 2, 1, 32, 2, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (45, 5, 1, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (46, 5, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (47, 5, 3, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (48, 5, 4, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (49, 5, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (50, 5, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (51, 5, 7, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (52, 5, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (53, 5, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (54, 5, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (55, 5, 11, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (6, 2, 1, 19, 2, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (56, 6, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (57, 6, 2, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (58, 6, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (59, 6, 4, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (60, 6, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (61, 6, 6, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (62, 6, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (63, 6, 8, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (64, 6, 9, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (65, 6, 10, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (66, 6, 11, NULL, 'Todo bien, explica claro.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (7, 3, 1, 32, 2, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (67, 7, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (68, 7, 2, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (69, 7, 3, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (70, 7, 4, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (71, 7, 5, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (72, 7, 6, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (73, 7, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (74, 7, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (75, 7, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (76, 7, 10, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (77, 7, 11, NULL, 'Es paciente y se nota que sabe del tema.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (8, 1, 1, 15, 2, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (78, 8, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (79, 8, 2, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (80, 8, 3, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (81, 8, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (82, 8, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (83, 8, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (84, 8, 7, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (85, 8, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (86, 8, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (87, 8, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (88, 8, 11, NULL, 'Me gustaria que hiciera mas ejemplos practicos.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (9, 2, 1, 32, 2, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (89, 9, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (90, 9, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (91, 9, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (92, 9, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (93, 9, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (94, 9, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (95, 9, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (96, 9, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (97, 9, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (98, 9, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (99, 9, 11, NULL, 'Deberia dar mas feedback en los PRs.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (10, 2, 1, 37, 2, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (100, 10, 1, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (101, 10, 2, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (102, 10, 3, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (103, 10, 4, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (104, 10, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (105, 10, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (106, 10, 7, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (107, 10, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (108, 10, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (109, 10, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (110, 10, 11, NULL, 'Muy buen lider, siempre apoya al equipo.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (11, 3, 1, 24, 2, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (111, 11, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (112, 11, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (113, 11, 3, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (114, 11, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (115, 11, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (116, 11, 6, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (117, 11, 7, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (118, 11, 8, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (119, 11, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (120, 11, 10, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (121, 11, 11, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (12, 4, 1, 19, 2, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (122, 12, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (123, 12, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (124, 12, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (125, 12, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (126, 12, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (127, 12, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (128, 12, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (129, 12, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (130, 12, 9, 2, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (131, 12, 10, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (132, 12, 11, NULL, 'Es paciente y se nota que sabe del tema.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (13, 4, 1, 28, 2, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (133, 13, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (134, 13, 2, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (135, 13, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (136, 13, 4, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (137, 13, 5, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (138, 13, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (139, 13, 7, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (140, 13, 8, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (141, 13, 9, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (142, 13, 10, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (143, 13, 11, NULL, 'Siempre esta disponible, muy buen profe.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (14, 4, 1, 25, 2, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (144, 14, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (145, 14, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (146, 14, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (147, 14, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (148, 14, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (149, 14, 6, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (150, 14, 7, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (151, 14, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (152, 14, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (153, 14, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (154, 14, 11, NULL, 'Siempre esta disponible, muy buen profe.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (15, 1, 1, 26, 2, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (155, 15, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (156, 15, 2, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (157, 15, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (158, 15, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (159, 15, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (160, 15, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (161, 15, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (162, 15, 8, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (163, 15, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (164, 15, 10, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (165, 15, 11, NULL, 'Muy buen lider, siempre apoya al equipo.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (16, 4, 1, 30, 2, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (166, 16, 1, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (167, 16, 2, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (168, 16, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (169, 16, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (170, 16, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (171, 16, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (172, 16, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (173, 16, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (174, 16, 9, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (175, 16, 10, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (176, 16, 11, NULL, 'Deberia dar mas feedback en los PRs.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (17, 4, 1, 29, 2, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (177, 17, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (178, 17, 2, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (179, 17, 3, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (180, 17, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (181, 17, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (182, 17, 6, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (183, 17, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (184, 17, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (185, 17, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (186, 17, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (187, 17, 11, NULL, 'Falta un poco de orden en las clases.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (18, 2, 1, 18, 2, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (188, 18, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (189, 18, 2, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (190, 18, 3, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (191, 18, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (192, 18, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (193, 18, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (194, 18, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (195, 18, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (196, 18, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (197, 18, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (198, 18, 11, NULL, 'Muy buen lider, siempre apoya al equipo.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (19, 4, 1, 18, 2, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (199, 19, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (200, 19, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (201, 19, 3, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (202, 19, 4, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (203, 19, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (204, 19, 6, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (205, 19, 7, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (206, 19, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (207, 19, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (208, 19, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (209, 19, 11, NULL, 'Es paciente y se nota que sabe del tema.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (20, 4, 1, 14, 2, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (210, 20, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (211, 20, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (212, 20, 3, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (213, 20, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (214, 20, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (215, 20, 6, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (216, 20, 7, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (217, 20, 8, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (218, 20, 9, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (219, 20, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (220, 20, 11, NULL, 'Excelente, me ayuda mucho con mis dudas.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (21, 3, 1, 29, 2, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (221, 21, 1, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (222, 21, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (223, 21, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (224, 21, 4, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (225, 21, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (226, 21, 6, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (227, 21, 7, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (228, 21, 8, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (229, 21, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (230, 21, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (231, 21, 11, NULL, 'Muy buen lider, siempre apoya al equipo.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (22, 4, 1, 15, 2, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (232, 22, 1, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (233, 22, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (234, 22, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (235, 22, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (236, 22, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (237, 22, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (238, 22, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (239, 22, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (240, 22, 9, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (241, 22, 10, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (242, 22, 11, NULL, 'Deberia dar mas feedback en los PRs.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (23, 2, 1, 22, 2, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (243, 23, 1, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (244, 23, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (245, 23, 3, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (246, 23, 4, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (247, 23, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (248, 23, 6, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (249, 23, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (250, 23, 8, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (251, 23, 9, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (252, 23, 10, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (253, 23, 11, NULL, 'Muy buen lider, siempre apoya al equipo.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (24, 3, 1, 40, 2, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (254, 24, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (255, 24, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (256, 24, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (257, 24, 4, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (258, 24, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (259, 24, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (260, 24, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (261, 24, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (262, 24, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (263, 24, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (264, 24, 11, NULL, 'Me gustaria que hiciera mas ejemplos practicos.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (25, 4, 1, 24, 2, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (265, 25, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (266, 25, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (267, 25, 3, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (268, 25, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (269, 25, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (270, 25, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (271, 25, 7, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (272, 25, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (273, 25, 9, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (274, 25, 10, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (275, 25, 11, NULL, 'Muy buen lider, siempre apoya al equipo.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (26, 2, 1, 23, 2, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (276, 26, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (277, 26, 2, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (278, 26, 3, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (279, 26, 4, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (280, 26, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (281, 26, 6, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (282, 26, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (283, 26, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (284, 26, 9, 2, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (285, 26, 10, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (286, 26, 11, NULL, 'Falta un poco de orden en las clases.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (27, 2, 1, 30, 2, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (287, 27, 1, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (288, 27, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (289, 27, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (290, 27, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (291, 27, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (292, 27, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (293, 27, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (294, 27, 8, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (295, 27, 9, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (296, 27, 10, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (297, 27, 11, NULL, 'Muy buen lider, siempre apoya al equipo.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (28, 3, 1, 31, 2, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (298, 28, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (299, 28, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (300, 28, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (301, 28, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (302, 28, 5, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (303, 28, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (304, 28, 7, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (305, 28, 8, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (306, 28, 9, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (307, 28, 10, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (308, 28, 11, NULL, 'Falta un poco de orden en las clases.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (29, 3, 1, 14, 2, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (309, 29, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (310, 29, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (311, 29, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (312, 29, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (313, 29, 5, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (314, 29, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (315, 29, 7, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (316, 29, 8, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (317, 29, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (318, 29, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (319, 29, 11, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (30, 4, 1, 22, 2, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (320, 30, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (321, 30, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (322, 30, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (323, 30, 4, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (324, 30, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (325, 30, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (326, 30, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (327, 30, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (328, 30, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (329, 30, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (330, 30, 11, NULL, 'Siempre esta disponible, muy buen profe.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (31, 1, 1, 40, 3, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (331, 31, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (332, 31, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (333, 31, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (334, 31, 4, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (335, 31, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (336, 31, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (337, 31, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (338, 31, 8, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (339, 31, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (340, 31, 10, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (341, 31, 11, NULL, 'Me gustaria que hiciera mas ejemplos practicos.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (32, 2, 1, 28, 3, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (342, 32, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (343, 32, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (344, 32, 3, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (345, 32, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (346, 32, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (347, 32, 6, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (348, 32, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (349, 32, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (350, 32, 9, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (351, 32, 10, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (352, 32, 11, NULL, 'Falta un poco de orden en las clases.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (33, 1, 1, 32, 3, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (353, 33, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (354, 33, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (355, 33, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (356, 33, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (357, 33, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (358, 33, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (359, 33, 7, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (360, 33, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (361, 33, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (362, 33, 10, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (363, 33, 11, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (34, 3, 1, 19, 3, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (364, 34, 1, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (365, 34, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (366, 34, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (367, 34, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (368, 34, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (369, 34, 6, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (370, 34, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (371, 34, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (372, 34, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (373, 34, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (374, 34, 11, NULL, 'Falta un poco de orden en las clases.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (35, 1, 1, 22, 3, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (375, 35, 1, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (376, 35, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (377, 35, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (378, 35, 4, 2, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (379, 35, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (380, 35, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (381, 35, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (382, 35, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (383, 35, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (384, 35, 10, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (385, 35, 11, NULL, 'Falta un poco de orden en las clases.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (36, 1, 1, 38, 3, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (386, 36, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (387, 36, 2, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (388, 36, 3, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (389, 36, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (390, 36, 5, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (391, 36, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (392, 36, 7, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (393, 36, 8, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (394, 36, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (395, 36, 10, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (396, 36, 11, NULL, 'Deberia dar mas feedback en los PRs.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (37, 1, 1, 36, 3, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (397, 37, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (398, 37, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (399, 37, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (400, 37, 4, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (401, 37, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (402, 37, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (403, 37, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (404, 37, 8, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (405, 37, 9, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (406, 37, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (407, 37, 11, NULL, 'Me gustaria que hiciera mas ejemplos practicos.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (38, 2, 1, 40, 3, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (408, 38, 1, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (409, 38, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (410, 38, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (411, 38, 4, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (412, 38, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (413, 38, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (414, 38, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (415, 38, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (416, 38, 9, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (417, 38, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (418, 38, 11, NULL, 'Todo bien, explica claro.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (39, 2, 1, 14, 3, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (419, 39, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (420, 39, 2, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (421, 39, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (422, 39, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (423, 39, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (424, 39, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (425, 39, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (426, 39, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (427, 39, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (428, 39, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (429, 39, 11, NULL, 'Me gustaria que hiciera mas ejemplos practicos.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (40, 2, 1, 35, 3, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (430, 40, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (431, 40, 2, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (432, 40, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (433, 40, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (434, 40, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (435, 40, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (436, 40, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (437, 40, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (438, 40, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (439, 40, 10, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (440, 40, 11, NULL, 'Deberia dar mas feedback en los PRs.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (41, 1, 1, 14, 3, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (441, 41, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (442, 41, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (443, 41, 3, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (444, 41, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (445, 41, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (446, 41, 6, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (447, 41, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (448, 41, 8, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (449, 41, 9, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (450, 41, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (451, 41, 11, NULL, 'Muy buen lider, siempre apoya al equipo.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (42, 3, 1, 34, 3, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (452, 42, 1, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (453, 42, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (454, 42, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (455, 42, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (456, 42, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (457, 42, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (458, 42, 7, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (459, 42, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (460, 42, 9, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (461, 42, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (462, 42, 11, NULL, 'Todo bien, explica claro.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (43, 3, 1, 12, 3, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (463, 43, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (464, 43, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (465, 43, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (466, 43, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (467, 43, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (468, 43, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (469, 43, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (470, 43, 8, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (471, 43, 9, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (472, 43, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (473, 43, 11, NULL, 'Es paciente y se nota que sabe del tema.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (44, 3, 1, 38, 3, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (474, 44, 1, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (475, 44, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (476, 44, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (477, 44, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (478, 44, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (479, 44, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (480, 44, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (481, 44, 8, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (482, 44, 9, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (483, 44, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (484, 44, 11, NULL, 'Es paciente y se nota que sabe del tema.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (45, 1, 1, 13, 3, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (485, 45, 1, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (486, 45, 2, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (487, 45, 3, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (488, 45, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (489, 45, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (490, 45, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (491, 45, 7, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (492, 45, 8, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (493, 45, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (494, 45, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (495, 45, 11, NULL, 'Es paciente y se nota que sabe del tema.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (46, 1, 1, 24, 3, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (496, 46, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (497, 46, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (498, 46, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (499, 46, 4, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (500, 46, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (501, 46, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (502, 46, 7, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (503, 46, 8, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (504, 46, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (505, 46, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (506, 46, 11, NULL, 'Siempre esta disponible, muy buen profe.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (47, 3, 1, 38, 3, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (507, 47, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (508, 47, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (509, 47, 3, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (510, 47, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (511, 47, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (512, 47, 6, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (513, 47, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (514, 47, 8, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (515, 47, 9, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (516, 47, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (517, 47, 11, NULL, 'Es paciente y se nota que sabe del tema.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (48, 2, 1, 37, 3, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (518, 48, 1, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (519, 48, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (520, 48, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (521, 48, 4, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (522, 48, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (523, 48, 6, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (524, 48, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (525, 48, 8, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (526, 48, 9, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (527, 48, 10, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (528, 48, 11, NULL, 'Me gustaria que hiciera mas ejemplos practicos.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (49, 1, 1, 27, 3, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (529, 49, 1, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (530, 49, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (531, 49, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (532, 49, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (533, 49, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (534, 49, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (535, 49, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (536, 49, 8, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (537, 49, 9, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (538, 49, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (539, 49, 11, NULL, 'Excelente, me ayuda mucho con mis dudas.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (50, 1, 1, 19, 3, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (540, 50, 1, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (541, 50, 2, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (542, 50, 3, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (543, 50, 4, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (544, 50, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (545, 50, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (546, 50, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (547, 50, 8, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (548, 50, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (549, 50, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (550, 50, 11, NULL, 'Excelente, me ayuda mucho con mis dudas.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (51, 2, 1, 12, 3, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (551, 51, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (552, 51, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (553, 51, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (554, 51, 4, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (555, 51, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (556, 51, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (557, 51, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (558, 51, 8, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (559, 51, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (560, 51, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (561, 51, 11, NULL, 'Todo bien, explica claro.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (52, 2, 1, 21, 3, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (562, 52, 1, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (563, 52, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (564, 52, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (565, 52, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (566, 52, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (567, 52, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (568, 52, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (569, 52, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (570, 52, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (571, 52, 10, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (572, 52, 11, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (53, 4, 1, 37, 3, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (573, 53, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (574, 53, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (575, 53, 3, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (576, 53, 4, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (577, 53, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (578, 53, 6, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (579, 53, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (580, 53, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (581, 53, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (582, 53, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (583, 53, 11, NULL, 'Falta un poco de orden en las clases.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (54, 2, 1, 32, 3, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (584, 54, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (585, 54, 2, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (586, 54, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (587, 54, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (588, 54, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (589, 54, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (590, 54, 7, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (591, 54, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (592, 54, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (593, 54, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (594, 54, 11, NULL, 'Falta un poco de orden en las clases.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (55, 4, 1, 14, 3, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (595, 55, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (596, 55, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (597, 55, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (598, 55, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (599, 55, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (600, 55, 6, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (601, 55, 7, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (602, 55, 8, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (603, 55, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (604, 55, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (605, 55, 11, NULL, 'Me gustaria que hiciera mas ejemplos practicos.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (56, 1, 1, 30, 3, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (606, 56, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (607, 56, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (608, 56, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (609, 56, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (610, 56, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (611, 56, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (612, 56, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (613, 56, 8, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (614, 56, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (615, 56, 10, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (616, 56, 11, NULL, 'Muy buen lider, siempre apoya al equipo.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (57, 2, 1, 26, 3, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (617, 57, 1, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (618, 57, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (619, 57, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (620, 57, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (621, 57, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (622, 57, 6, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (623, 57, 7, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (624, 57, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (625, 57, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (626, 57, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (627, 57, 11, NULL, 'Muy buen lider, siempre apoya al equipo.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (58, 3, 1, 12, 3, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (628, 58, 1, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (629, 58, 2, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (630, 58, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (631, 58, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (632, 58, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (633, 58, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (634, 58, 7, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (635, 58, 8, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (636, 58, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (637, 58, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (638, 58, 11, NULL, 'Me gustaria que hiciera mas ejemplos practicos.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (59, 3, 1, 30, 3, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (639, 59, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (640, 59, 2, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (641, 59, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (642, 59, 4, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (643, 59, 5, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (644, 59, 6, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (645, 59, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (646, 59, 8, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (647, 59, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (648, 59, 10, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (649, 59, 11, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (60, 3, 1, 14, 3, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (650, 60, 1, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (651, 60, 2, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (652, 60, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (653, 60, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (654, 60, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (655, 60, 6, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (656, 60, 7, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (657, 60, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (658, 60, 9, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (659, 60, 10, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (660, 60, 11, NULL, 'Excelente, me ayuda mucho con mis dudas.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (61, 3, 1, 16, 4, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (661, 61, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (662, 61, 2, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (663, 61, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (664, 61, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (665, 61, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (666, 61, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (667, 61, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (668, 61, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (669, 61, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (670, 61, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (671, 61, 11, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (62, 3, 1, 39, 4, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (672, 62, 1, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (673, 62, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (674, 62, 3, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (675, 62, 4, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (676, 62, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (677, 62, 6, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (678, 62, 7, 2, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (679, 62, 8, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (680, 62, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (681, 62, 10, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (682, 62, 11, NULL, 'Siempre esta disponible, muy buen profe.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (63, 1, 1, 33, 4, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (683, 63, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (684, 63, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (685, 63, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (686, 63, 4, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (687, 63, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (688, 63, 6, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (689, 63, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (690, 63, 8, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (691, 63, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (692, 63, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (693, 63, 11, NULL, 'Excelente, me ayuda mucho con mis dudas.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (64, 3, 1, 15, 4, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (694, 64, 1, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (695, 64, 2, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (696, 64, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (697, 64, 4, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (698, 64, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (699, 64, 6, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (700, 64, 7, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (701, 64, 8, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (702, 64, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (703, 64, 10, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (704, 64, 11, NULL, 'Muy buen lider, siempre apoya al equipo.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (65, 3, 1, 28, 4, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (705, 65, 1, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (706, 65, 2, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (707, 65, 3, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (708, 65, 4, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (709, 65, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (710, 65, 6, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (711, 65, 7, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (712, 65, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (713, 65, 9, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (714, 65, 10, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (715, 65, 11, NULL, 'Todo bien, explica claro.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (66, 4, 1, 39, 4, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (716, 66, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (717, 66, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (718, 66, 3, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (719, 66, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (720, 66, 5, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (721, 66, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (722, 66, 7, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (723, 66, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (724, 66, 9, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (725, 66, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (726, 66, 11, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (67, 3, 1, 22, 4, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (727, 67, 1, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (728, 67, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (729, 67, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (730, 67, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (731, 67, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (732, 67, 6, 2, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (733, 67, 7, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (734, 67, 8, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (735, 67, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (736, 67, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (737, 67, 11, NULL, 'Falta un poco de orden en las clases.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (68, 2, 1, 17, 4, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (738, 68, 1, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (739, 68, 2, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (740, 68, 3, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (741, 68, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (742, 68, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (743, 68, 6, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (744, 68, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (745, 68, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (746, 68, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (747, 68, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (748, 68, 11, NULL, 'Todo bien, explica claro.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (69, 2, 1, 29, 4, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (749, 69, 1, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (750, 69, 2, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (751, 69, 3, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (752, 69, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (753, 69, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (754, 69, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (755, 69, 7, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (756, 69, 8, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (757, 69, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (758, 69, 10, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (759, 69, 11, NULL, 'Es paciente y se nota que sabe del tema.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (70, 3, 1, 33, 4, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (760, 70, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (761, 70, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (762, 70, 3, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (763, 70, 4, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (764, 70, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (765, 70, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (766, 70, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (767, 70, 8, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (768, 70, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (769, 70, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (770, 70, 11, NULL, 'Deberia dar mas feedback en los PRs.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (71, 4, 1, 40, 4, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (771, 71, 1, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (772, 71, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (773, 71, 3, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (774, 71, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (775, 71, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (776, 71, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (777, 71, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (778, 71, 8, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (779, 71, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (780, 71, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (781, 71, 11, NULL, 'Siempre esta disponible, muy buen profe.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (72, 2, 1, 33, 4, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (782, 72, 1, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (783, 72, 2, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (784, 72, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (785, 72, 4, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (786, 72, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (787, 72, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (788, 72, 7, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (789, 72, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (790, 72, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (791, 72, 10, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (792, 72, 11, NULL, 'Siempre esta disponible, muy buen profe.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (73, 3, 1, 22, 4, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (793, 73, 1, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (794, 73, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (795, 73, 3, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (796, 73, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (797, 73, 5, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (798, 73, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (799, 73, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (800, 73, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (801, 73, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (802, 73, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (803, 73, 11, NULL, 'Excelente, me ayuda mucho con mis dudas.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (74, 1, 1, 33, 4, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (804, 74, 1, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (805, 74, 2, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (806, 74, 3, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (807, 74, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (808, 74, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (809, 74, 6, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (810, 74, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (811, 74, 8, 2, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (812, 74, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (813, 74, 10, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (814, 74, 11, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (75, 4, 1, 24, 4, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (815, 75, 1, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (816, 75, 2, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (817, 75, 3, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (818, 75, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (819, 75, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (820, 75, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (821, 75, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (822, 75, 8, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (823, 75, 9, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (824, 75, 10, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (825, 75, 11, NULL, 'Me gustaria que hiciera mas ejemplos practicos.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (76, 4, 1, 38, 4, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (826, 76, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (827, 76, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (828, 76, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (829, 76, 4, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (830, 76, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (831, 76, 6, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (832, 76, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (833, 76, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (834, 76, 9, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (835, 76, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (836, 76, 11, NULL, 'Siempre esta disponible, muy buen profe.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (77, 1, 1, 30, 4, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (837, 77, 1, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (838, 77, 2, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (839, 77, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (840, 77, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (841, 77, 5, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (842, 77, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (843, 77, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (844, 77, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (845, 77, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (846, 77, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (847, 77, 11, NULL, 'Excelente, me ayuda mucho con mis dudas.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (78, 1, 1, 28, 4, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (848, 78, 1, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (849, 78, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (850, 78, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (851, 78, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (852, 78, 5, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (853, 78, 6, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (854, 78, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (855, 78, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (856, 78, 9, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (857, 78, 10, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (858, 78, 11, NULL, 'Siempre esta disponible, muy buen profe.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (79, 1, 1, 37, 4, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (859, 79, 1, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (860, 79, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (861, 79, 3, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (862, 79, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (863, 79, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (864, 79, 6, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (865, 79, 7, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (866, 79, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (867, 79, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (868, 79, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (869, 79, 11, NULL, 'Muy buen lider, siempre apoya al equipo.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (80, 4, 1, 35, 4, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (870, 80, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (871, 80, 2, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (872, 80, 3, 2, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (873, 80, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (874, 80, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (875, 80, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (876, 80, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (877, 80, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (878, 80, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (879, 80, 10, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (880, 80, 11, NULL, 'Siempre esta disponible, muy buen profe.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (81, 4, 1, 28, 4, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (881, 81, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (882, 81, 2, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (883, 81, 3, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (884, 81, 4, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (885, 81, 5, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (886, 81, 6, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (887, 81, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (888, 81, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (889, 81, 9, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (890, 81, 10, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (891, 81, 11, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (82, 1, 1, 26, 4, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (892, 82, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (893, 82, 2, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (894, 82, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (895, 82, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (896, 82, 5, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (897, 82, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (898, 82, 7, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (899, 82, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (900, 82, 9, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (901, 82, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (902, 82, 11, NULL, 'Todo bien, explica claro.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (83, 2, 1, 18, 4, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (903, 83, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (904, 83, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (905, 83, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (906, 83, 4, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (907, 83, 5, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (908, 83, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (909, 83, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (910, 83, 8, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (911, 83, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (912, 83, 10, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (913, 83, 11, NULL, 'Muy buen lider, siempre apoya al equipo.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (84, 2, 1, 39, 4, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (914, 84, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (915, 84, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (916, 84, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (917, 84, 4, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (918, 84, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (919, 84, 6, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (920, 84, 7, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (921, 84, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (922, 84, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (923, 84, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (924, 84, 11, NULL, 'Me gustaria que hiciera mas ejemplos practicos.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (85, 2, 1, 17, 4, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (925, 85, 1, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (926, 85, 2, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (927, 85, 3, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (928, 85, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (929, 85, 5, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (930, 85, 6, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (931, 85, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (932, 85, 8, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (933, 85, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (934, 85, 10, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (935, 85, 11, NULL, 'Excelente, me ayuda mucho con mis dudas.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (86, 3, 1, 22, 4, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (936, 86, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (937, 86, 2, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (938, 86, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (939, 86, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (940, 86, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (941, 86, 6, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (942, 86, 7, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (943, 86, 8, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (944, 86, 9, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (945, 86, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (946, 86, 11, NULL, 'Deberia dar mas feedback en los PRs.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (87, 2, 1, 31, 4, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (947, 87, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (948, 87, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (949, 87, 3, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (950, 87, 4, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (951, 87, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (952, 87, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (953, 87, 7, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (954, 87, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (955, 87, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (956, 87, 10, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (957, 87, 11, NULL, 'Muy buen lider, siempre apoya al equipo.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (88, 1, 1, 36, 4, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (958, 88, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (959, 88, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (960, 88, 3, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (961, 88, 4, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (962, 88, 5, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (963, 88, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (964, 88, 7, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (965, 88, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (966, 88, 9, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (967, 88, 10, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (968, 88, 11, NULL, 'Excelente, me ayuda mucho con mis dudas.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (89, 3, 1, 27, 4, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (969, 89, 1, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (970, 89, 2, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (971, 89, 3, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (972, 89, 4, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (973, 89, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (974, 89, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (975, 89, 7, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (976, 89, 8, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (977, 89, 9, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (978, 89, 10, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (979, 89, 11, NULL, 'Siempre esta disponible, muy buen profe.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (90, 1, 1, 23, 4, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (980, 90, 1, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (981, 90, 2, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (982, 90, 3, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (983, 90, 4, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (984, 90, 5, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (985, 90, 6, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (986, 90, 7, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (987, 90, 8, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (988, 90, 9, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (989, 90, 10, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (990, 90, 11, NULL, 'Siempre esta disponible, muy buen profe.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (91, 1, 2, 31, 5, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (991, 91, 12, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (992, 91, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (993, 91, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (994, 91, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (995, 91, 16, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (996, 91, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (997, 91, 18, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (998, 91, 19, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (999, 91, 20, NULL, 'Todo bien, explica claro.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (92, 2, 2, 17, 5, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1000, 92, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1001, 92, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1002, 92, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1003, 92, 15, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1004, 92, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1005, 92, 17, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1006, 92, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1007, 92, 19, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1008, 92, 20, NULL, 'Siempre esta disponible, muy buen profe.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (93, 4, 2, 20, 5, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1009, 93, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1010, 93, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1011, 93, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1012, 93, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1013, 93, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1014, 93, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1015, 93, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1016, 93, 19, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1017, 93, 20, NULL, 'Todo bien, explica claro.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (94, 1, 2, 21, 5, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1018, 94, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1019, 94, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1020, 94, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1021, 94, 15, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1022, 94, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1023, 94, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1024, 94, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1025, 94, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1026, 94, 20, NULL, 'Me gustaria que hiciera mas ejemplos practicos.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (95, 1, 2, 22, 5, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1027, 95, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1028, 95, 13, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1029, 95, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1030, 95, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1031, 95, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1032, 95, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1033, 95, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1034, 95, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1035, 95, 20, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (96, 2, 2, 14, 5, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1036, 96, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1037, 96, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1038, 96, 14, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1039, 96, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1040, 96, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1041, 96, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1042, 96, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1043, 96, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1044, 96, 20, NULL, 'Es paciente y se nota que sabe del tema.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (97, 3, 2, 22, 5, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1045, 97, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1046, 97, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1047, 97, 14, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1048, 97, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1049, 97, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1050, 97, 17, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1051, 97, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1052, 97, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1053, 97, 20, NULL, 'Todo bien, explica claro.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (98, 2, 2, 17, 5, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1054, 98, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1055, 98, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1056, 98, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1057, 98, 15, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1058, 98, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1059, 98, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1060, 98, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1061, 98, 19, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1062, 98, 20, NULL, 'Falta un poco de orden en las clases.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (99, 1, 2, 16, 5, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1063, 99, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1064, 99, 13, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1065, 99, 14, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1066, 99, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1067, 99, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1068, 99, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1069, 99, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1070, 99, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1071, 99, 20, NULL, 'Todo bien, explica claro.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (100, 2, 2, 36, 5, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1072, 100, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1073, 100, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1074, 100, 14, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1075, 100, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1076, 100, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1077, 100, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1078, 100, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1079, 100, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1080, 100, 20, NULL, 'Muy buen lider, siempre apoya al equipo.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (101, 4, 2, 29, 5, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1081, 101, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1082, 101, 13, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1083, 101, 14, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1084, 101, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1085, 101, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1086, 101, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1087, 101, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1088, 101, 19, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1089, 101, 20, NULL, 'Siempre esta disponible, muy buen profe.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (102, 4, 2, 18, 5, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1090, 102, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1091, 102, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1092, 102, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1093, 102, 15, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1094, 102, 16, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1095, 102, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1096, 102, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1097, 102, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1098, 102, 20, NULL, 'Deberia dar mas feedback en los PRs.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (103, 1, 2, 30, 5, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1099, 103, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1100, 103, 13, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1101, 103, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1102, 103, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1103, 103, 16, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1104, 103, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1105, 103, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1106, 103, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1107, 103, 20, NULL, 'Me gustaria que hiciera mas ejemplos practicos.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (104, 1, 2, 21, 5, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1108, 104, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1109, 104, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1110, 104, 14, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1111, 104, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1112, 104, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1113, 104, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1114, 104, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1115, 104, 19, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1116, 104, 20, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (105, 3, 2, 19, 5, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1117, 105, 12, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1118, 105, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1119, 105, 14, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1120, 105, 15, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1121, 105, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1122, 105, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1123, 105, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1124, 105, 19, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1125, 105, 20, NULL, 'Falta un poco de orden en las clases.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (106, 3, 2, 22, 5, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1126, 106, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1127, 106, 13, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1128, 106, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1129, 106, 15, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1130, 106, 16, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1131, 106, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1132, 106, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1133, 106, 19, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1134, 106, 20, NULL, 'Excelente, me ayuda mucho con mis dudas.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (107, 2, 2, 12, 5, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1135, 107, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1136, 107, 13, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1137, 107, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1138, 107, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1139, 107, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1140, 107, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1141, 107, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1142, 107, 19, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1143, 107, 20, NULL, 'Todo bien, explica claro.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (108, 2, 2, 30, 5, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1144, 108, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1145, 108, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1146, 108, 14, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1147, 108, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1148, 108, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1149, 108, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1150, 108, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1151, 108, 19, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1152, 108, 20, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (109, 4, 2, 29, 5, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1153, 109, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1154, 109, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1155, 109, 14, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1156, 109, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1157, 109, 16, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1158, 109, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1159, 109, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1160, 109, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1161, 109, 20, NULL, 'Todo bien, explica claro.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (110, 4, 2, 37, 5, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1162, 110, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1163, 110, 13, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1164, 110, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1165, 110, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1166, 110, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1167, 110, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1168, 110, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1169, 110, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1170, 110, 20, NULL, 'Deberia dar mas feedback en los PRs.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (111, 2, 2, 12, 5, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1171, 111, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1172, 111, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1173, 111, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1174, 111, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1175, 111, 16, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1176, 111, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1177, 111, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1178, 111, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1179, 111, 20, NULL, 'Es paciente y se nota que sabe del tema.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (112, 2, 2, 36, 5, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1180, 112, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1181, 112, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1182, 112, 14, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1183, 112, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1184, 112, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1185, 112, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1186, 112, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1187, 112, 19, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1188, 112, 20, NULL, 'Deberia dar mas feedback en los PRs.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (113, 4, 2, 15, 5, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1189, 113, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1190, 113, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1191, 113, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1192, 113, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1193, 113, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1194, 113, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1195, 113, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1196, 113, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1197, 113, 20, NULL, 'Falta un poco de orden en las clases.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (114, 1, 2, 24, 5, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1198, 114, 12, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1199, 114, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1200, 114, 14, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1201, 114, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1202, 114, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1203, 114, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1204, 114, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1205, 114, 19, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1206, 114, 20, NULL, 'Falta un poco de orden en las clases.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (115, 2, 2, 36, 5, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1207, 115, 12, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1208, 115, 13, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1209, 115, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1210, 115, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1211, 115, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1212, 115, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1213, 115, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1214, 115, 19, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1215, 115, 20, NULL, 'Me gustaria que hiciera mas ejemplos practicos.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (116, 4, 2, 26, 5, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1216, 116, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1217, 116, 13, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1218, 116, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1219, 116, 15, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1220, 116, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1221, 116, 17, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1222, 116, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1223, 116, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1224, 116, 20, NULL, 'Muy buen lider, siempre apoya al equipo.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (117, 3, 2, 38, 5, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1225, 117, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1226, 117, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1227, 117, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1228, 117, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1229, 117, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1230, 117, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1231, 117, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1232, 117, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1233, 117, 20, NULL, 'Es paciente y se nota que sabe del tema.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (118, 4, 2, 12, 5, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1234, 118, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1235, 118, 13, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1236, 118, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1237, 118, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1238, 118, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1239, 118, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1240, 118, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1241, 118, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1242, 118, 20, NULL, 'Deberia dar mas feedback en los PRs.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (119, 3, 2, 28, 5, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1243, 119, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1244, 119, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1245, 119, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1246, 119, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1247, 119, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1248, 119, 17, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1249, 119, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1250, 119, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1251, 119, 20, NULL, 'Todo bien, explica claro.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (120, 2, 2, 25, 5, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1252, 120, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1253, 120, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1254, 120, 14, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1255, 120, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1256, 120, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1257, 120, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1258, 120, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1259, 120, 19, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1260, 120, 20, NULL, 'Siempre esta disponible, muy buen profe.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (121, 3, 2, 36, 6, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1261, 121, 12, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1262, 121, 13, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1263, 121, 14, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1264, 121, 15, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1265, 121, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1266, 121, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1267, 121, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1268, 121, 19, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1269, 121, 20, NULL, 'Es paciente y se nota que sabe del tema.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (122, 3, 2, 31, 6, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1270, 122, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1271, 122, 13, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1272, 122, 14, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1273, 122, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1274, 122, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1275, 122, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1276, 122, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1277, 122, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1278, 122, 20, NULL, 'Falta un poco de orden en las clases.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (123, 1, 2, 13, 6, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1279, 123, 12, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1280, 123, 13, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1281, 123, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1282, 123, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1283, 123, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1284, 123, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1285, 123, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1286, 123, 19, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1287, 123, 20, NULL, 'Falta un poco de orden en las clases.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (124, 3, 2, 19, 6, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1288, 124, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1289, 124, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1290, 124, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1291, 124, 15, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1292, 124, 16, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1293, 124, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1294, 124, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1295, 124, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1296, 124, 20, NULL, 'Falta un poco de orden en las clases.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (125, 4, 2, 40, 6, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1297, 125, 12, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1298, 125, 13, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1299, 125, 14, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1300, 125, 15, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1301, 125, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1302, 125, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1303, 125, 18, 2, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1304, 125, 19, 2, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1305, 125, 20, NULL, 'Es paciente y se nota que sabe del tema.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (126, 3, 2, 26, 6, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1306, 126, 12, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1307, 126, 13, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1308, 126, 14, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1309, 126, 15, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1310, 126, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1311, 126, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1312, 126, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1313, 126, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1314, 126, 20, NULL, 'Me gustaria que hiciera mas ejemplos practicos.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (127, 4, 2, 39, 6, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1315, 127, 12, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1316, 127, 13, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1317, 127, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1318, 127, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1319, 127, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1320, 127, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1321, 127, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1322, 127, 19, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1323, 127, 20, NULL, 'Siempre esta disponible, muy buen profe.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (128, 4, 2, 35, 6, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1324, 128, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1325, 128, 13, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1326, 128, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1327, 128, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1328, 128, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1329, 128, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1330, 128, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1331, 128, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1332, 128, 20, NULL, 'Es paciente y se nota que sabe del tema.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (129, 3, 2, 21, 6, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1333, 129, 12, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1334, 129, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1335, 129, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1336, 129, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1337, 129, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1338, 129, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1339, 129, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1340, 129, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1341, 129, 20, NULL, 'Es paciente y se nota que sabe del tema.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (130, 4, 2, 31, 6, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1342, 130, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1343, 130, 13, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1344, 130, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1345, 130, 15, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1346, 130, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1347, 130, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1348, 130, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1349, 130, 19, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1350, 130, 20, NULL, 'Deberia dar mas feedback en los PRs.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (131, 3, 2, 24, 6, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1351, 131, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1352, 131, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1353, 131, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1354, 131, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1355, 131, 16, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1356, 131, 17, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1357, 131, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1358, 131, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1359, 131, 20, NULL, 'Me gustaria que hiciera mas ejemplos practicos.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (132, 4, 2, 24, 6, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1360, 132, 12, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1361, 132, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1362, 132, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1363, 132, 15, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1364, 132, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1365, 132, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1366, 132, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1367, 132, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1368, 132, 20, NULL, 'Todo bien, explica claro.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (133, 3, 2, 20, 6, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1369, 133, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1370, 133, 13, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1371, 133, 14, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1372, 133, 15, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1373, 133, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1374, 133, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1375, 133, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1376, 133, 19, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1377, 133, 20, NULL, 'Todo bien, explica claro.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (134, 3, 2, 32, 6, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1378, 134, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1379, 134, 13, 2, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1380, 134, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1381, 134, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1382, 134, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1383, 134, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1384, 134, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1385, 134, 19, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1386, 134, 20, NULL, 'Deberia dar mas feedback en los PRs.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (135, 2, 2, 28, 6, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1387, 135, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1388, 135, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1389, 135, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1390, 135, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1391, 135, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1392, 135, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1393, 135, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1394, 135, 19, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1395, 135, 20, NULL, 'Todo bien, explica claro.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (136, 2, 2, 17, 6, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1396, 136, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1397, 136, 13, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1398, 136, 14, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1399, 136, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1400, 136, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1401, 136, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1402, 136, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1403, 136, 19, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1404, 136, 20, NULL, 'Muy buen lider, siempre apoya al equipo.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (137, 3, 2, 35, 6, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1405, 137, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1406, 137, 13, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1407, 137, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1408, 137, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1409, 137, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1410, 137, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1411, 137, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1412, 137, 19, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1413, 137, 20, NULL, 'Todo bien, explica claro.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (138, 2, 2, 31, 6, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1414, 138, 12, 2, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1415, 138, 13, 2, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1416, 138, 14, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1417, 138, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1418, 138, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1419, 138, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1420, 138, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1421, 138, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1422, 138, 20, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (139, 4, 2, 20, 6, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1423, 139, 12, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1424, 139, 13, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1425, 139, 14, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1426, 139, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1427, 139, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1428, 139, 17, 2, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1429, 139, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1430, 139, 19, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1431, 139, 20, NULL, 'Me gustaria que hiciera mas ejemplos practicos.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (140, 2, 2, 14, 6, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1432, 140, 12, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1433, 140, 13, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1434, 140, 14, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1435, 140, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1436, 140, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1437, 140, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1438, 140, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1439, 140, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1440, 140, 20, NULL, 'Siempre esta disponible, muy buen profe.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (141, 4, 2, 23, 6, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1441, 141, 12, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1442, 141, 13, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1443, 141, 14, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1444, 141, 15, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1445, 141, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1446, 141, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1447, 141, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1448, 141, 19, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1449, 141, 20, NULL, 'Me gustaria que hiciera mas ejemplos practicos.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (142, 3, 2, 32, 6, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1450, 142, 12, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1451, 142, 13, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1452, 142, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1453, 142, 15, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1454, 142, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1455, 142, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1456, 142, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1457, 142, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1458, 142, 20, NULL, 'Excelente, me ayuda mucho con mis dudas.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (143, 4, 2, 23, 6, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1459, 143, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1460, 143, 13, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1461, 143, 14, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1462, 143, 15, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1463, 143, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1464, 143, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1465, 143, 18, 2, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1466, 143, 19, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1467, 143, 20, NULL, 'Deberia dar mas feedback en los PRs.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (144, 2, 2, 18, 6, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1468, 144, 12, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1469, 144, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1470, 144, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1471, 144, 15, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1472, 144, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1473, 144, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1474, 144, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1475, 144, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1476, 144, 20, NULL, 'Siempre esta disponible, muy buen profe.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (145, 2, 2, 29, 6, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1477, 145, 12, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1478, 145, 13, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1479, 145, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1480, 145, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1481, 145, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1482, 145, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1483, 145, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1484, 145, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1485, 145, 20, NULL, 'Todo bien, explica claro.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (146, 4, 2, 30, 6, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1486, 146, 12, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1487, 146, 13, 2, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1488, 146, 14, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1489, 146, 15, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1490, 146, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1491, 146, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1492, 146, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1493, 146, 19, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1494, 146, 20, NULL, 'Excelente, me ayuda mucho con mis dudas.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (147, 1, 2, 30, 6, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1495, 147, 12, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1496, 147, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1497, 147, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1498, 147, 15, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1499, 147, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1500, 147, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1501, 147, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1502, 147, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1503, 147, 20, NULL, 'Excelente, me ayuda mucho con mis dudas.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (148, 2, 2, 19, 6, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1504, 148, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1505, 148, 13, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1506, 148, 14, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1507, 148, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1508, 148, 16, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1509, 148, 17, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1510, 148, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1511, 148, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1512, 148, 20, NULL, 'Falta un poco de orden en las clases.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (149, 1, 2, 39, 6, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1513, 149, 12, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1514, 149, 13, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1515, 149, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1516, 149, 15, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1517, 149, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1518, 149, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1519, 149, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1520, 149, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1521, 149, 20, NULL, 'Siempre esta disponible, muy buen profe.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (150, 3, 2, 13, 6, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1522, 150, 12, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1523, 150, 13, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1524, 150, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1525, 150, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1526, 150, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1527, 150, 17, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1528, 150, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1529, 150, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1530, 150, 20, NULL, 'Falta un poco de orden en las clases.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (151, 1, 2, 26, 7, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1531, 151, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1532, 151, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1533, 151, 14, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1534, 151, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1535, 151, 16, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1536, 151, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1537, 151, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1538, 151, 19, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1539, 151, 20, NULL, 'Me gustaria que hiciera mas ejemplos practicos.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (152, 1, 2, 15, 7, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1540, 152, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1541, 152, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1542, 152, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1543, 152, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1544, 152, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1545, 152, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1546, 152, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1547, 152, 19, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1548, 152, 20, NULL, 'Todo bien, explica claro.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (153, 4, 2, 16, 7, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1549, 153, 12, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1550, 153, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1551, 153, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1552, 153, 15, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1553, 153, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1554, 153, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1555, 153, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1556, 153, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1557, 153, 20, NULL, 'Todo bien, explica claro.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (154, 4, 2, 32, 7, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1558, 154, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1559, 154, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1560, 154, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1561, 154, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1562, 154, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1563, 154, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1564, 154, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1565, 154, 19, 2, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1566, 154, 20, NULL, 'Todo bien, explica claro.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (155, 2, 2, 38, 7, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1567, 155, 12, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1568, 155, 13, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1569, 155, 14, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1570, 155, 15, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1571, 155, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1572, 155, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1573, 155, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1574, 155, 19, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1575, 155, 20, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (156, 4, 2, 40, 7, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1576, 156, 12, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1577, 156, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1578, 156, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1579, 156, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1580, 156, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1581, 156, 17, 2, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1582, 156, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1583, 156, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1584, 156, 20, NULL, 'Muy buen lider, siempre apoya al equipo.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (157, 4, 2, 24, 7, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1585, 157, 12, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1586, 157, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1587, 157, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1588, 157, 15, 2, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1589, 157, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1590, 157, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1591, 157, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1592, 157, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1593, 157, 20, NULL, 'Me gustaria que hiciera mas ejemplos practicos.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (158, 2, 2, 36, 7, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1594, 158, 12, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1595, 158, 13, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1596, 158, 14, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1597, 158, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1598, 158, 16, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1599, 158, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1600, 158, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1601, 158, 19, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1602, 158, 20, NULL, 'Me gustaria que hiciera mas ejemplos practicos.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (159, 2, 2, 27, 7, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1603, 159, 12, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1604, 159, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1605, 159, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1606, 159, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1607, 159, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1608, 159, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1609, 159, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1610, 159, 19, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1611, 159, 20, NULL, 'Todo bien, explica claro.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (160, 1, 2, 38, 7, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1612, 160, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1613, 160, 13, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1614, 160, 14, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1615, 160, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1616, 160, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1617, 160, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1618, 160, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1619, 160, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1620, 160, 20, NULL, 'Es paciente y se nota que sabe del tema.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (161, 1, 2, 28, 7, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1621, 161, 12, 2, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1622, 161, 13, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1623, 161, 14, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1624, 161, 15, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1625, 161, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1626, 161, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1627, 161, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1628, 161, 19, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1629, 161, 20, NULL, 'Siempre esta disponible, muy buen profe.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (162, 4, 2, 15, 7, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1630, 162, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1631, 162, 13, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1632, 162, 14, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1633, 162, 15, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1634, 162, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1635, 162, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1636, 162, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1637, 162, 19, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1638, 162, 20, NULL, 'Falta un poco de orden en las clases.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (163, 1, 2, 33, 7, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1639, 163, 12, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1640, 163, 13, 2, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1641, 163, 14, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1642, 163, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1643, 163, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1644, 163, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1645, 163, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1646, 163, 19, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1647, 163, 20, NULL, 'Es paciente y se nota que sabe del tema.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (164, 3, 2, 16, 7, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1648, 164, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1649, 164, 13, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1650, 164, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1651, 164, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1652, 164, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1653, 164, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1654, 164, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1655, 164, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1656, 164, 20, NULL, 'Excelente, me ayuda mucho con mis dudas.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (165, 2, 2, 24, 7, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1657, 165, 12, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1658, 165, 13, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1659, 165, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1660, 165, 15, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1661, 165, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1662, 165, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1663, 165, 18, 2, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1664, 165, 19, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1665, 165, 20, NULL, 'Todo bien, explica claro.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (166, 1, 2, 18, 7, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1666, 166, 12, 2, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1667, 166, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1668, 166, 14, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1669, 166, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1670, 166, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1671, 166, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1672, 166, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1673, 166, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1674, 166, 20, NULL, 'Es paciente y se nota que sabe del tema.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (167, 4, 2, 33, 7, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1675, 167, 12, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1676, 167, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1677, 167, 14, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1678, 167, 15, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1679, 167, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1680, 167, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1681, 167, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1682, 167, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1683, 167, 20, NULL, 'Muy buen lider, siempre apoya al equipo.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (168, 2, 2, 33, 7, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1684, 168, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1685, 168, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1686, 168, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1687, 168, 15, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1688, 168, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1689, 168, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1690, 168, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1691, 168, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1692, 168, 20, NULL, 'Siempre esta disponible, muy buen profe.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (169, 1, 2, 31, 7, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1693, 169, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1694, 169, 13, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1695, 169, 14, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1696, 169, 15, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1697, 169, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1698, 169, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1699, 169, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1700, 169, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1701, 169, 20, NULL, 'Me gustaria que hiciera mas ejemplos practicos.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (170, 2, 2, 13, 7, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1702, 170, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1703, 170, 13, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1704, 170, 14, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1705, 170, 15, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1706, 170, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1707, 170, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1708, 170, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1709, 170, 19, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1710, 170, 20, NULL, 'Todo bien, explica claro.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (171, 1, 2, 17, 7, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1711, 171, 12, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1712, 171, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1713, 171, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1714, 171, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1715, 171, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1716, 171, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1717, 171, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1718, 171, 19, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1719, 171, 20, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (172, 2, 2, 16, 7, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1720, 172, 12, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1721, 172, 13, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1722, 172, 14, 2, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1723, 172, 15, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1724, 172, 16, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1725, 172, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1726, 172, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1727, 172, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1728, 172, 20, NULL, 'Muy buen lider, siempre apoya al equipo.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (173, 1, 2, 13, 7, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1729, 173, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1730, 173, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1731, 173, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1732, 173, 15, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1733, 173, 16, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1734, 173, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1735, 173, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1736, 173, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1737, 173, 20, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (174, 1, 2, 13, 7, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1738, 174, 12, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1739, 174, 13, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1740, 174, 14, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1741, 174, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1742, 174, 16, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1743, 174, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1744, 174, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1745, 174, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1746, 174, 20, NULL, 'Falta un poco de orden en las clases.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (175, 4, 2, 37, 7, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1747, 175, 12, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1748, 175, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1749, 175, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1750, 175, 15, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1751, 175, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1752, 175, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1753, 175, 18, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1754, 175, 19, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1755, 175, 20, NULL, 'Me gustaria que hiciera mas ejemplos practicos.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (176, 3, 2, 39, 7, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1756, 176, 12, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1757, 176, 13, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1758, 176, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1759, 176, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1760, 176, 16, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1761, 176, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1762, 176, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1763, 176, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1764, 176, 20, NULL, 'Muy buen lider, siempre apoya al equipo.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (177, 1, 2, 33, 7, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1765, 177, 12, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1766, 177, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1767, 177, 14, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1768, 177, 15, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1769, 177, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1770, 177, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1771, 177, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1772, 177, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1773, 177, 20, NULL, 'Me gustaria que hiciera mas ejemplos practicos.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (178, 2, 2, 32, 7, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1774, 178, 12, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1775, 178, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1776, 178, 14, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1777, 178, 15, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1778, 178, 16, 2, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1779, 178, 17, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1780, 178, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1781, 178, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1782, 178, 20, NULL, 'Siempre esta disponible, muy buen profe.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (179, 1, 2, 16, 7, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1783, 179, 12, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1784, 179, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1785, 179, 14, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1786, 179, 15, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1787, 179, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1788, 179, 17, 5, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1789, 179, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1790, 179, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1791, 179, 20, NULL, 'Excelente, me ayuda mucho con mis dudas.');
-INSERT INTO evaluations (id, period_id, form_id, evaluator_id, evaluatee_id, status, created_at, updated_at) VALUES (180, 1, 2, 40, 7, 'submitted', '2026-06-15 10:00:00', '2026-06-15 10:10:00');
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1792, 180, 12, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1793, 180, 13, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1794, 180, 14, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1795, 180, 15, 3, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1796, 180, 16, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1797, 180, 17, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1798, 180, 18, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1799, 180, 19, 4, NULL);
-INSERT INTO evaluation_submissions (id, evaluation_id, question_id, numeric_value, text_value) VALUES (1800, 180, 20, NULL, 'Es paciente y se nota que sabe del tema.');
+ALTER TABLE evaluations AUTO_INCREMENT = 1;
+
+INSERT INTO evaluations (period_id, form_id, evaluatee_id, is_anonymous, status, created_at, submitted_at) VALUES
+(1, 1, 2, FALSE, 'submitted', '2026-02-22 09:13:00', '2026-02-22 09:40:00'),
+(1, 1, 2, FALSE, 'submitted', '2026-03-01 10:26:00', '2026-03-01 11:00:00'),
+(1, 1, 2, TRUE, 'submitted', '2026-03-08 11:39:00', '2026-03-08 12:20:00'),
+(1, 1, 2, FALSE, 'submitted', '2026-02-16 12:52:00', '2026-02-16 13:40:00'),
+(1, 1, 2, FALSE, 'submitted', '2026-02-23 13:05:00', '2026-02-23 14:00:00'),
+(1, 1, 2, TRUE, 'submitted', '2026-03-02 14:18:00', '2026-03-02 15:20:00'),
+(1, 1, 2, FALSE, 'submitted', '2026-03-09 15:31:00', '2026-03-09 15:55:00'),
+(1, 1, 2, FALSE, 'submitted', '2026-02-17 16:44:00', '2026-02-17 17:15:00'),
+(1, 1, 2, TRUE, 'submitted', '2026-02-24 08:57:00', '2026-02-24 09:35:00'),
+(1, 1, 2, FALSE, 'submitted', '2026-03-03 09:10:00', '2026-03-03 09:55:00'),
+(1, 1, 2, FALSE, 'submitted', '2026-03-10 10:23:00', '2026-03-10 11:15:00'),
+(1, 1, 2, TRUE, 'submitted', '2026-02-18 11:36:00', '2026-02-18 12:35:00'),
+(1, 1, 2, FALSE, 'submitted', '2026-02-25 12:49:00', '2026-02-25 13:10:00'),
+(1, 1, 2, FALSE, 'submitted', '2026-03-04 13:02:00', '2026-03-04 13:30:00'),
+(1, 1, 2, TRUE, 'submitted', '2026-03-11 14:15:00', '2026-03-11 14:50:00'),
+(1, 1, 2, FALSE, 'submitted', '2026-02-19 15:28:00', '2026-02-19 16:10:00'),
+(1, 1, 2, FALSE, 'submitted', '2026-02-26 16:41:00', '2026-02-26 17:30:00'),
+(1, 1, 2, TRUE, 'submitted', '2026-03-05 08:54:00', '2026-03-05 09:50:00'),
+(1, 1, 2, FALSE, 'submitted', '2026-03-12 09:07:00', '2026-03-12 10:10:00'),
+(1, 1, 2, FALSE, 'submitted', '2026-02-20 10:20:00', '2026-02-20 10:45:00'),
+(1, 1, 2, TRUE, 'submitted', '2026-02-27 11:33:00', '2026-02-27 12:05:00'),
+(1, 1, 2, FALSE, 'submitted', '2026-03-06 12:46:00', '2026-03-06 13:25:00'),
+(1, 1, 2, FALSE, 'submitted', '2026-03-13 13:59:00', '2026-03-13 14:45:00'),
+(1, 1, 2, TRUE, 'submitted', '2026-02-21 14:12:00', '2026-02-21 15:05:00'),
+(1, 1, 2, FALSE, 'submitted', '2026-02-28 15:25:00', '2026-02-28 16:25:00'),
+(1, 2, 5, FALSE, 'submitted', '2026-03-07 16:38:00', '2026-03-07 17:00:00'),
+(1, 2, 5, TRUE, 'submitted', '2026-02-15 08:51:00', '2026-02-15 09:20:00'),
+(1, 2, 5, FALSE, 'submitted', '2026-02-22 09:04:00', '2026-02-22 09:40:00'),
+(1, 2, 5, FALSE, 'submitted', '2026-03-01 10:17:00', '2026-03-01 11:00:00'),
+(1, 2, 5, TRUE, 'submitted', '2026-03-08 11:30:00', '2026-03-08 12:20:00'),
+(1, 2, 5, FALSE, 'submitted', '2026-02-16 12:43:00', '2026-02-16 13:40:00'),
+(1, 2, 5, FALSE, 'submitted', '2026-02-23 13:56:00', '2026-02-23 15:00:00'),
+(1, 2, 5, TRUE, 'submitted', '2026-03-02 14:09:00', '2026-03-02 14:35:00'),
+(1, 2, 5, FALSE, 'submitted', '2026-03-09 15:22:00', '2026-03-09 15:55:00'),
+(1, 2, 5, FALSE, 'submitted', '2026-02-17 16:35:00', '2026-02-17 17:15:00'),
+(1, 2, 5, TRUE, 'submitted', '2026-02-24 08:48:00', '2026-02-24 09:35:00'),
+(1, 2, 5, FALSE, 'submitted', '2026-03-03 09:01:00', '2026-03-03 09:55:00'),
+(1, 2, 5, FALSE, 'submitted', '2026-03-10 10:14:00', '2026-03-10 11:15:00'),
+(1, 2, 5, TRUE, 'submitted', '2026-02-18 11:27:00', '2026-02-18 11:50:00'),
+(1, 2, 5, FALSE, 'submitted', '2026-02-25 12:40:00', '2026-02-25 13:10:00'),
+(1, 2, 5, FALSE, 'submitted', '2026-03-04 13:53:00', '2026-03-04 14:30:00'),
+(1, 2, 5, TRUE, 'submitted', '2026-03-11 14:06:00', '2026-03-11 14:50:00'),
+(1, 2, 5, FALSE, 'submitted', '2026-02-19 15:19:00', '2026-02-19 16:10:00'),
+(1, 2, 5, FALSE, 'submitted', '2026-02-26 16:32:00', '2026-02-26 17:30:00'),
+(1, 2, 5, TRUE, 'submitted', '2026-03-05 08:45:00', '2026-03-05 09:05:00'),
+(1, 2, 5, FALSE, 'submitted', '2026-03-12 09:58:00', '2026-03-12 10:25:00'),
+(1, 2, 5, FALSE, 'submitted', '2026-02-20 10:11:00', '2026-02-20 10:45:00'),
+(1, 2, 5, TRUE, 'submitted', '2026-02-27 11:24:00', '2026-02-27 12:05:00'),
+(1, 2, 5, FALSE, 'submitted', '2026-03-06 12:37:00', '2026-03-06 13:25:00'),
+(1, 2, 5, FALSE, 'submitted', '2026-03-13 13:50:00', '2026-03-13 14:45:00'),
+(2, 1, 2, TRUE, 'submitted', '2026-04-11 14:03:00', '2026-04-11 15:05:00'),
+(2, 1, 2, FALSE, 'submitted', '2026-03-19 15:16:00', '2026-03-19 15:40:00'),
+(2, 1, 2, FALSE, 'submitted', '2026-03-26 16:29:00', '2026-03-26 17:00:00'),
+(2, 1, 2, TRUE, 'submitted', '2026-04-02 08:42:00', '2026-04-02 09:20:00'),
+(2, 1, 2, FALSE, 'submitted', '2026-04-09 09:55:00', '2026-04-09 10:40:00'),
+(2, 1, 2, FALSE, 'submitted', '2026-03-17 10:08:00', '2026-03-17 11:00:00'),
+(2, 1, 2, TRUE, 'submitted', '2026-03-24 11:21:00', '2026-03-24 12:20:00'),
+(2, 1, 2, FALSE, 'submitted', '2026-03-31 12:34:00', '2026-03-31 12:55:00'),
+(2, 1, 2, FALSE, 'submitted', '2026-04-07 13:47:00', '2026-04-07 14:15:00'),
+(2, 1, 2, TRUE, 'submitted', '2026-03-15 14:00:00', '2026-03-15 14:35:00'),
+(2, 1, 2, FALSE, 'submitted', '2026-03-22 15:13:00', '2026-03-22 15:55:00'),
+(2, 1, 2, FALSE, 'submitted', '2026-03-29 16:26:00', '2026-03-29 17:15:00'),
+(2, 1, 2, TRUE, 'submitted', '2026-04-05 08:39:00', '2026-04-05 09:35:00'),
+(2, 1, 2, FALSE, 'submitted', '2026-04-12 09:52:00', '2026-04-12 10:55:00'),
+(2, 1, 2, FALSE, 'submitted', '2026-03-20 10:05:00', '2026-03-20 10:30:00'),
+(2, 1, 2, TRUE, 'submitted', '2026-03-27 11:18:00', '2026-03-27 11:50:00'),
+(2, 1, 2, FALSE, 'submitted', '2026-04-03 12:31:00', '2026-04-03 13:10:00'),
+(2, 1, 2, FALSE, 'submitted', '2026-04-10 13:44:00', '2026-04-10 14:30:00'),
+(2, 1, 2, TRUE, 'submitted', '2026-03-18 14:57:00', '2026-03-18 15:50:00'),
+(2, 1, 2, FALSE, 'submitted', '2026-03-25 15:10:00', '2026-03-25 16:10:00'),
+(2, 1, 2, FALSE, 'submitted', '2026-04-01 16:23:00', '2026-04-01 16:45:00'),
+(2, 1, 2, TRUE, 'submitted', '2026-04-08 08:36:00', '2026-04-08 09:05:00'),
+(2, 1, 2, FALSE, 'submitted', '2026-03-16 09:49:00', '2026-03-16 10:25:00'),
+(2, 1, 2, FALSE, 'submitted', '2026-03-23 10:02:00', '2026-03-23 10:45:00'),
+(2, 1, 2, TRUE, 'submitted', '2026-03-30 11:15:00', '2026-03-30 12:05:00'),
+(2, 2, 5, FALSE, 'submitted', '2026-04-06 12:28:00', '2026-04-06 13:25:00'),
+(2, 2, 5, FALSE, 'submitted', '2026-04-13 13:41:00', '2026-04-13 14:45:00'),
+(2, 2, 5, TRUE, 'submitted', '2026-03-21 14:54:00', '2026-03-21 15:20:00'),
+(2, 2, 5, FALSE, 'submitted', '2026-03-28 15:07:00', '2026-03-28 15:40:00'),
+(2, 2, 5, FALSE, 'submitted', '2026-04-04 16:20:00', '2026-04-04 17:00:00'),
+(2, 2, 5, TRUE, 'submitted', '2026-04-11 08:33:00', '2026-04-11 09:20:00'),
+(2, 2, 5, FALSE, 'submitted', '2026-03-19 09:46:00', '2026-03-19 10:40:00'),
+(2, 2, 5, FALSE, 'submitted', '2026-03-26 10:59:00', '2026-03-26 12:00:00'),
+(2, 2, 5, TRUE, 'submitted', '2026-04-02 11:12:00', '2026-04-02 11:35:00'),
+(2, 2, 5, FALSE, 'submitted', '2026-04-09 12:25:00', '2026-04-09 12:55:00'),
+(2, 2, 5, FALSE, 'submitted', '2026-03-17 13:38:00', '2026-03-17 14:15:00'),
+(2, 2, 5, TRUE, 'submitted', '2026-03-24 14:51:00', '2026-03-24 15:35:00'),
+(2, 2, 5, FALSE, 'submitted', '2026-03-31 15:04:00', '2026-03-31 15:55:00'),
+(2, 2, 5, FALSE, 'submitted', '2026-04-07 16:17:00', '2026-04-07 17:15:00'),
+(2, 2, 5, TRUE, 'submitted', '2026-03-15 08:30:00', '2026-03-15 08:50:00'),
+(2, 2, 5, FALSE, 'submitted', '2026-03-22 09:43:00', '2026-03-22 10:10:00'),
+(2, 2, 5, FALSE, 'submitted', '2026-03-29 10:56:00', '2026-03-29 11:30:00'),
+(2, 2, 5, TRUE, 'submitted', '2026-04-05 11:09:00', '2026-04-05 11:50:00'),
+(2, 2, 5, FALSE, 'submitted', '2026-04-12 12:22:00', '2026-04-12 13:10:00'),
+(2, 2, 5, FALSE, 'submitted', '2026-03-20 13:35:00', '2026-03-20 14:30:00'),
+(2, 2, 5, TRUE, 'submitted', '2026-03-27 14:48:00', '2026-03-27 15:50:00'),
+(2, 2, 5, FALSE, 'submitted', '2026-04-03 15:01:00', '2026-04-03 15:25:00'),
+(2, 2, 5, FALSE, 'submitted', '2026-04-10 16:14:00', '2026-04-10 16:45:00'),
+(2, 2, 5, TRUE, 'submitted', '2026-03-18 08:27:00', '2026-03-18 09:05:00'),
+(2, 2, 5, FALSE, 'submitted', '2026-03-25 09:40:00', '2026-03-25 10:25:00'),
+(3, 1, 2, FALSE, 'submitted', '2026-06-01 10:53:00', '2026-06-01 11:45:00'),
+(3, 1, 2, TRUE, 'submitted', '2026-06-08 11:06:00', '2026-06-08 12:05:00'),
+(3, 1, 2, FALSE, 'submitted', '2026-04-16 12:19:00', '2026-04-16 12:40:00'),
+(3, 1, 2, FALSE, 'submitted', '2026-04-23 13:32:00', '2026-04-23 14:00:00'),
+(3, 1, 2, TRUE, 'submitted', '2026-04-30 14:45:00', '2026-04-30 15:20:00'),
+(3, 1, 2, FALSE, 'submitted', '2026-05-07 15:58:00', '2026-05-07 16:40:00'),
+(3, 1, 2, FALSE, 'submitted', '2026-05-14 16:11:00', '2026-05-14 17:00:00'),
+(3, 1, 2, TRUE, 'submitted', '2026-05-21 08:24:00', '2026-05-21 09:20:00'),
+(3, 1, 2, FALSE, 'submitted', '2026-05-28 09:37:00', '2026-05-28 10:40:00'),
+(3, 1, 2, FALSE, 'submitted', '2026-06-04 10:50:00', '2026-06-04 11:15:00'),
+(3, 1, 2, TRUE, 'submitted', '2026-06-11 11:03:00', '2026-06-11 11:35:00'),
+(3, 1, 2, FALSE, 'submitted', '2026-04-19 12:16:00', '2026-04-19 12:55:00'),
+(3, 1, 2, FALSE, 'submitted', '2026-04-26 13:29:00', '2026-04-26 14:15:00'),
+(3, 1, 2, TRUE, 'submitted', '2026-05-03 14:42:00', '2026-05-03 15:35:00'),
+(3, 1, 2, FALSE, 'submitted', '2026-05-10 15:55:00', '2026-05-10 16:55:00'),
+(3, 1, 2, FALSE, 'submitted', '2026-05-17 16:08:00', '2026-05-17 16:30:00'),
+(3, 1, 2, TRUE, 'submitted', '2026-05-24 08:21:00', '2026-05-24 08:50:00'),
+(3, 1, 2, FALSE, 'submitted', '2026-05-31 09:34:00', '2026-05-31 10:10:00'),
+(3, 1, 2, FALSE, 'submitted', '2026-06-07 10:47:00', '2026-06-07 11:30:00'),
+(3, 1, 2, TRUE, 'submitted', '2026-04-15 11:00:00', '2026-04-15 11:50:00'),
+(3, 1, 2, FALSE, 'submitted', '2026-04-22 12:13:00', '2026-04-22 13:10:00'),
+(3, 1, 2, FALSE, 'submitted', '2026-04-29 13:26:00', '2026-04-29 14:30:00'),
+(3, 1, 2, TRUE, 'submitted', '2026-05-06 14:39:00', '2026-05-06 15:05:00'),
+(3, 1, 2, FALSE, 'submitted', '2026-05-13 15:52:00', '2026-05-13 16:25:00'),
+(3, 1, 2, FALSE, 'submitted', '2026-05-20 16:05:00', '2026-05-20 16:45:00'),
+(3, 2, 5, TRUE, 'submitted', '2026-05-27 08:18:00', '2026-05-27 09:05:00'),
+(3, 2, 5, FALSE, 'submitted', '2026-06-03 09:31:00', '2026-06-03 10:25:00'),
+(3, 2, 5, FALSE, 'submitted', '2026-06-10 10:44:00', '2026-06-10 11:45:00'),
+(3, 2, 5, TRUE, 'submitted', '2026-04-18 11:57:00', '2026-04-18 12:20:00'),
+(3, 2, 5, FALSE, 'submitted', '2026-04-25 12:10:00', '2026-04-25 12:40:00'),
+(3, 2, 5, FALSE, 'submitted', '2026-05-02 13:23:00', '2026-05-02 14:00:00'),
+(3, 2, 5, TRUE, 'submitted', '2026-05-09 14:36:00', '2026-05-09 15:20:00'),
+(3, 2, 5, FALSE, 'submitted', '2026-05-16 15:49:00', '2026-05-16 16:40:00'),
+(3, 2, 5, FALSE, 'submitted', '2026-05-23 16:02:00', '2026-05-23 17:00:00'),
+(3, 2, 5, TRUE, 'submitted', '2026-05-30 08:15:00', '2026-05-30 08:35:00'),
+(3, 2, 5, FALSE, 'submitted', '2026-06-06 09:28:00', '2026-06-06 09:55:00'),
+(3, 2, 5, FALSE, 'submitted', '2026-06-13 10:41:00', '2026-06-13 11:15:00'),
+(3, 2, 5, TRUE, 'submitted', '2026-04-21 11:54:00', '2026-04-21 12:35:00'),
+(3, 2, 5, FALSE, 'submitted', '2026-04-28 12:07:00', '2026-04-28 12:55:00'),
+(3, 2, 5, FALSE, 'submitted', '2026-05-05 13:20:00', '2026-05-05 14:15:00'),
+(3, 2, 5, TRUE, 'submitted', '2026-05-12 14:33:00', '2026-05-12 15:35:00'),
+(3, 2, 5, FALSE, 'submitted', '2026-05-19 15:46:00', '2026-05-19 16:10:00'),
+(3, 2, 5, FALSE, 'submitted', '2026-05-26 16:59:00', '2026-05-26 17:30:00'),
+(3, 2, 5, TRUE, 'submitted', '2026-06-02 08:12:00', '2026-06-02 08:50:00'),
+(3, 2, 5, FALSE, 'submitted', '2026-06-09 09:25:00', '2026-06-09 10:10:00'),
+(3, 2, 5, FALSE, 'submitted', '2026-04-17 10:38:00', '2026-04-17 11:30:00'),
+(3, 2, 5, TRUE, 'submitted', '2026-04-24 11:51:00', '2026-04-24 12:50:00'),
+(3, 2, 5, FALSE, 'submitted', '2026-05-01 12:04:00', '2026-05-01 12:25:00'),
+(3, 2, 5, FALSE, 'submitted', '2026-05-08 13:17:00', '2026-05-08 13:45:00'),
+(3, 2, 5, TRUE, 'submitted', '2026-05-15 14:30:00', '2026-05-15 15:05:00'),
+(4, 1, 2, FALSE, 'submitted', '2026-06-28 15:43:00', '2026-06-28 16:25:00'),
+(4, 1, 2, FALSE, 'submitted', '2026-07-05 16:56:00', '2026-07-05 17:45:00'),
+(4, 1, 2, TRUE, 'submitted', '2026-07-12 08:09:00', '2026-07-12 09:05:00'),
+(4, 1, 2, FALSE, 'submitted', '2026-06-20 09:22:00', '2026-06-20 10:25:00'),
+(4, 1, 2, FALSE, 'submitted', '2026-06-27 10:35:00', '2026-06-27 11:00:00'),
+(4, 1, 2, TRUE, 'submitted', '2026-07-04 11:48:00', '2026-07-04 12:20:00'),
+(4, 1, 2, FALSE, 'submitted', '2026-07-11 12:01:00', '2026-07-11 12:40:00'),
+(4, 1, 2, FALSE, 'submitted', '2026-06-19 13:14:00', '2026-06-19 14:00:00'),
+(4, 1, 2, TRUE, 'submitted', '2026-06-26 14:27:00', '2026-06-26 15:20:00'),
+(4, 1, 2, FALSE, 'submitted', '2026-07-03 15:40:00', '2026-07-03 16:40:00'),
+(4, 1, 2, FALSE, 'submitted', '2026-07-10 16:53:00', '2026-07-10 17:15:00'),
+(4, 1, 2, TRUE, 'submitted', '2026-06-18 08:06:00', '2026-06-18 08:35:00'),
+(4, 1, 2, FALSE, 'submitted', '2026-06-25 09:19:00', '2026-06-25 09:55:00'),
+(4, 1, 2, FALSE, 'submitted', '2026-07-02 10:32:00', '2026-07-02 11:15:00'),
+(4, 1, 2, TRUE, 'submitted', '2026-07-09 11:45:00', '2026-07-09 12:35:00'),
+(4, 1, 2, FALSE, 'submitted', '2026-06-17 12:58:00', '2026-06-17 13:55:00'),
+(4, 1, 2, FALSE, 'submitted', '2026-06-24 13:11:00', '2026-06-24 14:15:00'),
+(4, 1, 2, TRUE, 'submitted', '2026-07-01 14:24:00', '2026-07-01 14:50:00'),
+(4, 1, 2, FALSE, 'submitted', '2026-07-08 15:37:00', '2026-07-08 16:10:00'),
+(4, 1, 2, FALSE, 'submitted', '2026-06-16 16:50:00', '2026-06-16 17:30:00'),
+(4, 1, 2, TRUE, 'submitted', '2026-06-23 08:03:00', '2026-06-23 08:50:00'),
+(4, 1, 2, FALSE, 'submitted', '2026-06-30 09:16:00', '2026-06-30 10:10:00'),
+(4, 1, 2, FALSE, 'submitted', '2026-07-07 10:29:00', '2026-07-07 11:30:00'),
+(4, 1, 2, TRUE, 'submitted', '2026-06-15 11:42:00', '2026-06-15 12:05:00'),
+(4, 1, 2, FALSE, 'submitted', '2026-06-22 12:55:00', '2026-06-22 13:25:00'),
+(4, 2, 5, FALSE, 'submitted', '2026-06-29 13:08:00', '2026-06-29 13:45:00'),
+(4, 2, 5, TRUE, 'submitted', '2026-07-06 14:21:00', '2026-07-06 15:05:00'),
+(4, 2, 5, FALSE, 'submitted', '2026-07-13 15:34:00', '2026-07-13 16:25:00'),
+(4, 2, 5, FALSE, 'submitted', '2026-06-21 16:47:00', '2026-06-21 17:45:00'),
+(4, 2, 5, TRUE, 'submitted', '2026-06-28 08:00:00', '2026-06-28 08:20:00'),
+(4, 2, 5, FALSE, 'submitted', '2026-07-05 09:13:00', '2026-07-05 09:40:00'),
+(4, 2, 5, FALSE, 'submitted', '2026-07-12 10:26:00', '2026-07-12 11:00:00'),
+(4, 2, 5, TRUE, 'submitted', '2026-06-20 11:39:00', '2026-06-20 12:20:00'),
+(4, 2, 5, FALSE, 'submitted', '2026-06-27 12:52:00', '2026-06-27 13:40:00'),
+(4, 2, 5, FALSE, 'submitted', '2026-07-04 13:05:00', '2026-07-04 14:00:00'),
+(4, 2, 5, TRUE, 'submitted', '2026-07-11 14:18:00', '2026-07-11 15:20:00'),
+(4, 2, 5, FALSE, 'submitted', '2026-06-19 15:31:00', '2026-06-19 15:55:00'),
+(4, 2, 5, FALSE, 'submitted', '2026-06-26 16:44:00', '2026-06-26 17:15:00'),
+(4, 2, 5, TRUE, 'submitted', '2026-07-03 08:57:00', '2026-07-03 09:35:00'),
+(4, 2, 5, FALSE, 'submitted', '2026-07-10 09:10:00', '2026-07-10 09:55:00'),
+(4, 2, 5, FALSE, 'submitted', '2026-06-18 10:23:00', '2026-06-18 11:15:00'),
+(4, 2, 5, TRUE, 'submitted', '2026-06-25 11:36:00', '2026-06-25 12:35:00'),
+(4, 2, 5, FALSE, 'submitted', '2026-07-02 12:49:00', '2026-07-02 13:10:00'),
+(4, 2, 5, FALSE, 'submitted', '2026-07-09 13:02:00', '2026-07-09 13:30:00'),
+(4, 2, 5, TRUE, 'submitted', '2026-06-17 14:15:00', '2026-06-17 14:50:00'),
+(4, 2, 5, FALSE, 'submitted', '2026-06-24 15:28:00', '2026-06-24 16:10:00'),
+(4, 2, 5, FALSE, 'submitted', '2026-07-01 16:41:00', '2026-07-01 17:30:00'),
+(4, 2, 5, TRUE, 'submitted', '2026-07-08 08:54:00', '2026-07-08 09:50:00'),
+(4, 2, 5, FALSE, 'submitted', '2026-06-16 09:07:00', '2026-06-16 10:10:00'),
+(4, 2, 5, FALSE, 'submitted', '2026-06-23 10:20:00', '2026-06-23 10:45:00');
+
+INSERT INTO evaluation_submissions (evaluator_id, evaluatee_id, period_id, evaluation_id) VALUES
+(12, 2, 1, 1),
+(13, 2, 1, 2),
+(14, 2, 1, 3),
+(15, 2, 1, 4),
+(16, 2, 1, 5),
+(17, 2, 1, 6),
+(18, 2, 1, 7),
+(19, 2, 1, 8),
+(20, 2, 1, 9),
+(21, 2, 1, 10),
+(22, 2, 1, 11),
+(23, 2, 1, 12),
+(24, 2, 1, 13),
+(25, 2, 1, 14),
+(26, 2, 1, 15),
+(27, 2, 1, 16),
+(28, 2, 1, 17),
+(29, 2, 1, 18),
+(30, 2, 1, 19),
+(31, 2, 1, 20),
+(32, 2, 1, 21),
+(33, 2, 1, 22),
+(34, 2, 1, 23),
+(35, 2, 1, 24),
+(36, 2, 1, 25),
+(12, 5, 1, 26),
+(13, 5, 1, 27),
+(14, 5, 1, 28),
+(15, 5, 1, 29),
+(16, 5, 1, 30),
+(17, 5, 1, 31),
+(18, 5, 1, 32),
+(19, 5, 1, 33),
+(20, 5, 1, 34),
+(21, 5, 1, 35),
+(22, 5, 1, 36),
+(23, 5, 1, 37),
+(24, 5, 1, 38),
+(25, 5, 1, 39),
+(26, 5, 1, 40),
+(27, 5, 1, 41),
+(28, 5, 1, 42),
+(29, 5, 1, 43),
+(30, 5, 1, 44),
+(31, 5, 1, 45),
+(32, 5, 1, 46),
+(33, 5, 1, 47),
+(34, 5, 1, 48),
+(35, 5, 1, 49),
+(36, 5, 1, 50),
+(12, 2, 2, 51),
+(13, 2, 2, 52),
+(14, 2, 2, 53),
+(15, 2, 2, 54),
+(16, 2, 2, 55),
+(17, 2, 2, 56),
+(18, 2, 2, 57),
+(19, 2, 2, 58),
+(20, 2, 2, 59),
+(21, 2, 2, 60),
+(22, 2, 2, 61),
+(23, 2, 2, 62),
+(24, 2, 2, 63),
+(25, 2, 2, 64),
+(26, 2, 2, 65),
+(27, 2, 2, 66),
+(28, 2, 2, 67),
+(29, 2, 2, 68),
+(30, 2, 2, 69),
+(31, 2, 2, 70),
+(32, 2, 2, 71),
+(33, 2, 2, 72),
+(34, 2, 2, 73),
+(35, 2, 2, 74),
+(36, 2, 2, 75),
+(12, 5, 2, 76),
+(13, 5, 2, 77),
+(14, 5, 2, 78),
+(15, 5, 2, 79),
+(16, 5, 2, 80),
+(17, 5, 2, 81),
+(18, 5, 2, 82),
+(19, 5, 2, 83),
+(20, 5, 2, 84),
+(21, 5, 2, 85),
+(22, 5, 2, 86),
+(23, 5, 2, 87),
+(24, 5, 2, 88),
+(25, 5, 2, 89),
+(26, 5, 2, 90),
+(27, 5, 2, 91),
+(28, 5, 2, 92),
+(29, 5, 2, 93),
+(30, 5, 2, 94),
+(31, 5, 2, 95),
+(32, 5, 2, 96),
+(33, 5, 2, 97),
+(34, 5, 2, 98),
+(35, 5, 2, 99),
+(36, 5, 2, 100),
+(12, 2, 3, 101),
+(13, 2, 3, 102),
+(14, 2, 3, 103),
+(15, 2, 3, 104),
+(16, 2, 3, 105),
+(17, 2, 3, 106),
+(18, 2, 3, 107),
+(19, 2, 3, 108),
+(20, 2, 3, 109),
+(21, 2, 3, 110),
+(22, 2, 3, 111),
+(23, 2, 3, 112),
+(24, 2, 3, 113),
+(25, 2, 3, 114),
+(26, 2, 3, 115),
+(27, 2, 3, 116),
+(28, 2, 3, 117),
+(29, 2, 3, 118),
+(30, 2, 3, 119),
+(31, 2, 3, 120),
+(32, 2, 3, 121),
+(33, 2, 3, 122),
+(34, 2, 3, 123),
+(35, 2, 3, 124),
+(36, 2, 3, 125),
+(12, 5, 3, 126),
+(13, 5, 3, 127),
+(14, 5, 3, 128),
+(15, 5, 3, 129),
+(16, 5, 3, 130),
+(17, 5, 3, 131),
+(18, 5, 3, 132),
+(19, 5, 3, 133),
+(20, 5, 3, 134),
+(21, 5, 3, 135),
+(22, 5, 3, 136),
+(23, 5, 3, 137),
+(24, 5, 3, 138),
+(25, 5, 3, 139),
+(26, 5, 3, 140),
+(27, 5, 3, 141),
+(28, 5, 3, 142),
+(29, 5, 3, 143),
+(30, 5, 3, 144),
+(31, 5, 3, 145),
+(32, 5, 3, 146),
+(33, 5, 3, 147),
+(34, 5, 3, 148),
+(35, 5, 3, 149),
+(36, 5, 3, 150),
+(12, 2, 4, 151),
+(13, 2, 4, 152),
+(14, 2, 4, 153),
+(15, 2, 4, 154),
+(16, 2, 4, 155),
+(17, 2, 4, 156),
+(18, 2, 4, 157),
+(19, 2, 4, 158),
+(20, 2, 4, 159),
+(21, 2, 4, 160),
+(22, 2, 4, 161),
+(23, 2, 4, 162),
+(24, 2, 4, 163),
+(25, 2, 4, 164),
+(26, 2, 4, 165),
+(27, 2, 4, 166),
+(28, 2, 4, 167),
+(29, 2, 4, 168),
+(30, 2, 4, 169),
+(31, 2, 4, 170),
+(32, 2, 4, 171),
+(33, 2, 4, 172),
+(34, 2, 4, 173),
+(35, 2, 4, 174),
+(36, 2, 4, 175),
+(12, 5, 4, 176),
+(13, 5, 4, 177),
+(14, 5, 4, 178),
+(15, 5, 4, 179),
+(16, 5, 4, 180),
+(17, 5, 4, 181),
+(18, 5, 4, 182),
+(19, 5, 4, 183),
+(20, 5, 4, 184),
+(21, 5, 4, 185),
+(22, 5, 4, 186),
+(23, 5, 4, 187),
+(24, 5, 4, 188),
+(25, 5, 4, 189),
+(26, 5, 4, 190),
+(27, 5, 4, 191),
+(28, 5, 4, 192),
+(29, 5, 4, 193),
+(30, 5, 4, 194),
+(31, 5, 4, 195),
+(32, 5, 4, 196),
+(33, 5, 4, 197),
+(34, 5, 4, 198),
+(35, 5, 4, 199),
+(36, 5, 4, 200);
+
+INSERT INTO evaluation_details (evaluation_id, question_id, score, comment) VALUES
+(1, 1, 3, NULL),
+(1, 2, 4, NULL),
+(1, 3, 3, NULL),
+(1, 4, 5, NULL),
+(1, 5, 3, NULL),
+(1, 6, 3, NULL),
+(1, 7, 4, NULL),
+(1, 8, 5, NULL),
+(1, 9, 4, NULL),
+(1, 10, 5, NULL),
+(1, 11, NULL, 'Falta un poco de orden en las ceremonias.'),
+(2, 1, 3, NULL),
+(2, 2, 5, NULL),
+(2, 3, 4, NULL),
+(2, 4, 5, NULL),
+(2, 5, 4, NULL),
+(2, 6, 5, NULL),
+(2, 7, 3, NULL),
+(2, 8, 5, NULL),
+(2, 9, 3, NULL),
+(2, 10, 3, NULL),
+(2, 11, NULL, 'Me gustaria que diera feedback mas detallado.'),
+(3, 1, 5, NULL),
+(3, 2, 5, NULL),
+(3, 3, 4, NULL),
+(3, 4, 4, NULL),
+(3, 5, 3, NULL),
+(3, 6, 3, NULL),
+(3, 7, 4, NULL),
+(3, 8, 3, NULL),
+(3, 9, 5, NULL),
+(3, 10, 4, NULL),
+(3, 11, NULL, 'Me gustaria que diera feedback mas detallado.'),
+(4, 1, 5, NULL),
+(4, 2, 3, NULL),
+(4, 3, 4, NULL),
+(4, 4, 3, NULL),
+(4, 5, 5, NULL),
+(4, 6, 3, NULL),
+(4, 7, 4, NULL),
+(4, 8, 3, NULL),
+(4, 9, 5, NULL),
+(4, 10, 4, NULL),
+(4, 11, NULL, 'Todo bien, explica claro.'),
+(5, 1, 4, NULL),
+(5, 2, 5, NULL),
+(5, 3, 4, NULL),
+(5, 4, 4, NULL),
+(5, 5, 3, NULL),
+(5, 6, 5, NULL),
+(5, 7, 5, NULL),
+(5, 8, 4, NULL),
+(5, 9, 4, NULL),
+(5, 10, 5, NULL),
+(5, 11, NULL, 'Buen lider, pero a veces no responde rapido.'),
+(6, 1, 4, NULL),
+(6, 2, 3, NULL),
+(6, 3, 5, NULL),
+(6, 4, 4, NULL),
+(6, 5, 5, NULL),
+(6, 6, 5, NULL),
+(6, 7, 3, NULL),
+(6, 8, 4, NULL),
+(6, 9, 3, NULL),
+(6, 10, 3, NULL),
+(6, 11, NULL, 'Excelente, me ayuda mucho con mis dudas.'),
+(7, 1, 3, NULL),
+(7, 2, 3, NULL),
+(7, 3, 3, NULL),
+(7, 4, 5, NULL),
+(7, 5, 5, NULL),
+(7, 6, 5, NULL),
+(7, 7, 4, NULL),
+(7, 8, 5, NULL),
+(7, 9, 3, NULL),
+(7, 10, 5, NULL),
+(7, 11, NULL, 'Buen lider, pero a veces no responde rapido.'),
+(8, 1, 5, NULL),
+(8, 2, 3, NULL),
+(8, 3, 5, NULL),
+(8, 4, 4, NULL),
+(8, 5, 3, NULL),
+(8, 6, 4, NULL),
+(8, 7, 4, NULL),
+(8, 8, 4, NULL),
+(8, 9, 3, NULL),
+(8, 10, 5, NULL),
+(8, 11, NULL, 'Falta un poco de orden en las ceremonias.'),
+(9, 1, 3, NULL),
+(9, 2, 5, NULL),
+(9, 3, 3, NULL),
+(9, 4, 5, NULL),
+(9, 5, 5, NULL),
+(9, 6, 5, NULL),
+(9, 7, 3, NULL),
+(9, 8, 3, NULL),
+(9, 9, 5, NULL),
+(9, 10, 5, NULL),
+(9, 11, NULL, 'Excelente, me ayuda mucho con mis dudas.'),
+(10, 1, 5, NULL),
+(10, 2, 5, NULL),
+(10, 3, 5, NULL),
+(10, 4, 3, NULL),
+(10, 5, 3, NULL),
+(10, 6, 5, NULL),
+(10, 7, 4, NULL),
+(10, 8, 5, NULL),
+(10, 9, 4, NULL),
+(10, 10, 5, NULL),
+(10, 11, NULL, NULL),
+(11, 1, 5, NULL),
+(11, 2, 3, NULL),
+(11, 3, 4, NULL),
+(11, 4, 3, NULL),
+(11, 5, 4, NULL),
+(11, 6, 4, NULL),
+(11, 7, 4, NULL),
+(11, 8, 4, NULL),
+(11, 9, 4, NULL),
+(11, 10, 4, NULL),
+(11, 11, NULL, NULL),
+(12, 1, 4, NULL),
+(12, 2, 5, NULL),
+(12, 3, 4, NULL),
+(12, 4, 3, NULL),
+(12, 5, 5, NULL),
+(12, 6, 3, NULL),
+(12, 7, 5, NULL),
+(12, 8, 3, NULL),
+(12, 9, 4, NULL),
+(12, 10, 3, NULL),
+(12, 11, NULL, 'Me gustaria que diera feedback mas detallado.'),
+(13, 1, 4, NULL),
+(13, 2, 5, NULL),
+(13, 3, 3, NULL),
+(13, 4, 3, NULL),
+(13, 5, 3, NULL),
+(13, 6, 5, NULL),
+(13, 7, 5, NULL),
+(13, 8, 5, NULL),
+(13, 9, 5, NULL),
+(13, 10, 5, NULL),
+(13, 11, NULL, 'Me gustaria que diera feedback mas detallado.'),
+(14, 1, 5, NULL),
+(14, 2, 4, NULL),
+(14, 3, 5, NULL),
+(14, 4, 3, NULL),
+(14, 5, 5, NULL),
+(14, 6, 5, NULL),
+(14, 7, 4, NULL),
+(14, 8, 5, NULL),
+(14, 9, 4, NULL),
+(14, 10, 5, NULL),
+(14, 11, NULL, 'Todo bien, explica claro.'),
+(15, 1, 3, NULL),
+(15, 2, 3, NULL),
+(15, 3, 3, NULL),
+(15, 4, 3, NULL),
+(15, 5, 4, NULL),
+(15, 6, 4, NULL),
+(15, 7, 5, NULL),
+(15, 8, 5, NULL),
+(15, 9, 3, NULL),
+(15, 10, 5, NULL),
+(15, 11, NULL, 'Me gustaria que diera feedback mas detallado.'),
+(16, 1, 5, NULL),
+(16, 2, 5, NULL),
+(16, 3, 5, NULL),
+(16, 4, 5, NULL),
+(16, 5, 5, NULL),
+(16, 6, 4, NULL),
+(16, 7, 4, NULL),
+(16, 8, 3, NULL),
+(16, 9, 3, NULL),
+(16, 10, 5, NULL),
+(16, 11, NULL, 'Todo bien, explica claro.'),
+(17, 1, 4, NULL),
+(17, 2, 4, NULL),
+(17, 3, 4, NULL),
+(17, 4, 5, NULL),
+(17, 5, 5, NULL),
+(17, 6, 4, NULL),
+(17, 7, 5, NULL),
+(17, 8, 5, NULL),
+(17, 9, 4, NULL),
+(17, 10, 3, NULL),
+(17, 11, NULL, NULL),
+(18, 1, 4, NULL),
+(18, 2, 5, NULL),
+(18, 3, 4, NULL),
+(18, 4, 5, NULL),
+(18, 5, 5, NULL),
+(18, 6, 4, NULL),
+(18, 7, 3, NULL),
+(18, 8, 5, NULL),
+(18, 9, 5, NULL),
+(18, 10, 4, NULL),
+(18, 11, NULL, 'Buen lider, pero a veces no responde rapido.'),
+(19, 1, 5, NULL),
+(19, 2, 5, NULL),
+(19, 3, 3, NULL),
+(19, 4, 5, NULL),
+(19, 5, 3, NULL),
+(19, 6, 5, NULL),
+(19, 7, 4, NULL),
+(19, 8, 3, NULL),
+(19, 9, 4, NULL),
+(19, 10, 3, NULL),
+(19, 11, NULL, 'Me gustaria que diera feedback mas detallado.'),
+(20, 1, 5, NULL),
+(20, 2, 3, NULL),
+(20, 3, 3, NULL),
+(20, 4, 3, NULL),
+(20, 5, 5, NULL),
+(20, 6, 3, NULL),
+(20, 7, 3, NULL),
+(20, 8, 4, NULL),
+(20, 9, 5, NULL),
+(20, 10, 5, NULL),
+(20, 11, NULL, 'Me gustaria que diera feedback mas detallado.'),
+(21, 1, 3, NULL),
+(21, 2, 5, NULL),
+(21, 3, 4, NULL),
+(21, 4, 5, NULL),
+(21, 5, 4, NULL),
+(21, 6, 5, NULL),
+(21, 7, 4, NULL),
+(21, 8, 4, NULL),
+(21, 9, 4, NULL),
+(21, 10, 5, NULL),
+(21, 11, NULL, NULL),
+(22, 1, 4, NULL),
+(22, 2, 3, NULL),
+(22, 3, 3, NULL),
+(22, 4, 5, NULL),
+(22, 5, 5, NULL),
+(22, 6, 5, NULL),
+(22, 7, 3, NULL),
+(22, 8, 5, NULL),
+(22, 9, 5, NULL),
+(22, 10, 5, NULL),
+(22, 11, NULL, 'Me gustaria que diera feedback mas detallado.'),
+(23, 1, 4, NULL),
+(23, 2, 4, NULL),
+(23, 3, 5, NULL),
+(23, 4, 4, NULL),
+(23, 5, 3, NULL),
+(23, 6, 3, NULL),
+(23, 7, 4, NULL),
+(23, 8, 4, NULL),
+(23, 9, 4, NULL),
+(23, 10, 3, NULL),
+(23, 11, NULL, NULL),
+(24, 1, 3, NULL),
+(24, 2, 3, NULL),
+(24, 3, 5, NULL),
+(24, 4, 3, NULL),
+(24, 5, 5, NULL),
+(24, 6, 3, NULL),
+(24, 7, 5, NULL),
+(24, 8, 4, NULL),
+(24, 9, 3, NULL),
+(24, 10, 3, NULL),
+(24, 11, NULL, NULL),
+(25, 1, 5, NULL),
+(25, 2, 4, NULL),
+(25, 3, 5, NULL),
+(25, 4, 4, NULL),
+(25, 5, 4, NULL),
+(25, 6, 5, NULL),
+(25, 7, 4, NULL),
+(25, 8, 3, NULL),
+(25, 9, 4, NULL),
+(25, 10, 4, NULL),
+(25, 11, NULL, 'Buen lider, pero a veces no responde rapido.'),
+(26, 12, 3, NULL),
+(26, 13, 5, NULL),
+(26, 14, 4, NULL),
+(26, 15, 4, NULL),
+(26, 16, 3, NULL),
+(26, 17, 4, NULL),
+(26, 18, 5, NULL),
+(26, 19, 5, NULL),
+(26, 20, NULL, 'Es paciente y se nota que sabe del tema.'),
+(27, 12, 5, NULL),
+(27, 13, 4, NULL),
+(27, 14, 5, NULL),
+(27, 15, 3, NULL),
+(27, 16, 3, NULL),
+(27, 17, 5, NULL),
+(27, 18, 3, NULL),
+(27, 19, 3, NULL),
+(27, 20, NULL, 'A veces se confunde en el live coding, pero resuelve bien.'),
+(28, 12, 5, NULL),
+(28, 13, 5, NULL),
+(28, 14, 4, NULL),
+(28, 15, 3, NULL),
+(28, 16, 4, NULL),
+(28, 17, 4, NULL),
+(28, 18, 5, NULL),
+(28, 19, 3, NULL),
+(28, 20, NULL, 'Es paciente y se nota que sabe del tema.'),
+(29, 12, 3, NULL),
+(29, 13, 5, NULL),
+(29, 14, 4, NULL),
+(29, 15, 4, NULL),
+(29, 16, 3, NULL),
+(29, 17, 4, NULL),
+(29, 18, 3, NULL),
+(29, 19, 4, NULL),
+(29, 20, NULL, 'Me gustaria que hiciera mas ejemplos practicos.'),
+(30, 12, 5, NULL),
+(30, 13, 4, NULL),
+(30, 14, 4, NULL),
+(30, 15, 3, NULL),
+(30, 16, 3, NULL),
+(30, 17, 3, NULL),
+(30, 18, 5, NULL),
+(30, 19, 5, NULL),
+(30, 20, NULL, 'Me gustaria que hiciera mas ejemplos practicos.'),
+(31, 12, 4, NULL),
+(31, 13, 5, NULL),
+(31, 14, 4, NULL),
+(31, 15, 5, NULL),
+(31, 16, 4, NULL),
+(31, 17, 5, NULL),
+(31, 18, 5, NULL),
+(31, 19, 3, NULL),
+(31, 20, NULL, 'Me gustaria que hiciera mas ejemplos practicos.'),
+(32, 12, 5, NULL),
+(32, 13, 4, NULL),
+(32, 14, 5, NULL),
+(32, 15, 4, NULL),
+(32, 16, 3, NULL),
+(32, 17, 3, NULL),
+(32, 18, 5, NULL),
+(32, 19, 5, NULL),
+(32, 20, NULL, 'Me gustaria que hiciera mas ejemplos practicos.'),
+(33, 12, 5, NULL),
+(33, 13, 3, NULL),
+(33, 14, 4, NULL),
+(33, 15, 5, NULL),
+(33, 16, 4, NULL),
+(33, 17, 4, NULL),
+(33, 18, 3, NULL),
+(33, 19, 3, NULL),
+(33, 20, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.'),
+(34, 12, 4, NULL),
+(34, 13, 5, NULL),
+(34, 14, 3, NULL),
+(34, 15, 3, NULL),
+(34, 16, 3, NULL),
+(34, 17, 3, NULL),
+(34, 18, 5, NULL),
+(34, 19, 4, NULL),
+(34, 20, NULL, 'Es paciente y se nota que sabe del tema.'),
+(35, 12, 3, NULL),
+(35, 13, 3, NULL),
+(35, 14, 5, NULL),
+(35, 15, 3, NULL),
+(35, 16, 4, NULL),
+(35, 17, 4, NULL),
+(35, 18, 4, NULL),
+(35, 19, 3, NULL),
+(35, 20, NULL, 'Es paciente y se nota que sabe del tema.'),
+(36, 12, 5, NULL),
+(36, 13, 3, NULL),
+(36, 14, 3, NULL),
+(36, 15, 5, NULL),
+(36, 16, 3, NULL),
+(36, 17, 3, NULL),
+(36, 18, 5, NULL),
+(36, 19, 3, NULL),
+(36, 20, NULL, 'Es paciente y se nota que sabe del tema.'),
+(37, 12, 5, NULL),
+(37, 13, 4, NULL),
+(37, 14, 3, NULL),
+(37, 15, 4, NULL),
+(37, 16, 5, NULL),
+(37, 17, 3, NULL),
+(37, 18, 4, NULL),
+(37, 19, 4, NULL),
+(37, 20, NULL, 'A veces se confunde en el live coding, pero resuelve bien.'),
+(38, 12, 3, NULL),
+(38, 13, 3, NULL),
+(38, 14, 3, NULL),
+(38, 15, 4, NULL),
+(38, 16, 4, NULL),
+(38, 17, 5, NULL),
+(38, 18, 3, NULL),
+(38, 19, 4, NULL),
+(38, 20, NULL, 'A veces se confunde en el live coding, pero resuelve bien.'),
+(39, 12, 5, NULL),
+(39, 13, 5, NULL),
+(39, 14, 4, NULL),
+(39, 15, 5, NULL),
+(39, 16, 3, NULL),
+(39, 17, 5, NULL),
+(39, 18, 4, NULL),
+(39, 19, 4, NULL),
+(39, 20, NULL, 'Excelente tutor, sus clases son muy claras.'),
+(40, 12, 4, NULL),
+(40, 13, 4, NULL),
+(40, 14, 4, NULL),
+(40, 15, 4, NULL),
+(40, 16, 5, NULL),
+(40, 17, 4, NULL),
+(40, 18, 4, NULL),
+(40, 19, 5, NULL),
+(40, 20, NULL, 'Me gustaria que hiciera mas ejemplos practicos.'),
+(41, 12, 4, NULL),
+(41, 13, 5, NULL),
+(41, 14, 5, NULL),
+(41, 15, 5, NULL),
+(41, 16, 5, NULL),
+(41, 17, 3, NULL),
+(41, 18, 4, NULL),
+(41, 19, 4, NULL),
+(41, 20, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.'),
+(42, 12, 5, NULL),
+(42, 13, 5, NULL),
+(42, 14, 4, NULL),
+(42, 15, 4, NULL),
+(42, 16, 5, NULL),
+(42, 17, 4, NULL),
+(42, 18, 3, NULL),
+(42, 19, 3, NULL),
+(42, 20, NULL, NULL),
+(43, 12, 4, NULL),
+(43, 13, 3, NULL),
+(43, 14, 5, NULL),
+(43, 15, 5, NULL),
+(43, 16, 5, NULL),
+(43, 17, 4, NULL),
+(43, 18, 3, NULL),
+(43, 19, 3, NULL),
+(43, 20, NULL, 'Excelente tutor, sus clases son muy claras.'),
+(44, 12, 3, NULL),
+(44, 13, 3, NULL),
+(44, 14, 3, NULL),
+(44, 15, 4, NULL),
+(44, 16, 3, NULL),
+(44, 17, 4, NULL),
+(44, 18, 5, NULL),
+(44, 19, 5, NULL),
+(44, 20, NULL, 'Excelente tutor, sus clases son muy claras.'),
+(45, 12, 3, NULL),
+(45, 13, 3, NULL),
+(45, 14, 5, NULL),
+(45, 15, 5, NULL),
+(45, 16, 3, NULL),
+(45, 17, 4, NULL),
+(45, 18, 5, NULL),
+(45, 19, 3, NULL),
+(45, 20, NULL, NULL),
+(46, 12, 5, NULL),
+(46, 13, 4, NULL),
+(46, 14, 5, NULL),
+(46, 15, 3, NULL),
+(46, 16, 4, NULL),
+(46, 17, 5, NULL),
+(46, 18, 4, NULL),
+(46, 19, 3, NULL),
+(46, 20, NULL, 'A veces se confunde en el live coding, pero resuelve bien.'),
+(47, 12, 4, NULL),
+(47, 13, 3, NULL),
+(47, 14, 4, NULL),
+(47, 15, 4, NULL),
+(47, 16, 5, NULL),
+(47, 17, 5, NULL),
+(47, 18, 4, NULL),
+(47, 19, 5, NULL),
+(47, 20, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.'),
+(48, 12, 3, NULL),
+(48, 13, 5, NULL),
+(48, 14, 5, NULL),
+(48, 15, 4, NULL),
+(48, 16, 3, NULL),
+(48, 17, 3, NULL),
+(48, 18, 3, NULL),
+(48, 19, 5, NULL),
+(48, 20, NULL, 'A veces se confunde en el live coding, pero resuelve bien.'),
+(49, 12, 4, NULL),
+(49, 13, 4, NULL),
+(49, 14, 5, NULL),
+(49, 15, 5, NULL),
+(49, 16, 5, NULL),
+(49, 17, 3, NULL),
+(49, 18, 4, NULL),
+(49, 19, 3, NULL),
+(49, 20, NULL, NULL),
+(50, 12, 5, NULL),
+(50, 13, 4, NULL),
+(50, 14, 3, NULL),
+(50, 15, 4, NULL),
+(50, 16, 3, NULL),
+(50, 17, 4, NULL),
+(50, 18, 5, NULL),
+(50, 19, 5, NULL),
+(50, 20, NULL, 'Excelente tutor, sus clases son muy claras.');
+
+INSERT INTO evaluation_details (evaluation_id, question_id, score, comment) VALUES
+(51, 1, 4, NULL),
+(51, 2, 3, NULL),
+(51, 3, 5, NULL),
+(51, 4, 4, NULL),
+(51, 5, 4, NULL),
+(51, 6, 4, NULL),
+(51, 7, 5, NULL),
+(51, 8, 5, NULL),
+(51, 9, 4, NULL),
+(51, 10, 3, NULL),
+(51, 11, NULL, 'Todo bien, explica claro.'),
+(52, 1, 3, NULL),
+(52, 2, 5, NULL),
+(52, 3, 5, NULL),
+(52, 4, 5, NULL),
+(52, 5, 4, NULL),
+(52, 6, 5, NULL),
+(52, 7, 3, NULL),
+(52, 8, 5, NULL),
+(52, 9, 5, NULL),
+(52, 10, 5, NULL),
+(52, 11, NULL, 'Todo bien, explica claro.'),
+(53, 1, 5, NULL),
+(53, 2, 3, NULL),
+(53, 3, 5, NULL),
+(53, 4, 3, NULL),
+(53, 5, 5, NULL),
+(53, 6, 5, NULL),
+(53, 7, 3, NULL),
+(53, 8, 3, NULL),
+(53, 9, 5, NULL),
+(53, 10, 4, NULL),
+(53, 11, NULL, 'Buen lider, pero a veces no responde rapido.'),
+(54, 1, 4, NULL),
+(54, 2, 3, NULL),
+(54, 3, 5, NULL),
+(54, 4, 5, NULL),
+(54, 5, 3, NULL),
+(54, 6, 4, NULL),
+(54, 7, 4, NULL),
+(54, 8, 5, NULL),
+(54, 9, 4, NULL),
+(54, 10, 4, NULL),
+(54, 11, NULL, 'Me gustaria que diera feedback mas detallado.'),
+(55, 1, 4, NULL),
+(55, 2, 4, NULL),
+(55, 3, 3, NULL),
+(55, 4, 3, NULL),
+(55, 5, 3, NULL),
+(55, 6, 3, NULL),
+(55, 7, 4, NULL),
+(55, 8, 3, NULL),
+(55, 9, 4, NULL),
+(55, 10, 5, NULL),
+(55, 11, NULL, NULL),
+(56, 1, 4, NULL),
+(56, 2, 5, NULL),
+(56, 3, 4, NULL),
+(56, 4, 5, NULL),
+(56, 5, 5, NULL),
+(56, 6, 4, NULL),
+(56, 7, 5, NULL),
+(56, 8, 5, NULL),
+(56, 9, 3, NULL),
+(56, 10, 3, NULL),
+(56, 11, NULL, 'Buen lider, pero a veces no responde rapido.'),
+(57, 1, 5, NULL),
+(57, 2, 3, NULL),
+(57, 3, 5, NULL),
+(57, 4, 5, NULL),
+(57, 5, 5, NULL),
+(57, 6, 4, NULL),
+(57, 7, 4, NULL),
+(57, 8, 5, NULL),
+(57, 9, 5, NULL),
+(57, 10, 4, NULL),
+(57, 11, NULL, 'Todo bien, explica claro.'),
+(58, 1, 3, NULL),
+(58, 2, 5, NULL),
+(58, 3, 3, NULL),
+(58, 4, 5, NULL),
+(58, 5, 5, NULL),
+(58, 6, 4, NULL),
+(58, 7, 5, NULL),
+(58, 8, 3, NULL),
+(58, 9, 5, NULL),
+(58, 10, 4, NULL),
+(58, 11, NULL, 'Me gustaria que diera feedback mas detallado.'),
+(59, 1, 5, NULL),
+(59, 2, 5, NULL),
+(59, 3, 3, NULL),
+(59, 4, 5, NULL),
+(59, 5, 3, NULL),
+(59, 6, 4, NULL),
+(59, 7, 3, NULL),
+(59, 8, 4, NULL),
+(59, 9, 4, NULL),
+(59, 10, 5, NULL),
+(59, 11, NULL, NULL),
+(60, 1, 5, NULL),
+(60, 2, 5, NULL),
+(60, 3, 4, NULL),
+(60, 4, 3, NULL),
+(60, 5, 3, NULL),
+(60, 6, 4, NULL),
+(60, 7, 3, NULL),
+(60, 8, 3, NULL),
+(60, 9, 4, NULL),
+(60, 10, 3, NULL),
+(60, 11, NULL, 'Me gustaria que diera feedback mas detallado.'),
+(61, 1, 3, NULL),
+(61, 2, 5, NULL),
+(61, 3, 5, NULL),
+(61, 4, 5, NULL),
+(61, 5, 4, NULL),
+(61, 6, 5, NULL),
+(61, 7, 5, NULL),
+(61, 8, 4, NULL),
+(61, 9, 4, NULL),
+(61, 10, 5, NULL),
+(61, 11, NULL, 'Buen lider, pero a veces no responde rapido.'),
+(62, 1, 4, NULL),
+(62, 2, 5, NULL),
+(62, 3, 4, NULL),
+(62, 4, 5, NULL),
+(62, 5, 4, NULL),
+(62, 6, 4, NULL),
+(62, 7, 4, NULL),
+(62, 8, 5, NULL),
+(62, 9, 3, NULL),
+(62, 10, 4, NULL),
+(62, 11, NULL, 'Me gustaria que diera feedback mas detallado.'),
+(63, 1, 4, NULL),
+(63, 2, 4, NULL),
+(63, 3, 3, NULL),
+(63, 4, 5, NULL),
+(63, 5, 5, NULL),
+(63, 6, 4, NULL),
+(63, 7, 5, NULL),
+(63, 8, 3, NULL),
+(63, 9, 3, NULL),
+(63, 10, 3, NULL),
+(63, 11, NULL, 'Me gustaria que diera feedback mas detallado.'),
+(64, 1, 4, NULL),
+(64, 2, 4, NULL),
+(64, 3, 5, NULL),
+(64, 4, 3, NULL),
+(64, 5, 5, NULL),
+(64, 6, 4, NULL),
+(64, 7, 5, NULL),
+(64, 8, 4, NULL),
+(64, 9, 4, NULL),
+(64, 10, 3, NULL),
+(64, 11, NULL, 'Todo bien, explica claro.'),
+(65, 1, 5, NULL),
+(65, 2, 3, NULL),
+(65, 3, 3, NULL),
+(65, 4, 3, NULL),
+(65, 5, 5, NULL),
+(65, 6, 5, NULL),
+(65, 7, 5, NULL),
+(65, 8, 3, NULL),
+(65, 9, 3, NULL),
+(65, 10, 5, NULL),
+(65, 11, NULL, 'Falta un poco de orden en las ceremonias.'),
+(66, 1, 3, NULL),
+(66, 2, 5, NULL),
+(66, 3, 3, NULL),
+(66, 4, 3, NULL),
+(66, 5, 5, NULL),
+(66, 6, 5, NULL),
+(66, 7, 4, NULL),
+(66, 8, 4, NULL),
+(66, 9, 4, NULL),
+(66, 10, 5, NULL),
+(66, 11, NULL, 'Buen lider, pero a veces no responde rapido.'),
+(67, 1, 5, NULL),
+(67, 2, 4, NULL),
+(67, 3, 3, NULL),
+(67, 4, 5, NULL),
+(67, 5, 3, NULL),
+(67, 6, 5, NULL),
+(67, 7, 5, NULL),
+(67, 8, 5, NULL),
+(67, 9, 3, NULL),
+(67, 10, 4, NULL),
+(67, 11, NULL, 'Falta un poco de orden en las ceremonias.'),
+(68, 1, 3, NULL),
+(68, 2, 3, NULL),
+(68, 3, 3, NULL),
+(68, 4, 4, NULL),
+(68, 5, 3, NULL),
+(68, 6, 5, NULL),
+(68, 7, 4, NULL),
+(68, 8, 5, NULL),
+(68, 9, 3, NULL),
+(68, 10, 4, NULL),
+(68, 11, NULL, 'Excelente, me ayuda mucho con mis dudas.'),
+(69, 1, 4, NULL),
+(69, 2, 3, NULL),
+(69, 3, 3, NULL),
+(69, 4, 4, NULL),
+(69, 5, 5, NULL),
+(69, 6, 4, NULL),
+(69, 7, 5, NULL),
+(69, 8, 4, NULL),
+(69, 9, 5, NULL),
+(69, 10, 3, NULL),
+(69, 11, NULL, 'Me gustaria que diera feedback mas detallado.'),
+(70, 1, 5, NULL),
+(70, 2, 3, NULL),
+(70, 3, 4, NULL),
+(70, 4, 3, NULL),
+(70, 5, 4, NULL),
+(70, 6, 3, NULL),
+(70, 7, 4, NULL),
+(70, 8, 4, NULL),
+(70, 9, 3, NULL),
+(70, 10, 5, NULL),
+(70, 11, NULL, 'Buen lider, pero a veces no responde rapido.'),
+(71, 1, 4, NULL),
+(71, 2, 5, NULL),
+(71, 3, 3, NULL),
+(71, 4, 4, NULL),
+(71, 5, 4, NULL),
+(71, 6, 4, NULL),
+(71, 7, 5, NULL),
+(71, 8, 5, NULL),
+(71, 9, 5, NULL),
+(71, 10, 3, NULL),
+(71, 11, NULL, 'Todo bien, explica claro.'),
+(72, 1, 3, NULL),
+(72, 2, 3, NULL),
+(72, 3, 5, NULL),
+(72, 4, 4, NULL),
+(72, 5, 4, NULL),
+(72, 6, 3, NULL),
+(72, 7, 5, NULL),
+(72, 8, 3, NULL),
+(72, 9, 5, NULL),
+(72, 10, 4, NULL),
+(72, 11, NULL, 'Falta un poco de orden en las ceremonias.'),
+(73, 1, 5, NULL),
+(73, 2, 3, NULL),
+(73, 3, 4, NULL),
+(73, 4, 4, NULL),
+(73, 5, 5, NULL),
+(73, 6, 4, NULL),
+(73, 7, 5, NULL),
+(73, 8, 3, NULL),
+(73, 9, 3, NULL),
+(73, 10, 4, NULL),
+(73, 11, NULL, 'Todo bien, explica claro.'),
+(74, 1, 4, NULL),
+(74, 2, 3, NULL),
+(74, 3, 3, NULL),
+(74, 4, 5, NULL),
+(74, 5, 4, NULL),
+(74, 6, 5, NULL),
+(74, 7, 4, NULL),
+(74, 8, 3, NULL),
+(74, 9, 3, NULL),
+(74, 10, 5, NULL),
+(74, 11, NULL, 'Buen lider, pero a veces no responde rapido.'),
+(75, 1, 5, NULL),
+(75, 2, 5, NULL),
+(75, 3, 4, NULL),
+(75, 4, 5, NULL),
+(75, 5, 3, NULL),
+(75, 6, 5, NULL),
+(75, 7, 3, NULL),
+(75, 8, 4, NULL),
+(75, 9, 5, NULL),
+(75, 10, 3, NULL),
+(75, 11, NULL, NULL),
+(76, 12, 5, NULL),
+(76, 13, 5, NULL),
+(76, 14, 4, NULL),
+(76, 15, 3, NULL),
+(76, 16, 4, NULL),
+(76, 17, 4, NULL),
+(76, 18, 3, NULL),
+(76, 19, 4, NULL),
+(76, 20, NULL, 'A veces se confunde en el live coding, pero resuelve bien.'),
+(77, 12, 4, NULL),
+(77, 13, 5, NULL),
+(77, 14, 3, NULL),
+(77, 15, 3, NULL),
+(77, 16, 4, NULL),
+(77, 17, 4, NULL),
+(77, 18, 3, NULL),
+(77, 19, 4, NULL),
+(77, 20, NULL, 'A veces se confunde en el live coding, pero resuelve bien.'),
+(78, 12, 3, NULL),
+(78, 13, 5, NULL),
+(78, 14, 3, NULL),
+(78, 15, 4, NULL),
+(78, 16, 3, NULL),
+(78, 17, 5, NULL),
+(78, 18, 3, NULL),
+(78, 19, 4, NULL),
+(78, 20, NULL, 'A veces se confunde en el live coding, pero resuelve bien.'),
+(79, 12, 3, NULL),
+(79, 13, 4, NULL),
+(79, 14, 5, NULL),
+(79, 15, 3, NULL),
+(79, 16, 3, NULL),
+(79, 17, 3, NULL),
+(79, 18, 4, NULL),
+(79, 19, 4, NULL),
+(79, 20, NULL, 'Excelente tutor, sus clases son muy claras.'),
+(80, 12, 5, NULL),
+(80, 13, 3, NULL),
+(80, 14, 4, NULL),
+(80, 15, 4, NULL),
+(80, 16, 3, NULL),
+(80, 17, 3, NULL),
+(80, 18, 4, NULL),
+(80, 19, 3, NULL),
+(80, 20, NULL, 'Me gustaria que hiciera mas ejemplos practicos.'),
+(81, 12, 3, NULL),
+(81, 13, 3, NULL),
+(81, 14, 3, NULL),
+(81, 15, 5, NULL),
+(81, 16, 3, NULL),
+(81, 17, 3, NULL),
+(81, 18, 4, NULL),
+(81, 19, 5, NULL),
+(81, 20, NULL, 'A veces se confunde en el live coding, pero resuelve bien.'),
+(82, 12, 3, NULL),
+(82, 13, 5, NULL),
+(82, 14, 4, NULL),
+(82, 15, 5, NULL),
+(82, 16, 5, NULL),
+(82, 17, 3, NULL),
+(82, 18, 3, NULL),
+(82, 19, 4, NULL),
+(82, 20, NULL, 'Es paciente y se nota que sabe del tema.'),
+(83, 12, 3, NULL),
+(83, 13, 5, NULL),
+(83, 14, 4, NULL),
+(83, 15, 3, NULL),
+(83, 16, 5, NULL),
+(83, 17, 5, NULL),
+(83, 18, 5, NULL),
+(83, 19, 4, NULL),
+(83, 20, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.'),
+(84, 12, 3, NULL),
+(84, 13, 4, NULL),
+(84, 14, 4, NULL),
+(84, 15, 4, NULL),
+(84, 16, 5, NULL),
+(84, 17, 4, NULL),
+(84, 18, 4, NULL),
+(84, 19, 4, NULL),
+(84, 20, NULL, 'Excelente tutor, sus clases son muy claras.'),
+(85, 12, 5, NULL),
+(85, 13, 3, NULL),
+(85, 14, 4, NULL),
+(85, 15, 5, NULL),
+(85, 16, 3, NULL),
+(85, 17, 3, NULL),
+(85, 18, 4, NULL),
+(85, 19, 4, NULL),
+(85, 20, NULL, 'Excelente tutor, sus clases son muy claras.'),
+(86, 12, 4, NULL),
+(86, 13, 3, NULL),
+(86, 14, 3, NULL),
+(86, 15, 5, NULL),
+(86, 16, 5, NULL),
+(86, 17, 4, NULL),
+(86, 18, 3, NULL),
+(86, 19, 5, NULL),
+(86, 20, NULL, 'A veces se confunde en el live coding, pero resuelve bien.'),
+(87, 12, 4, NULL),
+(87, 13, 3, NULL),
+(87, 14, 4, NULL),
+(87, 15, 4, NULL),
+(87, 16, 4, NULL),
+(87, 17, 3, NULL),
+(87, 18, 3, NULL),
+(87, 19, 4, NULL),
+(87, 20, NULL, 'A veces se confunde en el live coding, pero resuelve bien.'),
+(88, 12, 3, NULL),
+(88, 13, 5, NULL),
+(88, 14, 4, NULL),
+(88, 15, 5, NULL),
+(88, 16, 3, NULL),
+(88, 17, 3, NULL),
+(88, 18, 4, NULL),
+(88, 19, 5, NULL),
+(88, 20, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.'),
+(89, 12, 4, NULL),
+(89, 13, 5, NULL),
+(89, 14, 5, NULL),
+(89, 15, 3, NULL),
+(89, 16, 5, NULL),
+(89, 17, 3, NULL),
+(89, 18, 5, NULL),
+(89, 19, 5, NULL),
+(89, 20, NULL, 'A veces se confunde en el live coding, pero resuelve bien.'),
+(90, 12, 5, NULL),
+(90, 13, 5, NULL),
+(90, 14, 5, NULL),
+(90, 15, 3, NULL),
+(90, 16, 4, NULL),
+(90, 17, 5, NULL),
+(90, 18, 3, NULL),
+(90, 19, 5, NULL),
+(90, 20, NULL, 'Excelente tutor, sus clases son muy claras.'),
+(91, 12, 3, NULL),
+(91, 13, 4, NULL),
+(91, 14, 5, NULL),
+(91, 15, 5, NULL),
+(91, 16, 3, NULL),
+(91, 17, 4, NULL),
+(91, 18, 4, NULL),
+(91, 19, 4, NULL),
+(91, 20, NULL, 'A veces se confunde en el live coding, pero resuelve bien.'),
+(92, 12, 3, NULL),
+(92, 13, 4, NULL),
+(92, 14, 4, NULL),
+(92, 15, 5, NULL),
+(92, 16, 4, NULL),
+(92, 17, 4, NULL),
+(92, 18, 4, NULL),
+(92, 19, 5, NULL),
+(92, 20, NULL, 'Me gustaria que hiciera mas ejemplos practicos.'),
+(93, 12, 4, NULL),
+(93, 13, 4, NULL),
+(93, 14, 3, NULL),
+(93, 15, 3, NULL),
+(93, 16, 4, NULL),
+(93, 17, 3, NULL),
+(93, 18, 4, NULL),
+(93, 19, 4, NULL),
+(93, 20, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.'),
+(94, 12, 3, NULL),
+(94, 13, 5, NULL),
+(94, 14, 4, NULL),
+(94, 15, 3, NULL),
+(94, 16, 3, NULL),
+(94, 17, 4, NULL),
+(94, 18, 4, NULL),
+(94, 19, 4, NULL),
+(94, 20, NULL, 'A veces se confunde en el live coding, pero resuelve bien.'),
+(95, 12, 4, NULL),
+(95, 13, 5, NULL),
+(95, 14, 3, NULL),
+(95, 15, 3, NULL),
+(95, 16, 4, NULL),
+(95, 17, 3, NULL),
+(95, 18, 5, NULL),
+(95, 19, 4, NULL),
+(95, 20, NULL, 'Excelente tutor, sus clases son muy claras.'),
+(96, 12, 5, NULL),
+(96, 13, 4, NULL),
+(96, 14, 4, NULL),
+(96, 15, 4, NULL),
+(96, 16, 4, NULL),
+(96, 17, 3, NULL),
+(96, 18, 3, NULL),
+(96, 19, 3, NULL),
+(96, 20, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.'),
+(97, 12, 5, NULL),
+(97, 13, 5, NULL),
+(97, 14, 3, NULL),
+(97, 15, 5, NULL),
+(97, 16, 5, NULL),
+(97, 17, 5, NULL),
+(97, 18, 3, NULL),
+(97, 19, 3, NULL),
+(97, 20, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.'),
+(98, 12, 4, NULL),
+(98, 13, 4, NULL),
+(98, 14, 3, NULL),
+(98, 15, 3, NULL),
+(98, 16, 4, NULL),
+(98, 17, 5, NULL),
+(98, 18, 3, NULL),
+(98, 19, 3, NULL),
+(98, 20, NULL, NULL),
+(99, 12, 3, NULL),
+(99, 13, 4, NULL),
+(99, 14, 5, NULL),
+(99, 15, 5, NULL),
+(99, 16, 5, NULL),
+(99, 17, 4, NULL),
+(99, 18, 5, NULL),
+(99, 19, 5, NULL),
+(99, 20, NULL, 'Excelente tutor, sus clases son muy claras.'),
+(100, 12, 5, NULL),
+(100, 13, 3, NULL),
+(100, 14, 3, NULL),
+(100, 15, 3, NULL),
+(100, 16, 3, NULL),
+(100, 17, 3, NULL),
+(100, 18, 5, NULL),
+(100, 19, 3, NULL),
+(100, 20, NULL, 'Excelente tutor, sus clases son muy claras.');
+
+INSERT INTO evaluation_details (evaluation_id, question_id, score, comment) VALUES
+(101, 1, 3, NULL),
+(101, 2, 3, NULL),
+(101, 3, 3, NULL),
+(101, 4, 5, NULL),
+(101, 5, 5, NULL),
+(101, 6, 3, NULL),
+(101, 7, 4, NULL),
+(101, 8, 5, NULL),
+(101, 9, 5, NULL),
+(101, 10, 5, NULL),
+(101, 11, NULL, 'Excelente, me ayuda mucho con mis dudas.'),
+(102, 1, 4, NULL),
+(102, 2, 4, NULL),
+(102, 3, 4, NULL),
+(102, 4, 4, NULL),
+(102, 5, 5, NULL),
+(102, 6, 3, NULL),
+(102, 7, 5, NULL),
+(102, 8, 5, NULL),
+(102, 9, 5, NULL),
+(102, 10, 4, NULL),
+(102, 11, NULL, 'Falta un poco de orden en las ceremonias.'),
+(103, 1, 4, NULL),
+(103, 2, 5, NULL),
+(103, 3, 4, NULL),
+(103, 4, 5, NULL),
+(103, 5, 3, NULL),
+(103, 6, 5, NULL),
+(103, 7, 5, NULL),
+(103, 8, 4, NULL),
+(103, 9, 4, NULL),
+(103, 10, 4, NULL),
+(103, 11, NULL, NULL),
+(104, 1, 4, NULL),
+(104, 2, 5, NULL),
+(104, 3, 3, NULL),
+(104, 4, 3, NULL),
+(104, 5, 4, NULL),
+(104, 6, 5, NULL),
+(104, 7, 3, NULL),
+(104, 8, 3, NULL),
+(104, 9, 3, NULL),
+(104, 10, 3, NULL),
+(104, 11, NULL, 'Todo bien, explica claro.'),
+(105, 1, 3, NULL),
+(105, 2, 5, NULL),
+(105, 3, 4, NULL),
+(105, 4, 5, NULL),
+(105, 5, 3, NULL),
+(105, 6, 4, NULL),
+(105, 7, 3, NULL),
+(105, 8, 4, NULL),
+(105, 9, 5, NULL),
+(105, 10, 3, NULL),
+(105, 11, NULL, 'Todo bien, explica claro.'),
+(106, 1, 4, NULL),
+(106, 2, 5, NULL),
+(106, 3, 3, NULL),
+(106, 4, 3, NULL),
+(106, 5, 5, NULL),
+(106, 6, 5, NULL),
+(106, 7, 5, NULL),
+(106, 8, 3, NULL),
+(106, 9, 3, NULL),
+(106, 10, 5, NULL),
+(106, 11, NULL, 'Falta un poco de orden en las ceremonias.'),
+(107, 1, 5, NULL),
+(107, 2, 5, NULL),
+(107, 3, 3, NULL),
+(107, 4, 5, NULL),
+(107, 5, 4, NULL),
+(107, 6, 5, NULL),
+(107, 7, 3, NULL),
+(107, 8, 5, NULL),
+(107, 9, 4, NULL),
+(107, 10, 4, NULL),
+(107, 11, NULL, 'Excelente, me ayuda mucho con mis dudas.'),
+(108, 1, 5, NULL),
+(108, 2, 5, NULL),
+(108, 3, 4, NULL),
+(108, 4, 3, NULL),
+(108, 5, 3, NULL),
+(108, 6, 4, NULL),
+(108, 7, 4, NULL),
+(108, 8, 4, NULL),
+(108, 9, 5, NULL),
+(108, 10, 5, NULL),
+(108, 11, NULL, 'Me gustaria que diera feedback mas detallado.'),
+(109, 1, 3, NULL),
+(109, 2, 4, NULL),
+(109, 3, 5, NULL),
+(109, 4, 5, NULL),
+(109, 5, 5, NULL),
+(109, 6, 3, NULL),
+(109, 7, 4, NULL),
+(109, 8, 3, NULL),
+(109, 9, 3, NULL),
+(109, 10, 5, NULL),
+(109, 11, NULL, 'Buen lider, pero a veces no responde rapido.'),
+(110, 1, 3, NULL),
+(110, 2, 3, NULL),
+(110, 3, 5, NULL),
+(110, 4, 5, NULL),
+(110, 5, 5, NULL),
+(110, 6, 3, NULL),
+(110, 7, 4, NULL),
+(110, 8, 3, NULL),
+(110, 9, 5, NULL),
+(110, 10, 5, NULL),
+(110, 11, NULL, 'Me gustaria que diera feedback mas detallado.'),
+(111, 1, 5, NULL),
+(111, 2, 3, NULL),
+(111, 3, 3, NULL),
+(111, 4, 3, NULL),
+(111, 5, 5, NULL),
+(111, 6, 4, NULL),
+(111, 7, 4, NULL),
+(111, 8, 4, NULL),
+(111, 9, 3, NULL),
+(111, 10, 4, NULL),
+(111, 11, NULL, 'Excelente, me ayuda mucho con mis dudas.'),
+(112, 1, 4, NULL),
+(112, 2, 4, NULL),
+(112, 3, 4, NULL),
+(112, 4, 3, NULL),
+(112, 5, 5, NULL),
+(112, 6, 5, NULL),
+(112, 7, 5, NULL),
+(112, 8, 3, NULL),
+(112, 9, 5, NULL),
+(112, 10, 5, NULL),
+(112, 11, NULL, 'Todo bien, explica claro.'),
+(113, 1, 4, NULL),
+(113, 2, 4, NULL),
+(113, 3, 5, NULL),
+(113, 4, 3, NULL),
+(113, 5, 5, NULL),
+(113, 6, 5, NULL),
+(113, 7, 5, NULL),
+(113, 8, 5, NULL),
+(113, 9, 4, NULL),
+(113, 10, 5, NULL),
+(113, 11, NULL, 'Buen lider, pero a veces no responde rapido.'),
+(114, 1, 3, NULL),
+(114, 2, 3, NULL),
+(114, 3, 3, NULL),
+(114, 4, 5, NULL),
+(114, 5, 3, NULL),
+(114, 6, 3, NULL),
+(114, 7, 4, NULL),
+(114, 8, 4, NULL),
+(114, 9, 5, NULL),
+(114, 10, 3, NULL),
+(114, 11, NULL, 'Todo bien, explica claro.'),
+(115, 1, 3, NULL),
+(115, 2, 4, NULL),
+(115, 3, 5, NULL),
+(115, 4, 3, NULL),
+(115, 5, 3, NULL),
+(115, 6, 4, NULL),
+(115, 7, 5, NULL),
+(115, 8, 5, NULL),
+(115, 9, 4, NULL),
+(115, 10, 4, NULL),
+(115, 11, NULL, 'Buen lider, pero a veces no responde rapido.'),
+(116, 1, 3, NULL),
+(116, 2, 3, NULL),
+(116, 3, 3, NULL),
+(116, 4, 4, NULL),
+(116, 5, 5, NULL),
+(116, 6, 3, NULL),
+(116, 7, 4, NULL),
+(116, 8, 5, NULL),
+(116, 9, 3, NULL),
+(116, 10, 3, NULL),
+(116, 11, NULL, 'Buen lider, pero a veces no responde rapido.'),
+(117, 1, 3, NULL),
+(117, 2, 4, NULL),
+(117, 3, 3, NULL),
+(117, 4, 4, NULL),
+(117, 5, 3, NULL),
+(117, 6, 5, NULL),
+(117, 7, 5, NULL),
+(117, 8, 5, NULL),
+(117, 9, 3, NULL),
+(117, 10, 4, NULL),
+(117, 11, NULL, NULL),
+(118, 1, 3, NULL),
+(118, 2, 5, NULL),
+(118, 3, 4, NULL),
+(118, 4, 4, NULL),
+(118, 5, 4, NULL),
+(118, 6, 4, NULL),
+(118, 7, 4, NULL),
+(118, 8, 5, NULL),
+(118, 9, 4, NULL),
+(118, 10, 3, NULL),
+(118, 11, NULL, 'Todo bien, explica claro.'),
+(119, 1, 5, NULL),
+(119, 2, 4, NULL),
+(119, 3, 5, NULL),
+(119, 4, 4, NULL),
+(119, 5, 4, NULL),
+(119, 6, 5, NULL),
+(119, 7, 4, NULL),
+(119, 8, 5, NULL),
+(119, 9, 4, NULL),
+(119, 10, 3, NULL),
+(119, 11, NULL, 'Buen lider, pero a veces no responde rapido.'),
+(120, 1, 3, NULL),
+(120, 2, 5, NULL),
+(120, 3, 5, NULL),
+(120, 4, 3, NULL),
+(120, 5, 4, NULL),
+(120, 6, 4, NULL),
+(120, 7, 3, NULL),
+(120, 8, 5, NULL),
+(120, 9, 5, NULL),
+(120, 10, 5, NULL),
+(120, 11, NULL, NULL),
+(121, 1, 3, NULL),
+(121, 2, 3, NULL),
+(121, 3, 5, NULL),
+(121, 4, 4, NULL),
+(121, 5, 4, NULL),
+(121, 6, 3, NULL),
+(121, 7, 5, NULL),
+(121, 8, 5, NULL),
+(121, 9, 3, NULL),
+(121, 10, 4, NULL),
+(121, 11, NULL, 'Me gustaria que diera feedback mas detallado.'),
+(122, 1, 3, NULL),
+(122, 2, 4, NULL),
+(122, 3, 4, NULL),
+(122, 4, 3, NULL),
+(122, 5, 5, NULL),
+(122, 6, 5, NULL),
+(122, 7, 3, NULL),
+(122, 8, 5, NULL),
+(122, 9, 3, NULL),
+(122, 10, 4, NULL),
+(122, 11, NULL, 'Me gustaria que diera feedback mas detallado.'),
+(123, 1, 5, NULL),
+(123, 2, 5, NULL),
+(123, 3, 4, NULL),
+(123, 4, 5, NULL),
+(123, 5, 3, NULL),
+(123, 6, 5, NULL),
+(123, 7, 3, NULL),
+(123, 8, 5, NULL),
+(123, 9, 5, NULL),
+(123, 10, 5, NULL),
+(123, 11, NULL, 'Todo bien, explica claro.'),
+(124, 1, 4, NULL),
+(124, 2, 3, NULL),
+(124, 3, 4, NULL),
+(124, 4, 5, NULL),
+(124, 5, 3, NULL),
+(124, 6, 5, NULL),
+(124, 7, 3, NULL),
+(124, 8, 4, NULL),
+(124, 9, 4, NULL),
+(124, 10, 3, NULL),
+(124, 11, NULL, 'Falta un poco de orden en las ceremonias.'),
+(125, 1, 5, NULL),
+(125, 2, 4, NULL),
+(125, 3, 5, NULL),
+(125, 4, 4, NULL),
+(125, 5, 3, NULL),
+(125, 6, 4, NULL),
+(125, 7, 4, NULL),
+(125, 8, 3, NULL),
+(125, 9, 3, NULL),
+(125, 10, 4, NULL),
+(125, 11, NULL, 'Me gustaria que diera feedback mas detallado.'),
+(126, 12, 4, NULL),
+(126, 13, 3, NULL),
+(126, 14, 5, NULL),
+(126, 15, 4, NULL),
+(126, 16, 5, NULL),
+(126, 17, 3, NULL),
+(126, 18, 5, NULL),
+(126, 19, 4, NULL),
+(126, 20, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.'),
+(127, 12, 4, NULL),
+(127, 13, 4, NULL),
+(127, 14, 5, NULL),
+(127, 15, 3, NULL),
+(127, 16, 5, NULL),
+(127, 17, 5, NULL),
+(127, 18, 4, NULL),
+(127, 19, 4, NULL),
+(127, 20, NULL, 'A veces se confunde en el live coding, pero resuelve bien.'),
+(128, 12, 5, NULL),
+(128, 13, 3, NULL),
+(128, 14, 3, NULL),
+(128, 15, 5, NULL),
+(128, 16, 3, NULL),
+(128, 17, 3, NULL),
+(128, 18, 5, NULL),
+(128, 19, 5, NULL),
+(128, 20, NULL, 'Excelente tutor, sus clases son muy claras.'),
+(129, 12, 3, NULL),
+(129, 13, 3, NULL),
+(129, 14, 4, NULL),
+(129, 15, 4, NULL),
+(129, 16, 3, NULL),
+(129, 17, 5, NULL),
+(129, 18, 5, NULL),
+(129, 19, 4, NULL),
+(129, 20, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.'),
+(130, 12, 4, NULL),
+(130, 13, 3, NULL),
+(130, 14, 5, NULL),
+(130, 15, 5, NULL),
+(130, 16, 5, NULL),
+(130, 17, 5, NULL),
+(130, 18, 4, NULL),
+(130, 19, 3, NULL),
+(130, 20, NULL, 'Me gustaria que hiciera mas ejemplos practicos.'),
+(131, 12, 5, NULL),
+(131, 13, 4, NULL),
+(131, 14, 5, NULL),
+(131, 15, 5, NULL),
+(131, 16, 4, NULL),
+(131, 17, 3, NULL),
+(131, 18, 3, NULL),
+(131, 19, 5, NULL),
+(131, 20, NULL, 'Excelente tutor, sus clases son muy claras.'),
+(132, 12, 3, NULL),
+(132, 13, 5, NULL),
+(132, 14, 5, NULL),
+(132, 15, 3, NULL),
+(132, 16, 4, NULL),
+(132, 17, 3, NULL),
+(132, 18, 3, NULL),
+(132, 19, 5, NULL),
+(132, 20, NULL, 'Me gustaria que hiciera mas ejemplos practicos.'),
+(133, 12, 3, NULL),
+(133, 13, 4, NULL),
+(133, 14, 3, NULL),
+(133, 15, 5, NULL),
+(133, 16, 3, NULL),
+(133, 17, 3, NULL),
+(133, 18, 4, NULL),
+(133, 19, 4, NULL),
+(133, 20, NULL, 'Me gustaria que hiciera mas ejemplos practicos.'),
+(134, 12, 4, NULL),
+(134, 13, 5, NULL),
+(134, 14, 4, NULL),
+(134, 15, 3, NULL),
+(134, 16, 3, NULL),
+(134, 17, 4, NULL),
+(134, 18, 3, NULL),
+(134, 19, 5, NULL),
+(134, 20, NULL, NULL),
+(135, 12, 5, NULL),
+(135, 13, 4, NULL),
+(135, 14, 3, NULL),
+(135, 15, 4, NULL),
+(135, 16, 5, NULL),
+(135, 17, 4, NULL),
+(135, 18, 3, NULL),
+(135, 19, 3, NULL),
+(135, 20, NULL, 'A veces se confunde en el live coding, pero resuelve bien.'),
+(136, 12, 3, NULL),
+(136, 13, 5, NULL),
+(136, 14, 3, NULL),
+(136, 15, 3, NULL),
+(136, 16, 4, NULL),
+(136, 17, 5, NULL),
+(136, 18, 5, NULL),
+(136, 19, 5, NULL),
+(136, 20, NULL, NULL),
+(137, 12, 5, NULL),
+(137, 13, 5, NULL),
+(137, 14, 4, NULL),
+(137, 15, 5, NULL),
+(137, 16, 5, NULL),
+(137, 17, 5, NULL),
+(137, 18, 5, NULL),
+(137, 19, 5, NULL),
+(137, 20, NULL, 'Excelente tutor, sus clases son muy claras.'),
+(138, 12, 4, NULL),
+(138, 13, 4, NULL),
+(138, 14, 5, NULL),
+(138, 15, 5, NULL),
+(138, 16, 5, NULL),
+(138, 17, 4, NULL),
+(138, 18, 3, NULL),
+(138, 19, 3, NULL),
+(138, 20, NULL, 'A veces se confunde en el live coding, pero resuelve bien.'),
+(139, 12, 4, NULL),
+(139, 13, 4, NULL),
+(139, 14, 4, NULL),
+(139, 15, 4, NULL),
+(139, 16, 3, NULL),
+(139, 17, 4, NULL),
+(139, 18, 5, NULL),
+(139, 19, 3, NULL),
+(139, 20, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.'),
+(140, 12, 3, NULL),
+(140, 13, 5, NULL),
+(140, 14, 4, NULL),
+(140, 15, 4, NULL),
+(140, 16, 5, NULL),
+(140, 17, 5, NULL),
+(140, 18, 4, NULL),
+(140, 19, 3, NULL),
+(140, 20, NULL, 'Me gustaria que hiciera mas ejemplos practicos.'),
+(141, 12, 5, NULL),
+(141, 13, 3, NULL),
+(141, 14, 5, NULL),
+(141, 15, 5, NULL),
+(141, 16, 4, NULL),
+(141, 17, 3, NULL),
+(141, 18, 5, NULL),
+(141, 19, 3, NULL),
+(141, 20, NULL, 'Excelente tutor, sus clases son muy claras.'),
+(142, 12, 5, NULL),
+(142, 13, 3, NULL),
+(142, 14, 5, NULL),
+(142, 15, 3, NULL),
+(142, 16, 4, NULL),
+(142, 17, 4, NULL),
+(142, 18, 4, NULL),
+(142, 19, 4, NULL),
+(142, 20, NULL, NULL),
+(143, 12, 5, NULL),
+(143, 13, 5, NULL),
+(143, 14, 4, NULL),
+(143, 15, 4, NULL),
+(143, 16, 3, NULL),
+(143, 17, 5, NULL),
+(143, 18, 5, NULL),
+(143, 19, 4, NULL),
+(143, 20, NULL, NULL),
+(144, 12, 5, NULL),
+(144, 13, 5, NULL),
+(144, 14, 4, NULL),
+(144, 15, 5, NULL),
+(144, 16, 4, NULL),
+(144, 17, 4, NULL),
+(144, 18, 5, NULL),
+(144, 19, 5, NULL),
+(144, 20, NULL, 'A veces se confunde en el live coding, pero resuelve bien.'),
+(145, 12, 4, NULL),
+(145, 13, 5, NULL),
+(145, 14, 5, NULL),
+(145, 15, 3, NULL),
+(145, 16, 5, NULL),
+(145, 17, 5, NULL),
+(145, 18, 5, NULL),
+(145, 19, 3, NULL),
+(145, 20, NULL, 'Es paciente y se nota que sabe del tema.'),
+(146, 12, 4, NULL),
+(146, 13, 5, NULL),
+(146, 14, 3, NULL),
+(146, 15, 5, NULL),
+(146, 16, 3, NULL),
+(146, 17, 4, NULL),
+(146, 18, 4, NULL),
+(146, 19, 3, NULL),
+(146, 20, NULL, 'Me gustaria que hiciera mas ejemplos practicos.'),
+(147, 12, 5, NULL),
+(147, 13, 4, NULL),
+(147, 14, 4, NULL),
+(147, 15, 5, NULL),
+(147, 16, 5, NULL),
+(147, 17, 5, NULL),
+(147, 18, 5, NULL),
+(147, 19, 4, NULL),
+(147, 20, NULL, 'Excelente tutor, sus clases son muy claras.'),
+(148, 12, 4, NULL),
+(148, 13, 3, NULL),
+(148, 14, 3, NULL),
+(148, 15, 5, NULL),
+(148, 16, 4, NULL),
+(148, 17, 4, NULL),
+(148, 18, 4, NULL),
+(148, 19, 5, NULL),
+(148, 20, NULL, 'A veces se confunde en el live coding, pero resuelve bien.'),
+(149, 12, 5, NULL),
+(149, 13, 3, NULL),
+(149, 14, 3, NULL),
+(149, 15, 3, NULL),
+(149, 16, 3, NULL),
+(149, 17, 3, NULL),
+(149, 18, 3, NULL),
+(149, 19, 4, NULL),
+(149, 20, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.'),
+(150, 12, 4, NULL),
+(150, 13, 4, NULL),
+(150, 14, 3, NULL),
+(150, 15, 5, NULL),
+(150, 16, 4, NULL),
+(150, 17, 4, NULL),
+(150, 18, 5, NULL),
+(150, 19, 3, NULL),
+(150, 20, NULL, 'Es paciente y se nota que sabe del tema.');
+
+INSERT INTO evaluation_details (evaluation_id, question_id, score, comment) VALUES
+(151, 1, 4, NULL),
+(151, 2, 3, NULL),
+(151, 3, 3, NULL),
+(151, 4, 3, NULL),
+(151, 5, 5, NULL),
+(151, 6, 3, NULL),
+(151, 7, 3, NULL),
+(151, 8, 3, NULL),
+(151, 9, 5, NULL),
+(151, 10, 5, NULL),
+(151, 11, NULL, 'Excelente, me ayuda mucho con mis dudas.'),
+(152, 1, 3, NULL),
+(152, 2, 3, NULL),
+(152, 3, 3, NULL),
+(152, 4, 3, NULL),
+(152, 5, 4, NULL),
+(152, 6, 5, NULL),
+(152, 7, 5, NULL),
+(152, 8, 4, NULL),
+(152, 9, 4, NULL),
+(152, 10, 3, NULL),
+(152, 11, NULL, 'Excelente, me ayuda mucho con mis dudas.'),
+(153, 1, 4, NULL),
+(153, 2, 5, NULL),
+(153, 3, 4, NULL),
+(153, 4, 5, NULL),
+(153, 5, 5, NULL),
+(153, 6, 5, NULL),
+(153, 7, 4, NULL),
+(153, 8, 4, NULL),
+(153, 9, 4, NULL),
+(153, 10, 3, NULL),
+(153, 11, NULL, 'Excelente, me ayuda mucho con mis dudas.'),
+(154, 1, 3, NULL),
+(154, 2, 4, NULL),
+(154, 3, 5, NULL),
+(154, 4, 5, NULL),
+(154, 5, 3, NULL),
+(154, 6, 5, NULL),
+(154, 7, 5, NULL),
+(154, 8, 4, NULL),
+(154, 9, 5, NULL),
+(154, 10, 4, NULL),
+(154, 11, NULL, 'Buen lider, pero a veces no responde rapido.'),
+(155, 1, 4, NULL),
+(155, 2, 5, NULL),
+(155, 3, 3, NULL),
+(155, 4, 5, NULL),
+(155, 5, 3, NULL),
+(155, 6, 4, NULL),
+(155, 7, 5, NULL),
+(155, 8, 5, NULL),
+(155, 9, 3, NULL),
+(155, 10, 3, NULL),
+(155, 11, NULL, 'Buen lider, pero a veces no responde rapido.'),
+(156, 1, 3, NULL),
+(156, 2, 4, NULL),
+(156, 3, 5, NULL),
+(156, 4, 5, NULL),
+(156, 5, 5, NULL),
+(156, 6, 3, NULL),
+(156, 7, 3, NULL),
+(156, 8, 5, NULL),
+(156, 9, 3, NULL),
+(156, 10, 4, NULL),
+(156, 11, NULL, 'Falta un poco de orden en las ceremonias.'),
+(157, 1, 3, NULL),
+(157, 2, 3, NULL),
+(157, 3, 3, NULL),
+(157, 4, 5, NULL),
+(157, 5, 4, NULL),
+(157, 6, 4, NULL),
+(157, 7, 4, NULL),
+(157, 8, 4, NULL),
+(157, 9, 5, NULL),
+(157, 10, 5, NULL),
+(157, 11, NULL, 'Todo bien, explica claro.'),
+(158, 1, 4, NULL),
+(158, 2, 4, NULL),
+(158, 3, 4, NULL),
+(158, 4, 3, NULL),
+(158, 5, 4, NULL),
+(158, 6, 3, NULL),
+(158, 7, 5, NULL),
+(158, 8, 4, NULL),
+(158, 9, 3, NULL),
+(158, 10, 4, NULL),
+(158, 11, NULL, 'Buen lider, pero a veces no responde rapido.'),
+(159, 1, 5, NULL),
+(159, 2, 4, NULL),
+(159, 3, 4, NULL),
+(159, 4, 5, NULL),
+(159, 5, 4, NULL),
+(159, 6, 5, NULL),
+(159, 7, 4, NULL),
+(159, 8, 4, NULL),
+(159, 9, 3, NULL),
+(159, 10, 3, NULL),
+(159, 11, NULL, 'Buen lider, pero a veces no responde rapido.'),
+(160, 1, 5, NULL),
+(160, 2, 4, NULL),
+(160, 3, 4, NULL),
+(160, 4, 4, NULL),
+(160, 5, 3, NULL),
+(160, 6, 5, NULL),
+(160, 7, 4, NULL),
+(160, 8, 4, NULL),
+(160, 9, 3, NULL),
+(160, 10, 4, NULL),
+(160, 11, NULL, 'Excelente, me ayuda mucho con mis dudas.'),
+(161, 1, 4, NULL),
+(161, 2, 4, NULL),
+(161, 3, 3, NULL),
+(161, 4, 5, NULL),
+(161, 5, 3, NULL),
+(161, 6, 3, NULL),
+(161, 7, 3, NULL),
+(161, 8, 3, NULL),
+(161, 9, 4, NULL),
+(161, 10, 3, NULL),
+(161, 11, NULL, 'Excelente, me ayuda mucho con mis dudas.'),
+(162, 1, 3, NULL),
+(162, 2, 3, NULL),
+(162, 3, 4, NULL),
+(162, 4, 4, NULL),
+(162, 5, 3, NULL),
+(162, 6, 4, NULL),
+(162, 7, 3, NULL),
+(162, 8, 5, NULL),
+(162, 9, 5, NULL),
+(162, 10, 5, NULL),
+(162, 11, NULL, 'Buen lider, pero a veces no responde rapido.'),
+(163, 1, 4, NULL),
+(163, 2, 4, NULL),
+(163, 3, 5, NULL),
+(163, 4, 5, NULL),
+(163, 5, 5, NULL),
+(163, 6, 5, NULL),
+(163, 7, 4, NULL),
+(163, 8, 4, NULL),
+(163, 9, 3, NULL),
+(163, 10, 5, NULL),
+(163, 11, NULL, 'Excelente, me ayuda mucho con mis dudas.'),
+(164, 1, 5, NULL),
+(164, 2, 4, NULL),
+(164, 3, 4, NULL),
+(164, 4, 5, NULL),
+(164, 5, 4, NULL),
+(164, 6, 4, NULL),
+(164, 7, 5, NULL),
+(164, 8, 3, NULL),
+(164, 9, 4, NULL),
+(164, 10, 4, NULL),
+(164, 11, NULL, NULL),
+(165, 1, 5, NULL),
+(165, 2, 3, NULL),
+(165, 3, 4, NULL),
+(165, 4, 5, NULL),
+(165, 5, 4, NULL),
+(165, 6, 3, NULL),
+(165, 7, 5, NULL),
+(165, 8, 5, NULL),
+(165, 9, 3, NULL),
+(165, 10, 3, NULL),
+(165, 11, NULL, 'Excelente, me ayuda mucho con mis dudas.'),
+(166, 1, 4, NULL),
+(166, 2, 4, NULL),
+(166, 3, 3, NULL),
+(166, 4, 5, NULL),
+(166, 5, 4, NULL),
+(166, 6, 3, NULL),
+(166, 7, 4, NULL),
+(166, 8, 4, NULL),
+(166, 9, 3, NULL),
+(166, 10, 4, NULL),
+(166, 11, NULL, NULL),
+(167, 1, 5, NULL),
+(167, 2, 5, NULL),
+(167, 3, 3, NULL),
+(167, 4, 5, NULL),
+(167, 5, 4, NULL),
+(167, 6, 5, NULL),
+(167, 7, 4, NULL),
+(167, 8, 5, NULL),
+(167, 9, 3, NULL),
+(167, 10, 5, NULL),
+(167, 11, NULL, 'Buen lider, pero a veces no responde rapido.'),
+(168, 1, 5, NULL),
+(168, 2, 4, NULL),
+(168, 3, 5, NULL),
+(168, 4, 4, NULL),
+(168, 5, 4, NULL),
+(168, 6, 3, NULL),
+(168, 7, 5, NULL),
+(168, 8, 3, NULL),
+(168, 9, 3, NULL),
+(168, 10, 5, NULL),
+(168, 11, NULL, 'Me gustaria que diera feedback mas detallado.'),
+(169, 1, 3, NULL),
+(169, 2, 3, NULL),
+(169, 3, 3, NULL),
+(169, 4, 5, NULL),
+(169, 5, 4, NULL),
+(169, 6, 5, NULL),
+(169, 7, 5, NULL),
+(169, 8, 5, NULL),
+(169, 9, 3, NULL),
+(169, 10, 3, NULL),
+(169, 11, NULL, NULL),
+(170, 1, 3, NULL),
+(170, 2, 4, NULL),
+(170, 3, 4, NULL),
+(170, 4, 4, NULL),
+(170, 5, 4, NULL),
+(170, 6, 4, NULL),
+(170, 7, 3, NULL),
+(170, 8, 4, NULL),
+(170, 9, 3, NULL),
+(170, 10, 3, NULL),
+(170, 11, NULL, 'Excelente, me ayuda mucho con mis dudas.'),
+(171, 1, 4, NULL),
+(171, 2, 4, NULL),
+(171, 3, 4, NULL),
+(171, 4, 3, NULL),
+(171, 5, 3, NULL),
+(171, 6, 4, NULL),
+(171, 7, 4, NULL),
+(171, 8, 5, NULL),
+(171, 9, 3, NULL),
+(171, 10, 5, NULL),
+(171, 11, NULL, 'Excelente, me ayuda mucho con mis dudas.'),
+(172, 1, 3, NULL),
+(172, 2, 5, NULL),
+(172, 3, 3, NULL),
+(172, 4, 5, NULL),
+(172, 5, 4, NULL),
+(172, 6, 4, NULL),
+(172, 7, 3, NULL),
+(172, 8, 4, NULL),
+(172, 9, 3, NULL),
+(172, 10, 4, NULL),
+(172, 11, NULL, 'Falta un poco de orden en las ceremonias.'),
+(173, 1, 3, NULL),
+(173, 2, 3, NULL),
+(173, 3, 3, NULL),
+(173, 4, 4, NULL),
+(173, 5, 5, NULL),
+(173, 6, 4, NULL),
+(173, 7, 4, NULL),
+(173, 8, 5, NULL),
+(173, 9, 3, NULL),
+(173, 10, 5, NULL),
+(173, 11, NULL, NULL),
+(174, 1, 4, NULL),
+(174, 2, 5, NULL),
+(174, 3, 5, NULL),
+(174, 4, 5, NULL),
+(174, 5, 4, NULL),
+(174, 6, 3, NULL),
+(174, 7, 4, NULL),
+(174, 8, 5, NULL),
+(174, 9, 3, NULL),
+(174, 10, 5, NULL),
+(174, 11, NULL, NULL),
+(175, 1, 5, NULL),
+(175, 2, 4, NULL),
+(175, 3, 4, NULL),
+(175, 4, 3, NULL),
+(175, 5, 4, NULL),
+(175, 6, 5, NULL),
+(175, 7, 5, NULL),
+(175, 8, 5, NULL),
+(175, 9, 3, NULL),
+(175, 10, 3, NULL),
+(175, 11, NULL, 'Me gustaria que diera feedback mas detallado.'),
+(176, 12, 4, NULL),
+(176, 13, 4, NULL),
+(176, 14, 4, NULL),
+(176, 15, 3, NULL),
+(176, 16, 5, NULL),
+(176, 17, 4, NULL),
+(176, 18, 4, NULL),
+(176, 19, 4, NULL),
+(176, 20, NULL, 'A veces se confunde en el live coding, pero resuelve bien.'),
+(177, 12, 5, NULL),
+(177, 13, 5, NULL),
+(177, 14, 5, NULL),
+(177, 15, 5, NULL),
+(177, 16, 4, NULL),
+(177, 17, 3, NULL),
+(177, 18, 4, NULL),
+(177, 19, 5, NULL),
+(177, 20, NULL, 'Me gustaria que hiciera mas ejemplos practicos.'),
+(178, 12, 4, NULL),
+(178, 13, 3, NULL),
+(178, 14, 3, NULL),
+(178, 15, 4, NULL),
+(178, 16, 4, NULL),
+(178, 17, 4, NULL),
+(178, 18, 4, NULL),
+(178, 19, 5, NULL),
+(178, 20, NULL, 'Es paciente y se nota que sabe del tema.'),
+(179, 12, 5, NULL),
+(179, 13, 3, NULL),
+(179, 14, 4, NULL),
+(179, 15, 3, NULL),
+(179, 16, 4, NULL),
+(179, 17, 5, NULL),
+(179, 18, 4, NULL),
+(179, 19, 4, NULL),
+(179, 20, NULL, NULL),
+(180, 12, 3, NULL),
+(180, 13, 3, NULL),
+(180, 14, 5, NULL),
+(180, 15, 5, NULL),
+(180, 16, 3, NULL),
+(180, 17, 3, NULL),
+(180, 18, 3, NULL),
+(180, 19, 5, NULL),
+(180, 20, NULL, 'A veces se confunde en el live coding, pero resuelve bien.'),
+(181, 12, 5, NULL),
+(181, 13, 5, NULL),
+(181, 14, 3, NULL),
+(181, 15, 4, NULL),
+(181, 16, 5, NULL),
+(181, 17, 3, NULL),
+(181, 18, 5, NULL),
+(181, 19, 3, NULL),
+(181, 20, NULL, NULL),
+(182, 12, 4, NULL),
+(182, 13, 5, NULL),
+(182, 14, 3, NULL),
+(182, 15, 3, NULL),
+(182, 16, 5, NULL),
+(182, 17, 4, NULL),
+(182, 18, 3, NULL),
+(182, 19, 3, NULL),
+(182, 20, NULL, 'Excelente tutor, sus clases son muy claras.'),
+(183, 12, 5, NULL),
+(183, 13, 4, NULL),
+(183, 14, 3, NULL),
+(183, 15, 4, NULL),
+(183, 16, 4, NULL),
+(183, 17, 4, NULL),
+(183, 18, 4, NULL),
+(183, 19, 3, NULL),
+(183, 20, NULL, 'Es paciente y se nota que sabe del tema.'),
+(184, 12, 5, NULL),
+(184, 13, 3, NULL),
+(184, 14, 4, NULL),
+(184, 15, 5, NULL),
+(184, 16, 4, NULL),
+(184, 17, 4, NULL),
+(184, 18, 3, NULL),
+(184, 19, 4, NULL),
+(184, 20, NULL, 'Excelente tutor, sus clases son muy claras.'),
+(185, 12, 3, NULL),
+(185, 13, 5, NULL),
+(185, 14, 5, NULL),
+(185, 15, 3, NULL),
+(185, 16, 4, NULL),
+(185, 17, 3, NULL),
+(185, 18, 5, NULL),
+(185, 19, 5, NULL),
+(185, 20, NULL, 'A veces se confunde en el live coding, pero resuelve bien.'),
+(186, 12, 5, NULL),
+(186, 13, 5, NULL),
+(186, 14, 4, NULL),
+(186, 15, 3, NULL),
+(186, 16, 5, NULL),
+(186, 17, 4, NULL),
+(186, 18, 5, NULL),
+(186, 19, 5, NULL),
+(186, 20, NULL, 'A veces se confunde en el live coding, pero resuelve bien.'),
+(187, 12, 4, NULL),
+(187, 13, 4, NULL),
+(187, 14, 4, NULL),
+(187, 15, 3, NULL),
+(187, 16, 4, NULL),
+(187, 17, 4, NULL),
+(187, 18, 5, NULL),
+(187, 19, 4, NULL),
+(187, 20, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.'),
+(188, 12, 3, NULL),
+(188, 13, 4, NULL),
+(188, 14, 3, NULL),
+(188, 15, 5, NULL),
+(188, 16, 3, NULL),
+(188, 17, 5, NULL),
+(188, 18, 4, NULL),
+(188, 19, 3, NULL),
+(188, 20, NULL, 'Es paciente y se nota que sabe del tema.'),
+(189, 12, 3, NULL),
+(189, 13, 5, NULL),
+(189, 14, 5, NULL),
+(189, 15, 4, NULL),
+(189, 16, 4, NULL),
+(189, 17, 4, NULL),
+(189, 18, 4, NULL),
+(189, 19, 4, NULL),
+(189, 20, NULL, 'Me gustaria que hiciera mas ejemplos practicos.'),
+(190, 12, 3, NULL),
+(190, 13, 4, NULL),
+(190, 14, 4, NULL),
+(190, 15, 5, NULL),
+(190, 16, 5, NULL),
+(190, 17, 3, NULL),
+(190, 18, 3, NULL),
+(190, 19, 3, NULL),
+(190, 20, NULL, 'Es paciente y se nota que sabe del tema.'),
+(191, 12, 3, NULL),
+(191, 13, 3, NULL),
+(191, 14, 4, NULL),
+(191, 15, 4, NULL),
+(191, 16, 4, NULL),
+(191, 17, 5, NULL),
+(191, 18, 5, NULL),
+(191, 19, 3, NULL),
+(191, 20, NULL, NULL),
+(192, 12, 5, NULL),
+(192, 13, 5, NULL),
+(192, 14, 3, NULL),
+(192, 15, 3, NULL),
+(192, 16, 4, NULL),
+(192, 17, 5, NULL),
+(192, 18, 3, NULL),
+(192, 19, 3, NULL),
+(192, 20, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.'),
+(193, 12, 3, NULL),
+(193, 13, 5, NULL),
+(193, 14, 4, NULL),
+(193, 15, 4, NULL),
+(193, 16, 3, NULL),
+(193, 17, 5, NULL),
+(193, 18, 4, NULL),
+(193, 19, 4, NULL),
+(193, 20, NULL, 'Hace un buen trabajo, pero a veces explica muy rapido.'),
+(194, 12, 5, NULL),
+(194, 13, 4, NULL),
+(194, 14, 4, NULL),
+(194, 15, 3, NULL),
+(194, 16, 4, NULL),
+(194, 17, 5, NULL),
+(194, 18, 4, NULL),
+(194, 19, 5, NULL),
+(194, 20, NULL, 'A veces se confunde en el live coding, pero resuelve bien.'),
+(195, 12, 3, NULL),
+(195, 13, 5, NULL),
+(195, 14, 3, NULL),
+(195, 15, 4, NULL),
+(195, 16, 5, NULL),
+(195, 17, 5, NULL),
+(195, 18, 3, NULL),
+(195, 19, 5, NULL),
+(195, 20, NULL, NULL),
+(196, 12, 5, NULL),
+(196, 13, 3, NULL),
+(196, 14, 5, NULL),
+(196, 15, 4, NULL),
+(196, 16, 4, NULL),
+(196, 17, 5, NULL),
+(196, 18, 4, NULL),
+(196, 19, 3, NULL),
+(196, 20, NULL, 'Me gustaria que hiciera mas ejemplos practicos.'),
+(197, 12, 4, NULL),
+(197, 13, 3, NULL),
+(197, 14, 3, NULL),
+(197, 15, 5, NULL),
+(197, 16, 5, NULL),
+(197, 17, 3, NULL),
+(197, 18, 3, NULL),
+(197, 19, 4, NULL),
+(197, 20, NULL, 'Excelente tutor, sus clases son muy claras.'),
+(198, 12, 4, NULL),
+(198, 13, 4, NULL),
+(198, 14, 3, NULL),
+(198, 15, 5, NULL),
+(198, 16, 4, NULL),
+(198, 17, 4, NULL),
+(198, 18, 5, NULL),
+(198, 19, 3, NULL),
+(198, 20, NULL, 'Me gustaria que hiciera mas ejemplos practicos.'),
+(199, 12, 4, NULL),
+(199, 13, 3, NULL),
+(199, 14, 5, NULL),
+(199, 15, 4, NULL),
+(199, 16, 3, NULL),
+(199, 17, 3, NULL),
+(199, 18, 4, NULL),
+(199, 19, 3, NULL),
+(199, 20, NULL, NULL),
+(200, 12, 5, NULL),
+(200, 13, 4, NULL),
+(200, 14, 3, NULL),
+(200, 15, 5, NULL),
+(200, 16, 5, NULL),
+(200, 17, 4, NULL),
+(200, 18, 4, NULL),
+(200, 19, 3, NULL),
+(200, 20, NULL, 'Es paciente y se nota que sabe del tema.');
+
+
+-- ---------------------------------------------------------------------
+-- Borradores en el periodo ACTIVO (5 = API TALKS, 2026-07-15 -> 2026-10-14)
+--
+-- Reproducen lo que hace evaluation_service.create_evaluation con
+-- status='draft': fila en `evaluations` con submitted_at NULL, fila en
+-- `evaluation_submissions` (el servicio la inserta SIEMPRE, no solo al
+-- enviar) y respuestas PARCIALES en evaluation_details -- un borrador es
+-- una evaluacion a medio llenar.
+--
+-- Efecto buscado: vw_period_metrics filtra status='submitted', asi que
+-- estos borradores NO alteran el ICP ni n_evals. Solo alimentan la vista
+-- "continuar donde ibas" del coder.
+--
+-- OJO: por `uq_submission_once`, los coders 12, 13, 14 y 15 quedan
+-- bloqueados para volver a evaluar a ese mismo evaluado en el periodo 5.
+-- Se dejaron a proposito solo 4 coders con borrador; los demas (16-36)
+-- siguen libres para evaluar en vivo durante la demo.
+-- ---------------------------------------------------------------------
+INSERT INTO evaluations (period_id, form_id, evaluatee_id, is_anonymous, status, created_at, submitted_at) VALUES
+(5, 1, 2, FALSE, 'draft', '2026-07-18 09:15:00', NULL),
+(5, 1, 2, TRUE,  'draft', '2026-07-19 14:30:00', NULL),
+(5, 1, 2, FALSE, 'draft', '2026-07-20 10:05:00', NULL),
+(5, 2, 5, FALSE, 'draft', '2026-07-19 16:40:00', NULL),
+(5, 2, 5, TRUE,  'draft', '2026-07-20 11:20:00', NULL);
+
+INSERT INTO evaluation_submissions (evaluator_id, evaluatee_id, period_id, evaluation_id) VALUES
+(12, 2, 5, 201),
+(13, 2, 5, 202),
+(14, 2, 5, 203),
+(12, 5, 5, 204),
+(15, 5, 5, 205);
+
+-- Respuestas parciales. Preguntas del form 1 (TL) = ids 1..11 (la 11 es texto);
+-- preguntas del form 2 (Tutor) = ids 12..20 (la 20 es texto). Ningun borrador
+-- llega a la pregunta de texto todavia.
+INSERT INTO evaluation_details (evaluation_id, question_id, score, comment) VALUES
+(201, 1, 4, NULL),
+(201, 2, 5, NULL),
+(201, 3, 3, NULL),
+(201, 4, 4, NULL),
+(201, 5, 4, NULL),
+(202, 1, 3, NULL),
+(202, 2, 3, NULL),
+(202, 3, 4, NULL),
+(202, 4, 2, NULL),
+(202, 5, 3, NULL),
+(202, 6, 4, NULL),
+(202, 7, 3, NULL),
+(203, 1, 5, NULL),
+(203, 2, 4, NULL),
+(203, 3, 5, NULL),
+(204, 12, 4, NULL),
+(204, 13, 4, NULL),
+(204, 14, 5, NULL),
+(204, 15, 3, NULL),
+(205, 12, 5, NULL),
+(205, 13, 4, NULL),
+(205, 14, 4, NULL),
+(205, 15, 5, NULL),
+(205, 16, 3, NULL),
+(205, 17, 4, NULL);

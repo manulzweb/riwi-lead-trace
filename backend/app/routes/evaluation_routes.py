@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query, status
 from typing import List, Optional, Union
 import logging
-from app.schemas.detalles_evaluacion import EvaluationCreate, EvaluationDetailOut, EvaluationHistoryOut
+from app.schemas.evaluation_details import EvaluationCreate, EvaluationDetailOut, EvaluationHistoryOut
 from app.services.evaluation_service import evaluation_service
 from app.exceptions.evaluation_exceptions import (
     PeriodNotFoundException, PeriodNotActiveException, EvaluationAlreadyExistsException,

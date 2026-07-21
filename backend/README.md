@@ -62,7 +62,7 @@ mysql -u root -p riwi_lead_trace < ../database/02_dml.sql
 
 Esto crea las tablas normalizadas a 3FN (`roles`, `cohorts`, `clans`, `users`, `user_roles`,
 `team_leader_clans`, `periods`, `forms`, `questions`, `evaluations`,
-`detalles_evaluacion`, `ai_feedback_cache`). Los roles de cada usuario son N:M (`user_roles`): un
+`evaluation_details`, `ai_feedback_cache`). Los roles de cada usuario son N:M (`user_roles`): un
 usuario puede tener más de un rol a la vez, y un Team Leader puede tener varios clanes a cargo
 (`team_leader_clans`). Ver [`docs/07-base-de-datos.md`](../docs/07-base-de-datos.md) para el
 modelo entidad-relación completo.
@@ -176,7 +176,7 @@ Reglas de negocio clave (no romper sin acordarlo con el equipo):
   nueva para un rol desactiva cualquier otra plantilla activa de ese mismo rol (una sola activa por
   rol, igual que los periodos). Ni `POST /forms` ni `POST /questions` ni `DELETE` borran filas
   físicamente: siempre desactivan (`is_active=FALSE`), porque `evaluations.form_id` y
-  `detalles_evaluacion.question_id` pueden referenciarlas desde evaluaciones históricas. Los tipos de
+  `evaluation_details.question_id` pueden referenciarlas desde evaluaciones históricas. Los tipos de
   pregunta válidos son `scale` \| `text` \| `yes_no`; `yes_no` se trata como `text` para el ICP (se
   excluye del promedio ponderado, igual que `text`, ver `metrics_service.calculate_average_score`).
 - A la API de Gemini solo se le envían agregados anonimizados (nunca `evaluator_id` ni identidades).

@@ -87,7 +87,7 @@ El detalle completo, con diagramas y el contrato REST, está en
 
 Base de datos relacional en MySQL, normalizada hasta 3FN, con las entidades principales: `users`,
 `roles`, `user_roles`, `team_leader_clans`, `periods`, `forms` + `categories` + `questions`,
-`evaluations` + `evaluation_submissions` + `detalles_evaluacion`, y `ai_feedback_cache`. El
+`evaluations` + `evaluation_submissions` + `evaluation_details`, y `ai_feedback_cache`. El
 contenido de una evaluación (`evaluations`) y quién la envió (`evaluation_submissions`) viven en
 tablas separadas — así el anonimato es una propiedad estructural del modelo (ver sección 5). El
 **ICP no se persiste**: se calcula al momento a partir de las evaluaciones, así siempre refleja los

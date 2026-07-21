@@ -97,12 +97,12 @@ class EvaluationRepository:
             logger.error(f"Error inserting evaluation submission: {e}")
             raise
 
-    def insert_detalles_evaluacion(self, conn, answers_data: List[Dict[str, Any]]) -> None:
+    def insert_evaluation_details(self, conn, answers_data: List[Dict[str, Any]]) -> None:
         if not answers_data:
             return
         try:
             query = text("""
-                INSERT INTO detalles_evaluacion (evaluation_id, question_id, score, comment)
+                INSERT INTO evaluation_details (evaluation_id, question_id, score, comment)
                 VALUES (:evaluation_id, :question_id, :score, :comment)
             """)
             # Pass a list of dicts to SQLAlchemy to trigger an executemany (bulk insert)
@@ -206,7 +206,7 @@ class EvaluationRepository:
         if not evaluation_ids:
             return []
         try:
-            query = text("SELECT id, evaluation_id, question_id, score, comment FROM detalles_evaluacion WHERE evaluation_id IN :eval_ids")
+            query = text("SELECT id, evaluation_id, question_id, score, comment FROM evaluation_details WHERE evaluation_id IN :eval_ids")
             # Tuple binding allows SQLAlchemy to correctly format the IN clause
             rows = conn.execute(query, {"eval_ids": tuple(evaluation_ids)}).mappings().all()
             return [dict(r) for r in rows]

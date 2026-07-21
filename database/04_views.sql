@@ -56,7 +56,7 @@ question_averages AS (
         a.question_id, 
         q.weight_percent, 
         AVG(a.score) AS avg_score
-    FROM detalles_evaluacion a
+    FROM evaluation_details a
     JOIN questions q ON a.question_id = q.id
     JOIN evaluations e ON a.evaluation_id = e.id
     WHERE e.status = 'submitted'

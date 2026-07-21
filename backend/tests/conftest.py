@@ -38,7 +38,7 @@ def _make_temp_period(is_active: bool):
     yield period_id
 
     conn.execute(
-        text("DELETE FROM detalles_evaluacion WHERE evaluation_id IN "
+        text("DELETE FROM evaluation_details WHERE evaluation_id IN "
              "(SELECT id FROM evaluations WHERE period_id = :id)"),
         {"id": period_id}
     )

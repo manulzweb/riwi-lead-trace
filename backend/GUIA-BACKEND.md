@@ -59,7 +59,7 @@ def create_evaluation(eval_data: EvaluationCreate):
         conn.execute(text("INSERT INTO evaluations ..."))
         
         # 2. Insertar los hijos
-        conn.execute(text("INSERT INTO detalles_evaluacion ..."))
+        conn.execute(text("INSERT INTO evaluation_details ..."))
         
         # 3. Confirmar transacción
         conn.commit()
