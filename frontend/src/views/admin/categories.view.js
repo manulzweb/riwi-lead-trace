@@ -6,6 +6,7 @@ import { setupModalA11y } from "../../utils/modalA11y";
 import { authService } from "../../services/auth.service";
 import { searchBoxComponent, setupSearch } from "../../components/searchBox";
 import { emptyStateComponent } from "../../components/emptyState.js";
+import { z } from "zod";
 
 // Estado de error del listado: ofrece reintentar en vez de pedir recargar la
 // pagina. El listener del boton se engancha en loadCategories().
@@ -201,7 +202,17 @@ export const setupAdminCategories = () => {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const name = nameInput.value.trim();
-    if (!name) return;
+
+    // Validacion Zod
+    const categorySchema = z.object({
+      name: z.string().min(3, "El nombre debe tener al menos 3 caracteres").max(60, "El nombre es muy largo (máximo 60)")
+    });
+    const validation = categorySchema.safeParse({ name });
+    
+    if (!validation.success) {
+      showToast("Nombre inválido", "warning", validation.error.issues[0].message);
+      return;
+    }
 
     // Optimistic UI: Actualizar o agregar a la lista inmediatamente
     const originalCategories = [...allCategories];

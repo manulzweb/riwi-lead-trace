@@ -68,16 +68,23 @@ export async function renderRoute() {
         document.title = route.title;
     }
 
-    // 5. Renderizado de la vista y componentes
-    app.innerHTML = `
-        <div id="content">
-            ${await route.renderView()}
-        </div>
-    `;
+    // 5. Función que ejecuta el renderizado
+    const updateDOM = async () => {
+        app.innerHTML = `
+            <div id="content">
+                ${await route.renderView()}
+            </div>
+        `;
+        setupNavBar();
+        if (route.initSetup) {
+            route.initSetup();
+        }
+    };
 
-    // 6. Ejecución de configuraciones iniciales
-    setupNavBar();
-    if (route.initSetup) {
-        route.initSetup();
+    // 6. Aplicar View Transitions API si está disponible
+    if (document.startViewTransition) {
+        document.startViewTransition(() => updateDOM());
+    } else {
+        await updateDOM();
     }
 }

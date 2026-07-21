@@ -7,6 +7,7 @@ import { setupModalA11y } from "../../utils/modalA11y";
 import { authService } from "../../services/auth.service";
 import { searchBoxComponent, setupSearch } from "../../components/searchBox";
 import { emptyStateComponent } from "../../components/emptyState.js";
+import { z } from "zod";
 
 // Clases del input del modal, extraidas para no repetir la misma cadena en los
 // tres campos (DRY) y para que los tokens de color queden en un solo sitio.
@@ -292,11 +293,30 @@ export const setupAdminPeriods = () => {
     e.preventDefault();
 
     const data = {
-      name: document.getElementById("period-name").value,
+      name: document.getElementById("period-name").value.trim(),
       starts_at: document.getElementById("period-start").value,
       ends_at: document.getElementById("period-end").value,
       is_active: true // Por defecto al crear es activo, al editar depende pero lo ignoramos optimista
     };
+
+    // Validacion Zod
+    const periodSchema = z.object({
+      name: z.string().min(3, "El nombre debe tener al menos 3 caracteres").max(100, "Nombre demasiado largo"),
+      starts_at: z.string().min(1, "La fecha de inicio es requerida"),
+      ends_at: z.string().min(1, "La fecha de fin es requerida")
+    }).superRefine((val, ctx) => {
+      const start = new Date(val.starts_at);
+      const end = new Date(val.ends_at);
+      if (end <= start) {
+        ctx.addIssue({ code: "custom", message: "La fecha de fin debe ser posterior a la fecha de inicio", path: ["ends_at"] });
+      }
+    });
+
+    const validation = periodSchema.safeParse(data);
+    if (!validation.success) {
+      showToast("Datos inválidos", "warning", validation.error.issues[0].message);
+      return;
+    }
 
     const originalPeriods = [...allPeriods];
 
