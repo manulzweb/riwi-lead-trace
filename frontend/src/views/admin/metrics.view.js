@@ -402,6 +402,11 @@ export const setupMetrics = async () => {
         const canvas = document.getElementById(`history-chart-${evaluateeId}`);
         const brandColor = cssVar('--brand-bg') || '#4f46e5';
         const mutedColor = cssVar('--text-muted') || '#64748b';
+        const ctx = canvas.getContext("2d");
+        const gradient = ctx.createLinearGradient(0, 0, 0, 160);
+        gradient.addColorStop(0, `${brandColor}66`);
+        gradient.addColorStop(1, `${brandColor}00`);
+
         const chart = new Chart(canvas, {
           type: 'line',
           data: {
@@ -409,9 +414,16 @@ export const setupMetrics = async () => {
             datasets: [{
               data: history.map(h => h.average_score),
               borderColor: brandColor,
-              backgroundColor: `${brandColor}33`,
+              backgroundColor: gradient,
               pointBackgroundColor: brandColor,
-              tension: 0.3,
+              pointHoverBackgroundColor: "#ffffff",
+              pointHoverBorderColor: brandColor,
+              pointBorderWidth: 2,
+              pointHoverBorderWidth: 3,
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              borderWidth: 3,
+              tension: 0.4, // Curvas más suaves (smooth curve)
               fill: true,
             }],
           },
