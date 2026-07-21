@@ -210,7 +210,8 @@ export const setupEvaluate = async () => {
       updateProgress();
       loadDraft(role);
     } catch (err) {
-      if (err.message && err.message.includes("404")) {
+      // 404 = no hay formulario activo para ese rol (ver contrato de /forms).
+      if (err.status === 404) {
         qContainer.innerHTML = `
           <div class="text-center py-10 bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-main)] shadow-sm">
             <svg class="w-12 h-12 text-[var(--text-muted)] mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -461,19 +462,31 @@ export const setupEvaluate = async () => {
     submitBtn.disabled = true;
     submitBtn.textContent = "Enviando...";
 
+    // Optimistic UI: Mostramos éxito y redirigimos inmediatamente sin esperar al servidor
+    showToast("¡Evaluación enviada!", "success", "Tu feedback ha sido registrado exitosamente.");
+    localStorage.removeItem("evaluation_draft");
+    window.history.pushState({}, "", "/evaluations");
+    renderRoute();
+
     try {
       await evaluationService.create(evaluationData);
-      localStorage.removeItem("evaluation_draft"); // Limpiar borrador tras envío exitoso
-      showToast("¡Evaluación enviada!", "success", "Tu feedback ha sido registrado exitosamente.");
-      window.history.pushState({}, "", "/evaluations");
-      renderRoute();
     } catch (err) {
-      submitBtn.disabled = false;
-      submitBtn.textContent = "Enviar evaluación";
-      if (err.message && err.message.includes("409")) {
-        showToast("Conflicto", "error", "Ya has evaluado a esta persona en el periodo actual.");
+      // Rollback visual informando al usuario en caso de error
+      // Guardamos de vuelta el borrador para que no pierda su trabajo
+      localStorage.setItem("evaluation_draft", JSON.stringify({
+        role: targetRole.value,
+        evaluatee: evaluatee.value,
+        anonymous: anonCheck.checked,
+        answers: draftAnswers.reduce((acc, curr) => {
+          acc[curr.question_id] = curr.score !== null ? curr.score.toString() : curr.comment;
+          return acc;
+        }, {})
+      }));
+
+      if (err.status === 409) {
+        showToast("No se pudo enviar la evaluación", "error", err.detail || "Ya evaluaste a esta persona en este periodo, o el periodo de evaluación no está activo.");
       } else {
-        showToast("Error", "error", "Hubo un problema al enviar la evaluación.");
+        showToast("Error", "error", "Hubo un problema al enviar la evaluación. Tu progreso se guardó en borradores.");
       }
       console.error(err);
     }

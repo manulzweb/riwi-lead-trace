@@ -8,6 +8,19 @@ import { authService } from "../../services/auth.service";
 import { searchBoxComponent, setupSearch } from "../../components/searchBox";
 import { emptyStateComponent } from "../../components/emptyState.js";
 
+// Clases del input del modal, extraidas para no repetir la misma cadena en los
+// tres campos (DRY) y para que los tokens de color queden en un solo sitio.
+const INPUT_CLASSES = "w-full rounded-xl border border-[var(--border-main)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text-main)] transition-all focus:border-[var(--brand-bg)] focus:bg-[var(--bg-panel)] focus:outline-none focus:ring-4 focus:ring-[var(--brand-bg)]/10";
+
+// Estado de error del listado: ofrece reintentar en vez de pedir recargar la
+// pagina. El listener del boton se engancha en loadPeriods().
+const renderPeriodsError = () => `
+  <div class="text-center py-8">
+    <p class="text-[var(--danger-text)] text-sm">No se pudieron cargar los ciclos.</p>
+    <button id="btn-retry-periods" class="mt-4 rounded-xl bg-[var(--brand-bg)] px-5 py-2.5 text-sm font-bold text-[var(--brand-text)] transition-all hover:bg-[var(--brand-hover)] cursor-pointer">Reintentar</button>
+  </div>
+`;
+
 export const renderAdminPeriods = () => `
   ${navBarComponent()}
   <main class="mx-auto max-w-6xl px-6 py-10 relative">
@@ -19,31 +32,31 @@ export const renderAdminPeriods = () => `
         <p class="mt-4 text-[var(--text-muted)]">Abre o cierra ventanas de tiempo para que el equipo comience a evaluar.</p>
       </div>
       <button id="btn-create-period" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--brand-bg)] px-6 py-3 text-sm font-bold text-[var(--brand-text)] transition-all duration-300 ease-in-out hover:bg-[var(--brand-hover)] hover:shadow-md hover:-translate-y-0.5 cursor-pointer">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        <svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
         Nuevo Ciclo
       </button>
     </section>
 
     <!-- Modal Form for New Period -->
     <div id="period-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300">
-      <div class="w-full max-w-md scale-95 transform rounded-3xl bg-white p-8 shadow-2xl transition-transform duration-300 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800">
+      <div role="dialog" aria-modal="true" aria-labelledby="period-modal-title" class="w-full max-w-md scale-95 transform rounded-3xl bg-[var(--bg-panel)] p-8 shadow-2xl transition-transform duration-300 border border-[var(--border-main)]">
         <h2 id="period-modal-title" class="mb-6 text-2xl font-bold font-heading text-[var(--text-main)]">Abrir Nuevo Ciclo</h2>
         <form id="form-period">
           <div class="mb-4">
-            <label class="mb-2 block text-sm font-semibold text-[var(--text-main)]">Nombre del Ciclo</label>
-            <input required id="period-name" type="text" placeholder="Ej. Q3 2026 o Julio 2026" class="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-sm transition-all focus:border-[var(--brand-bg)] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[var(--brand-bg)]/10 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-white" />
+            <label for="period-name" class="mb-2 block text-sm font-semibold text-[var(--text-main)]">Nombre del Ciclo</label>
+            <input required id="period-name" type="text" placeholder="Ej. Q3 2026 o Julio 2026" class="${INPUT_CLASSES}" />
           </div>
           <div class="mb-4">
-            <label class="mb-2 block text-sm font-semibold text-[var(--text-main)]">Fecha de Inicio</label>
-            <input required id="period-start" type="date" class="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-sm transition-all focus:border-[var(--brand-bg)] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[var(--brand-bg)]/10 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-white" />
+            <label for="period-start" class="mb-2 block text-sm font-semibold text-[var(--text-main)]">Fecha de Inicio</label>
+            <input required id="period-start" type="date" class="${INPUT_CLASSES}" />
           </div>
           <div class="mb-6">
-            <label class="mb-2 block text-sm font-semibold text-[var(--text-main)]">Fecha de Fin</label>
-            <input required id="period-end" type="date" class="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-sm transition-all focus:border-[var(--brand-bg)] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[var(--brand-bg)]/10 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-white" />
+            <label for="period-end" class="mb-2 block text-sm font-semibold text-[var(--text-main)]">Fecha de Fin</label>
+            <input required id="period-end" type="date" class="${INPUT_CLASSES}" />
           </div>
           <div class="flex items-center gap-3">
-            <button type="button" id="btn-cancel-period" class="w-full rounded-xl border border-gray-200 bg-white py-3 font-semibold text-gray-600 transition-all hover:bg-gray-50 hover:text-gray-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-gray-300 dark:hover:bg-zinc-700 cursor-pointer">Cancelar</button>
-            <button type="submit" class="w-full rounded-xl bg-[var(--brand-bg)] py-3 font-bold text-white transition-all hover:bg-[var(--brand-hover)] cursor-pointer">Guardar</button>
+            <button type="button" id="btn-cancel-period" class="w-full rounded-xl border border-[var(--border-main)] bg-[var(--bg-panel)] py-3 font-semibold text-[var(--text-muted)] transition-all hover:bg-[var(--bg-base)] hover:text-[var(--text-main)] cursor-pointer">Cancelar</button>
+            <button type="submit" class="w-full rounded-xl bg-[var(--brand-bg)] py-3 font-bold text-[var(--brand-text)] transition-all hover:bg-[var(--brand-hover)] cursor-pointer">Guardar</button>
           </div>
         </form>
       </div>
@@ -51,7 +64,7 @@ export const renderAdminPeriods = () => `
 
     <div id="period-search-slot" class="mt-8 max-w-sm"></div>
 
-    <section id="periods-list" class="flex flex-col gap-4">
+    <section id="periods-list" aria-live="polite" class="flex flex-col gap-4">
       <div class="h-24 animate-pulse rounded-3xl bg-[var(--bg-panel)]"></div>
       <div class="h-24 animate-pulse rounded-3xl bg-[var(--bg-panel)]"></div>
     </section>
@@ -132,12 +145,15 @@ export const setupAdminPeriods = () => {
           ? statusBadgeComponent({ variant: "dot", status: "Activa" }) 
           : statusBadgeComponent({ variant: "dot", status: "Cerrado" });
           
+        // Botones "suaves": fondo tintado + texto del mismo tono, via tokens
+        // semanticos. El hover se resuelve con opacidad en vez de un segundo
+        // tono literal, para no necesitar un token extra por familia.
         const actionBtn = p.is_active
-          ? `<button class="btn-toggle-period rounded-lg px-4 py-2 text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 transition-colors cursor-pointer" data-id="${p.id}" data-action="close">Cerrar Ciclo</button>`
-          : `<button class="btn-toggle-period rounded-lg px-4 py-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 transition-colors cursor-pointer" data-id="${p.id}" data-action="open">Reabrir Ciclo</button>`;
+          ? `<button class="btn-toggle-period rounded-lg px-4 py-2 text-xs font-bold text-[var(--danger-text)] bg-[var(--danger-bg)] hover:opacity-80 transition-opacity cursor-pointer" data-id="${p.id}" data-action="close">Cerrar Ciclo</button>`
+          : `<button class="btn-toggle-period rounded-lg px-4 py-2 text-xs font-bold text-[var(--success-text)] bg-[var(--success-bg)] hover:opacity-80 transition-opacity cursor-pointer" data-id="${p.id}" data-action="open">Reabrir Ciclo</button>`;
 
         return `
-          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-2xl bg-[var(--bg-panel)] p-5 shadow-sm border border-gray-100 dark:border-zinc-800 transition-all hover:shadow-md">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-2xl bg-[var(--bg-panel)] p-5 shadow-sm border border-[var(--border-main)] transition-all hover:shadow-md">
             <div>
               <div class="flex items-center gap-3 mb-2">
                 <h3 class="font-bold text-[var(--text-main)] text-lg">${escapeHtml(p.name)}</h3>
@@ -154,7 +170,7 @@ export const setupAdminPeriods = () => {
               </button>
               ${actionBtn}
               <button class="btn-delete-period p-2 text-[var(--text-muted)] hover:bg-[var(--danger-bg)] hover:text-[var(--danger-text)] rounded-lg transition-colors cursor-pointer" data-id="${p.id}" title="Eliminar ciclo">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
               </button>
             </div>
           </div>
@@ -164,15 +180,30 @@ export const setupAdminPeriods = () => {
       // Lógica de los botones de Activar/Desactivar
       document.querySelectorAll(".btn-toggle-period").forEach(btn => {
         btn.addEventListener("click", async (e) => {
-          const id = e.target.dataset.id;
+          const id = parseInt(e.target.dataset.id);
           const action = e.target.dataset.action;
           const newStatus = action === "open" ? true : false;
+          
+          // Optimistic UI: cambiar el estado local
+          const originalPeriods = [...allPeriods];
+          const periodIndex = allPeriods.findIndex(p => p.id === id);
+          if (periodIndex !== -1) {
+            // Si abrimos un ciclo, cerramos los demás
+            if (newStatus) {
+              allPeriods.forEach(p => p.is_active = false);
+            }
+            allPeriods[periodIndex].is_active = newStatus;
+            renderPeriodsList(allPeriods);
+          }
 
           try {
             await periodService.update(id, { is_active: newStatus, admin_id: authService.getSession()?.id });
             showToast(newStatus ? "Ciclo Abierto Exitosamente" : "Ciclo Cerrado", "success");
-            loadPeriods(); // Recargar la lista
+            loadPeriods(); // Recargar la lista por si el backend ajustó algo más
           } catch (error) {
+            // Rollback
+            allPeriods = originalPeriods;
+            renderPeriodsList(allPeriods);
             showToast("Error al cambiar estado", "error");
           }
         });
@@ -193,12 +224,21 @@ export const setupAdminPeriods = () => {
           const id = e.currentTarget.dataset.id;
           if (!(await showConfirm("¿Estás seguro de que deseas eliminar este ciclo? Esta acción no se puede deshacer."))) return;
 
+          // Optimistic UI
+          const originalPeriods = [...allPeriods];
+          allPeriods = allPeriods.filter(p => p.id != id);
+          renderPeriodsList(allPeriods);
+
           try {
             await periodService.remove(id);
             showToast("Ciclo eliminado", "success");
             loadPeriods();
           } catch (error) {
-            const msg = error?.message?.includes("409")
+            // Rollback
+            allPeriods = originalPeriods;
+            renderPeriodsList(allPeriods);
+
+            const msg = error?.status === 409
               ? "No se puede eliminar: ya hay evaluaciones registradas en este ciclo."
               : "Error al eliminar el ciclo.";
             showToast(msg, "error");
@@ -225,11 +265,8 @@ export const setupAdminPeriods = () => {
     } catch (error) {
       console.error(error);
       showToast("No se pudieron cargar los ciclos", "error");
-      listContainer.innerHTML = `
-        <div class="text-center py-8 text-[var(--danger-text)] text-sm">
-          No se pudieron cargar los ciclos. Recarga la página para reintentar.
-        </div>
-      `;
+      listContainer.innerHTML = renderPeriodsError();
+      document.getElementById("btn-retry-periods")?.addEventListener("click", loadPeriods);
     }
   };
 
@@ -237,28 +274,41 @@ export const setupAdminPeriods = () => {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
+    const data = {
+      name: document.getElementById("period-name").value,
+      starts_at: document.getElementById("period-start").value,
+      ends_at: document.getElementById("period-end").value,
+      is_active: true // Por defecto al crear es activo, al editar depende pero lo ignoramos optimista
+    };
+
+    const originalPeriods = [...allPeriods];
+
+    if (editPeriodId) {
+      const idx = allPeriods.findIndex(p => p.id === editPeriodId);
+      if (idx !== -1) {
+        allPeriods[idx] = { ...allPeriods[idx], ...data, is_active: allPeriods[idx].is_active };
+      }
+    } else {
+      // Fake ID temporal para renderizado optimista
+      allPeriods.push({ id: Date.now(), ...data });
+    }
+
+    renderPeriodsList(allPeriods);
+    closeModal();
+
     try {
       if (editPeriodId) {
-        const data = {
-          name: document.getElementById("period-name").value,
-          starts_at: document.getElementById("period-start").value,
-          ends_at: document.getElementById("period-end").value,
-        };
         await periodService.update(editPeriodId, data);
         showToast("Ciclo Actualizado Exitosamente", "success");
       } else {
-        const data = {
-          name: document.getElementById("period-name").value,
-          starts_at: document.getElementById("period-start").value,
-          ends_at: document.getElementById("period-end").value,
-          is_active: true // Por defecto lo creamos activo
-        };
         await periodService.create(data);
         showToast("Ciclo Creado Exitosamente", "success");
       }
-      closeModal();
       loadPeriods();
     } catch (error) {
+      // Rollback
+      allPeriods = originalPeriods;
+      renderPeriodsList(allPeriods);
       showToast(editPeriodId ? "Error al actualizar ciclo" : "Error al crear ciclo", "error");
     }
   });
