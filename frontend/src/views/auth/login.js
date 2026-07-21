@@ -1,10 +1,15 @@
-import { getEmailRules, getPasswordRules } from "../../utils/validators";
+import { z } from "zod";
 import { authService } from "../../services/auth.service";
 import { renderRoute } from "../../router/router";
 import { showToast } from "../../components/alerts";
 import { setButtonLoadingState, createDebouncedValidator, validateSync, showFieldError } from "../../utils/formUtils";
 import { backgroundComponent } from "../../components/background.js";
 import { langSwitcherComponent, setupLangSwitcher } from "../../components/lang-switcher.js";
+
+const loginSchema = {
+  email: z.string().min(1, "El correo es obligatorio").email("Formato de correo inválido"),
+  password: z.string().min(1, "La contraseña es obligatoria").min(8, "Mínimo 8 caracteres")
+};
 
 export const renderLogin = () => `
   <div class="relative min-h-screen w-full overflow-hidden">
@@ -80,8 +85,8 @@ const handleLoginSubmit = (elements) => async (event) => {
   event.preventDefault();
   if (elements.submitBtn.disabled) return;
 
-  const isEmailValid = validateSync(elements.emailInput, elements.emailError, getEmailRules());
-  const isPasswordValid = validateSync(elements.passwordInput, elements.passwordError, getPasswordRules());
+  const isEmailValid = validateSync(elements.emailInput, elements.emailError, loginSchema.email);
+  const isPasswordValid = validateSync(elements.passwordInput, elements.passwordError, loginSchema.password);
 
   if (!isEmailValid || !isPasswordValid) return;
 
@@ -98,11 +103,6 @@ const handleLoginSubmit = (elements) => async (event) => {
     window.history.pushState({}, "", "/dashboard");
     renderRoute();
   } catch (error) {
-    // El mapa viejo mezclaba dos cosas distintas bajo el mismo `includes()`:
-    // codigos HTTP ("401"/"404") y fallos de red ("Failed to fetch"), que ni
-    // siquiera llegan al servidor. Ahora los codigos se leen de error.status
-    // (lo expone api.service.js) y la red se detecta por la AUSENCIA de status:
-    // si fetch nunca obtuvo respuesta, no hay codigo que mirar.
     const statusMessages = {
       401: "Contraseña incorrecta",
       404: "El correo no está registrado"
@@ -124,8 +124,8 @@ export const setupLogin = () => {
   const elements = getViewElements();
   if (!elements.form || !elements.emailInput || !elements.passwordInput || !elements.emailError || !elements.passwordError) return;
 
-  elements.emailInput.addEventListener("input", createDebouncedValidator(elements.emailInput, elements.emailError, getEmailRules()));
-  elements.passwordInput.addEventListener("input", createDebouncedValidator(elements.passwordInput, elements.passwordError, getPasswordRules()));
+  elements.emailInput.addEventListener("input", createDebouncedValidator(elements.emailInput, elements.emailError, loginSchema.email));
+  elements.passwordInput.addEventListener("input", createDebouncedValidator(elements.passwordInput, elements.passwordError, loginSchema.password));
 
   elements.form.addEventListener("submit", (event) => {
     event.preventDefault();

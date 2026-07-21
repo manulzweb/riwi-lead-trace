@@ -37,49 +37,73 @@ export const clearFieldError = (input, errorElement = null) => {
   }
 };
 
-export const createDebouncedValidator = (input, errorElement, rules, delay = 500) => {
+export const validateSync = (input, errorElement, schemaOrRules) => {
+  const inputValue = input.value.trim();
+  
+  // Zod schema
+  if (schemaOrRules && typeof schemaOrRules.safeParse === 'function') {
+    const result = schemaOrRules.safeParse(inputValue);
+    if (!result.success) {
+      showFieldError(input, result.error.issues[0].message, errorElement);
+      return false;
+    }
+  } else {
+    // Legacy rules array
+    for (const rule of schemaOrRules) {
+      if (rule.validate(inputValue)) {
+        showFieldError(input, rule.errorMessage, errorElement);
+        return false;
+      }
+    }
+  }
+
+  clearFieldError(input, errorElement);
+  return true;
+};
+
+export const createDebouncedValidator = (input, errorElement, schemaOrRules, delay = 500) => {
   let timeoutId;
   return () => {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(() => {
-      const inputValue = input.value.trim();
-      let error = null;
-      for (const rule of rules) {
-        if (rule.validate(inputValue)) {
-          error = rule.errorMessage;
-          break;
-        }
-      }
-      if (error) {
-        showFieldError(input, error, errorElement);
-      } else {
-        clearFieldError(input, errorElement);
-      }
+      validateSync(input, errorElement, schemaOrRules);
     }, delay);
   };
 };
 
-export const validateSync = (input, errorElement, rules) => {
-  const inputValue = input.value.trim();
-  for (const rule of rules) {
-    if (rule.validate(inputValue)) {
-      showFieldError(input, rule.errorMessage, errorElement);
-      return false; // has error
-    }
-  }
-  clearFieldError(input, errorElement);
-  return true; // no error
-};
+/**
+ * Guarda el markup original de cada botón mientras está en estado de carga.
+ *
+ * Por qué un WeakMap y no un `data-` attribute: el contenido de estos botones es
+ * HTML (un `<svg>` + texto), y serializarlo dentro de un atributo obliga a
+ * escaparlo/desescaparlo a mano. Además el router hace `app.innerHTML = ...` en
+ * cada navegación: los botones viejos quedan sin referencias y el WeakMap los
+ * suelta solo, sin fugas ni limpieza manual.
+ */
+const originalButtonMarkup = new WeakMap();
 
 /**
  * Gestiona el estado visual de carga de un botón.
+ *
+ * La rama de carga reemplaza el contenido por un spinner (`innerHTML`), así que
+ * el reseteo tiene que restaurar **markup**, no texto plano: los botones del
+ * proyecto llevan `<svg>` + texto y un `textContent = originalText` les borraba
+ * el icono para siempre tras el primer "Guardando...".
+ *
+ * `originalText` se conserva como fallback (firma intacta) para el caso en que
+ * se pida el reseteo sin que este helper haya puesto antes el estado de carga.
  */
 export const setButtonLoadingState = (button, isLoading, loadingText = "Guardando...", originalText = "Guardar") => {
   if (!button) return
-  
+
   button.disabled = isLoading
-  
+
   if (isLoading) {
+    // Solo la PRIMERA entrada en carga guarda el markup: si ya hay uno guardado,
+    // lo que está en el botón ahora es el spinner, no el contenido original.
+    if (!originalButtonMarkup.has(button)) {
+      originalButtonMarkup.set(button, button.innerHTML)
+    }
     button.classList.add("opacity-90", "cursor-wait", "pointer-events-none")
     button.innerHTML = `
       <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -90,6 +114,14 @@ export const setButtonLoadingState = (button, isLoading, loadingText = "Guardand
     `;
   } else {
     button.classList.remove("opacity-90", "cursor-wait", "pointer-events-none")
-    button.textContent = originalText
+
+    const savedMarkup = originalButtonMarkup.get(button)
+    if (savedMarkup !== undefined) {
+      button.innerHTML = savedMarkup
+      originalButtonMarkup.delete(button)
+    } else {
+      // Nunca pasó por la rama de carga: comportamiento histórico.
+      button.textContent = originalText
+    }
   }
 };
