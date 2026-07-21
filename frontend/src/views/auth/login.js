@@ -13,11 +13,11 @@ export const renderLogin = () => `
     ${langSwitcherComponent("es")}
 
     <div class="flex min-h-screen items-center justify-center p-4">
-      <form class="w-full max-w-md rounded-3xl border border-white/30 bg-white/95 p-10 shadow-2xl backdrop-blur-xl transition-all hover:scale-[1.02]">
+      <form class="w-full max-w-md rounded-3xl border border-white/30 bg-white/95 p-6 sm:p-10 shadow-2xl backdrop-blur-xl transition-all sm:hover:scale-[1.02]">
 
-        <h1 class="mb-3 text-center text-3xl font-bold text-[var(--brand-bg)]">Riwi LeadTrace</h1>
-        <p class="mb-1 text-center text-[var(--text-muted)]">Evaluación 360</p>
-        <p class="mb-6 text-center text-[var(--text-muted)]">Acompaña, evalúa y crece con tu equipo</p>
+        <h1 class="mb-3 text-center text-2xl sm:text-3xl font-bold text-[var(--brand-bg)]">Riwi LeadTrace</h1>
+        <p class="mb-1 text-center text-sm sm:text-base text-[var(--text-muted)]">Evaluación 360</p>
+        <p class="mb-6 text-center text-sm sm:text-base text-[var(--text-muted)]">Acompaña, evalúa y crece con tu equipo</p>
 
         <div class="mb-4">
           <label class="mb-1 block text-sm font-medium text-[var(--text-main)]" for="email">
@@ -99,15 +99,19 @@ const handleLoginSubmit = (elements) => async (event) => {
     window.history.pushState({}, "", "/dashboard");
     renderRoute();
   } catch (error) {
-    const errorMap = {
-      "Failed to fetch": "No se pudo conectar con el servidor",
-      "NetworkError": "No se pudo conectar con el servidor",
-      "401": "Contraseña incorrecta",
-      "404": "El correo no está registrado"
+    // El mapa viejo mezclaba dos cosas distintas bajo el mismo `includes()`:
+    // codigos HTTP ("401"/"404") y fallos de red ("Failed to fetch"), que ni
+    // siquiera llegan al servidor. Ahora los codigos se leen de error.status
+    // (lo expone api.service.js) y la red se detecta por la AUSENCIA de status:
+    // si fetch nunca obtuvo respuesta, no hay codigo que mirar.
+    const statusMessages = {
+      401: "Contraseña incorrecta",
+      404: "El correo no está registrado"
     };
 
-    const matchedKey = Object.keys(errorMap).find(key => error.message.includes(key));
-    const errorMsg = matchedKey ? errorMap[matchedKey] : (error.message || "Error desconocido");
+    const errorMsg = error.status
+      ? (statusMessages[error.status] || "No se pudo iniciar sesión. Inténtalo de nuevo.")
+      : "No se pudo conectar con el servidor";
 
     showToast("Falló el inicio de sesión", "error", errorMsg);
     setButtonLoadingState(elements.submitBtn, false, "", "Entrar al dashboard");
