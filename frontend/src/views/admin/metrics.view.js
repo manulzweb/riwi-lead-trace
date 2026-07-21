@@ -7,6 +7,7 @@ import { showToast } from "../../components/alerts";
 import { getCategoryBreakdown } from "../../utils/categoryBreakdown";
 import { formatDate } from "../../utils/date";
 import { emptyStateComponent } from "../../components/emptyState.js";
+import { escapeHtml } from "../../utils/validators";
 import {
   Chart, LineController, LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Filler,
 } from "chart.js";
@@ -16,6 +17,18 @@ Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryS
 // Canvas no resuelve variables CSS (var(--brand-bg)) como los elementos del
 // DOM -- hay que pedirle el valor calculado real al navegador.
 const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+// Estado de error del grid: ofrece reintentar en vez de pedirle al usuario que
+// recargue la pagina entera.
+const renderMetricsError = () => `
+  <div class="col-span-full rounded-3xl border border-[var(--danger-border)] bg-[var(--danger-bg)] p-6 text-center">
+    <p class="text-sm font-semibold text-[var(--danger-text)]">No se pudieron cargar las métricas.</p>
+    <button id="btn-retry-metrics" type="button"
+      class="mt-4 rounded-2xl bg-[var(--brand-bg)] px-5 py-2.5 text-sm font-bold text-[var(--brand-text)] transition hover:bg-[var(--brand-hover)]">
+      Reintentar
+    </button>
+  </div>
+`;
 
 export const renderMetrics = () => `
   ${navBarComponent()}
@@ -27,7 +40,7 @@ export const renderMetrics = () => `
         <p class="mt-4 text-[var(--text-muted)]">Índice de Calidad Percibida general por líder, tutor y periodo.</p>
       </div>
       <button id="download-pdf-btn" type="button"
-        class="shrink-0 rounded-2xl border border-[var(--border-main)] bg-[var(--brand-bg)] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[var(--brand-hover)]">
+        class="shrink-0 rounded-2xl border border-[var(--border-main)] bg-[var(--brand-bg)] px-4 py-2 text-sm font-semibold text-[var(--brand-text)] transition-all hover:bg-[var(--brand-hover)]">
         Descargar PDF
       </button>
     </section>
@@ -36,7 +49,7 @@ export const renderMetrics = () => `
       <div class="flex flex-col gap-1 w-48">
         <label class="text-sm font-semibold text-[var(--text-muted)]">Periodo:</label>
         <div id="period-dropdown-container">
-          <div class="h-10 animate-pulse rounded-2xl bg-[var(--bg-panel)]"></div>
+          <div class="h-10 skeleton-shimmer rounded-2xl"></div>
         </div>
       </div>
 
@@ -53,7 +66,7 @@ export const renderMetrics = () => `
     <div id="metrics-report" class="mt-8 bg-[var(--bg-base)]">
       <p id="report-period-label" class="mb-4 text-sm text-[var(--text-muted)]"></p>
 
-      <section id="kpis-section" class="grid gap-6 sm:grid-cols-3">
+      <section id="kpis-section" class="grid gap-6 sm:grid-cols-3" aria-live="polite">
         <article class="rounded-3xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-lg">
           <p class="text-sm text-[var(--text-muted)]">Evaluaciones recibidas</p>
           <div id="kpi-total-evals" class="mt-3 text-3xl font-black text-[var(--text-main)]">--</div>
@@ -69,15 +82,15 @@ export const renderMetrics = () => `
       </section>
       
       <!-- ----- Highlights ----- -->
-      <section id="highlights-section" class="mt-10 grid gap-4 sm:grid-cols-2"></section>
+      <section id="highlights-section" class="mt-10 grid gap-4 sm:grid-cols-2" aria-live="polite"></section>
 
       <!-- ----- Resultados detallados ----- -->
       <section class="mt-10">
         <h2 class="text-2xl font-bold text-[var(--text-main)] mb-6">Resultados Detallados</h2>
-        <div id="metrics-grid" class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <div class="h-32 animate-pulse rounded-3xl bg-[var(--bg-panel)]"></div>
-          <div class="h-32 animate-pulse rounded-3xl bg-[var(--bg-panel)]"></div>
-          <div class="h-32 animate-pulse rounded-3xl bg-[var(--bg-panel)]"></div>
+        <div id="metrics-grid" class="grid gap-4 md:grid-cols-2 lg:grid-cols-3" aria-live="polite">
+          <div class="h-32 skeleton-shimmer rounded-3xl"></div>
+          <div class="h-32 skeleton-shimmer rounded-3xl"></div>
+          <div class="h-32 skeleton-shimmer rounded-3xl"></div>
         </div>
       </section>
     </div>
@@ -110,6 +123,9 @@ export const setupMetrics = async () => {
         .set({
           filename: `metricas-icp-${periodName}.pdf`,
           margin: 10,
+          // Literal a proposito: el PDF debe salir siempre con fondo blanco
+          // aunque la app este en dark mode. NO cambiar por var(--bg-base):
+          // en oscuro generaria un PDF de fondo negro. No es un token olvidado.
           html2canvas: { backgroundColor: "#ffffff" }
         })
         .from(reportElement)
@@ -128,52 +144,62 @@ export const setupMetrics = async () => {
   let currentRoleFilter = "all";
   const historyCharts = new Map(); // evaluateeId -> instancia de Chart.js activa, para destruirla antes de recrearla
 
-  try {
-    periods = await periodService.get();
+  // Extraida a funcion para que el boton "Reintentar" del estado de error pueda
+  // reejecutar la carga completa sin recargar la pagina.
+  async function initPeriods() {
+    try {
+      periods = await periodService.get();
 
-    if (periods.length === 0) {
-      periodContainer.innerHTML = '<p class="text-sm text-[var(--text-muted)]">No hay periodos</p>';
-      gridContainer.innerHTML = '<p class="text-[var(--text-muted)]">No hay periodos registrados.</p>';
-      return;
+      if (periods.length === 0) {
+        periodContainer.innerHTML = '<p class="text-sm text-[var(--text-muted)]">No hay periodos</p>';
+        gridContainer.innerHTML = '<p class="text-[var(--text-muted)]">No hay periodos registrados.</p>';
+        return;
+      }
+
+      const periodOptions = periods.map(p => ({
+        value: p.id,
+        label: p.name
+      }));
+
+      const activePeriod = periods.find(p => p.is_active) || periods[0];
+      currentPeriodId = activePeriod.id;
+
+      periodContainer.innerHTML = dropdownComponent('filter-period', periodOptions, activePeriod.id);
+
+      // 3. Inicializar el componente dinámico
+      setupDropdown('filter-period');
+      const periodSelector = document.getElementById("filter-period");
+
+      await loadMetrics(currentPeriodId, currentRoleFilter);
+
+      // Evento de filtrado por periodo. El selector se recrea en cada intento,
+      // asi que su listener se registra aqui (nodo nuevo = sin duplicados).
+      if (periodSelector) {
+        periodSelector.addEventListener("change", async (e) => {
+          currentPeriodId = parseInt(e.target.value);
+          await loadMetrics(currentPeriodId, currentRoleFilter);
+        });
+      }
+    } catch (err) {
+      showToast("Error", "error", "No se pudieron obtener las métricas.");
+      console.error(err);
+      periodContainer.innerHTML = '<p class="text-sm text-[var(--danger-text)]">No se pudo cargar</p>';
+      gridContainer.innerHTML = renderMetricsError();
+      document.getElementById("btn-retry-metrics")
+        ?.addEventListener("click", initPeriods);
     }
-
-    const periodOptions = periods.map(p => ({
-      value: p.id,
-      label: p.name
-    }));
-
-    const activePeriod = periods.find(p => p.is_active) || periods[0];
-    currentPeriodId = activePeriod.id;
-
-    periodContainer.innerHTML = dropdownComponent('filter-period', periodOptions, activePeriod.id);
-
-    // 3. Inicializar el componente dinámico
-    setupDropdown('filter-period');
-    const periodSelector = document.getElementById("filter-period");
-
-    await loadMetrics(currentPeriodId, currentRoleFilter);
-
-    // Eventos de filtrado
-    if (periodSelector) {
-      periodSelector.addEventListener("change", async (e) => {
-        currentPeriodId = parseInt(e.target.value);
-        await loadMetrics(currentPeriodId, currentRoleFilter);
-      });
-    }
-
-    if (roleSelector) {
-      roleSelector.addEventListener("change", async (e) => {
-        currentRoleFilter = e.target.value;
-        await loadMetrics(currentPeriodId, currentRoleFilter);
-      });
-    }
-
-  } catch (err) {
-    showToast("Error", "error", "No se pudieron obtener las métricas.");
-    console.error(err);
-    periodContainer.innerHTML = '<p class="text-sm text-[var(--danger-text)]">No se pudo cargar</p>';
-    gridContainer.innerHTML = '<p class="text-[var(--danger-text)]">No se pudieron cargar las métricas. Recarga la página para reintentar.</p>';
   }
+
+  // El selector de rol vive en el markup estatico y sobrevive a los reintentos:
+  // su listener se registra una sola vez, fuera de initPeriods.
+  if (roleSelector) {
+    roleSelector.addEventListener("change", async (e) => {
+      currentRoleFilter = e.target.value;
+      await loadMetrics(currentPeriodId, currentRoleFilter);
+    });
+  }
+
+  await initPeriods();
 
   function renderHighlights(list) {
     if (!highlightsContainer) return;
@@ -191,23 +217,25 @@ export const setupMetrics = async () => {
     const highlightCard = (label, person, colorClasses) => `
       <article class="rounded-3xl border p-6 ${colorClasses.border}  ${colorClasses.bg}">
         <p class="text-xs font-semibold uppercase tracking-wider ${colorClasses.text}">${label}</p>
-        <h3 class="mt-2 text-lg font-bold text-[var(--text-main)]">${person.name}</h3>
-        <p class="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">${person.role.replace('_', ' ')}</p>
-        <p class="text-3xl font-black mt-2 ${colorClasses.text}">${person.average_score}/100</p>
+        <h3 class="mt-2 text-lg font-bold text-[var(--text-main)]">${escapeHtml(person.name)}</h3>
+        <p class="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">${escapeHtml(person.role.replace('_', ' '))}</p>
+        <p class="text-3xl font-black mt-2 ${colorClasses.text}">${escapeHtml(person.average_score)}/100</p>
       </article>
     `;
 
+    // Tokens semanticos (global.css): ya cambian solos en dark mode, por eso
+    // desaparecen las variantes `dark:` que habia aqui.
     const bestCard = highlightCard("Mejor evaluado", best, {
-      border: "border-emerald-200 dark:border-emerald-900/50",
-      bg: "bg-emerald-100/30 dark:bg-emerald-950/30",
-      text: "text-emerald-600 dark:text-emerald-400"
+      border: "border-[var(--success-text)]/30",
+      bg: "bg-[var(--success-bg)]",
+      text: "text-[var(--success-text)]"
     });
 
     const opportunityCard = withScore.length > 1
       ? highlightCard("Oportunidad de mejora", needsSupport, {
-        border: "border-amber-200 dark:border-amber-900/50",
-        bg: "bg-amber-100/30 dark:bg-amber-950/30",
-        text: "text-amber-600 dark:text-amber-400"
+        border: "border-[var(--warning-text)]/30",
+        bg: "bg-[var(--warning-bg)]",
+        text: "text-[var(--warning-text)]"
       })
       : "";
 
@@ -222,9 +250,9 @@ export const setupMetrics = async () => {
       historyCharts.clear();
 
       gridContainer.innerHTML = `
-        <div class="h-32 animate-pulse rounded-3xl bg-[var(--bg-panel)]"></div>
-        <div class="h-32 animate-pulse rounded-3xl bg-[var(--bg-panel)]"></div>
-        <div class="h-32 animate-pulse rounded-3xl bg-[var(--bg-panel)]"></div>
+        <div class="h-32 skeleton-shimmer rounded-3xl"></div>
+        <div class="h-32 skeleton-shimmer rounded-3xl"></div>
+        <div class="h-32 skeleton-shimmer rounded-3xl"></div>
       `;
 
       const summary = await metricsService.getSummary(periodId);
@@ -265,19 +293,21 @@ export const setupMetrics = async () => {
       gridContainer.innerHTML = list.map(ev => {
         const scoreText = ev.average_score !== null ? `${ev.average_score}` : "--";
 
-        let statusBadgeClass = "bg-gray-100 text-gray-800 dark:bg-gray-900/50 dark:text-gray-400";
-        if (ev.status === "Sólido") statusBadgeClass = "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400";
-        if (ev.status === "En riesgo") statusBadgeClass = "bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400";
-        if (ev.status === "Estable") statusBadgeClass = "bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400";
+        // Badge neutro por defecto: tokens, no grises literales de Tailwind
+        // (bg-gray-*/text-gray-* no reaccionan al tema y rompen el dark mode).
+        let statusBadgeClass = "bg-[var(--bg-base)] text-[var(--text-muted)]";
+        if (ev.status === "Sólido") statusBadgeClass = "bg-[var(--success-bg)] text-[var(--success-text)]";
+        if (ev.status === "En riesgo") statusBadgeClass = "bg-[var(--danger-bg)] text-[var(--danger-text)]";
+        if (ev.status === "Estable") statusBadgeClass = "bg-[var(--warning-bg)] text-[var(--warning-text)]";
 
         return `
           <article class="metrics-card rounded-3xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-md transition-all hover:shadow-lg cursor-pointer" data-id="${ev.id}" data-period="${periodId}">
             <div class="flex items-start justify-between pointer-events-none">
               <div>
-                <h3 class="text-lg font-bold text-[var(--text-main)]">${ev.name}</h3>
-                <p class="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">${ev.role.replace('_', ' ')}</p>
+                <h3 class="text-lg font-bold text-[var(--text-main)]">${escapeHtml(ev.name)}</h3>
+                <p class="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">${escapeHtml(ev.role.replace('_', ' '))}</p>
               </div>
-              <span class="rounded-full px-3 py-1 text-xs font-semibold ${statusBadgeClass}">${ev.status}</span>
+              <span class="rounded-full px-3 py-1 text-xs font-semibold ${statusBadgeClass}">${escapeHtml(ev.status)}</span>
             </div>
 
             <div class="mt-6 flex justify-between items-end border-t border-[var(--border-main)] pt-4 pointer-events-none">
@@ -294,13 +324,17 @@ export const setupMetrics = async () => {
             <button class="btn-toggle-detail mt-4 w-full text-center text-xs font-semibold text-[var(--brand-bg)] pointer-events-none">
               Ver detalle por categoría e historial ↓
             </button>
-            <div id="detail-${ev.id}" class="mt-4 hidden border-t border-[var(--border-main)] pt-4 cursor-default" onclick="event.stopPropagation()"></div>
+            <div id="detail-${ev.id}" data-detail-panel class="mt-4 hidden border-t border-[var(--border-main)] pt-4 cursor-default"></div>
           </article>
         `;
       }).join("");
 
       document.querySelectorAll(".metrics-card").forEach(card => {
         card.addEventListener("click", () => toggleDetail(card));
+        // Un click dentro del panel de detalle no debe plegar la tarjeta.
+        // Antes era un `onclick="event.stopPropagation()"` inline en el markup.
+        card.querySelector("[data-detail-panel]")
+          ?.addEventListener("click", (e) => e.stopPropagation());
       });
 
     } catch (err) {
@@ -330,7 +364,7 @@ export const setupMetrics = async () => {
 
     if (btn) btn.textContent = "Ocultar detalle ↑";
     container.classList.remove("hidden");
-    container.innerHTML = `<div class="h-20 animate-pulse rounded-2xl bg-[var(--bg-base)]"></div>`;
+    container.innerHTML = `<div class="h-20 skeleton-shimmer rounded-2xl"></div>`;
 
     try {
       const [breakdown, history] = await Promise.all([
@@ -343,8 +377,8 @@ export const setupMetrics = async () => {
         : breakdown.map(cat => `
             <div class="mb-2">
               <div class="flex justify-between text-xs mb-1">
-                <span class="font-semibold text-[var(--text-main)]">${cat.category}</span>
-                <span class="font-bold text-[var(--text-main)]">${cat.score}/100</span>
+                <span class="font-semibold text-[var(--text-main)]">${escapeHtml(cat.category)}</span>
+                <span class="font-bold text-[var(--text-main)]">${escapeHtml(cat.score)}/100</span>
               </div>
               <div class="w-full bg-[var(--border-main)] h-1.5 rounded-full overflow-hidden">
                 <div class="bg-[var(--brand-bg)] h-full rounded-full" style="width: ${cat.score}%"></div>

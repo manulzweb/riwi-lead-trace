@@ -65,8 +65,8 @@ export const renderAdminPeriods = () => `
     <div id="period-search-slot" class="mt-8 max-w-sm"></div>
 
     <section id="periods-list" aria-live="polite" class="flex flex-col gap-4">
-      <div class="h-24 animate-pulse rounded-3xl bg-[var(--bg-panel)]"></div>
-      <div class="h-24 animate-pulse rounded-3xl bg-[var(--bg-panel)]"></div>
+      <div class="h-24 skeleton-shimmer rounded-3xl"></div>
+      <div class="h-24 skeleton-shimmer rounded-3xl"></div>
     </section>
 
   </main>

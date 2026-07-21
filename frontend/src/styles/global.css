@@ -41,9 +41,37 @@
   /* indigo-700 */
   --brand-text: #ffffff;
   --danger-bg: #fee2e2;
-  --danger-hover: #ff7878;
+  --danger-hover: #b91c1c;
+  /* red-700: hover de superficie roja solida, con texto blanco encima.
+     Antes era #ff7878, que no alcanzaba contraste AA ni con blanco (2.56:1)
+     ni con --danger-text (1.89:1). Mismo patron que --brand-hover respecto a
+     --brand-bg (indigo-700 sobre indigo-600). */
   --danger-text: #dc2626;
   --danger-border: #fca5a5;
+  --danger-dot: #ef4444;
+  /* red-500 */
+
+  /* Paleta semantica: exito / advertencia / informativo.
+     Los valores salen de los literales de Tailwind que ya se usaban en los
+     badges y tarjetas, para que el aspecto no cambie al tokenizarlos. */
+  --success-text: #059669;
+  /* emerald-600 */
+  --success-bg: #ecfdf5;
+  /* emerald-50 */
+  --success-dot: #10b981;
+  /* emerald-500 */
+  --warning-text: #d97706;
+  /* amber-600 */
+  --warning-bg: #fffbeb;
+  /* amber-50 */
+  --warning-dot: #f59e0b;
+  /* amber-500 */
+  --info-text: #2563eb;
+  /* blue-600 */
+  --info-bg: #eff6ff;
+  /* blue-50 */
+  --info-dot: #3b82f6;
+  /* blue-500 */
 
   /* Gradiente Navbar Modo Claro */
   --topbar-grad-start: #090c1e;
@@ -75,6 +103,26 @@ html.dark {
   --danger-text: #ef4444;
   /* red-500 */
   --danger-border: rgba(220, 38, 38, 0.3);
+  --danger-dot: #f87171;
+  /* red-400 */
+
+  /* Paleta semantica en oscuro: texto en el tono -400 (legible sobre panel) y
+     fondo al 10% de opacidad, igual que hacian las variantes dark: literales. */
+  --success-text: #34d399;
+  /* emerald-400 */
+  --success-bg: rgba(16, 185, 129, 0.1);
+  /* emerald-500/10 */
+  --success-dot: #34d399;
+  --warning-text: #fbbf24;
+  /* amber-400 */
+  --warning-bg: rgba(245, 158, 11, 0.1);
+  /* amber-500/10 */
+  --warning-dot: #fbbf24;
+  --info-text: #60a5fa;
+  /* blue-400 */
+  --info-bg: rgba(59, 130, 246, 0.1);
+  /* blue-500/10 */
+  --info-dot: #60a5fa;
 
   /* Gradiente Navbar Modo Oscuro */
   --topbar-grad-start: #0f172a;
@@ -88,6 +136,38 @@ html {
   background-color: var(--bg-base);
   color: var(--text-main);
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* --- Premium Skeleton Loader --- */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--bg-panel) 25%,
+    var(--border-main) 50%,
+    var(--bg-panel) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: inherit;
+}
+
+html.dark .skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--bg-panel) 25%,
+    var(--bg-base) 50%,
+    var(--bg-panel) 75%
+  );
+  background-size: 200% 100%;
 }
 
 /* Aplicar fuente de encabezados para mejorar la jerarquía */

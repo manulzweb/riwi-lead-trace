@@ -36,9 +36,9 @@ export const renderAdminEvaluations = () => `
       <div id="form-search-slot" class="mb-6 max-w-sm"></div>
       <div id="forms-container">
         <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <div class="h-48 animate-pulse rounded-[2rem] bg-[var(--bg-panel)]"></div>
-          <div class="h-48 animate-pulse rounded-[2rem] bg-[var(--bg-panel)]"></div>
-          <div class="h-48 animate-pulse rounded-[2rem] bg-[var(--bg-panel)]"></div>
+          <div class="h-48 skeleton-shimmer rounded-[2rem]"></div>
+          <div class="h-48 skeleton-shimmer rounded-[2rem]"></div>
+          <div class="h-48 skeleton-shimmer rounded-[2rem]"></div>
         </div>
       </div>
     </div>
@@ -465,18 +465,22 @@ export const setupAdminEvaluations = () => {
       }
     }
 
+    // Se llama solo si la IA objeta la coherencia texto<->categoria de
+    // una pregunta puntual (ver forms.service.js.updateForm) --
+    // muestra su razon real, no un aviso generico.
+    // Se declara FUERA del try a proposito: el catch del 409 reintenta el
+    // guardado tras cerrar el periodo y necesita pasar este mismo callback.
+    // Declarada dentro del try quedaba fuera de alcance ahi (ReferenceError).
+    const onCoherenceConfirm = async (question, aiMessage) => await showConfirm(
+      `${escapeHtml(aiMessage || "La IA no está segura de que el nuevo texto siga encajando en su categoría.")}\n\n` +
+      `¿Guardar de todas formas?`
+    );
+
     try {
       btnSave.disabled = true;
       btnSave.innerHTML = "Guardando...";
 
       if (editId) {
-        // Se llama solo si la IA objeta la coherencia texto<->categoria de
-        // una pregunta puntual (ver forms.service.js.updateForm) --
-        // muestra su razon real, no un aviso generico.
-        const onCoherenceConfirm = async (question, aiMessage) => await showConfirm(
-          `${aiMessage || "La IA no está segura de que el nuevo texto siga encajando en su categoría."}\n\n` +
-          `¿Guardar de todas formas?`
-        );
         await formsService.updateForm(editId, formData, onCoherenceConfirm);
       } else {
         await formsService.createForm(formData);
@@ -485,7 +489,10 @@ export const setupAdminEvaluations = () => {
       showToast("Formulario Guardada", "success");
       await showList();
     } catch (error) {
-      if (error.message && error.message.includes("cancelado")) {
+      // No es un error HTTP: es el aborto interno que lanza forms.service.js
+      // cuando el admin no confirma el versionado del texto (por eso se mira
+      // .cancelled y no .status/.detail).
+      if (error.cancelled) {
         showToast("Guardado cancelado", "warning", "No se confirmó el cambio de texto; no se guardó nada.");
       } else if (error.status === 409) {
         const closeIt = await showConfirm("Periodo Activo", "Para editar este formulario, primero debes cerrar el periodo activo actual. ¿Deseas cerrarlo automáticamente ahora?", "warning");
@@ -498,8 +505,10 @@ export const setupAdminEvaluations = () => {
               await periodService.update(activePeriod.id, { is_active: false });
               await formsService.updateForm(editId, formData, onCoherenceConfirm);
               showToast("Periodo cerrado y formulario guardado", "success");
-              closeBuilder();
-              renderFormsList();
+              // Antes llamaba a closeBuilder(), que no existe en este archivo
+              // (ReferenceError). showList() ya oculta el constructor y
+              // recarga la lista, que era la intencion.
+              await showList();
             }
           } catch (err) {
             showToast("Error", "error", "No se pudo cerrar el periodo o guardar el formulario.");

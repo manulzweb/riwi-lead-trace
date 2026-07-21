@@ -4,6 +4,7 @@ import { userService } from "../../services/users.service";
 import { periodService } from "../../services/periods.service";
 import { metricsService } from "../../services/metrics.service";
 import { showToast } from "../../components/alerts";
+import { escapeHtml } from "../../utils/validators";
 
 export const renderAiSummary = () => `
   ${navBarComponent()}
@@ -17,13 +18,13 @@ export const renderAiSummary = () => `
     <section class="mt-8 rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-8 shadow-xl">
       <div id="ai-summary-form" class="grid gap-5">
         <div>
-          <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="target-user">Persona evaluada</label>
+          <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="target-user-btn">Persona evaluada</label>
           ${dropdownComponent('target-user', [
   { value: '', label: 'Selecciona una persona...' }
 ], '')}
         </div>
         <div>
-          <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="period">Periodo</label>
+          <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="period-btn">Periodo</label>
           ${dropdownComponent('period', [
   { value: '', label: 'Selecciona un periodo...' }
 ], '')}
@@ -40,9 +41,9 @@ export const renderAiSummary = () => `
         </div>
       </div>
 
-      <div id="ai-empty" class="mt-8 hidden text-center py-8 text-[var(--text-muted)] text-sm"></div>
+      <div id="ai-empty" class="mt-8 hidden text-center py-8 text-[var(--text-muted)] text-sm" aria-live="polite"></div>
 
-      <div id="ai-result" class="mt-8 hidden">
+      <div id="ai-result" class="mt-8 hidden" aria-live="polite">
         <hr class="border-[var(--border-main)]" />
         <p class="mt-6 text-sm font-semibold uppercase tracking-[0.3em] text-[var(--brand-bg)]">Resultado</p>
         <div id="ai-content" class="mt-4 text-[var(--text-main)] leading-8 whitespace-pre-wrap"></div>
@@ -51,7 +52,7 @@ export const renderAiSummary = () => `
       <div id="ai-batch-results" class="mt-8 hidden">
         <hr class="border-[var(--border-main)]" />
         <p class="mt-6 text-sm font-semibold uppercase tracking-[0.3em] text-[var(--brand-bg)]">Generación en lote</p>
-        <p id="ai-batch-progress" class="mt-2 text-sm text-[var(--text-muted)]"></p>
+        <p id="ai-batch-progress" class="mt-2 text-sm text-[var(--text-muted)]" aria-live="polite"></p>
         <ul id="ai-batch-list" class="mt-4 flex flex-col gap-2 text-sm"></ul>
       </div>
     </section>
@@ -76,6 +77,10 @@ export const setupAiSummary = async () => {
   if (!generateBtn || !generateAllBtn || !targetUserSelect || !periodSelect || !resultSection || !resultContent || !emptyState) return;
 
   let evaluables = [];
+
+  // Carga de opciones extraida a una funcion para poder reintentarla desde el
+  // boton de error sin recargar la pagina.
+  const loadOptions = async () => {
   try {
     const [users, periods] = await Promise.all([userService.get(), periodService.get()]);
     evaluables = users.filter(u => u.roles?.includes("team_leader") || u.roles?.includes("tutor"));
@@ -87,6 +92,9 @@ export const setupAiSummary = async () => {
       document.getElementById("ai-summary-form").classList.add("hidden");
       return;
     }
+
+    emptyState.classList.add("hidden");
+    document.getElementById("ai-summary-form").classList.remove("hidden");
 
     const userOptions = [
       { value: '', label: 'Selecciona una persona...' },
@@ -109,10 +117,20 @@ export const setupAiSummary = async () => {
   } catch (err) {
     showToast("Error", "error", "No se pudieron cargar las personas o periodos.");
     console.error(err);
-    emptyState.textContent = "No se pudieron cargar los datos. Recarga la página para reintentar.";
+    emptyState.innerHTML = `
+      <p class="text-[var(--danger-text)]">No se pudieron cargar las personas o periodos.</p>
+      <button type="button" id="ai-options-retry"
+        class="mt-4 inline-flex items-center justify-center rounded-2xl bg-[var(--brand-bg)] px-5 py-2.5 text-sm font-bold text-[var(--brand-text)] hover:bg-[var(--brand-hover)] transition cursor-pointer focus:ring-4 focus:ring-[var(--border-main)]">
+        Reintentar
+      </button>
+    `;
     emptyState.classList.remove("hidden");
+    document.getElementById("ai-options-retry")?.addEventListener("click", loadOptions);
     return;
   }
+  };
+
+  await loadOptions();
 
   generateBtn.addEventListener("click", async () => {
     // We must query the input value dynamically at click time
@@ -170,7 +188,7 @@ export const setupAiSummary = async () => {
 
       const row = document.createElement("li");
       row.className = "flex items-center justify-between rounded-xl border border-[var(--border-main)] bg-[var(--bg-base)] px-4 py-2";
-      row.innerHTML = `<span>${person.name}</span><span class="text-xs font-semibold text-[var(--text-muted)]">Generando...</span>`;
+      row.innerHTML = `<span>${escapeHtml(person.name)}</span><span class="text-xs font-semibold text-[var(--text-muted)]">Generando...</span>`;
       batchList.appendChild(row);
 
       try {

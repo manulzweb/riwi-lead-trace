@@ -52,9 +52,9 @@ export const renderAdminCategories = () => `
     <div id="category-search-slot" class="mt-8 max-w-sm"></div>
 
     <section id="categories-list" aria-live="polite" class="flex flex-col gap-3">
-      <div class="h-16 animate-pulse rounded-2xl bg-[var(--bg-panel)]"></div>
-      <div class="h-16 animate-pulse rounded-2xl bg-[var(--bg-panel)]"></div>
-      <div class="h-16 animate-pulse rounded-2xl bg-[var(--bg-panel)]"></div>
+      <div class="h-16 skeleton-shimmer rounded-2xl"></div>
+      <div class="h-16 skeleton-shimmer rounded-2xl"></div>
+      <div class="h-16 skeleton-shimmer rounded-2xl"></div>
     </section>
 
   </main>

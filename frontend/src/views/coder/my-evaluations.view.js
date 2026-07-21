@@ -8,6 +8,7 @@ import { formsService } from "../../services/forms.service";
 import Swal from 'sweetalert2';
 import { formatDateLong } from "../../utils/date";
 import { emptyStateComponent } from "../../components/emptyState";
+import { escapeHtml } from "../../utils/validators";
 
 export const renderMyEvaluations = () => `
   ${navBarComponent()}
@@ -23,10 +24,10 @@ export const renderMyEvaluations = () => `
       </a>
     </section>
 
-    <section id="evaluations-list" class="mt-8 grid gap-4">
-      <div class="h-20 animate-pulse rounded-3xl bg-[var(--bg-panel)]"></div>
-      <div class="h-20 animate-pulse rounded-3xl bg-[var(--bg-panel)]"></div>
-      <div class="h-20 animate-pulse rounded-3xl bg-[var(--bg-panel)]"></div>
+    <section id="evaluations-list" class="mt-8 grid gap-4" aria-live="polite">
+      <div class="h-20 skeleton-shimmer rounded-3xl"></div>
+      <div class="h-20 skeleton-shimmer rounded-3xl"></div>
+      <div class="h-20 skeleton-shimmer rounded-3xl"></div>
     </section>
   </main>
 `;
@@ -70,24 +71,26 @@ export const setupMyEvaluations = async () => {
 
       const formattedDate = ev.submitted_at ? formatDateLong(ev.submitted_at) : "No enviada";
 
+      // Tokens semanticos de global.css: cambian solos en dark mode, asi que
+      // ya no hacen falta las variantes `dark:`.
       const statusBadge = ev.status === "submitted"
-        ? `<span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400">Enviada</span>`
-        : `<span class="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-600 dark:bg-amber-950/20 dark:text-amber-400">Borrador</span>`;
+        ? `<span class="rounded-full bg-[var(--success-bg)] px-3 py-1 text-xs font-semibold text-[var(--success-text)]">Enviada</span>`
+        : `<span class="rounded-full bg-[var(--warning-bg)] px-3 py-1 text-xs font-semibold text-[var(--warning-text)]">Borrador</span>`;
 
       return `
         <article class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-3xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-md transition-all hover:shadow-lg">
           <div>
             <div class="flex items-center gap-3">
-              <h3 class="text-lg font-bold text-[var(--text-main)]">${evaluateeName}</h3>
+              <h3 class="text-lg font-bold text-[var(--text-main)]">${escapeHtml(evaluateeName)}</h3>
               ${statusBadge}
             </div>
-            <p class="text-xs text-[var(--text-muted)] mt-1 uppercase tracking-wider font-semibold">${evaluateeRole}</p>
-            <p class="text-sm text-[var(--text-muted)] mt-2">Periodo: <strong class="text-[var(--text-main)]">${periodName}</strong> · Fecha: <strong class="text-[var(--text-main)]">${formattedDate}</strong></p>
+            <p class="text-xs text-[var(--text-muted)] mt-1 uppercase tracking-wider font-semibold">${escapeHtml(evaluateeRole)}</p>
+            <p class="text-sm text-[var(--text-muted)] mt-2">Periodo: <strong class="text-[var(--text-main)]">${escapeHtml(periodName)}</strong> · Fecha: <strong class="text-[var(--text-main)]">${escapeHtml(formattedDate)}</strong></p>
           </div>
-          
+
           <div class="flex items-center gap-3">
-            <button class="rounded-xl border border-[var(--border-main)] bg-[var(--bg-base)] px-4 py-2 text-xs font-bold text-[var(--text-main)] transition hover:bg-[var(--border-main)]" 
-              onclick="showEvaluationDetail(${ev.id})">
+            <button type="button" class="rounded-xl border border-[var(--border-main)] bg-[var(--bg-base)] px-4 py-2 text-xs font-bold text-[var(--text-main)] transition hover:bg-[var(--border-main)]"
+              data-eval-id="${escapeHtml(ev.id)}">
               Ver detalle
             </button>
           </div>
@@ -95,8 +98,9 @@ export const setupMyEvaluations = async () => {
       `;
     }).join("");
 
-    // Agregar función global temporal para ver el detalle de la evaluación
-    window.showEvaluationDetail = (evalId) => {
+    // Detalle de una evaluación. Es una función local de la vista: colgarla de
+    // `window` rompía la capa de vistas y el global sobrevivía a la navegación.
+    const showEvaluationDetail = (evalId) => {
       const evaluation = evaluations.find(e => e.id === evalId);
       if (!evaluation) return;
 
@@ -117,23 +121,23 @@ export const setupMyEvaluations = async () => {
         
         let answerDisplay = '';
         if (inputType === 'scale' || inputType === 'scale_1_5') {
-          answerDisplay = `<div class="mt-2 text-sm"><span class="font-bold text-[var(--brand-bg)] text-2xl">${ans.score || 'N/A'}</span> <span class="text-[var(--text-muted)] font-medium">/ 5</span></div>`;
+          answerDisplay = `<div class="mt-2 text-sm"><span class="font-bold text-[var(--brand-bg)] text-2xl">${escapeHtml(ans.score || 'N/A')}</span> <span class="text-[var(--text-muted)] font-medium">/ 5</span></div>`;
         } else if (inputType === 'yes_no') {
-          answerDisplay = `<div class="mt-2 inline-flex items-center rounded-xl bg-[var(--brand-bg)]/10 px-4 py-2 text-sm font-bold text-[var(--brand-bg)]">${ans.comment || 'N/A'}</div>`;
+          answerDisplay = `<div class="mt-2 inline-flex items-center rounded-xl bg-[var(--brand-bg)]/10 px-4 py-2 text-sm font-bold text-[var(--brand-bg)]">${escapeHtml(ans.comment || 'N/A')}</div>`;
         } else {
-           answerDisplay = ans.comment ? `<p class="mt-2 rounded-xl bg-[var(--bg-base)] p-4 text-sm text-[var(--text-main)] border border-[var(--border-main)]">"${ans.comment}"</p>` : `<p class="mt-2 text-sm text-[var(--text-muted)] italic">Sin respuesta</p>`;
+           answerDisplay = ans.comment ? `<p class="mt-2 rounded-xl bg-[var(--bg-base)] p-4 text-sm text-[var(--text-main)] border border-[var(--border-main)]">"${escapeHtml(ans.comment)}"</p>` : `<p class="mt-2 text-sm text-[var(--text-muted)] italic">Sin respuesta</p>`;
         }
 
         return `
           <div class="border-b border-[var(--border-main)] pb-5 mb-5 last:border-b-0 last:mb-0">
-            <h4 class="text-base font-semibold text-[var(--text-main)] leading-snug">${questionText}</h4>
+            <h4 class="text-base font-semibold text-[var(--text-main)] leading-snug">${escapeHtml(questionText)}</h4>
             ${answerDisplay}
           </div>
         `;
       }).join("");
 
       Swal.fire({
-        title: `<div class="text-left"><h3 class="text-2xl font-black text-[var(--text-main)]">Resultados</h3><p class="text-sm text-[var(--text-muted)] mt-1 font-normal">Evaluación a <span class="font-semibold text-[var(--text-main)]">${evaluateeName}</span></p></div>`,
+        title: `<div class="text-left"><h3 class="text-2xl font-black text-[var(--text-main)]">Resultados</h3><p class="text-sm text-[var(--text-muted)] mt-1 font-normal">Evaluación a <span class="font-semibold text-[var(--text-main)]">${escapeHtml(evaluateeName)}</span></p></div>`,
         html: `
           <div class="text-left mt-6 max-h-[60vh] overflow-y-auto pr-4 custom-scrollbar">
             ${answersHtml}
@@ -148,6 +152,16 @@ export const setupMyEvaluations = async () => {
         }
       });
     };
+
+    // UN solo listener delegado en el contenedor, en vez de un `onclick` inline
+    // por tarjeta. `closest` es necesario porque el click puede caer en un nodo
+    // interno del boton, donde `e.target.dataset` vendria vacio. El contenedor
+    // lo destruye el router al navegar, asi que el listener no se acumula.
+    container.addEventListener("click", (e) => {
+      const trigger = e.target.closest("[data-eval-id]");
+      if (!trigger) return;
+      showEvaluationDetail(Number(trigger.dataset.evalId));
+    });
 
   } catch (err) {
     showToast("Error", "error", "No se pudieron cargar tus evaluaciones.");

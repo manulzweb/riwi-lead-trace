@@ -167,7 +167,13 @@ export const setupEvaluate = async () => {
     }
 
     try {
-      qContainer.innerHTML = '<div class="text-center py-4 text-[var(--text-muted)] animate-pulse">Cargando datos...</div>';
+      qContainer.innerHTML = `
+        <div class="flex flex-col gap-6">
+          <div class="h-24 skeleton-shimmer rounded-3xl"></div>
+          <div class="h-24 skeleton-shimmer rounded-3xl"></div>
+          <div class="h-24 skeleton-shimmer rounded-3xl"></div>
+        </div>
+      `;
 
       const [form, previousEvaluations] = await Promise.all([
         evaluationService.getForm(role),

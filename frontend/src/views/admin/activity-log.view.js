@@ -25,51 +25,67 @@ export const renderActivityLog = () => `
       </p>
     </section>
 
-    <section id="activity-log-list" class="mt-8 flex flex-col gap-3">
-      <div class="h-16 animate-pulse rounded-2xl bg-[var(--bg-panel)]"></div>
-      <div class="h-16 animate-pulse rounded-2xl bg-[var(--bg-panel)]"></div>
-      <div class="h-16 animate-pulse rounded-2xl bg-[var(--bg-panel)]"></div>
+    <section id="activity-log-list" class="mt-8 flex flex-col gap-3" aria-live="polite" aria-busy="true">
+      <div class="h-16 skeleton-shimmer rounded-2xl"></div>
+      <div class="h-16 skeleton-shimmer rounded-2xl"></div>
+      <div class="h-16 skeleton-shimmer rounded-2xl"></div>
     </section>
   </main>
+`;
+
+// Estado de error del contenedor: incluye boton de reintento para no obligar
+// a recargar toda la pagina cuando falla la red.
+const renderLoadError = () => `
+  <div class="text-center py-8 rounded-2xl border border-[var(--danger-border)] bg-[var(--danger-bg)]">
+    <p class="text-sm text-[var(--danger-text)]">No se pudo cargar la bitácora.</p>
+    <button type="button" id="activity-log-retry"
+      class="mt-4 inline-flex items-center justify-center rounded-2xl bg-[var(--brand-bg)] px-5 py-2.5 text-sm font-bold text-[var(--brand-text)] hover:bg-[var(--brand-hover)] transition cursor-pointer focus:ring-4 focus:ring-[var(--border-main)]">
+      Reintentar
+    </button>
+  </div>
 `;
 
 export const setupActivityLog = async () => {
   const listContainer = document.getElementById("activity-log-list");
   if (!listContainer) return;
 
-  try {
-    const entries = await activityLogService.getRecent(50);
+  const load = async () => {
+    listContainer.setAttribute("aria-busy", "true");
+    try {
+      const entries = await activityLogService.getRecent(50);
 
-    if (!entries || entries.length === 0) {
-      listContainer.innerHTML = emptyStateComponent(
-        "Sin actividad registrada",
-        "Las acciones administrativas aparecerán aquí a medida que ocurran."
-      );
-      return;
-    }
+      if (!entries || entries.length === 0) {
+        listContainer.innerHTML = emptyStateComponent(
+          "Sin actividad registrada",
+          "Las acciones administrativas aparecerán aquí a medida que ocurran."
+        );
+        return;
+      }
 
-    listContainer.innerHTML = entries.map(entry => {
-      const label = ACTION_LABELS[entry.action] || entry.action;
-      const actor = entry.admin_name || (entry.admin_id ? `Usuario #${entry.admin_id}` : "Desconocido");
-      const date = formatDateTime(entry.created_at);
+      listContainer.innerHTML = entries.map(entry => {
+        const label = ACTION_LABELS[entry.action] || entry.action;
+        const actor = entry.admin_name || (entry.admin_id ? `Usuario #${entry.admin_id}` : "Desconocido");
+        const date = formatDateTime(entry.created_at);
 
-      return `
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-2xl bg-[var(--bg-panel)] p-4 shadow-sm border border-gray-100 dark:border-zinc-800">
-          <div>
-            <p class="text-sm font-bold text-[var(--text-main)]">${escapeHtml(label)}</p>
-            <p class="text-xs text-[var(--text-muted)]">${escapeHtml(actor)} ${entry.detail ? `— ${escapeHtml(entry.detail)}` : ""}</p>
+        return `
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-2xl bg-[var(--bg-panel)] p-4 shadow-sm border border-gray-100 dark:border-zinc-800">
+            <div>
+              <p class="text-sm font-bold text-[var(--text-main)]">${escapeHtml(label)}</p>
+              <p class="text-xs text-[var(--text-muted)]">${escapeHtml(actor)} ${entry.detail ? `— ${escapeHtml(entry.detail)}` : ""}</p>
+            </div>
+            <span class="text-xs text-[var(--text-muted)] shrink-0">${escapeHtml(date)}</span>
           </div>
-          <span class="text-xs text-[var(--text-muted)] shrink-0">${date}</span>
-        </div>
-      `;
-    }).join("");
-  } catch (err) {
-    console.error(err);
-    showToast("Error", "error", "No se pudo cargar la bitácora.");
-    listContainer.innerHTML = `
-      <div class="text-center py-8 text-[var(--danger-text)] text-sm">
-        No se pudo cargar la bitácora. Recarga la página para reintentar.
-      </div>
-    `;
-  }
+        `;
+      }).join("");
+    } catch (err) {
+      console.error(err);
+      showToast("Error", "error", "No se pudo cargar la bitácora.");
+      listContainer.innerHTML = renderLoadError();
+      document.getElementById("activity-log-retry")?.addEventListener("click", load);
+    } finally {
+      listContainer.setAttribute("aria-busy", "false");
+    }
+  };
+
+  await load();
 };
