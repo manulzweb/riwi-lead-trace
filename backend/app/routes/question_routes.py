@@ -55,6 +55,10 @@ def delete_question(question_id: int):
         if not deleted:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pregunta no encontrada.")
         return None
+    except HTTPException as e:
+        raise e
+    except QuestionNotFoundException as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except ActivePeriodExistsException as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except Exception as e:

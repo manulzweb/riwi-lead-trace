@@ -121,10 +121,24 @@ export const setupAdminCategories = () => {
   btnCancel.addEventListener("click", closeModal);
 
   let allCategories = [];
+  let currentFilteredCategories = [];
+  let currentPage = 1;
+  const itemsPerPage = 5;
   const searchSlot = document.getElementById("category-search-slot");
 
   const renderCategoriesList = (categories) => {
-    if (!categories || categories.length === 0) {
+    if (categories !== currentFilteredCategories) {
+      currentFilteredCategories = categories;
+      currentPage = 1;
+    }
+    
+    const totalPages = Math.ceil(currentFilteredCategories.length / itemsPerPage) || 1;
+    if (currentPage > totalPages) currentPage = totalPages;
+    
+    const startIdx = (currentPage - 1) * itemsPerPage;
+    const paginatedData = currentFilteredCategories.slice(startIdx, startIdx + itemsPerPage);
+
+    if (!paginatedData || paginatedData.length === 0) {
       listContainer.innerHTML = emptyStateComponent(
         allCategories.length === 0 ? "No hay categorías" : "Sin resultados",
         allCategories.length === 0 ? "Crea la primera categoría para poder clasificar preguntas." : "Ninguna categoría coincide con la búsqueda."
@@ -132,7 +146,7 @@ export const setupAdminCategories = () => {
       return;
     }
 
-    listContainer.innerHTML = categories.map(c => `
+    let html = paginatedData.map(c => `
       <div class="flex items-center justify-between gap-4 rounded-2xl bg-[var(--bg-panel)] p-4 shadow-sm border border-[var(--border-main)] transition-all hover:shadow-md">
         <h3 class="font-bold text-[var(--text-main)]">${escapeHtml(c.name)}</h3>
         <div class="flex items-center gap-2">
@@ -146,7 +160,34 @@ export const setupAdminCategories = () => {
       </div>
     `).join("");
 
-    document.querySelectorAll(".btn-edit-category").forEach(btn => {
+    if (totalPages > 1) {
+      html += `
+        <div class="flex justify-between items-center mt-4 px-2">
+          <button class="btn-prev-page px-4 py-2 rounded-xl font-bold bg-[var(--bg-base)] text-[var(--text-muted)] border border-[var(--border-main)] hover:bg-[var(--border-main)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer" ${currentPage === 1 ? 'disabled' : ''}>Anterior</button>
+          <span class="text-sm font-semibold text-[var(--text-muted)]">Página ${currentPage} de ${totalPages}</span>
+          <button class="btn-next-page px-4 py-2 rounded-xl font-bold bg-[var(--bg-base)] text-[var(--text-muted)] border border-[var(--border-main)] hover:bg-[var(--border-main)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer" ${currentPage === totalPages ? 'disabled' : ''}>Siguiente</button>
+        </div>
+      `;
+    }
+
+    listContainer.innerHTML = html;
+
+    if (totalPages > 1) {
+      listContainer.querySelector(".btn-prev-page")?.addEventListener("click", () => {
+        if (currentPage > 1) {
+          currentPage--;
+          renderCategoriesList(currentFilteredCategories);
+        }
+      });
+      listContainer.querySelector(".btn-next-page")?.addEventListener("click", () => {
+        if (currentPage < totalPages) {
+          currentPage++;
+          renderCategoriesList(currentFilteredCategories);
+        }
+      });
+    }
+
+    listContainer.querySelectorAll(".btn-edit-category").forEach(btn => {
       btn.addEventListener("click", () => {
         const id = parseInt(btn.dataset.id);
         const category = allCategories.find(c => c.id === id);
@@ -154,7 +195,7 @@ export const setupAdminCategories = () => {
       });
     });
 
-    document.querySelectorAll(".btn-delete-category").forEach(btn => {
+    listContainer.querySelectorAll(".btn-delete-category").forEach(btn => {
       btn.addEventListener("click", async (e) => {
         const id = e.currentTarget.dataset.id;
         if (!(await showConfirm("¿Estás seguro de que deseas eliminar esta categoría?"))) return;

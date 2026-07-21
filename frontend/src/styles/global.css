@@ -244,39 +244,38 @@ div.swal2-title {
 }
 /* Sidebar Collapsed State (Desktop) */
 @media (min-width: 1024px) {
-  body.sidebar-collapsed #main-sidebar {
+  body.has-sidebar.sidebar-collapsed #main-sidebar {
     width: 5.5rem !important;
   }
   
-  body.sidebar-collapsed main {
+  body.has-sidebar.sidebar-collapsed main {
     margin-left: 5.5rem !important;
   }
   
-  body:not(.sidebar-collapsed) main {
+  body.has-sidebar:not(.sidebar-collapsed) main {
     margin-left: 18rem !important;
   }
   
-  body.sidebar-collapsed #main-sidebar .accordion-header span,
-  body.sidebar-collapsed #main-sidebar .accordion-header svg:last-child,
-  body.sidebar-collapsed #main-sidebar a > span.submenu-label,
-  body.sidebar-collapsed #main-sidebar a > span:not(.submenu-label),
-  body.sidebar-collapsed #main-sidebar .user-info {
+  body.has-sidebar.sidebar-collapsed #main-sidebar .accordion-header span,
+  body.has-sidebar.sidebar-collapsed #main-sidebar .accordion-header svg:last-child,
+  body.has-sidebar.sidebar-collapsed #main-sidebar a > span.submenu-label,
+  body.has-sidebar.sidebar-collapsed #main-sidebar a > span:not(.submenu-label),
+  body.has-sidebar.sidebar-collapsed #main-sidebar .user-info {
     display: none !important;
   }
   
-  body.sidebar-collapsed #main-sidebar .accordion-header,
-  body.sidebar-collapsed #main-sidebar a {
+  body.has-sidebar.sidebar-collapsed #main-sidebar .accordion-header,
+  body.has-sidebar.sidebar-collapsed #main-sidebar a {
     justify-content: center !important;
     padding-left: 0 !important;
-    padding-right: 0 !important;
   }
   
-  body.sidebar-collapsed #main-sidebar .accordion-header div.flex {
+  body.has-sidebar.sidebar-collapsed #main-sidebar .accordion-header div.flex {
     justify-content: center !important;
     width: 100%;
   }
   
-  body.sidebar-collapsed .desktop-sidebar-icon {
+  body.has-sidebar.sidebar-collapsed .desktop-sidebar-icon {
     transform: rotate(180deg);
   }
 }
