@@ -25,7 +25,7 @@ Justificacion ampliada en [`06-arquitectura.md`](./06-arquitectura.md).
 | `categories` | Categoria/tema de una pregunta (ej. "Comunicacion efectiva"); el Admin la administra aparte de las plantillas |
 | `questions` | Preguntas/criterios que componen una plantilla |
 | `evaluations` | Una evaluacion de un evaluador hacia un evaluado, en un periodo |
-| `evaluation_details` | Respuestas (puntaje + comentario) por pregunta de una evaluacion |
+| `detalles_evaluacion` | Respuestas (puntaje + comentario) por pregunta de una evaluacion |
 | `ai_feedback_cache` | Cache de resumenes generados por IA (Google Gemini) para el Admin |
 | `admin_activity_log` | Bitacora de acciones administrativas (auditoria basica, sin verificacion criptografica de autoria); expuesta via `GET /activity-log` y su export CSV `GET /activity-log/export` |
 | `system_settings` | Configuracion global del sistema (fila unica `id=1`: umbrales de ICP, temperatura de IA, tolerancia de pesos, etc.); expuesta via `GET`/`PUT /settings` y `GET /settings/defaults` |
@@ -146,7 +146,7 @@ Registra **la participacion** de un evaluador, separada del contenido que escrib
 Constraint: `uq_submission_once UNIQUE (evaluator_id, evaluatee_id, period_id)` — como las tres
 columnas son `NOT NULL`, cubre **por igual** evaluaciones anonimas y no anonimas.
 
-### `evaluation_details`
+### `detalles_evaluacion`
 | Atributo | Tipo | Notas |
 |----------|------|-------|
 | id | INT PK | |
@@ -225,8 +225,8 @@ no es un catalogo clave-valor, sino una fila con una columna tipada por ajuste. 
 - `evaluations` 1—0..1 `evaluation_submissions` *(el vinculo `evaluation_id`; **NULL en anonimas**, y por eso el evaluador de una anonima es irrecuperable)*
 - `users` (evaluado) 1—N `evaluations` · 1—N `evaluation_submissions`
 - `periods` 1—N `evaluations` · 1—N `evaluation_submissions`
-- `evaluations` 1—N `evaluation_details`
-- `questions` 1—N `evaluation_details`
+- `evaluations` 1—N `detalles_evaluacion`
+- `questions` 1—N `detalles_evaluacion`
 - `users` (evaluado) 1—N `ai_feedback_cache` · `periods` 1—N `ai_feedback_cache`
 
 ## Modelo Entidad-Relacion (texto)
@@ -253,7 +253,7 @@ roles (id PK, name)                                                     │
                       │N
 categories (id PK, name) ──────────────────────────< questions.category_id
                       │1
-                      └──< evaluation_details (id PK, evaluation_id FK, question_id FK, score, comment)
+                      └──< detalles_evaluacion (id PK, evaluation_id FK, question_id FK, score, comment)
                                    │N
                                    └──> evaluations (id PK, evaluatee_id FK,
                                                      form_id FK, period_id FK, is_anonymous,
@@ -270,7 +270,7 @@ Cardinalidades clave:
 - **users ──< evaluations (evaluatee):** un usuario puede ser evaluado muchas veces.
 - **users ──< evaluation_submissions (evaluator):** un usuario puede participar muchas veces; la FK **nunca es NULL** (siempre se sabe *que* participo, aunque no *que respondio*).
 - **evaluations ──o evaluation_submissions:** relacion 1—0..1 por `evaluation_id`. Si la evaluacion es anonima **esa fila de enlace queda en NULL** y el par persona↔contenido no existe en la BD.
-- **evaluations ──< evaluation_details:** una evaluacion tiene muchas respuestas.
+- **evaluations ──< detalles_evaluacion:** una evaluacion tiene muchas respuestas.
 
 ## Modelo relacional (resumen)
 
@@ -289,7 +289,7 @@ evaluations(id, evaluatee_id->users, form_id->forms,
             period_id->periods, is_anonymous, status, submitted_at, created_at)
 evaluation_submissions(id, evaluator_id->users, evaluatee_id->users, period_id->periods,
             evaluation_id->evaluations?, created_at)   -- UNIQUE(evaluator_id, evaluatee_id, period_id)
-evaluation_details(id, evaluation_id->evaluations, question_id->questions, score, comment)
+detalles_evaluacion(id, evaluation_id->evaluations, question_id->questions, score, comment)
 ai_feedback_cache(id, evaluatee_id->users, period_id->periods, summary, model,
                   generated_at)                   -- UNIQUE(evaluatee_id, period_id)
 ```
@@ -310,7 +310,7 @@ ai_feedback_cache(id, evaluatee_id->users, period_id->periods, summary, model,
   admin tambien podria).
 - **Plantillas dinamicas:** `forms` + `questions` permiten cambiar criterios sin tocar codigo. El Admin puede **editar texto y activar/desactivar** preguntas (`questions.is_active`), **solo con periodo cerrado** y **versionando** (fila nueva + desactivar la anterior): asi las respuestas historicas conservan el texto que realmente respondieron y el ICP no se contamina. Ademas puede **crear plantillas nuevas** (`POST /forms`, con sus preguntas iniciales) y **agregar/quitar preguntas** de una plantilla existente (`POST`/`DELETE /questions`) — tambien solo con periodo cerrado; crear/quitar nunca versiona (no hay historial previo que preservar), solo desactiva. `target_role` esta restringido a `team_leader`/`tutor` (los unicos roles evaluables); `input_type` acepta `scale`\|`text`\|`yes_no` (`yes_no` se excluye del ICP igual que `text`).
 - **Ventana de evaluacion controlada:** `periods.is_active` define si hay formularios disponibles. Solo **un** periodo activo a la vez (regla en `services`, transaccional); sin periodo activo, no se aceptan evaluaciones nuevas ni envios.
-- **Una respuesta por pregunta** via `evaluation_details` (normalizado), facilitando metricas por criterio/categoria.
+- **Una respuesta por pregunta** via `detalles_evaluacion` (normalizado), facilitando metricas por criterio/categoria.
 - **Integridad de unicidad:** un evaluador no puede evaluar dos veces al mismo evaluado en el mismo
   periodo, y la regla **si aplica ahora a las anonimas**, en las dos capas:
   - **Capa BD (autoridad).** `evaluation_submissions` lleva
@@ -351,7 +351,7 @@ ai_feedback_cache(id, evaluatee_id->users, period_id->periods, summary, model,
   Reconstruir esos evaluadores por heuristica (timestamps, clan, orden de insercion) **viola el
   anonimato** y no debe intentarse.
 - **Roles (4, N:M por usuario):** `roles` = coder, tutor, team_leader, admin. Un usuario puede tener **mas de uno a la vez** via `user_roles` (N:M); no existe un `role_id` unico en `users`. **`tutor` es un rol de cuenta de pleno derecho** (no una bandera sobre coder): conserva `clan_id`.
-- **Metricas derivadas, no persistidas:** el **ICP** (indice 0-100) y la **participacion** se calculan **on-read** en `services` desde `evaluation_details`; no se guardan como columnas (evita redundancia/inconsistencia). Se persiste solo lo que **no** es derivacion: el `ai_feedback_cache` (resultado costoso de un servicio externo, con `UNIQUE(evaluatee_id, period_id)`).
+- **Metricas derivadas, no persistidas:** el **ICP** (indice 0-100) y la **participacion** se calculan **on-read** en `services` desde `detalles_evaluacion`; no se guardan como columnas (evita redundancia/inconsistencia). Se persiste solo lo que **no** es derivacion: el `ai_feedback_cache` (resultado costoso de un servicio externo, con `UNIQUE(evaluatee_id, period_id)`).
 - **Privacidad de IA:** al modelo solo se envian agregados/comentarios **anonimizados**; nunca `evaluator_id`. El cache guarda el texto resultante, no las identidades de origen.
 - **Cohortes y clanes:** un Coder pertenece a **un** clan (`users.clan_id`, relacion 1—N), y cada clan vive dentro de **una** cohorte (`clanes.cohorte_id`). El numero de clan es unico **dentro** de su cohorte -> `UNIQUE(cohorte_id, numero)`.
 - **Relación M:N exclusiva para Team Leaders:** se maneja mediante la tabla intermedia `team_leader_clans`. Esto permite que un Team Leader pueda impartir clases a dos o más clanes simultáneamente, mientras que los coders se mantienen estrictamente 1:1 con su clan en la tabla `users`.
@@ -359,7 +359,7 @@ ai_feedback_cache(id, evaluatee_id->users, period_id->periods, summary, model,
 
 ## Cumplimiento de la Tercera Forma Normal (3FN)
 
-- **1FN:** todos los atributos son atomicos; no hay grupos repetidos (las respuestas se modelan en su propia tabla `evaluation_details`, no como columnas multiples).
+- **1FN:** todos los atributos son atomicos; no hay grupos repetidos (las respuestas se modelan en su propia tabla `detalles_evaluacion`, no como columnas multiples).
 - **2FN:** sin dependencias parciales; cada tabla tiene PK simple (`id`) y los atributos dependen de ella por completo.
 - **3FN:** sin dependencias transitivas; p.ej. el nombre del rol vive en `roles` (no se repite en `users`) y los criterios en `questions`. La **cohorte de un Coder no se almacena en `users`**: depende del clan (`clan_id -> clanes.cohorte_id`), asi que guardarla seria transitiva; se deriva por JOIN. El **ICP tampoco se persiste**: es funcion de las respuestas y se calcula on-read (persistirlo seria redundancia derivada).
 
@@ -369,7 +369,7 @@ ai_feedback_cache(id, evaluatee_id->users, period_id->periods, summary, model,
 |---------|:------:|:----:|:------:|:------:|
 | users | seed/admin | login, listar evaluables | perfil (futuro) | baja logica (`is_active`) |
 | evaluations | Coder (POST) | historial, dashboard | borrador->enviada | borrador descartable |
-| evaluation_details | con la evaluacion | en detalle/metricas | en borrador | cascada con evaluacion |
+| detalles_evaluacion | con la evaluacion | en detalle/metricas | en borrador | cascada con evaluacion |
 | forms / questions | seed | render de formularios | admin: texto + `is_active` (versionado, periodo cerrado) | baja logica (`is_active`) |
 | periods | seed/admin | filtros | admin: activar/cerrar (uno activo) | — |
 | ai_feedback_cache | servicio IA | resumen del Admin | regenerar | invalidar |

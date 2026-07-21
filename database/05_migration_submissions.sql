@@ -113,7 +113,7 @@ CREATE TABLE IF NOT EXISTS evaluation_submissions (
 --
 --     Opcion A (recomendada): quedarse con la evaluacion mas reciente
 --       ('submitted' antes que 'draft') y borrar las otras. Al borrar la
---       evaluacion se borran sus evaluation_details en cascada
+--       evaluacion se borran sus detalles_evaluacion en cascada
 --       (fk_answer_eval ON DELETE CASCADE), asi que se pierde ese feedback
 --       -- exportalo antes si te importa.
 --

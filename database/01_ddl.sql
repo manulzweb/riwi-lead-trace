@@ -13,7 +13,7 @@ USE riwi_lead_trace;
 DROP TABLE IF EXISTS system_settings;
 DROP TABLE IF EXISTS admin_activity_log;
 DROP TABLE IF EXISTS ai_feedback_cache;
-DROP TABLE IF EXISTS evaluation_details;
+DROP TABLE IF EXISTS detalles_evaluacion;
 DROP TABLE IF EXISTS evaluation_submissions;
 DROP TABLE IF EXISTS evaluations;
 DROP TABLE IF EXISTS questions;
@@ -316,7 +316,7 @@ CREATE TABLE evaluation_submissions (
 -- ---------------------------------------------------------------------
 -- Respuestas por pregunta
 -- ---------------------------------------------------------------------
-CREATE TABLE evaluation_details (
+CREATE TABLE detalles_evaluacion (
     id            INT AUTO_INCREMENT PRIMARY KEY,
     evaluation_id INT NOT NULL,
     question_id   INT NOT NULL,
