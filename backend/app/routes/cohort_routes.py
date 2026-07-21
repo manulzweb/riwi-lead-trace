@@ -4,7 +4,7 @@ from app.config.database import get_db
 
 router = APIRouter(prefix="/cohorts")
 
-@router.get("/")
+@router.get("")
 def get_cohorts(db = Depends(get_db)):
     query = text("SELECT id, number, name, city FROM cohorts ORDER BY number ASC")
     res = db.execute(query).fetchall()
