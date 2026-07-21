@@ -1,4 +1,5 @@
-import html2pdf from "html2pdf.js";
+import domtoimage from "dom-to-image";
+import { jsPDF } from "jspdf";
 import { navBarComponent } from "../../components/navbar";
 import { dropdownComponent, setupDropdown } from "../../components/dropdown";
 import { metricsService } from "../../services/metrics.service";
@@ -115,9 +116,36 @@ export const setupMetrics = async () => {
   if (!kpiEvals || !kpiIcp || !kpiPart || !gridContainer || !periodContainer) return;
 
   downloadBtn?.addEventListener("click", async () => {
-    // Usar la impresión nativa del navegador es mucho más robusto
-    // que html2pdf para interpretar CSS moderno (Grid, Flex, Oklch, variables).
-    window.print();
+    downloadBtn.disabled = true;
+    showToast("Generando PDF...", "info");
+    
+    // Escondemos botones temporalmente
+    downloadBtn.style.display = 'none';
+    const originalBorder = reportElement.style.border;
+    
+    try {
+      // Necesitamos fondo blanco porque dom-to-image respetará transparencias
+      const dataUrl = await domtoimage.toPng(reportElement, { bgcolor: '#ffffff' });
+      
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgProps = pdf.getImageProperties(dataUrl);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      // Calculamos altura manteniendo el aspect ratio
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      
+      pdf.addImage(dataUrl, 'PNG', 0, 10, pdfWidth, pdfHeight);
+      
+      const periodName = periods.find(p => p.id === currentPeriodId)?.name ?? "periodo";
+      pdf.save(`metricas-icp-${periodName}.pdf`);
+      
+      showToast("PDF descargado con dom-to-image", "success");
+    } catch (err) {
+      showToast("Error", "error", "No se pudo generar el PDF con dom-to-image.");
+      console.error(err);
+    } finally {
+      downloadBtn.style.display = '';
+      downloadBtn.disabled = false;
+    }
   });
 
   let periods = [];
