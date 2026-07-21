@@ -116,9 +116,23 @@ export const setupAdminPeriods = () => {
 
   // Renderizar Ciclos
   let allPeriods = [];
+  let currentFilteredPeriods = [];
+  let currentPage = 1;
+  const itemsPerPage = 5;
 
   const renderPeriodsList = (list) => {
-      if (!list || list.length === 0) {
+      if (list !== currentFilteredPeriods) {
+        currentFilteredPeriods = list;
+        currentPage = 1;
+      }
+      
+      const totalPages = Math.ceil(currentFilteredPeriods.length / itemsPerPage) || 1;
+      if (currentPage > totalPages) currentPage = totalPages;
+      
+      const startIdx = (currentPage - 1) * itemsPerPage;
+      const paginatedData = currentFilteredPeriods.slice(startIdx, startIdx + itemsPerPage);
+
+      if (!paginatedData || paginatedData.length === 0) {
         listContainer.innerHTML = `
           <div class="flex flex-col items-center justify-center py-16 text-center">
             <div class="mb-4 rounded-full bg-gray-100 p-4 dark:bg-zinc-800">
@@ -130,7 +144,7 @@ export const setupAdminPeriods = () => {
         return;
       }
 
-      listContainer.innerHTML = list.map(p => {
+      let html = paginatedData.map(p => {
         const statusBadge = p.is_active 
           ? statusBadgeComponent({ variant: "dot", status: "Activa" }) 
           : statusBadgeComponent({ variant: "dot", status: "Cerrado" });
@@ -163,6 +177,33 @@ export const setupAdminPeriods = () => {
           </div>
         `;
       }).join("");
+
+      if (totalPages > 1) {
+        html += `
+          <div class="flex justify-between items-center mt-4 px-2">
+            <button class="btn-prev-page px-4 py-2 rounded-xl font-bold bg-[var(--bg-base)] text-[var(--text-muted)] border border-[var(--border-main)] hover:bg-[var(--border-main)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer" ${currentPage === 1 ? 'disabled' : ''}>Anterior</button>
+            <span class="text-sm font-semibold text-[var(--text-muted)]">Página ${currentPage} de ${totalPages}</span>
+            <button class="btn-next-page px-4 py-2 rounded-xl font-bold bg-[var(--bg-base)] text-[var(--text-muted)] border border-[var(--border-main)] hover:bg-[var(--border-main)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer" ${currentPage === totalPages ? 'disabled' : ''}>Siguiente</button>
+          </div>
+        `;
+      }
+
+      listContainer.innerHTML = html;
+
+      if (totalPages > 1) {
+        listContainer.querySelector(".btn-prev-page")?.addEventListener("click", () => {
+          if (currentPage > 1) {
+            currentPage--;
+            renderPeriodsList(currentFilteredPeriods);
+          }
+        });
+        listContainer.querySelector(".btn-next-page")?.addEventListener("click", () => {
+          if (currentPage < totalPages) {
+            currentPage++;
+            renderPeriodsList(currentFilteredPeriods);
+          }
+        });
+      }
 
       // Lógica de los botones de Activar/Desactivar
       document.querySelectorAll(".btn-toggle-period").forEach(btn => {
