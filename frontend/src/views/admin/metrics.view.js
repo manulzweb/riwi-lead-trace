@@ -253,6 +253,15 @@ export const setupMetrics = async () => {
         return;
       }
 
+      const hasValidScores = list.some(e => e.average_score !== null);
+      if (!hasValidScores) {
+        gridContainer.innerHTML = emptyStateComponent(
+          "Esperando más evaluaciones",
+          "Aún no hay suficientes datos. Debemos recibir un mínimo de evaluaciones (al menos 3 por persona) para poder calcular y mostrar las métricas del ICP."
+        );
+        return;
+      }
+
       gridContainer.innerHTML = list.map(ev => {
         const scoreText = ev.average_score !== null ? `${ev.average_score}` : "--";
 
