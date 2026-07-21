@@ -10,7 +10,10 @@ const getAiSummary = async (evaluateeId, periodId) => {
   return Array.isArray(res) ? res[0] : res;
 };
 
+const getHistory = async (evaluateeId) => await request(`/metrics/history?evaluatee_id=${evaluateeId}`);
+
 export const metricsService = {
   getSummary,
-  getAiSummary
+  getAiSummary,
+  getHistory
 }

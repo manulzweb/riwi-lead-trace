@@ -1,11 +1,12 @@
 from fastapi import APIRouter, HTTPException, status
 from typing import List
-
+import logging
 from app.schemas.category import CategoryCreate, CategoryOut, CategoryUpdate
-from app.services import category_service
+from app.services.category_service import category_service
+from app.exceptions.category_exceptions import CategoryAlreadyExistsException, CategoryNotFoundException, CategoryInUseException
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
-
 
 @router.get(
     "/categories", 
@@ -15,8 +16,11 @@ router = APIRouter()
 )
 def get_categories():
     """Consulta de lectura total sobre la entidad `categories`."""
-    return category_service.get_categories()
-
+    try:
+        return category_service.get_categories()
+    except Exception as e:
+        logger.error(f"Error fetching categories: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al listar categorías")
 
 @router.post(
     "/categories", 
@@ -27,8 +31,13 @@ def get_categories():
 )
 def create_category(payload: CategoryCreate):
     """Inserta una nueva categoría en la base de datos."""
-    return category_service.create_category(payload.name)
-
+    try:
+        return category_service.create_category(payload.name)
+    except CategoryAlreadyExistsException as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error creating category: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al crear categoría")
 
 @router.put(
     "/categories/{category_id}", 
@@ -39,10 +48,15 @@ def create_category(payload: CategoryCreate):
 )
 def put_category(category_id: int, payload: CategoryUpdate):
     """Actualiza el campo `name` de una categoría existente de manera total."""
-    updated = category_service.update_category(category_id, payload.name)
-    if not updated:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Categoria no encontrada.")
-    return updated
+    try:
+        return category_service.update_category(category_id, payload.name)
+    except CategoryNotFoundException as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except CategoryAlreadyExistsException as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error updating category {category_id}: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al actualizar categoría")
 
 @router.patch(
     "/categories/{category_id}", 
@@ -53,16 +67,26 @@ def put_category(category_id: int, payload: CategoryUpdate):
 )
 def update_category(category_id: int, payload: CategoryUpdate):
     """Actualiza el campo `name` de una categoría existente de manera parcial."""
-    updated = category_service.update_category(category_id, payload.name)
-    if not updated:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Categoria no encontrada.")
-    return updated
-
+    try:
+        return category_service.update_category(category_id, payload.name)
+    except CategoryNotFoundException as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except CategoryAlreadyExistsException as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error patching category {category_id}: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al parchear categoría")
 
 @router.delete("/categories/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_category(category_id: int):
-    """Ejecuta un hard delete sobre la entidad `categories`. Valida restricciones de FK; retorna HTTP 409 si existe constraint violation (uso en preguntas históricas o activas)."""
-    deleted = category_service.delete_category(category_id)
-    if not deleted:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Categoria no encontrada.")
-    return None
+def delete_category(category_id: int, admin_id: int = None):
+    """Ejecuta un hard delete sobre la entidad `categories`. Valida restricciones de FK."""
+    try:
+        category_service.delete_category(category_id, admin_id)
+        return None
+    except CategoryNotFoundException as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except CategoryInUseException as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error deleting category {category_id}: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al eliminar categoría")

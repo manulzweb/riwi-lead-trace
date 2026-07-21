@@ -1,0 +1,5 @@
+EVALUATION_STATUS_DRAFT = "draft"
+EVALUATION_STATUS_SUBMITTED = "submitted"
+
+ROLE_TUTOR = "tutor"
+ROLE_TEAM_LEADER = "team_leader"

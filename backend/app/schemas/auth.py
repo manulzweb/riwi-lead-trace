@@ -1,7 +1,6 @@
-from pydantic import BaseModel, EmailStr
-from app.schemas.user import UserOut
+from pydantic import BaseModel, EmailStr, Field
 
-from pydantic import Field
+from app.schemas.user import UserOut
 
 class LoginRequest(BaseModel):
     email: EmailStr = Field(

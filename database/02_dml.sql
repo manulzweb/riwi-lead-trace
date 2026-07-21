@@ -64,7 +64,7 @@ INSERT INTO categories (name) VALUES
     ('General');
 
 -- Plantillas: una para Team Leader, una para Tutor
-INSERT INTO form_templates (title, target_role_id) VALUES
+INSERT INTO forms (title, target_role_id) VALUES
     ('Evaluación de Team Leader', 2),
     ('Evaluación de Tutor', 3);
 
@@ -73,7 +73,7 @@ INSERT INTO form_templates (title, target_role_id) VALUES
 -- Deben coincidir EXACTAMENTE con las categorías/pesos de docs/06-arquitectura.md.
 -- 10 preguntas de escala con peso igual (10.00 cada una = 100.00); la de
 -- texto no pondera (weight_percent queda en su default 0).
-INSERT INTO questions (template_id, text, category_id, input_type, sort_order, weight_percent) VALUES
+INSERT INTO questions (form_id, text, category_id, input_type, sort_order, weight_percent) VALUES
     (1, '¿Tu Team Leader se comunica de forma clara y oportuna durante los dailies y ceremonias del Sprint?', (SELECT id FROM categories WHERE name = 'Comunicación efectiva'), 'scale', 1, 10.00),
     (1, '¿Sientes confianza para hablar con tu Team Leader cuando te atrasas con un reto o simulacro?', (SELECT id FROM categories WHERE name = 'Comunicación efectiva'), 'scale', 2, 10.00),
     (1, '¿Tu Team Leader deja claras las rúbricas y lo que se espera de ti en las entregas de Riwi?', (SELECT id FROM categories WHERE name = 'Alineación de expectativas'), 'scale', 3, 10.00),
@@ -89,7 +89,7 @@ INSERT INTO questions (template_id, text, category_id, input_type, sort_order, w
 -- Preguntas de la plantilla de Tutor (id=2)
 -- Categorías del ICP para Tutor, basadas en el SEEQ (Marsh, 1982).
 -- 8 preguntas de escala con peso igual (12.50 cada una = 100.00).
-INSERT INTO questions (template_id, text, category_id, input_type, sort_order, weight_percent) VALUES
+INSERT INTO questions (form_id, text, category_id, input_type, sort_order, weight_percent) VALUES
     (2, '¿Las clases de tu Tutor te dan las bases necesarias para resolver los retos de Riwi?', (SELECT id FROM categories WHERE name = 'Valor del aprendizaje'), 'scale', 1, 12.50),
     (2, '¿El contenido que explica el Tutor aporta valor técnico real y actualizado?', (SELECT id FROM categories WHERE name = 'Valor del aprendizaje'), 'scale', 2, 12.50),
     (2, '¿El Tutor estructura sus clases teóricas de forma ordenada y fácil de digerir?', (SELECT id FROM categories WHERE name = 'Claridad y organización'), 'scale', 3, 12.50),
@@ -99,3 +99,93 @@ INSERT INTO questions (template_id, text, category_id, input_type, sort_order, w
     (2, '¿El Tutor está disponible en los canales de soporte (Slack/Discord) dentro del horario?', (SELECT id FROM categories WHERE name = 'Disponibilidad e interacción'), 'scale', 7, 12.50),
     (2, '¿Resuelve tus bloqueos técnicos puntuales en un tiempo razonable cuando le consultas?', (SELECT id FROM categories WHERE name = 'Disponibilidad e interacción'), 'scale', 8, 12.50),
     (2, 'Comentarios adicionales sobre tu Tutor (¿qué debería mantener y qué debería cambiar?)', (SELECT id FROM categories WHERE name = 'General'), 'text', 9, 0);
+
+
+-- Usuarios reales exportados de Esthercita
+INSERT INTO users (id, full_name, email, password_hash, clan_id) VALUES
+    (12, 'Juan José Álvarez Manjarrez', 'jlvarezmanjarrez12@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (13, 'Javier Alexander Ávila Rodríguez', 'jvilarodrguez13@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (14, 'Kerin Enrique Barranco Martínez', 'kbarrancomartnez14@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (15, 'Marlon José Castillo De La Hoz', 'mlahoz15@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (16, 'Yuranys Paola Castro Ruiz', 'ycastroruiz16@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (17, 'Carlos Eduardo Charris Yepes', 'ccharrisyepes17@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (18, 'Jorge Luis Corrales Barraza', 'jcorralesbarraza18@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (19, 'Andrés Felipe Cortés Zambrano', 'acortszambrano19@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (20, 'Cristian David Del Castillo Ruiz', 'ccastilloruiz20@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (21, 'José del Carmen Díaz Díaz', 'jdazdaz21@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (22, 'Milton Daniel Escamilla Carreño', 'mescamillacarreo22@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (23, 'Thomas Eaton García Navas', 'tgarcanavas23@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (24, 'Jorel Yessith Hernandez Muñoz', 'jhernandezmuoz24@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (25, 'Juan David Hernández Viana', 'jhernndezviana25@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (26, 'Brandon Styl Herrera', 'bstylherrera26@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (27, 'Jair Daniel Lastre Arrieta', 'jlastrearrieta27@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (28, 'Maria Jose Leal Brochero', 'mlealbrochero28@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (29, 'Jhon Michael Lopera Velasquez', 'jloperavelasquez29@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (30, 'Juan José Maldonado Navarro', 'jmaldonadonavarro30@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (31, 'Juan Diego Marchena Comas', 'jmarchenacomas31@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (32, 'Iván David Mejía Mendez', 'imejamendez32@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (33, 'Sebastian Mendoza Brieva', 'smendozabrieva33@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (34, 'Leonela Isabel Miranda López', 'lmirandalpez34@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (35, 'Ibrahim Monroy', 'iibrahimmonroy35@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (36, 'Dilant Antonio Murillo', 'dantoniomurillo36@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (37, 'Yesid Palacio', 'yyesidpalacio37@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (38, 'Lians Dylan Paternina Lopez', 'lpaterninalopez38@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (39, 'Manuel David Rincón Clavijo', 'mrincnclavijo39@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (40, 'Elian David Rivera Guaca', 'eriveraguaca40@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (41, 'Samuel Roncancio Bertel', 'sroncanciobertel41@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (42, 'Axel David Ruiz Polo', 'aruizpolo42@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (43, 'Manuel Andrés Vásquez Mendoza', 'mvsquezmendoza43@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (44, 'Cesar Julio Vega Morales', 'cvegamorales44@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1),
+    (45, 'Daniela Zapata Jiménez', 'dzapatajimnez45@riwi.io', '\.p1a.6ffVYMmvbX..HFvR7V6qL6BF/oG2ug8Oe8JPIB0M5m', 1);
+
+INSERT INTO user_roles (user_id, role_id) VALUES
+    (12, 1),
+    (13, 1),
+    (14, 1),
+    (15, 1),
+    (16, 1),
+    (17, 1),
+    (18, 1),
+    (19, 1),
+    (20, 1),
+    (21, 1),
+    (22, 1),
+    (23, 1),
+    (24, 1),
+    (25, 1),
+    (26, 1),
+    (27, 1),
+    (28, 1),
+    (29, 1),
+    (30, 1),
+    (31, 1),
+    (32, 1),
+    (33, 1),
+    (34, 1),
+    (35, 1),
+    (36, 1),
+    (37, 1),
+    (38, 1),
+    (39, 1),
+    (40, 1),
+    (41, 1),
+    (42, 1),
+    (43, 1),
+    (44, 1),
+    (45, 1);
+
+
+-- ---------------------------------------------------------------------
+-- Configuracion global: fila unica id = 1 con los valores de fabrica.
+--   settings_repository.py hace SELECT/UPDATE ... WHERE id = 1, asi que sin
+--   esta fila GET /settings devuelve {} y la vista de admin no puede pintar.
+--   Los valores coinciden con los DEFAULT declarados en 01_ddl.sql.
+-- ---------------------------------------------------------------------
+INSERT INTO system_settings (
+    id, ai_temperature, ai_auto_summary,
+    score_risk_threshold, score_excellent_threshold, weight_tolerance,
+    strict_entity_lock, required_evaluations, log_retention_days
+) VALUES
+    (1, 0.70, TRUE, 60.00, 80.00, 0.01, TRUE, 3, 90);
+
+

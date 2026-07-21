@@ -20,9 +20,11 @@ Filosofia: **startup validando una idea**. El MVP debe ser lo minimo para compro
 | Historial de evaluaciones (Coder) | Trazabilidad minima para el evaluador |
 | Dashboard de resultados (Admin) | Convierte datos en decision; razon de negocio |
 | **ICP** e indicadores | Mide calidad del acompanamiento con un indice accionable |
-| **Resumen de feedback con IA** (Claude) para el Admin | Diferenciador; sintesis accionable y anonimizada |
+| **Resumen de feedback con IA** (Google Gemini) para el Admin | Diferenciador; sintesis accionable y anonimizada |
 | SPA responsive y navegable | Restriccion tecnica + usabilidad basica |
 | Despliegue accesible (front + back) | Requisito: app funcional disponible para la sustentacion |
+| **Configuracion global** (Admin) | Ajustar desde la UI los umbrales del ICP, la tolerancia de pesos y la temperatura de IA (`system_settings`) en vez de dejarlos hardcodeados |
+| **Bitacora basica de acciones administrativas** (Admin) | Trazabilidad minima de acciones sensibles (abrir/cerrar periodo, editar preguntas, borrar categorias), con export a CSV |
 
 **Seguimiento historico (admin)** se incluye como `Should`: aporta a la validacion pero puede recortarse si la capacidad aprieta.
 
@@ -43,7 +45,7 @@ Filosofia: **startup validando una idea**. El MVP debe ser lo minimo para compro
 | Comparativas avanzadas, benchmarking entre cohortes | Requiere volumen de datos; post-validacion |
 | Despliegue en contenedores (Docker) y multi-sede | Se aborda en un plan/iteracion aparte |
 | Internacionalizacion (i18n) | El piloto es en espanol |
-| Auditoria detallada / logs de actividad | Mas alla de la trazabilidad basica de evaluaciones |
+| Auditoria detallada (busqueda avanzada, alertas, purga automatica por retencion) | El MVP ya incluye una bitacora basica de acciones administrativas (`GET /activity-log` + export CSV en `admin_activity_log`); lo que queda fuera es la retencion automatica (el ajuste `log_retention_days` se guarda pero no purga nada) y cualquier busqueda/alerta mas alla del listado cronologico |
 | Roles y permisos granulares (mas alla de los 4) | Los 4 roles cubren el piloto |
 | App movil nativa / PWA offline | La SPA responsive es suficiente para validar |
 
@@ -57,9 +59,9 @@ Definidos con criterio MVP: suficientes para un piloto confiable, sin sobreingen
 
 | RNF | Que exige | Objetivo verificable |
 |---|---|---|
-| **Seguridad** | Contrasenas hasheadas (bcrypt); anonimato real (sin `evaluator_id`); **sin JWT** — el rol/ID de quien llama lo manda el propio front y el backend lo confia (filtro de datos, no verificacion criptografica, ver `06-arquitectura.md`); HTTPS en produccion; sanear entradas (evitar XSS). | 0 contrasenas en texto plano; anonimas sin `evaluator_id` |
+| **Seguridad** | Contrasenas hasheadas (bcrypt); anonimato real y **estructural** (el vinculo evaluador↔contenido no se crea: `evaluation_submissions.evaluation_id = NULL`); **sin JWT** — el rol/ID de quien llama lo manda el propio front y el backend lo confia (filtro de datos, no verificacion criptografica, ver `06-arquitectura.md`); HTTPS en produccion; sanear entradas (evitar XSS). | 0 contrasenas en texto plano; 0 filas de `evaluation_submissions` anonimas con `evaluation_id` distinto de NULL |
 | **Escalabilidad** | Frontend desacoplado via contrato REST; arquitectura modular; plantillas de formulario en BD. | — |
 | **Rendimiento** | Bundle ligero (Vite, sin frameworks pesados); estados de carga; evitar peticiones redundantes. | FCP < 2s; bundle inicial liviano |
 | **Usabilidad** | Responsive mobile-first (>=320px); feedback inmediato (carga/vacio/error/exito); validacion clara por campo. | Completar evaluacion en <=3 clics |
-| **Mantenibilidad** | Capas separadas (router/store/services en front; routes/services en back, sin `repositories/` ni `models/` — ver `06-arquitectura.md`); Conventional Commits; docs vivos. | Logica de negocio aislada en `services` |
+| **Mantenibilidad** | Capas separadas (router/services en front; `routes/ → services/ → repositories/` en back, sin capa `models/` — ver `06-arquitectura.md`); Conventional Commits; docs vivos. | Logica de negocio aislada en `services`, acceso a datos en `repositories` |
 | **Accesibilidad** | HTML semantico; navegacion por teclado; contraste WCAG AA; `aria-*` donde falte semantica. | Navegable 100% por teclado; contraste AA |

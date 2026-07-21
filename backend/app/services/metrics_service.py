@@ -1,99 +1,125 @@
+from typing import List, Dict, Any
 from sqlalchemy import text
 from app.config.database import engine
+from app.repositories.metrics_repository import MetricsRepository
+from app.services.settings_service import settings_service
 
-MIN_EVALUATIONS = 3
-UMBRAL_EN_RIESGO = 60
-UMBRAL_SOLIDO = 80
+# Valores de respaldo si `system_settings` no devuelve fila (BD sin seed).
+#
+# ESCALA: 0-100, la misma que produce vw_period_metrics.
+# La vista normaliza la media ponderada 1-5 a 0-100 con ((x - 1) / 4 * 100),
+# asi que los umbrales con los que se compara el ICP viven tambien en 0-100.
+# Estos numeros son los que estaban hardcodeados antes de leer la config global,
+# por lo que sin fila en `system_settings` la clasificacion no cambia.
+DEFAULT_SCORE_RISK_THRESHOLD = 60
+DEFAULT_SCORE_EXCELLENT_THRESHOLD = 80
+DEFAULT_REQUIRED_EVALUATIONS = 3
 
 
-def classify_status(average_score):
-    if average_score is None:
-        return "Datos insuficientes"
-    if average_score < UMBRAL_EN_RIESGO:
-        return "En riesgo"
-    if average_score >= UMBRAL_SOLIDO:
-        return "Sólido"
-    return "Estable"
+class MetricsService:
+    def __init__(self, repository: MetricsRepository = None):
+        self.repo = repository or MetricsRepository()
 
+    def _load_policy(self) -> Dict[str, Any]:
+        """
+        Lee la configuracion global de politicas de evaluacion.
 
-def calculate_average_score(evaluatee_id: int, period_id: int):
-    with engine.connect() as conn:
-        count_query = text("""
-            SELECT COUNT(DISTINCT id) FROM evaluations
-            WHERE evaluatee_id = :evaluatee_id AND period_id = :period_id AND status = 'submitted'
-        """)
-        n_evals = conn.execute(count_query, {"evaluatee_id": evaluatee_id, "period_id": period_id}).scalar() or 0
+        Se llama SIEMPRE antes de abrir la conexion de metricas: settings_service
+        abre su propia conexion (`engine.begin()`), y llamarlo dentro de un
+        `with engine.connect()` mantendria dos checkouts del pool vivos a la vez
+        en la misma peticion. Leyendo primero, las conexiones no se solapan.
 
-        if n_evals < MIN_EVALUATIONS:
-            return {"average_score": None, "n_evals": n_evals}
+        Si no hay fila en `system_settings`, el repositorio devuelve {} y aqui
+        degradamos a los valores por defecto en vez de reventar.
+        """
+        settings = settings_service.get_settings() or {}
 
-        per_question_query = text("""
-            SELECT a.question_id, q.weight_percent, AVG(a.score) AS avg_score
-            FROM evaluation_answers a
-            JOIN questions q ON a.question_id = q.id
-            JOIN evaluations e ON a.evaluation_id = e.id
-            WHERE e.evaluatee_id = :evaluatee_id
-              AND e.period_id = :period_id
-              AND e.status = 'submitted'
-              AND q.input_type = 'scale'
-              AND a.score IS NOT NULL
-            GROUP BY a.question_id, q.weight_percent
-        """)
-        rows = conn.execute(per_question_query, {"evaluatee_id": evaluatee_id, "period_id": period_id}).all()
+        def value_or_default(key: str, default):
+            # `or` no sirve: 0 es un umbral valido y seria descartado como falsy.
+            raw = settings.get(key)
+            return default if raw is None else raw
 
-        if not rows:
-            return {"average_score": None, "n_evals": n_evals}
+        return {
+            "risk_threshold": float(
+                value_or_default("score_risk_threshold", DEFAULT_SCORE_RISK_THRESHOLD)
+            ),
+            "excellent_threshold": float(
+                value_or_default("score_excellent_threshold", DEFAULT_SCORE_EXCELLENT_THRESHOLD)
+            ),
+            "required_evaluations": int(
+                value_or_default("required_evaluations", DEFAULT_REQUIRED_EVALUATIONS)
+            ),
+        }
 
-        total_weight = sum(float(weight) for _, weight, _ in rows)
+    def classify_status(
+        self,
+        average_score: float,
+        risk_threshold: float = DEFAULT_SCORE_RISK_THRESHOLD,
+        excellent_threshold: float = DEFAULT_SCORE_EXCELLENT_THRESHOLD,
+    ) -> str:
+        """
+        Clasifica un ICP (0-100) contra los umbrales configurables del admin.
+        Funcion pura: los umbrales entran por parametro, no los lee de la BD.
+        """
+        if average_score is None:
+            return "Datos insuficientes"
+        if float(average_score) < float(risk_threshold):
+            return "En riesgo"
+        if float(average_score) >= float(excellent_threshold):
+            return "Sólido"
+        return "Estable"
 
-        if total_weight > 0:
-            avg_1_5 = sum(float(avg_score) * float(weight) for _, weight, avg_score in rows) / total_weight
-        else:
-            avg_1_5 = sum(float(avg_score) for _, _, avg_score in rows) / len(rows)
+    def get_score_history(self, evaluatee_id: int) -> List[Dict[str, Any]]:
+        """
+        Serie del ICP de una persona a través de todos los periodos.
+        Usa la vista vw_period_metrics para obtener los datos precalculados.
+        El minimo de evaluaciones para que un periodo sea estadisticamente
+        valido ya no vive en la vista: se pasa como parametro a la query.
+        """
+        policy = self._load_policy()
+        with engine.connect() as conn:
+            return self.repo.get_score_history_for_user(
+                conn, evaluatee_id, policy["required_evaluations"]
+            )
 
-        average_score = round((avg_1_5 - 1) / 4 * 100)
+    def get_metrics_summary(self, period_id: int) -> Dict[str, Any]:
+        """
+        Agrega y normaliza las métricas de ICP basándose en la vista vw_period_metrics.
+        """
+        policy = self._load_policy()
 
-        return {"average_score": average_score, "n_evals": n_evals}
-
-def get_metrics_summary(period_id: int):
-    with engine.connect() as conn:
-        total_eval_query = text("""
-            SELECT COUNT(DISTINCT id) FROM evaluations WHERE period_id = :period_id AND status = 'submitted'
-        """)
-        total_evaluations = conn.execute(total_eval_query, {"period_id": period_id}).scalar() or 0
-
-        users_query = text("""
-            SELECT u.id, u.full_name AS name, u.email, r.name AS role
-            FROM users u
-            JOIN user_roles ur ON u.id = ur.user_id
-            JOIN roles r ON ur.role_id = r.id
-            WHERE r.name IN ('team_leader', 'tutor')
-            GROUP BY u.id, r.name
-        """)
-        evaluatees_rows = conn.execute(users_query).mappings().all()
+        with engine.connect() as conn:
+            total_evaluations = self.repo.get_total_evaluations(conn, period_id)
+            total_coders = self.repo.get_total_active_coders(conn)
+            evaluatees_rows = self.repo.get_evaluatees_with_metrics(
+                conn, period_id, policy["required_evaluations"]
+            )
 
         evaluatees = []
         scores = []
-        for row in evaluatees_rows:
-            user_dict = dict(row)
-            score_info = calculate_average_score(user_dict["id"], period_id)
-            user_dict.update(score_info)
-            user_dict["status"] = classify_status(score_info["average_score"])
+
+        for user_dict in evaluatees_rows:
+            avg_score = user_dict.get("average_score")
+
+            user_dict["status"] = self.classify_status(
+                avg_score, policy["risk_threshold"], policy["excellent_threshold"]
+            )
             evaluatees.append(user_dict)
-            if score_info["average_score"] is not None:
-                scores.append(score_info["average_score"])
+
+            if avg_score is not None:
+                scores.append(avg_score)
 
         average_score_global = round(sum(scores) / len(scores)) if scores else 0
 
-        total_coders_query = text("""
-            SELECT COUNT(DISTINCT u.id) 
-            FROM users u 
-            JOIN user_roles ur ON u.id = ur.user_id 
-            WHERE ur.role_id = 1 AND u.is_active = TRUE
-        """)
-        total_coders = conn.execute(total_coders_query).scalar() or 0
-
+        # Asumimos 2 evaluaciones por coder activo como baseline ideal (ej. evalúan a su Tutor y a su TL)
+        # Si estamos viendo todos los periodos (period_id == 0), multiplicamos por la cantidad total de periodos
         possible_evaluations = total_coders * 2
+        if period_id == 0:
+            total_periods_query = text("SELECT COUNT(id) FROM periods")
+            with engine.connect() as conn:
+                total_periods = conn.execute(total_periods_query).scalar() or 1
+            possible_evaluations *= total_periods
+            
         participation_rate = round((total_evaluations / possible_evaluations) * 100) if possible_evaluations else 0
         participation_rate = min(participation_rate, 100)
 
@@ -105,3 +131,11 @@ def get_metrics_summary(period_id: int):
             },
             "evaluatees": evaluatees
         }
+
+metrics_service = MetricsService()
+
+def get_score_history(evaluatee_id: int):
+    return metrics_service.get_score_history(evaluatee_id)
+
+def get_metrics_summary(period_id: int):
+    return metrics_service.get_metrics_summary(period_id)

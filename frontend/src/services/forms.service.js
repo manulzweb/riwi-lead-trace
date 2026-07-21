@@ -31,26 +31,35 @@ const getDefaultCategoryId = () => {
   return defaultCategoryIdPromise;
 };
 
-// GET /forms?target_role= devuelve un arreglo (la plantilla activa de ESE
+// GET /forms?target_role= devuelve un arreglo (la formulario activa de ESE
 // rol, si existe). Como solo hay 2 roles evaluables, se piden ambas en
 // paralelo y se arma la lista a partir de eso.
-const getTemplates = async () => {
+const getForms = async () => {
   const results = await Promise.all(
     TARGET_ROLES.map(async (targetRole) => {
-      const templates = await request(`/forms?target_role=${targetRole}`);
-      const template = templates[0];
-      return template ? { ...template, targetRole } : null;
+      try {
+        const forms = await request(`/forms?target_role=${targetRole}`);
+        // Mapeamos todas las formularios que devuelva el backend
+        return forms.map(t => ({ ...t, targetRole }));
+      } catch (error) {
+        // Si la API arroja 404 porque todavía no hay formularios creadas para este rol,
+        // devolvemos un array vacío para no romper nada. Se compara el status
+        // real que expone api.service.js, no el texto del mensaje.
+        if (error.status === 404) return [];
+        throw error; 
+      }
     })
   );
-  return results.filter(Boolean);
+  // results es un array de arrays (uno por rol), lo aplanamos a una sola lista
+  return results.flat();
 };
 
 // Para editar, ademas del texto (que ya viene en /forms) hace falta el peso
 // de cada pregunta, que /forms no expone -- se completa con /questions.
-const getTemplateForEdit = async (template) => {
-  const questions = await request(`/questions?template_id=${template.id}`);
+const getFormForEdit = async (form) => {
+  const questions = await request(`/questions?form_id=${form.id}`);
   return {
-    ...template,
+    ...form,
     questions: questions.map((q) => ({
       id: String(q.id),
       text: q.text,
@@ -68,30 +77,30 @@ const toQuestionPayload = async (q) => ({
   weight_percent: (TYPE_TO_INPUT_TYPE[q.type] || 'text') === 'scale' ? (q.weight || 0) : 0,
 });
 
-// Plantilla nueva: POST /forms crea la plantilla y todas sus preguntas
+// Formulario nueva: POST /forms crea la formulario y todas sus preguntas
 // iniciales en un solo paso (no hay historial previo que versionar).
-const createTemplate = async (templateData) => {
+const createForm = async (formData) => {
   const payload = {
-    title: templateData.title,
-    description: templateData.description || null,
-    target_role: templateData.targetRole,
-    questions: await Promise.all(templateData.questions.map(toQuestionPayload)),
+    title: formData.title,
+    description: formData.description || null,
+    target_role: formData.targetRole,
+    questions: await Promise.all(formData.questions.map(toQuestionPayload)),
   };
   return await request('/forms', jsonOptions('POST', payload));
 };
 
-// Plantilla existente: no hay un "reemplazar todas las preguntas de una",
+// Formulario existente: no hay un "reemplazar todas las preguntas de una",
 // asi que se compara el estado actual del builder contra lo que estaba
 // cargado al abrirlo y se manda solo lo que cambio -- agregar, quitar,
 // reformular texto (versiona) y por ultimo reequilibrar los pesos.
-const updateTemplate = async (id, templateData) => {
+const updateForm = async (id, formData, onCoherenceConfirm) => {
   await request(`/forms/${id}`, jsonOptions('PUT', {
-    title: templateData.title,
-    description: templateData.description || null,
+    title: formData.title,
+    description: formData.description || null,
   }));
 
-  const before = templateData.originalQuestions || [];
-  const after = templateData.questions;
+  const before = formData.originalQuestions || [];
+  const after = formData.questions;
   const beforeIds = new Set(before.map((q) => q.id));
   const afterIds = new Set(after.map((q) => q.id));
 
@@ -106,7 +115,7 @@ const updateTemplate = async (id, templateData) => {
   const createdFromNew = [];
   for (const q of added) {
     const created = await request('/questions', jsonOptions('POST', {
-      template_id: id,
+      form_id: id,
       ...(await toQuestionPayload(q)),
     }));
     createdFromNew.push({ realId: created.id, type: q.type, weight: q.weight });
@@ -115,33 +124,55 @@ const updateTemplate = async (id, templateData) => {
   for (const q of kept) {
     const original = before.find((b) => b.id === q.id);
     if (original && original.text !== q.text) {
-      await request(`/questions/${q.id}`, jsonOptions('PATCH', { text: q.text, confirm: true }));
+      // Primer intento SIN forzar: si la IA ve coherente el nuevo texto con
+      // la categoria de la pregunta, el backend lo guarda directo. Si no,
+      // responde 409 con su razon puntual -- recien ahi se pide confirmar.
+      try {
+        const updatedQ = await request(`/questions/${q.id}`, jsonOptions('PATCH', { text: q.text, confirm: false, admin_id: formData.adminId }));
+        q.id = String(updatedQ.id);
+      } catch (err) {
+        if (err.status === 409 && onCoherenceConfirm) {
+          const confirmed = await onCoherenceConfirm(q, err.detail);
+          if (!confirmed) {
+            // Aborto interno del flujo (el admin dijo "no"), NO un error HTTP:
+            // por eso no tiene .status. Se marca con .cancelled para que la
+            // vista lo distinga sin leer el texto del mensaje.
+            const cancelled = new Error(`Guardado cancelado: no se confirmo el cambio de texto de "${original.text}".`);
+            cancelled.cancelled = true;
+            throw cancelled;
+          }
+          const updatedQ = await request(`/questions/${q.id}`, jsonOptions('PATCH', { text: q.text, confirm: true, admin_id: formData.adminId }));
+          q.id = String(updatedQ.id);
+        } else {
+          throw err;
+        }
+      }
     }
   }
 
   // Reequilibrar pesos: todas las preguntas de escala que quedan activas
-  // (las que ya existian + las recien creadas), con su peso actual del builder.
   const scaleWeights = [
     ...kept.filter((q) => q.type === 'scale_1_5').map((q) => ({ question_id: Number(q.id), weight_percent: q.weight || 0 })),
     ...createdFromNew.filter((c) => c.type === 'scale_1_5').map((c) => ({ question_id: c.realId, weight_percent: c.weight || 0 })),
   ];
   if (scaleWeights.length > 0) {
     await request('/questions/weights', jsonOptions('PUT', {
-      template_id: id,
+      form_id: id,
       weights: scaleWeights,
+      admin_id: formData.adminId,
     }));
   }
 
-  const templates = await request(`/forms?target_role=${templateData.targetRole}`);
-  return templates[0];
+  const forms = await request(`/forms?target_role=${formData.targetRole}`);
+  return forms[0];
 };
 
-const deleteTemplate = async (id) => await request(`/forms/${id}`, { method: 'DELETE' });
+const deleteForm = async (id) => await request(`/forms/${id}`, { method: 'DELETE' });
 
-export const templatesService = {
-  getTemplates,
-  getTemplateForEdit,
-  createTemplate,
-  updateTemplate,
-  deleteTemplate,
+export const formsService = {
+  getForms,
+  getFormForEdit,
+  createForm,
+  updateForm,
+  deleteForm,
 };

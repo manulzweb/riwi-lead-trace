@@ -4,8 +4,8 @@ Backlog **full-stack** del MVP (frontend SPA + backend FastAPI + MySQL). Estimac
 
 | ID | Nombre | Descripcion | Epica | Prioridad | SP | Dependencias |
 |----|--------|-------------|-------|-----------|:--:|--------------|
-| CORE-01 | Preparar repo + estructura base de la SPA | Monorepo, estructura `frontend/`, router, store y `http.js` | CORE | Must | 5 | — |
-| CORE-02 | Estructura base del backend + BD | FastAPI, capas routes/services (sin `repositories/`/`models/` separados), conexion MySQL, seed | CORE | Must | 5 | — |
+| CORE-01 | Preparar repo + estructura base de la SPA | Monorepo, estructura `frontend/`, router y `api.service.js` (sin store centralizado, ver `06-arquitectura.md`) | CORE | Must | 5 | — |
+| CORE-02 | Estructura base del backend + BD | FastAPI, capas routes/services/repositories (sin `models/`), conexion MySQL, seed | CORE | Must | 5 | — |
 | CORE-03 | Layout y navegacion responsive | Shell SPA, nav por rol, estilos base mobile-first | CORE | Must | 5 | CORE-01 |
 | AUTH-01 | Inicio de sesion | UI login + `POST /auth/login`: verifica hash bcrypt en servidor, sin emitir token | AUTH | Must | 3 | CORE-02, CORE-03 |
 | AUTH-02 | Sesion en cliente | Usuario y roles en `localStorage`, guards de la SPA para redirigir sin sesion | AUTH | Must | 5 | AUTH-01 |
@@ -13,7 +13,7 @@ Backlog **full-stack** del MVP (frontend SPA + backend FastAPI + MySQL). Estimac
 | EVAL-01 | Listar evaluables | UI + `GET /users?role=...` de Team Leaders/Tutores a evaluar | EVAL | Must | 3 | AUTH-03 |
 | EVAL-02 | Evaluar Team Leader | Formulario estructurado + `GET /forms?target_role=` plantilla | EVAL | Must | 5 | EVAL-01 |
 | EVAL-03 | Evaluar Tutor | Reutiliza motor de formularios con plantilla de Tutor | EVAL | Must | 3 | EVAL-02 |
-| EVAL-04 | Feedback anonimo opcional | Toggle + regla backend: no persistir `evaluator_id` | EVAL | Should | 2 | EVAL-02 |
+| EVAL-04 | Feedback anonimo opcional | Toggle + regla backend: no crear el vinculo evaluador↔contenido (`evaluation_submissions.evaluation_id = NULL`) | EVAL | Should | 2 | EVAL-02 |
 | EVAL-05 | Registrar evaluacion (API) | `POST /evaluations`: validacion Pydantic, estados, **no-duplicado por periodo**, **requiere periodo activo** | EVAL | Must | 5 | EVAL-02 |
 | ADMIN-01 | Gestion del periodo de evaluacion | Admin activa/cierra el periodo (`PUT /periods/:id`, solo uno activo); sin periodo activo los Coders ven "No hay formularios por realizar" | ADMIN | Must | 3 | AUTH-03 |
 | ADMIN-02 | Editar preguntas del formulario | Admin edita texto y activa/desactiva preguntas (`PATCH /questions/:id`), solo con periodo cerrado; edicion = versionado + **chequeo IA de coherencia** con la categoria | ADMIN | Should | 3 | ADMIN-01 |
@@ -21,7 +21,7 @@ Backlog **full-stack** del MVP (frontend SPA + backend FastAPI + MySQL). Estimac
 | HIST-02 | Seguimiento historico | Admin: historico por evaluado/periodo, respeta anonimato | HIST | Should | 3 | EVAL-05 |
 | DASH-01 | Dashboard + ICP | Panel admin + `GET /metrics/summary` (**ICP**) | DASH | Must | 5 | EVAL-05 |
 | DASH-02 | ICP por criterio e indicadores | **Logica de negocio:** ICP por categoria, % participacion, confianza | DASH | Should | 3 | DASH-01 |
-| AIFEED-01 | Resumen de feedback con IA | `GET /metrics/ai-summary` (Claude, anonimizado, cacheado) | AIFEED | Should | 5 | DASH-01 |
+| AIFEED-01 | Resumen de feedback con IA | `GET /metrics/ai-summary` (Google Gemini, anonimizado, cacheado) | AIFEED | Should | 5 | DASH-01 |
 | DELIV-01 | Despliegue de la app | Backend + frontend + MySQL hospedados; URL publica; vars de entorno | ENTREGA | Must | 5 | EVAL-05 |
 | DELIV-02 | Pitch comercial (ingles) | Slides + script en ingles (3-5 min); ensayado por todos | ENTREGA | Must | 3 | — |
 | DELIV-03 | Pitch tecnico (espanol) | Slides + demo en vivo (5-8 min); cada integrante explica su parte | ENTREGA | Must | 3 | DELIV-01 |
@@ -33,7 +33,8 @@ Backlog **full-stack** del MVP (frontend SPA + backend FastAPI + MySQL). Estimac
 
 La rubrica exige logica de negocio identificable mas alla del CRUD. En este backlog reside en:
 - **EVAL-05:** prevencion de evaluacion duplicada por (evaluador, evaluado, periodo) + estados borrador/enviada + rechazo (`409`) si no hay periodo activo.
-- **EVAL-04:** anonimato real (no se persiste el evaluador).
+- **EVAL-04:** anonimato real y **estructural** (el vinculo evaluador↔contenido no se crea, asi que
+  no hay query capaz de reconstruirlo).
 - **AUTH-03:** RBAC en servidor + visibilidad restringida por rol (`403`).
 - **ADMIN-01:** ventana de evaluacion controlada — el periodo activo habilita/deshabilita los formularios para todos los Coders (solo un periodo activo a la vez).
 - **ADMIN-02:** integridad del instrumento — las preguntas solo se editan con periodo cerrado y editarlas **versiona** (nueva fila + desactivar la anterior) para no falsear el historial ni el ICP.

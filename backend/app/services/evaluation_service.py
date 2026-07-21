@@ -1,169 +1,204 @@
-from sqlalchemy import text
 from datetime import datetime
-from fastapi import HTTPException, status
-from typing import Optional
+from typing import Optional, List, Dict, Any
+from sqlalchemy.exc import IntegrityError
 from app.config.database import engine
-from app.schemas.evaluation import EvaluationCreate
+from app.schemas.detalles_evaluacion import EvaluationCreate
+from app.repositories.evaluation_repository import EvaluationRepository
+from app.constants.evaluation_constants import EVALUATION_STATUS_SUBMITTED, ROLE_TEAM_LEADER, ROLE_TUTOR
+from app.exceptions.evaluation_exceptions import (
+    PeriodNotFoundException, PeriodNotActiveException, EvaluationAlreadyExistsException,
+    EvaluateeNotFoundException, InvalidRoleException, InvalidClanException
+)
 
-def create_evaluation(eval_data: EvaluationCreate):
-    evaluator_id = eval_data.evaluator_id
+class EvaluationService:
+    def __init__(self, repository: EvaluationRepository = None):
+        # Allow dependency injection, default to a new instance if not provided
+        self.repo = repository or EvaluationRepository()
 
-    with engine.begin() as conn:
-        period_query = text("SELECT is_active FROM periods WHERE id = :period_id")
-        period_row = conn.execute(period_query, {"period_id": eval_data.period_id}).first()
-        if period_row is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="El periodo indicado no existe."
-            )
-        if not period_row[0]:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="No se pueden crear ni enviar evaluaciones: el periodo no esta activo."
-            )
+    def _validate_period(self, conn, period_id: int):
+        is_active = self.repo.get_period_active_status(conn, period_id)
+        if is_active is None:
+            raise PeriodNotFoundException("El periodo indicado no existe.")
+        if not is_active:
+            raise PeriodNotActiveException("No se pueden crear ni enviar evaluaciones: el periodo no esta activo.")
 
-        check_query = text("""
-            SELECT id FROM evaluations
-            WHERE evaluator_id = :evaluator_id
-              AND evaluatee_id = :evaluatee_id
-              AND period_id = :period_id
-        """)
-        existing = conn.execute(check_query, {
-            "evaluator_id": evaluator_id,
-            "evaluatee_id": eval_data.evaluatee_id,
-            "period_id": eval_data.period_id
-        }).first()
-        if existing:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Ya has evaluado a esta persona en el periodo seleccionado."
-            )
-
-        db_evaluator_id = None if eval_data.is_anonymous else evaluator_id
-
-        if evaluator_id is not None:
-            evaluatee_query = text("""
-                SELECT u.clan_id, GROUP_CONCAT(r.name) as roles
-                FROM users u
-                LEFT JOIN user_roles ur ON u.id = ur.user_id
-                LEFT JOIN roles r ON ur.role_id = r.id
-                WHERE u.id = :evaluatee_id
-                GROUP BY u.id
-            """)
-            evaluatee_row = conn.execute(evaluatee_query, {"evaluatee_id": eval_data.evaluatee_id}).mappings().first()
+    def _validate_permissions(self, conn, evaluator_id: int, evaluatee_id: int):
+        evaluatee_info = self.repo.get_user_clan_and_roles(conn, evaluatee_id)
+        if not evaluatee_info:
+            raise EvaluateeNotFoundException("Evaluado no encontrado")
             
-            if not evaluatee_row:
-                raise HTTPException(status_code=404, detail="Evaluado no encontrado")
-                
-            evaluatee_roles = evaluatee_row["roles"].split(",") if evaluatee_row["roles"] else []
+        evaluatee_roles = evaluatee_info["roles"].split(",") if evaluatee_info["roles"] else []
+        
+        if ROLE_TUTOR not in evaluatee_roles and ROLE_TEAM_LEADER not in evaluatee_roles:
+            raise InvalidRoleException("El usuario a evaluar debe tener rol de Tutor o Team Leader.")
+        
+        evaluator_info = self.repo.get_user_clan_and_roles(conn, evaluator_id)
+        
+        if evaluatee_info and evaluator_info and evaluatee_info["email"] == evaluator_info["email"]:
+            raise InvalidRoleException("No puedes evaluarte a ti mismo.")
             
-            if "tutor" not in evaluatee_roles and "team_leader" not in evaluatee_roles:
-                raise HTTPException(status_code=403, detail="El usuario a evaluar debe tener rol de Tutor o Team Leader.")
+        evaluator_clan = evaluator_info["clan_id"] if evaluator_info else None
+
+        if ROLE_TEAM_LEADER in evaluatee_roles:
+            tl_clans = self.repo.get_team_leader_clans(conn, evaluatee_id)
+            if evaluator_clan not in tl_clans:
+                raise InvalidClanException("No puedes evaluar a un Team Leader que no tiene a cargo tu clan.")
+        else:
+            if evaluator_clan != evaluatee_info["clan_id"]:
+                raise InvalidClanException("Solo puedes evaluar a usuarios de tu mismo clan.")
+
+    def create_evaluation(self, eval_data: EvaluationCreate) -> Optional[Dict[str, Any]]:
+        with engine.begin() as conn:
+            self._validate_period(conn, eval_data.period_id)
             
-            evaluator_query = text("SELECT clan_id FROM users WHERE id = :evaluator_id")
-            evaluator_row = conn.execute(evaluator_query, {"evaluator_id": evaluator_id}).mappings().first()
-            evaluator_clan = evaluator_row["clan_id"] if evaluator_row else None
+            if self.repo.check_evaluation_exists(conn, eval_data.evaluator_id, eval_data.evaluatee_id, eval_data.period_id):
+                raise EvaluationAlreadyExistsException("Ya has evaluado a esta persona en el periodo seleccionado.")
+            
+            if eval_data.evaluator_id is not None:
+                self._validate_permissions(conn, eval_data.evaluator_id, eval_data.evaluatee_id)
 
-            if "team_leader" in evaluatee_roles:
-                tl_clans_query = text("SELECT clan_id FROM team_leader_clans WHERE user_id = :tl_id")
-                tl_clans_rows = conn.execute(tl_clans_query, {"tl_id": eval_data.evaluatee_id}).all()
-                tl_clans = [r.clan_id for r in tl_clans_rows]
-                if evaluator_clan not in tl_clans:
-                    raise HTTPException(status_code=403, detail="No puedes evaluar a un Team Leader que no tiene a cargo tu clan.")
-            else:
-                if evaluator_clan != evaluatee_row["clan_id"]:
-                    raise HTTPException(status_code=403, detail="Solo puedes evaluar a usuarios de tu mismo clan.")
-
-        try:
-            insert_eval_query = text("""
-                INSERT INTO evaluations (evaluator_id, evaluatee_id, template_id, period_id, is_anonymous, status, submitted_at)
-                VALUES (:evaluator_id, :evaluatee_id, :template_id, :period_id, :is_anonymous, :status, :submitted_at)
-            """)
-            result = conn.execute(insert_eval_query, {
-                "evaluator_id": db_evaluator_id,
+            eval_dict = {
                 "evaluatee_id": eval_data.evaluatee_id,
-                "template_id": eval_data.template_id,
+                "form_id": eval_data.form_id,
                 "period_id": eval_data.period_id,
                 "is_anonymous": eval_data.is_anonymous,
                 "status": eval_data.status,
-                "submitted_at": datetime.now() if eval_data.status == "submitted" else None
-            })
-            evaluation_id = result.lastrowid
+                "submitted_at": datetime.now() if eval_data.status == EVALUATION_STATUS_SUBMITTED else None
+            }
+            evaluation_id = self.repo.insert_evaluation(conn, eval_dict)
 
-            insert_answer_query = text("""
-                INSERT INTO evaluation_answers (evaluation_id, question_id, score, comment)
-                VALUES (:evaluation_id, :question_id, :score, :comment)
-            """)
-            for ans in eval_data.answers:
-                conn.execute(insert_answer_query, {
+            # Registro de participacion, en la MISMA transaccion que el contenido.
+            # `evaluation_id` se guarda siempre, tambien en anonimas: el equipo
+            # priorizo que el Coder pueda releer su propio historial por encima de
+            # un anonimato estructural (regla 1). El precio es que el vinculo SI
+            # existe en la BD y solo lo tapan dos filtros de aplicacion
+            # (vw_evaluations_summary y get_evaluator_ids_for_evaluations). Toda
+            # query nueva sobre esta tabla debe filtrar `is_anonymous` a mano.
+            submission_dict = {
+                "evaluator_id": eval_data.evaluator_id,
+                "evaluatee_id": eval_data.evaluatee_id,
+                "period_id": eval_data.period_id,
+                "evaluation_id": evaluation_id,
+            }
+            try:
+                self.repo.insert_evaluation_submission(conn, submission_dict)
+            except IntegrityError:
+                # Red de seguridad contra la condicion de carrera del SELECT previo:
+                # dos peticiones concurrentes del mismo evaluador pueden pasar ambas
+                # el check_evaluation_exists, pero solo una gana el INSERT porque
+                # `uq_submission_once` (evaluator_id, evaluatee_id, period_id) es un
+                # constraint de BD. La perdedora cae aqui y recibe el mismo 409 que
+                # en el caso normal. El SELECT previo sigue existiendo para dar el
+                # mensaje limpio sin depender de un error de driver; el constraint es
+                # el que de verdad garantiza la unicidad.
+                # engine.begin() revierte la transaccion completa, asi que la
+                # evaluacion y sus respuestas no quedan huerfanas.
+                raise EvaluationAlreadyExistsException(
+                    "Ya has evaluado a esta persona en el periodo seleccionado."
+                )
+
+            answers_data = [
+                {
                     "evaluation_id": evaluation_id,
                     "question_id": ans.question_id,
                     "score": ans.score,
                     "comment": ans.comment
-                })
-        except Exception:
-            raise HTTPException(status_code=500, detail="Error interno al guardar la evaluación.")
+                }
+                for ans in eval_data.answers
+            ]
+            self.repo.insert_detalles_evaluacion(conn, answers_data)
+
+            created = self._get_evaluation_detail(conn, evaluation_id)
+            if created is not None:
+                # Se devuelve al propio evaluador su id (no revela nada: es quien
+                # hizo la peticion). En anonima va None, como en la BD.
+                created["evaluator_id"] = None if eval_data.is_anonymous else eval_data.evaluator_id
+            return created
+
+    def _attach_answers(self, conn, evaluations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        eval_ids = [e["id"] for e in evaluations]
+        if not eval_ids:
+            return evaluations
             
-    return get_evaluation_detail(evaluation_id)
+        answers = self.repo.get_answers_for_evaluations(conn, eval_ids)
+        
+        answers_map = {eid: [] for eid in eval_ids}
+        for ans in answers:
+            answers_map[ans["evaluation_id"]].append(ans)
+            
+        for ev in evaluations:
+            ev["answers"] = answers_map[ev["id"]]
+            
+        return evaluations
 
-def _get_answers(conn, evaluation_id: int):
-    query = text("SELECT id, question_id, score, comment FROM evaluation_answers WHERE evaluation_id = :evaluation_id")
-    result = conn.execute(query, {"evaluation_id": evaluation_id})
-    return [dict(row) for row in result.mappings()]
-
-def get_evaluation_detail(evaluation_id: int):
-    with engine.connect() as conn:
-        query = text("""
-            SELECT id, evaluator_id, evaluatee_id, template_id, period_id, is_anonymous, status, created_at, submitted_at
-            FROM evaluations WHERE id = :id
-        """)
-        eval_row = conn.execute(query, {"id": evaluation_id}).mappings().first()
-        if not eval_row:
+    def _get_evaluation_detail(self, conn, evaluation_id: int) -> Optional[Dict[str, Any]]:
+        eval_dict = self.repo.get_evaluation_by_id(conn, evaluation_id)
+        if not eval_dict:
             return None
+        return self._attach_answers(conn, [eval_dict])[0]
 
-        eval_dict = dict(eval_row)
-        eval_dict["answers"] = _get_answers(conn, evaluation_id)
-        return eval_dict
+    def get_evaluations_by_evaluator(self, evaluator_id: int, skip: int = 0, limit: int = 100) -> List[Dict[str, Any]]:
+        """Historial del evaluador: participaciones y sus respuestas.
+
+        El coder siempre puede ver su propio historial completo, incluyendo
+        respuestas, incluso de sus evaluaciones anónimas.
+        """
+        with engine.connect() as conn:
+            submissions = self.repo.get_submissions_by_evaluator(conn, evaluator_id, skip, limit)
+
+            visible = []
+            for s in submissions:
+                s["is_anonymous"] = s.pop("eval_is_anonymous", False)
+                s["answers"] = []
+                if s["evaluation_id"] is not None:
+                    visible.append(s)
+
+            # Solo se cargan respuestas de las participaciones con contenido visible.
+            if visible:
+                answers = self.repo.get_answers_for_evaluations(
+                    conn, [s["evaluation_id"] for s in visible]
+                )
+                answers_map: Dict[int, List[Dict[str, Any]]] = {s["evaluation_id"]: [] for s in visible}
+                for ans in answers:
+                    answers_map[ans["evaluation_id"]].append(ans)
+                for s in visible:
+                    s["answers"] = answers_map[s["evaluation_id"]]
+
+            return submissions
+
+    def get_evaluations_by_evaluatee(self, evaluatee_id: int, period_id: Optional[int] = None, hide_evaluator: bool = False, skip: int = 0, limit: int = 100) -> List[Dict[str, Any]]:
+        """Evaluaciones recibidas por una persona.
+
+        `evaluator_id` ya no vive en `evaluations`; para las no anonimas se
+        resuelve via `evaluation_submissions`. Reglas 1 y 8 de CLAUDE.md:
+        - anonima  -> no existe el dato, para nadie (ni para el admin);
+        - hide_evaluator (el propio TL/Tutor consultando) -> nunca ve quien lo
+          evaluo, ni siquiera en las no anonimas. Solo el admin lo ve.
+        """
+        with engine.connect() as conn:
+            evaluations = self.repo.get_evaluations_by_evaluatee(conn, evaluatee_id, period_id, skip, limit)
+
+            evaluator_map: Dict[int, int] = {}
+            if not hide_evaluator:
+                # Ni siquiera se consulta el dato si quien mira no puede verlo.
+                identifiable = [ev["id"] for ev in evaluations if not ev["is_anonymous"]]
+                evaluator_map = self.repo.get_evaluator_ids_for_evaluations(conn, identifiable)
+
+            for ev in evaluations:
+                ev["evaluator_id"] = None if (ev["is_anonymous"] or hide_evaluator) else evaluator_map.get(ev["id"])
+
+            return self._attach_answers(conn, evaluations)
+
+# We export a singleton instance for backward compatibility with other routes
+# that might import the module directly, but it can be replaced by DI.
+evaluation_service = EvaluationService()
+
+# Facade methods to preserve exact backward compatibility for old imports
+def create_evaluation(eval_data: EvaluationCreate):
+    return evaluation_service.create_evaluation(eval_data)
 
 def get_evaluations_by_evaluator(evaluator_id: int, skip: int = 0, limit: int = 100):
-    with engine.connect() as conn:
-        query = text("""
-            SELECT id, evaluator_id, evaluatee_id, template_id, period_id, is_anonymous, status, created_at, submitted_at
-            FROM evaluations WHERE evaluator_id = :evaluator_id
-            LIMIT :limit OFFSET :skip
-        """)
-        result = conn.execute(query, {"evaluator_id": evaluator_id, "limit": limit, "skip": skip})
-
-        evaluations = []
-        for row in result.mappings():
-            eval_dict = dict(row)
-            eval_dict["answers"] = _get_answers(conn, eval_dict["id"])
-            evaluations.append(eval_dict)
-
-        return evaluations
+    return evaluation_service.get_evaluations_by_evaluator(evaluator_id, skip, limit)
 
 def get_evaluations_by_evaluatee(evaluatee_id: int, period_id: Optional[int] = None, hide_evaluator: bool = False, skip: int = 0, limit: int = 100):
-    with engine.connect() as conn:
-        query_str = """
-            SELECT id, evaluator_id, evaluatee_id, template_id, period_id, is_anonymous, status, created_at, submitted_at
-            FROM evaluations WHERE evaluatee_id = :evaluatee_id
-        """
-        params = {"evaluatee_id": evaluatee_id, "limit": limit, "skip": skip}
-        if period_id is not None:
-            query_str += " AND period_id = :period_id"
-            params["period_id"] = period_id
-
-        query_str += " LIMIT :limit OFFSET :skip"
-
-        result = conn.execute(text(query_str), params)
-
-        evaluations = []
-        for row in result.mappings():
-            eval_dict = dict(row)
-            if eval_dict["is_anonymous"] or hide_evaluator:
-                eval_dict["evaluator_id"] = None
-
-            eval_dict["answers"] = _get_answers(conn, eval_dict["id"])
-            evaluations.append(eval_dict)
-
-        return evaluations
+    return evaluation_service.get_evaluations_by_evaluatee(evaluatee_id, period_id, hide_evaluator, skip, limit)

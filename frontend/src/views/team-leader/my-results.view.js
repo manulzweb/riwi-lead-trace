@@ -1,9 +1,12 @@
 import { navBarComponent } from "../../components/navbar";
+import { dropdownComponent, setupDropdown } from "../../components/dropdown";
 import { metricsService } from "../../services/metrics.service";
 import { evaluationService } from "../../services/evaluation.service";
 import { periodService } from "../../services/periods.service";
 import { authService } from "../../services/auth.service";
 import { showToast } from "../../components/alerts";
+import { emptyStateComponent } from "../../components/emptyState";
+import { escapeHtml } from "../../utils/validators";
 
 export const renderMyResults = () => `
   ${navBarComponent()}
@@ -14,11 +17,9 @@ export const renderMyResults = () => `
         <h1 class="mt-1 text-4xl font-black tracking-tight text-[var(--text-main)]">Mis resultados</h1>
         <p class="mt-4 text-[var(--text-muted)]">Consulta cómo te han evaluado los Coders de tu clan.</p>
       </div>
-      <div>
-        <select id="period-selector" 
-          class="rounded-2xl border border-[var(--border-main)] bg-[var(--bg-panel)] px-4 py-3 text-sm text-[var(--text-main)] focus:border-[var(--brand-hover)] focus:outline-none">
-          <option value="">Cargando periodos...</option>
-        </select>
+      <div id="period-selector-container" class="w-64">
+        <label class="mb-2 block text-sm font-medium text-[var(--text-main)] sr-only" for="period-selector-btn">Periodo</label>
+        ${dropdownComponent('period-selector', [{ value: '', label: 'Cargando periodos...' }], '')}
       </div>
     </section>
 
@@ -39,11 +40,24 @@ export const renderMyResults = () => `
 
     <section class="mt-10">
       <h2 class="text-2xl font-bold text-[var(--text-main)] mb-6">Comentarios y Detalles</h2>
-      <div id="feedback-list" class="grid gap-4">
-        <div class="h-20 animate-pulse rounded-3xl bg-[var(--bg-panel)]"></div>
+      <div id="feedback-list" class="grid gap-4" aria-live="polite" aria-busy="true">
+        <div class="h-20 skeleton-shimmer rounded-3xl"></div>
       </div>
     </section>
   </main>
+`;
+
+// Estado de error del contenedor de feedback, con reintento. `retryId` permite
+// distinguir el reintento de la carga inicial del de un periodo puntual.
+const renderLoadError = (message, retryId) => `
+  <article class="rounded-3xl border border-[var(--danger-border)] bg-[var(--danger-bg)] p-10 text-center">
+    <p class="text-[var(--danger-text)] font-bold">${escapeHtml(message)}</p>
+    <p class="mt-2 text-sm text-[var(--text-muted)]">Revisa tu conexión e inténtalo de nuevo.</p>
+    <button type="button" id="${retryId}"
+      class="mt-6 inline-flex items-center justify-center rounded-2xl bg-[var(--brand-bg)] px-5 py-3 text-sm font-bold text-[var(--brand-text)] hover:bg-[var(--brand-hover)] transition shadow-md cursor-pointer focus:ring-4 focus:ring-[var(--border-main)]">
+      Reintentar
+    </button>
+  </article>
 `;
 
 export const setupMyResults = async () => {
@@ -58,37 +72,66 @@ export const setupMyResults = async () => {
   const currentUser = authService.getSession();
   let periods = [];
 
+  // Carga inicial extraida para poder reintentarla desde el estado de error.
+  const init = async () => {
+  feedbackList.setAttribute("aria-busy", "true");
   try {
     periods = await periodService.get();
 
     if (periods.length === 0) {
-      periodSelector.innerHTML = '<option value="">No hay periodos</option>';
+      document.getElementById('period-selector-container').outerHTML = `
+        <div id="period-selector-container" class="w-64">
+          ${dropdownComponent('period-selector', [{ value: '', label: 'No hay periodos' }], '')}
+        </div>`;
+      setupDropdown('period-selector');
       feedbackList.innerHTML = '<p class="text-[var(--text-muted)]">No hay periodos registrados.</p>';
       return;
     }
 
-    periodSelector.innerHTML = periods.map(p =>
-      `<option value="${p.id}" ${p.is_active ? 'selected' : ''}>${p.name}</option>`
-    ).join("");
-
     const activePeriod = periods.find(p => p.is_active) || periods[0];
+    const periodOptions = periods.map(p => ({ value: p.id, label: p.name }));
+
+    document.getElementById('period-selector-container').outerHTML = `
+      <div id="period-selector-container" class="w-64">
+        <label class="mb-2 block text-sm font-medium text-[var(--text-main)] sr-only" for="period-selector-btn">Periodo</label>
+        ${dropdownComponent('period-selector', periodOptions, activePeriod.id)}
+      </div>`;
+    setupDropdown('period-selector');
+
+    // After re-rendering, get the new input
+    const periodInput = document.getElementById("period-selector");
 
     // Cargar datos del periodo inicial
     await loadResultsForPeriod(currentUser.id, activePeriod.id);
 
-    periodSelector.addEventListener("change", async () => {
-      const selectedPeriodId = parseInt(periodSelector.value);
-      await loadResultsForPeriod(currentUser.id, selectedPeriodId);
-    });
+    if (periodInput) {
+      periodInput.addEventListener("change", async () => {
+        const selectedPeriodId = parseInt(periodInput.value);
+        await loadResultsForPeriod(currentUser.id, selectedPeriodId);
+      });
+    }
 
   } catch (err) {
     showToast("Error", "error", "No se pudo cargar la información de resultados.");
     console.error(err);
+    feedbackList.innerHTML = renderLoadError("No se pudo cargar la información de resultados.", "my-results-retry");
+    document.getElementById("my-results-retry")?.addEventListener("click", init);
+  } finally {
+    feedbackList.setAttribute("aria-busy", "false");
   }
+  };
+
+  await init();
 
   async function loadResultsForPeriod(userId, periodId) {
     try {
-      feedbackList.innerHTML = '<div class="text-center py-4 text-[var(--text-muted)] animate-pulse">Cargando comentarios...</div>';
+      feedbackList.setAttribute("aria-busy", "true");
+      feedbackList.innerHTML = `
+        <div class="flex flex-col gap-4">
+          <div class="h-20 skeleton-shimmer rounded-3xl"></div>
+          <div class="h-20 skeleton-shimmer rounded-3xl"></div>
+        </div>
+      `;
 
       const [summary, evaluations] = await Promise.all([
         metricsService.getSummary(periodId),
@@ -110,18 +153,17 @@ export const setupMyResults = async () => {
         if (myMetrics.status === "En riesgo") statusColor = "text-red-500";
         if (myMetrics.status === "Estable") statusColor = "text-amber-500";
 
-        evalStatus.innerHTML = `<span class="${statusColor}">${myMetrics.status}</span>`;
+        evalStatus.innerHTML = `<span class="${statusColor}">${escapeHtml(myMetrics.status)}</span>`;
       }
 
       // Filtrar evaluaciones pertenecientes al periodo seleccionado
       const periodEvaluations = evaluations.filter(e => e.period_id === periodId && e.status === "submitted");
 
       if (periodEvaluations.length === 0) {
-        feedbackList.innerHTML = `
-          <article class="rounded-3xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-10 text-center text-[var(--text-muted)]">
-            No has recibido ninguna evaluación para este periodo.
-          </article>
-        `;
+        feedbackList.innerHTML = emptyStateComponent(
+          "Sin feedback",
+          "No has recibido evaluaciones para este periodo."
+        );
         return;
       }
 
@@ -149,13 +191,18 @@ export const setupMyResults = async () => {
       feedbackList.innerHTML = textAnswers.map(ans => `
         <article class="rounded-2xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-5 shadow-sm">
           <p class="text-sm font-semibold uppercase tracking-wider text-[var(--brand-bg)] mb-2">Comentario de Coder</p>
-          <p class="text-[var(--text-main)] italic">"${ans.comment}"</p>
+          <p class="text-[var(--text-main)] italic">"${escapeHtml(ans.comment)}"</p>
         </article>
       `).join("");
 
     } catch (err) {
       showToast("Error", "error", "No se pudieron obtener tus resultados.");
       console.error(err);
+      feedbackList.innerHTML = renderLoadError("No se pudieron obtener tus resultados.", "period-results-retry");
+      document.getElementById("period-results-retry")
+        ?.addEventListener("click", () => loadResultsForPeriod(userId, periodId));
+    } finally {
+      feedbackList.setAttribute("aria-busy", "false");
     }
   }
 };

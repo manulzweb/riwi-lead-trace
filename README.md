@@ -13,15 +13,15 @@
 
 ## Notas tecnicas
 
-Si una evaluacion es anonima, el `evaluator_id` no se guarda en la base de datos. No hay forma de recuperar despues quien la hizo.
+El contenido de una evaluacion y la participacion de quien la envio viven en tablas separadas: `evaluations` (respuestas) y `evaluation_submissions` (quien evaluo a quien, en que periodo). Las unen por la columna `evaluation_id`. Si la evaluacion es anonima esa columna queda en NULL, asi que **el vinculo entre la persona y sus respuestas nunca llega a existir**: no hay consulta —ni acceso directo a la base— que permita reconstruirlo. El precio, aceptado a proposito: el propio autor tampoco puede volver a ver sus respuestas anonimas; si pudiera el, podria el admin.
 
-El backend revisa el `evaluator_id` antes de insertar, para que un Coder no evalue dos veces a la misma persona en el mismo periodo. Ese id llega en el body de la peticion, no de un token.
+Para que un Coder no evalue dos veces a la misma persona en el mismo periodo hay un constraint real de base de datos, `uq_submission_once UNIQUE (evaluator_id, evaluatee_id, period_id)` sobre `evaluation_submissions`. Como ahi el evaluador **siempre** se guarda (sea anonima o no), la regla cubre los dos casos. El backend ademas consulta antes de insertar para dar un mensaje claro, pero la autoridad es la BD: si dos peticiones se cruzan, el constraint las frena y el error se traduce a un `409`. El `evaluator_id` llega en el body de la peticion, no de un token.
 
-El ICP (Indice de Calidad Percibida) se calcula al consultar, no se guarda en tablas. Es un promedio ponderado por pregunta (`questions.weight_percent`, que las preguntas de escala activas de un template deben sumar 100). Con menos del minimo de evaluaciones no se publica puntaje. El estado (Solido, Estable, En riesgo) sale de comparar contra dos umbrales fijos en el codigo.
+El ICP (Indice de Calidad Percibida) se calcula al consultar, no se guarda en tablas. Es un promedio ponderado por pregunta (`questions.weight_percent`, que las preguntas de escala activas de un form deben sumar 100). Con menos del minimo de evaluaciones no se publica puntaje. El estado (Solido, Estable, En riesgo) sale de comparar contra umbrales configurables por el Admin (con valores de respaldo fijos en el codigo si no hay configuracion guardada).
 
 El login valida la contrasena con bcrypt en el servidor. No usamos JWT: el front recibe el usuario ya validado y decide que mostrar segun el rol que le llega.
 
-Los resumenes con IA (API de Claude) reciben solo promedios y conteos, nunca los comentarios ni quien los escribio. Se cachean por persona y periodo. La IA tambien revisa, al editar el texto de una pregunta, que siga encajando en su categoria.
+Los resumenes con IA (Google Gemini) reciben solo promedios y conteos, nunca los comentarios ni quien los escribio. Se cachean por persona y periodo. La IA tambien revisa, al editar el texto de una pregunta, que siga encajando en su categoria.
 
 Las queries son SQL directo con `text()` de SQLAlchemy, sin ORM declarativo.
 
@@ -31,7 +31,7 @@ Las queries son SQL directo con `text()` de SQLAlchemy, sin ORM declarativo.
 riwi-lead-trace/
 ├── frontend/      # SPA Vanilla JS (ES Modules) + Vite
 ├── backend/       # API REST: FastAPI + SQLAlchemy (SQL plano) + MySQL
-├── database/      # schema.sql (3FN) + datos semilla
+├── database/      # 01_ddl.sql (3FN) + 02_dml.sql (seed) + 03_mock_history.sql (datos de prueba) + 04_views.sql (vistas)
 ├── docs/          # documentacion Scrum y tecnica
 └── mockups/       # prototipos de las pantallas del MVP
 ```
@@ -41,8 +41,11 @@ Detalle del backend en [`backend/README.md`](./backend/README.md).
 ## Local
 
 ```bash
-# Base de datos
-mysql -u root -p < database/schema.sql
+# Base de datos (en este orden; 04_views.sql es requerido, /metrics depende de sus vistas)
+mysql -u root -p < database/01_ddl.sql
+mysql -u root -p riwi_lead_trace < database/02_dml.sql
+mysql -u root -p riwi_lead_trace < database/03_mock_history.sql   # opcional: datos de prueba
+mysql -u root -p riwi_lead_trace < database/04_views.sql
 
 # Backend
 cd backend
@@ -73,7 +76,7 @@ Detalle en [`docs/11-entregables-y-evaluacion.md`](./docs/11-entregables-y-evalu
 | Backend | Python + FastAPI, SQLAlchemy (`text()`), Pydantic |
 | Base de datos | MySQL, normalizada a 3FN |
 | Auth | bcrypt en el login + sesion en `localStorage` |
-| IA | Claude API (`anthropic`), con cache de resumenes |
+| IA | Google Gemini (`google-generativeai`), con cache de resumenes |
 
 ## Tests
 

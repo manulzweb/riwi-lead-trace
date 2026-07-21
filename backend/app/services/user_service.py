@@ -1,130 +1,123 @@
-from typing import Optional
-
-from sqlalchemy import text
+from typing import Optional, List, Dict, Any
 from app.config.database import engine
 from app.config.security import hash_password
 from app.schemas.user import UserCreate, UserUpdate
+from app.repositories.user_repository import UserRepository
+from app.exceptions.user_exceptions import UserNotFoundException, EmailAlreadyExistsException
+from sqlalchemy.exc import IntegrityError
 
-def _format_user(row):
-    user_dict = dict(row)
-    user_dict["id"] = str(user_dict["id"])
-    user_dict["roles"] = user_dict["roles"].split(",") if user_dict["roles"] else []
-    return user_dict
+class UserService:
+    def __init__(self, repository: UserRepository = None):
+        self.repo = repository or UserRepository()
+
+    def _format_user(self, row_dict: Dict[str, Any]) -> Dict[str, Any]:
+        user_dict = dict(row_dict)
+        user_dict["roles"] = user_dict["roles"].split(",") if user_dict["roles"] else []
+        return user_dict
+
+    def get_users(self, role: Optional[str] = None) -> List[Dict[str, Any]]:
+        with engine.connect() as conn:
+            users = self.repo.get_users(conn, role)
+            return [self._format_user(u) for u in users]
+
+    def get_evaluables(self, evaluator_id: Optional[int] = None) -> List[Dict[str, Any]]:
+        with engine.connect() as conn:
+            users = self.repo.get_evaluables(conn)
+            if evaluator_id is not None:
+                evaluator = self.repo.get_user_by_id(conn, evaluator_id)
+                if evaluator:
+                    evaluator_email = evaluator["email"]
+                    users = [u for u in users if u["email"] != evaluator_email]
+            return [self._format_user(u) for u in users]
+
+    def get_user(self, user_id: int) -> Optional[Dict[str, Any]]:
+        with engine.connect() as conn:
+            user = self.repo.get_user_by_id(conn, user_id)
+            return self._format_user(user) if user else None
+
+    def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
+        with engine.connect() as conn:
+            user = self.repo.get_user_by_email(conn, email)
+            return self._format_user(user) if user else None
+
+    def create_user(self, user: UserCreate) -> Dict[str, Any]:
+        with engine.begin() as conn:
+            existing = self.repo.get_user_by_email(conn, user.email)
+            if existing:
+                raise EmailAlreadyExistsException("El email ya está registrado")
+
+            user_data = {
+                "full_name": user.name,
+                "email": user.email,
+                "password_hash": hash_password(user.password),
+                "clan_id": user.clan_id,
+                "is_active": user.is_active
+            }
+            try:
+                new_user_id = self.repo.insert_user(conn, user_data)
+            except IntegrityError:
+                raise EmailAlreadyExistsException("Error de integridad: Posible email duplicado u otra restricción")
+
+            if user.role_ids:
+                roles_data = [{"user_id": new_user_id, "role_id": rid} for rid in user.role_ids]
+                self.repo.insert_user_roles(conn, roles_data)
+                
+        return self.get_user(new_user_id)
+
+    def update_user(self, user_id: int, user: UserUpdate) -> Optional[Dict[str, Any]]:
+        with engine.begin() as conn:
+            existing_user = self.repo.get_user_by_id(conn, user_id)
+            if not existing_user:
+                raise UserNotFoundException("Usuario no encontrado")
+
+            values = {}
+            if user.name is not None: values["full_name"] = user.name
+            if user.email is not None: values["email"] = user.email
+            if user.password is not None: values["password_hash"] = hash_password(user.password)
+            if user.clan_id is not None: values["clan_id"] = user.clan_id
+            if user.is_active is not None: values["is_active"] = user.is_active
+
+            if values:
+                try:
+                    self.repo.update_user(conn, user_id, values)
+                except IntegrityError:
+                    raise EmailAlreadyExistsException("El email ya pertenece a otro usuario")
+                
+            if user.role_ids is not None:
+                self.repo.delete_user_roles(conn, user_id)
+                if user.role_ids:
+                    roles_data = [{"user_id": user_id, "role_id": rid} for rid in user.role_ids]
+                    self.repo.insert_user_roles(conn, roles_data)
+
+        return self.get_user(user_id)
+
+    def delete_user(self, user_id: int) -> bool:
+        with engine.begin() as conn:
+            deleted = self.repo.delete_user(conn, user_id)
+            if not deleted:
+                raise UserNotFoundException("Usuario no encontrado")
+        return True
+
+# Exportar una instancia global por compatibilidad y simplicidad
+user_service = UserService()
 
 def get_users(role: Optional[str] = None):
-    query_str = """
-        SELECT u.id, u.full_name AS name, u.email, u.is_active, u.clan_id, GROUP_CONCAT(r.name) as roles
-        FROM users u
-        LEFT JOIN user_roles ur ON u.id = ur.user_id
-        LEFT JOIN roles r ON ur.role_id = r.id
-    """
-    params = {}
-    if role is not None:
-        query_str += " WHERE r.name = :role"
-        params["role"] = role
-
-    query_str += " GROUP BY u.id"
-    
-    with engine.connect() as conn:
-        result = conn.execute(text(query_str), params)
-        return [_format_user(row) for row in result.mappings()]
+    return user_service.get_users(role)
 
 def get_evaluables():
-    query = text("""
-        SELECT u.id, u.full_name AS name, u.email, u.is_active, u.clan_id, GROUP_CONCAT(r.name) as roles
-        FROM users u
-        LEFT JOIN user_roles ur ON u.id = ur.user_id
-        LEFT JOIN roles r ON ur.role_id = r.id
-        WHERE r.name IN ('team_leader', 'tutor') AND u.is_active = 1
-        GROUP BY u.id
-    """)
-    with engine.connect() as conn:
-        result = conn.execute(query)
-        return [_format_user(row) for row in result.mappings()]
+    return user_service.get_evaluables()
 
 def get_user(user_id: int):
-    query = text("""
-        SELECT u.id, u.full_name AS name, u.email, u.is_active, u.clan_id, GROUP_CONCAT(r.name) as roles
-        FROM users u
-        LEFT JOIN user_roles ur ON u.id = ur.user_id
-        LEFT JOIN roles r ON ur.role_id = r.id
-        WHERE u.id = :id
-        GROUP BY u.id
-    """)
-    with engine.connect() as conn:
-        result = conn.execute(query, {"id": user_id}).mappings().first()
-        if not result:
-            return None
-        return _format_user(result)
+    return user_service.get_user(user_id)
 
 def get_user_by_email(email: str):
-    query = text("""
-        SELECT u.id, u.full_name AS name, u.email, u.password_hash AS password, u.is_active, u.clan_id, GROUP_CONCAT(r.name) as roles
-        FROM users u
-        LEFT JOIN user_roles ur ON u.id = ur.user_id
-        LEFT JOIN roles r ON ur.role_id = r.id
-        WHERE u.email = :email
-        GROUP BY u.id
-    """)
-    with engine.connect() as conn:
-        result = conn.execute(query, {"email": email}).mappings().first()
-        if not result:
-            return None
-        return _format_user(result)
+    return user_service.get_user_by_email(email)
 
 def create_user(user: UserCreate):
-    with engine.begin() as conn:
-        query = text("""
-            INSERT INTO users (full_name, email, password_hash, clan_id, is_active)
-            VALUES (:full_name, :email, :password_hash, :clan_id, :is_active)
-        """)
-        result = conn.execute(query, {
-            "full_name": user.name,
-            "email": user.email,
-            "password_hash": hash_password(user.password),
-            "clan_id": user.clan_id,
-            "is_active": user.is_active
-        })
-        new_user_id = result.lastrowid
-        
-        if user.role_ids:
-            role_query = text("INSERT INTO user_roles (user_id, role_id) VALUES (:user_id, :role_id)")
-            for rid in user.role_ids:
-                conn.execute(role_query, {"user_id": new_user_id, "role_id": rid})
-                
-    return get_user(new_user_id)
+    return user_service.create_user(user)
 
 def update_user(user_id: int, user: UserUpdate):
-    with engine.begin() as conn:
-        values = {}
-        if user.name is not None:
-            values["full_name"] = user.name
-        if user.email is not None:
-            values["email"] = user.email
-        if user.password is not None:
-            values["password_hash"] = hash_password(user.password)
-        if user.clan_id is not None:
-            values["clan_id"] = user.clan_id
-        if user.is_active is not None:
-            values["is_active"] = user.is_active
-
-        if values:
-            set_clause = ", ".join(f"{column} = :{column}" for column in values)
-            query = text(f"UPDATE users SET {set_clause} WHERE id = :id")
-            conn.execute(query, {**values, "id": user_id})
-            
-        if user.role_ids is not None:
-            conn.execute(text("DELETE FROM user_roles WHERE user_id = :id"), {"id": user_id})
-            role_query = text("INSERT INTO user_roles (user_id, role_id) VALUES (:user_id, :role_id)")
-            for rid in user.role_ids:
-                conn.execute(role_query, {"user_id": user_id, "role_id": rid})
-
-    return get_user(user_id)
+    return user_service.update_user(user_id, user)
 
 def delete_user(user_id: int):
-    with engine.begin() as conn:
-        query = text("DELETE FROM users WHERE id = :id")
-        result = conn.execute(query, {"id": user_id})
-        if result.rowcount == 0:
-            return False
-    return True
+    return user_service.delete_user(user_id)

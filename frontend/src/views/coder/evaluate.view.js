@@ -1,14 +1,36 @@
 import { navBarComponent } from "../../components/navbar";
+import { dropdownComponent, setupDropdown } from "../../components/dropdown";
 import { userService } from "../../services/users.service";
 import { evaluationService } from "../../services/evaluation.service";
 import { periodService } from "../../services/periods.service";
 import { authService } from "../../services/auth.service";
 import { showToast } from "../../components/alerts";
 import { renderRoute } from "../../router/router";
+import { z } from "zod";
+
+// Preguntas de escala/si-no son obligatorias; texto abierto es opcional. La
+// validacion vive aca en vez de un if/else imperativo por cada pregunta --
+// mas facil de leer que "que hace falta para poder enviar" de un vistazo.
+const answerSchema = z.object({
+  question_id: z.number(),
+  type: z.enum(["scale", "scale_1_5", "yes_no", "open_text", "text"]),
+  score: z.number().min(1).max(5).nullable(),
+  comment: z.string().nullable(),
+}).superRefine((answer, ctx) => {
+  const isScale = answer.type === "scale" || answer.type === "scale_1_5";
+  if (isScale && (answer.score === null || Number.isNaN(answer.score))) {
+    ctx.addIssue({ code: "custom", message: "Selecciona una opción.", path: ["score"] });
+  }
+  if (answer.type === "yes_no" && !answer.comment) {
+    ctx.addIssue({ code: "custom", message: "Selecciona una opción.", path: ["comment"] });
+  }
+});
+
+const evaluationAnswersSchema = z.array(answerSchema).min(1, "La evaluación debe tener al menos una pregunta.");
 
 let allUsers = [];
 let activePeriod = null;
-let currentTemplate = null;
+let currentForm = null;
 
 export const renderEvaluate = () => `
   ${navBarComponent()}
@@ -18,13 +40,18 @@ export const renderEvaluate = () => `
       <p class="mt-2 text-[var(--text-muted)]">Completa el formulario estructurado para evaluar a tu Team Leader o Tutor.</p>
     </div>
 
-    <div class="mb-8 hidden" id="progress-container">
-      <div class="h-2 w-full rounded-full bg-[var(--border-main)]">
-        <div id="progress-bar-fill" class="h-2 w-0 rounded-full bg-[var(--brand-bg)] transition-all duration-300"></div>
+    <div class="mb-8 hidden sticky top-0 z-40 bg-[var(--bg-base)]/80 py-4 backdrop-blur-md border-b border-[var(--border-main)] -mx-6 px-6" id="progress-container">
+      <div class="flex justify-between items-center mb-2">
+        <div class="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
+          <span id="progress-text">0 de 0 respondidas</span> (<span id="progress-percentage">0%</span>)
+        </div>
+        <div id="autosave-indicator" class="text-xs font-bold text-[var(--brand-bg)] opacity-0 transition-opacity duration-300 flex items-center gap-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+          Guardado
+        </div>
       </div>
-      <div class="mt-2 flex justify-between text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
-        <span id="progress-text">0 de 0 respondidas</span>
-        <span id="progress-percentage">0%</span>
+      <div class="h-2 w-full rounded-full bg-[var(--border-main)] overflow-hidden">
+        <div id="progress-bar-fill" class="h-full w-0 rounded-full bg-[var(--brand-bg)] transition-all duration-300"></div>
       </div>
     </div>
 
@@ -32,22 +59,20 @@ export const renderEvaluate = () => `
       <section class="rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-8 shadow-sm">
         
         <div class="grid gap-6 md:grid-cols-2 mb-8">
-          <div>
+          <div id="target-role-container">
             <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="target-role">¿A quién evalúas?</label>
-            <select id="target-role" required
-              class="w-full rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] px-4 py-3 text-[var(--text-main)] focus:border-[var(--brand-hover)] focus:outline-none">
-              <option value="">Selecciona un rol...</option>
-              <option value="team_leader">Team Leader</option>
-              <option value="tutor">Tutor</option>
-            </select>
+            ${dropdownComponent('target-role', [
+              { value: '', label: 'Selecciona un rol...' },
+              { value: 'team_leader', label: 'Team Leader' },
+              { value: 'tutor', label: 'Tutor' }
+            ], '')}
           </div>
 
-          <div>
+          <div id="evaluatee-container">
             <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="evaluatee">Persona a evaluar</label>
-            <select id="evaluatee" disabled required
-              class="w-full rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] px-4 py-3 text-[var(--text-main)] focus:border-[var(--brand-hover)] focus:outline-none disabled:cursor-not-allowed disabled:text-[var(--text-muted)]">
-              <option value="">Primero selecciona un rol...</option>
-            </select>
+            ${dropdownComponent('evaluatee', [
+              { value: '', label: 'Primero selecciona un rol...' }
+            ], '')}
           </div>
         </div>
 
@@ -56,12 +81,17 @@ export const renderEvaluate = () => `
 
       <section class="flex flex-col sm:flex-row sm:items-center gap-4 rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm">
         <label class="relative inline-flex cursor-pointer items-center">
-          <input type="checkbox" id="is-anonymous" name="anonymous" class="peer sr-only" />
-          <div class="peer h-6 w-11 rounded-full bg-[var(--border-main)] after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-[var(--brand-bg)] peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--brand-hover)]"></div>
+          <input type="checkbox" id="is-anonymous" name="anonymous" class="peer sr-only" aria-describedby="anon-help" />
+          <span class="sr-only">Enviar esta evaluación de forma anónima</span>
+          <div aria-hidden="true" class="peer h-6 w-11 rounded-full bg-[var(--border-main)] after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-[var(--brand-bg)] peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--brand-hover)]"></div>
         </label>
         <div>
           <h3 class="text-base font-bold text-[var(--text-main)]">Envío Anónimo</h3>
-          <p class="text-sm text-[var(--text-muted)]">Si lo activas, nadie (incluyendo coordinadores y administradores) sabrá quién envió esta evaluación. El anonimato es irreversible.</p>
+          <p id="anon-help" class="text-sm text-[var(--text-muted)]">
+            Si lo activas, tus respuestas se guardan sin ningún vínculo con tu identidad: ni el equipo administrador
+            puede saber quién las envió. Queda registrado que participaste, pero no qué respondiste — por eso el
+            detalle tampoco aparecerá en tu historial. Es irreversible.
+          </p>
         </div>
       </section>
 
@@ -94,7 +124,39 @@ export const setupEvaluate = async () => {
 
   if (!form || !submitBtn || !targetRole || !evaluatee || !qContainer) return;
 
+  setupDropdown('target-role');
+  setupDropdown('evaluatee');
+
   const currentUser = authService.getSession();
+
+  // Lógica centralizada para auto-guardado
+  let autosaveTimeout;
+  const saveDraftLocally = () => {
+    const answers = {};
+    qContainer.querySelectorAll("[data-question-id]").forEach(el => {
+      if (el.dataset.selectedValue) {
+        answers[el.dataset.questionId] = el.dataset.selectedValue;
+      }
+    });
+
+    const draft = {
+      role: targetRole.value,
+      evaluatee: evaluatee.value,
+      anonymous: anonCheck.checked,
+      answers: answers
+    };
+    localStorage.setItem("evaluation_draft", JSON.stringify(draft));
+
+    // Feedback visual
+    const indicator = document.getElementById("autosave-indicator");
+    if (indicator) {
+      indicator.classList.remove("opacity-0");
+      clearTimeout(autosaveTimeout);
+      autosaveTimeout = setTimeout(() => {
+        indicator.classList.add("opacity-0");
+      }, 2000);
+    }
+  };
 
   // Función para actualizar la barra de progreso
   const updateProgress = () => {
@@ -110,6 +172,9 @@ export const setupEvaluate = async () => {
     progressBarFill.style.width = `${percentage}%`;
     progressText.textContent = `${answered} de ${questionElements.length} respondidas`;
     progressPercent.textContent = `${percentage}%`;
+
+    // Disparar auto-guardado cada vez que cambia el progreso
+    saveDraftLocally();
   };
 
   try {
@@ -130,52 +195,94 @@ export const setupEvaluate = async () => {
   const handleRoleChange = async () => {
     const role = targetRole.value;
     qContainer.innerHTML = "";
-    currentTemplate = null;
+    currentForm = null;
     progressContainer.classList.add("hidden");
 
     if (!role) {
-      evaluatee.disabled = true;
-      evaluatee.innerHTML = '<option value="">Primero selecciona un rol...</option>';
+      document.getElementById('evaluatee-container').outerHTML = `
+        <div id="evaluatee-container">
+          <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="evaluatee">Persona a evaluar</label>
+          ${dropdownComponent('evaluatee', [{ value: '', label: 'Primero selecciona un rol...' }], '')}
+        </div>`;
+      setupDropdown('evaluatee');
       return;
     }
 
     try {
-      qContainer.innerHTML = '<div class="text-center py-4 text-[var(--text-muted)] animate-pulse">Cargando datos...</div>';
+      qContainer.innerHTML = `
+        <div class="flex flex-col gap-6">
+          <div class="h-24 skeleton-shimmer rounded-3xl"></div>
+          <div class="h-24 skeleton-shimmer rounded-3xl"></div>
+          <div class="h-24 skeleton-shimmer rounded-3xl"></div>
+        </div>
+      `;
 
-      // evaluationService.getForm ya unicamente acepta target_role (ver
-      // backend/app/routes/form_routes.py); devuelve la plantilla o lanza
-      // si no hay ninguna activa para ese rol.
-      const [template, previousEvaluations] = await Promise.all([
+      const [form, previousEvaluations] = await Promise.all([
         evaluationService.getForm(role),
         evaluationService.getByEvaluator(currentUser.id)
       ]);
-      currentTemplate = template;
+      currentForm = form;
 
+      // Personas ya evaluadas en este periodo, para sacarlas del selector.
+      //
+      // El filtro es solo por periodo, sin `form_id`, por dos razones: (1) la
+      // regla real de no-duplicado es (evaluador, evaluado, periodo) --el
+      // constraint `uq_submission_once`--, el formulario no entra; (2) las
+      // participaciones anonimas llegan con `form_id` en null (no hay vinculo
+      // con el contenido), asi que compararlo las descartaba y el coder volvia
+      // a ver en la lista a alguien que ya evaluo anonimamente, para chocar
+      // luego contra un 409. La lista de candidatos ya viene filtrada por rol,
+      // asi que no hace falta desambiguar por formulario.
       const evaluatedIds = previousEvaluations
-        .filter(e => e.period_id === activePeriod.id && e.template_id === currentTemplate.id)
+        .filter(e => e.period_id === activePeriod.id)
         .map(e => String(e.evaluatee_id));
 
       const filtered = allUsers.filter(u => u.roles?.includes(role) && u.id !== currentUser.id && !evaluatedIds.includes(String(u.id)));
 
       if (filtered.length === 0) {
-        evaluatee.innerHTML = '<option value="">Ya has evaluado a todos para este rol</option>';
-        evaluatee.disabled = true;
+        document.getElementById('evaluatee-container').outerHTML = `
+          <div id="evaluatee-container">
+            <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="evaluatee">Persona a evaluar</label>
+            ${dropdownComponent('evaluatee', [{ value: '', label: 'Ya has evaluado a todos para este rol' }], '')}
+          </div>`;
+        setupDropdown('evaluatee');
         qContainer.innerHTML = '<div class="text-center py-4 text-[var(--brand-bg)] font-bold">¡Has completado todas las evaluaciones para este rol en el periodo actual!</div>';
         return;
       }
 
-      evaluatee.disabled = false;
-      evaluatee.innerHTML = '<option value="">Selecciona una persona...</option>' +
-        filtered.map(u => `<option value="${u.id}">${u.name} (${u.email})</option>`).join("");
+      const evaluateeOptions = [
+        { value: '', label: 'Selecciona una persona...' },
+        ...filtered.map(u => ({ value: u.id, label: `${u.name} (${u.email})` }))
+      ];
+      
+      document.getElementById('evaluatee-container').outerHTML = `
+        <div id="evaluatee-container">
+          <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="evaluatee">Persona a evaluar</label>
+          ${dropdownComponent('evaluatee', evaluateeOptions, '')}
+        </div>`;
+      setupDropdown('evaluatee');
 
-      renderQuestions(currentTemplate.questions);
+      renderQuestions(currentForm.questions);
 
       progressContainer.classList.remove("hidden");
       updateProgress();
-      loadDraft(role); // Cargar borrador si existe para este rol
+      loadDraft(role);
     } catch (err) {
-      qContainer.innerHTML = '<div class="text-red-500 py-4 text-center">Error al cargar preguntas de la plantilla.</div>';
-      console.error(err);
+      // 404 = no hay formulario activo para ese rol (ver contrato de /forms).
+      if (err.status === 404) {
+        qContainer.innerHTML = `
+          <div class="text-center py-10 bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-main)] shadow-sm">
+            <svg class="w-12 h-12 text-[var(--text-muted)] mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <h3 class="text-lg font-bold text-[var(--text-main)] mb-1">Sin evaluaciones disponibles</h3>
+            <p class="text-sm text-[var(--text-muted)] max-w-sm mx-auto">No hay ningún formulario de evaluación activo en este momento para el rol seleccionado.</p>
+          </div>
+        `;
+        evaluatee.disabled = true;
+        evaluatee.innerHTML = '<option value="">Sin formulario disponible</option>';
+      } else {
+        qContainer.innerHTML = '<div class="text-[var(--danger-text)] bg-[var(--danger-bg)] p-4 rounded-xl text-center">Error al cargar preguntas de la formulario.</div>';
+        console.error(err);
+      }
     }
   };
 
@@ -308,24 +415,10 @@ export const setupEvaluate = async () => {
     }
   };
 
-  // Lógica de guardado de borrador
+  // Lógica de guardado manual del borrador (mantiene el toast original)
   if (draftBtn) {
     draftBtn.addEventListener("click", () => {
-      const answers = {};
-      qContainer.querySelectorAll("[data-question-id]").forEach(el => {
-        if (el.dataset.selectedValue) {
-          answers[el.dataset.questionId] = el.dataset.selectedValue;
-        }
-      });
-
-      const draft = {
-        role: targetRole.value,
-        evaluatee: evaluatee.value,
-        anonymous: anonCheck.checked,
-        answers: answers
-      };
-
-      localStorage.setItem("evaluation_draft", JSON.stringify(draft));
+      saveDraftLocally();
       showToast("Borrador guardado", "success", "Tu progreso ha sido guardado localmente.");
     });
   }
@@ -367,42 +460,42 @@ export const setupEvaluate = async () => {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    if (!currentTemplate || !activePeriod) {
-      showToast("Error", "error", "No se ha cargado la plantilla o periodo activo.");
+    if (!currentForm || !activePeriod) {
+      showToast("Error", "error", "No se ha cargado la formulario o periodo activo.");
       return;
     }
 
-    const answers = [];
     const questionElements = qContainer.querySelectorAll("[data-question-id]");
-    let allValid = true;
-
-    questionElements.forEach(el => {
-      const qId = parseInt(el.dataset.questionId);
+    const draftAnswers = Array.from(questionElements).map(el => {
       const type = el.dataset.inputType;
       const val = el.dataset.selectedValue;
-      const errorMsg = el.querySelector(".error-msg");
-
-      if ((type === "scale" || type === "scale_1_5" || type === "yes_no") && !val) {
-        allValid = false;
-        if (errorMsg) errorMsg.classList.remove("hidden");
-      }
-
-      answers.push({
-        question_id: qId,
-        score: (type === "scale" || type === "scale_1_5") ? parseInt(val) : null,
-        comment: (type === "open_text" || type === "yes_no") ? val || "" : null
-      });
+      return {
+        question_id: parseInt(el.dataset.questionId),
+        type,
+        score: (type === "scale" || type === "scale_1_5") ? (val ? parseInt(val) : null) : null,
+        comment: (type === "open_text" || type === "yes_no") ? (val || null) : null,
+      };
     });
 
-    if (!allValid) {
-      showToast("Formulario incompleto", "warning", "Por favor califica todas las preguntas de escala.");
+    questionElements.forEach(el => el.querySelector(".error-msg")?.classList.add("hidden"));
+
+    const validation = evaluationAnswersSchema.safeParse(draftAnswers);
+    if (!validation.success) {
+      validation.error.issues.forEach(issue => {
+        const index = issue.path[0];
+        questionElements[index]?.querySelector(".error-msg")?.classList.remove("hidden");
+      });
+      showToast("Formulario incompleto", "warning", "Por favor completa todas las preguntas obligatorias.");
       return;
     }
+
+    // El backend no espera el campo "type" (solo se usaba para validar aca).
+    const answers = draftAnswers.map(({ type, ...rest }) => rest);
 
     const evaluationData = {
       evaluator_id: currentUser.id,
       evaluatee_id: parseInt(evaluatee.value),
-      template_id: currentTemplate.id,
+      form_id: currentForm.id,
       period_id: activePeriod.id,
       is_anonymous: anonCheck.checked,
       status: "submitted",
@@ -414,18 +507,42 @@ export const setupEvaluate = async () => {
     submitBtn.textContent = "Enviando...";
 
     try {
+      // Se espera al servidor antes de anunciar exito: el periodo puede haberse
+      // cerrado o la evaluacion estar duplicada, y ahi la SPA no es la autoridad
+      // (regla 5). Confirmar antes de tiempo dejaba al coder creyendo que evaluo.
       await evaluationService.create(evaluationData);
-      localStorage.removeItem("evaluation_draft"); // Limpiar borrador tras envío exitoso
+
       showToast("¡Evaluación enviada!", "success", "Tu feedback ha sido registrado exitosamente.");
+      localStorage.removeItem("evaluation_draft");
       window.history.pushState({}, "", "/evaluations");
       renderRoute();
     } catch (err) {
       submitBtn.disabled = false;
       submitBtn.textContent = "Enviar evaluación";
-      if (err.message && err.message.includes("409")) {
-        showToast("Conflicto", "error", "Ya has evaluado a esta persona en el periodo actual.");
+
+      // El borrador nunca se borro, pero se reescribe con lo ultimo respondido
+      // por si el usuario cambio algo despues de cargarlo.
+      localStorage.setItem("evaluation_draft", JSON.stringify({
+        role: targetRole.value,
+        evaluatee: evaluatee.value,
+        anonymous: anonCheck.checked,
+        answers: draftAnswers.reduce((acc, curr) => {
+          acc[curr.question_id] = curr.score !== null ? curr.score.toString() : curr.comment;
+          return acc;
+        }, {})
+      }));
+
+      if (err.status === 409) {
+        // El backend usa 409 para DOS conflictos distintos: ya evaluaste a esa
+        // persona en el periodo, o el periodo no esta activo. Lo unico que los
+        // distingue es `err.detail`, que puede venir vacio -- por eso siempre va
+        // acompanado de una frase propia y nunca se usa como texto unico.
+        const reason = err.detail
+          ? err.detail
+          : "Puede que ya hayas evaluado a esta persona en este periodo, o que el periodo de evaluación ya no esté activo.";
+        showToast("No se pudo enviar la evaluación", "error", `${reason} Tu progreso se guardó en borradores.`);
       } else {
-        showToast("Error", "error", "Hubo un problema al enviar la evaluación.");
+        showToast("Error", "error", "Hubo un problema al enviar la evaluación. Tu progreso se guardó en borradores.");
       }
       console.error(err);
     }

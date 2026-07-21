@@ -1,4 +1,4 @@
-import { getEmailRules, getPasswordRules } from "../../utils/validators";
+import { z } from "zod";
 import { authService } from "../../services/auth.service";
 import { renderRoute } from "../../router/router";
 import { showToast } from "../../components/alerts";
@@ -6,18 +6,22 @@ import { setButtonLoadingState, createDebouncedValidator, validateSync, showFiel
 import { backgroundComponent } from "../../components/background.js";
 import { langSwitcherComponent, setupLangSwitcher } from "../../components/lang-switcher.js";
 
+const loginSchema = {
+  email: z.string().min(1, "El correo es obligatorio").email("Formato de correo inválido"),
+  password: z.string().min(1, "La contraseña es obligatoria").min(8, "Mínimo 8 caracteres")
+};
+
 export const renderLogin = () => `
-  <main class="relative min-h-screen w-full overflow-hidden">
+  <div class="relative min-h-screen w-full overflow-hidden">
 
     ${backgroundComponent()}
     ${langSwitcherComponent("es")}
 
     <div class="flex min-h-screen items-center justify-center p-4">
-      <form class="w-full max-w-md rounded-3xl border border-white/30 bg-white/95 p-10 shadow-2xl backdrop-blur-xl transition-all hover:scale-[1.02]">
+      <form class="w-full max-w-md rounded-3xl border border-white/30 bg-white/95 p-6 sm:p-10 shadow-2xl backdrop-blur-xl transition-all sm:hover:scale-[1.02]">
 
-        <h1 class="mb-3 text-center text-3xl font-bold text-[var(--brand-bg)]">Riwi LeadTrace</h1>
-        <p class="mb-1 text-center text-[var(--text-muted)]">Evaluación 360</p>
-        <p class="mb-6 text-center text-[var(--text-muted)]">Acompaña, evalúa y crece con tu equipo</p>
+        <h1 class="mb-3 text-center text-2xl sm:text-3xl font-bold text-[var(--brand-bg)]">Riwi LeadTrace</h1>
+        <p class="mb-6 text-center text-sm sm:text-base text-[var(--text-muted)]">Acompaña, evalúa y crece con tu equipo</p>
 
         <div class="mb-4">
           <label class="mb-1 block text-sm font-medium text-[var(--text-main)]" for="email">
@@ -27,6 +31,8 @@ export const renderLogin = () => `
             required
             id="email"
             type="email"
+            name="email"
+            autocomplete="email"
             placeholder="Ingresa tu correo"
             class="w-full rounded-2xl border border-gray-200 px-4 py-3 transition-all focus:outline-none focus:ring-2 focus:ring-[var(--brand-bg)]"
           />
@@ -43,6 +49,8 @@ export const renderLogin = () => `
             required
             id="password"
             type="password"
+            name="password"
+            autocomplete="current-password"
             placeholder="Tu contraseña"
             class="w-full rounded-2xl border border-gray-200 px-4 py-3 transition-all focus:outline-none focus:ring-2 focus:ring-[var(--brand-bg)]"
           />
@@ -60,7 +68,7 @@ export const renderLogin = () => `
         </button>
       </form>
     </div>
-  </main>`;
+  </div>`;
 
 
 const getViewElements = () => ({
@@ -81,8 +89,8 @@ const handleLoginSubmit = (elements) => async (event) => {
   event.preventDefault();
   if (elements.submitBtn.disabled) return;
 
-  const isEmailValid = validateSync(elements.emailInput, elements.emailError, getEmailRules());
-  const isPasswordValid = validateSync(elements.passwordInput, elements.passwordError, getPasswordRules());
+  const isEmailValid = validateSync(elements.emailInput, elements.emailError, loginSchema.email);
+  const isPasswordValid = validateSync(elements.passwordInput, elements.passwordError, loginSchema.password);
 
   if (!isEmailValid || !isPasswordValid) return;
 
@@ -99,9 +107,18 @@ const handleLoginSubmit = (elements) => async (event) => {
     window.history.pushState({}, "", "/dashboard");
     renderRoute();
   } catch (error) {
-    showToast("Falló el inicio de sesión", "error", "Credenciales incorrectas");
+    const statusMessages = {
+      401: "Contraseña incorrecta",
+      404: "El correo no está registrado"
+    };
+
+    const errorMsg = error.status
+      ? (statusMessages[error.status] || "No se pudo iniciar sesión. Inténtalo de nuevo.")
+      : "No se pudo conectar con el servidor";
+
+    showToast("Falló el inicio de sesión", "error", errorMsg);
     setButtonLoadingState(elements.submitBtn, false, "", "Entrar al dashboard");
-    return showFieldError(elements.emailInput, "Credenciales incorrectas", elements.emailError);
+    return showFieldError(elements.emailInput, errorMsg, elements.emailError);
   }
 };
 
@@ -111,8 +128,8 @@ export const setupLogin = () => {
   const elements = getViewElements();
   if (!elements.form || !elements.emailInput || !elements.passwordInput || !elements.emailError || !elements.passwordError) return;
 
-  elements.emailInput.addEventListener("input", createDebouncedValidator(elements.emailInput, elements.emailError, getEmailRules()));
-  elements.passwordInput.addEventListener("input", createDebouncedValidator(elements.passwordInput, elements.passwordError, getPasswordRules()));
+  elements.emailInput.addEventListener("input", createDebouncedValidator(elements.emailInput, elements.emailError, loginSchema.email));
+  elements.passwordInput.addEventListener("input", createDebouncedValidator(elements.passwordInput, elements.passwordError, loginSchema.password));
 
   elements.form.addEventListener("submit", (event) => {
     event.preventDefault();

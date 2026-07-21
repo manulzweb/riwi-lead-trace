@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
+from datetime import datetime
 
 class QuestionOut(BaseModel):
     id: int
@@ -13,12 +14,14 @@ class QuestionOut(BaseModel):
     class Config:
         from_attributes = True
 
-class FormTemplateOut(BaseModel):
+class FormOut(BaseModel):
     id: int
     title: str
     description: Optional[str] = None
     target_role_id: int
     is_active: bool
+    is_form: bool = False
+    created_at: Optional[datetime] = None
     questions: List[QuestionOut] = []
 
     class Config:
@@ -56,7 +59,7 @@ class QuestionCreateItem(BaseModel):
     )
 
 
-class TemplateCreate(BaseModel):
+class FormCreate(BaseModel):
     """Body de POST /forms: crea una plantilla nueva con sus preguntas iniciales.
 
     A diferencia de PATCH /questions/{id} (que versiona una pregunta ya
@@ -81,6 +84,11 @@ class TemplateCreate(BaseModel):
         description="'team_leader' o 'tutor' -- los unicos roles evaluables",
         examples=["team_leader"]
     )
+    is_form: bool = Field(
+        default=False,
+        title="Es Plantilla Base",
+        description="Indica si este formulario es solo una base (true) o un formulario activo para recibir respuestas (false)"
+    )
     questions: List[QuestionCreateItem] = Field(
         min_length=1,
         title="Preguntas",
@@ -88,7 +96,7 @@ class TemplateCreate(BaseModel):
     )
 
 
-class TemplateUpdate(BaseModel):
+class FormUpdate(BaseModel):
     """Body de PUT /forms/{id}: solo metadata (titulo/descripcion). Las
     preguntas se agregan/quitan/editan con los endpoints de /questions.
     """

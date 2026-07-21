@@ -5,6 +5,7 @@ import { evaluationService } from "../../services/evaluation.service";
 import { periodService } from "../../services/periods.service";
 import { escapeHtml } from "../../utils/validators";
 import { showToast } from "../../components/alerts";
+import { emptyStateComponent } from "../../components/emptyState.js";
 
 let evaluables = [];
 let evaluations = [];
@@ -36,14 +37,39 @@ export const renderEvaluables = () => {
         </div>
       </section>
 
-      <section id="evaluables-list" class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        <div class="h-44 animate-pulse rounded-3xl bg-[var(--bg-panel)]"></div>
-        <div class="h-44 animate-pulse rounded-3xl bg-[var(--bg-panel)]"></div>
-        <div class="h-44 animate-pulse rounded-3xl bg-[var(--bg-panel)]"></div>
+      <section id="evaluables-list" class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" aria-live="polite" aria-busy="true">
+        ${Array(6).fill(`
+          <article class="flex flex-col justify-between rounded-3xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-md h-44">
+            <div>
+              <div class="flex items-center justify-between gap-3">
+                <div class="h-6 w-20 skeleton-shimmer rounded-full"></div>
+                <div class="h-6 w-20 skeleton-shimmer rounded-full"></div>
+              </div>
+              <div class="h-6 w-3/4 skeleton-shimmer rounded-md mt-4"></div>
+              <div class="h-4 w-1/2 skeleton-shimmer rounded-md mt-2"></div>
+            </div>
+            <div class="mt-6 flex">
+              <div class="h-10 w-full skeleton-shimmer rounded-2xl"></div>
+            </div>
+          </article>
+        `).join("")}
       </section>
     </main>
   `;
 };
+
+// Estado de error del contenedor, con reintento (no basta el toast: dura 3s
+// y deja la pantalla rota).
+const renderLoadError = () => `
+  <article class="rounded-3xl border border-[var(--danger-border)] bg-[var(--danger-bg)] p-10 text-center shadow-lg">
+    <h3 class="text-xl font-bold text-[var(--danger-text)]">No se pudieron cargar los evaluables</h3>
+    <p class="mt-2 text-sm text-[var(--text-muted)]">Revisa tu conexión e inténtalo de nuevo.</p>
+    <button type="button" id="evaluables-retry"
+      class="mt-6 inline-flex items-center justify-center rounded-2xl bg-[var(--brand-bg)] px-5 py-3 text-sm font-bold text-[var(--brand-text)] hover:bg-[var(--brand-hover)] transition shadow-md cursor-pointer focus:ring-4 focus:ring-[var(--border-main)]">
+      Reintentar
+    </button>
+  </article>
+`;
 
 const updateFilterButtons = () => {
   const filters = ["all", "team_leader", "tutor"];
@@ -73,26 +99,21 @@ const renderEvaluablesList = () => {
   }
 
   if (filtered.length === 0) {
+    // Se reutiliza el componente compartido en vez de mantener otra tarjeta
+    // de estado vacio propia de esta vista (DRY).
     container.className = "mt-8";
-    container.innerHTML = `
-      <article class="rounded-3xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-12 text-center shadow-lg">
-        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--border-main)] text-[var(--brand-bg)]">
-          <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-        </div>
-        <h3 class="mt-6 text-xl font-bold text-[var(--text-main)]">Sin evaluables asignados</h3>
-        <p class="mt-2 text-sm text-[var(--text-muted)]">No se encontraron Team Leaders o Tutores disponibles para evaluar bajo los filtros seleccionados.</p>
-      </article>
-    `;
+    container.innerHTML = emptyStateComponent(
+      "Sin evaluables asignados",
+      "No se encontraron Team Leaders o Tutores disponibles para evaluar bajo los filtros seleccionados."
+    );
     return;
   }
 
   container.className = "mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3";
   container.innerHTML = filtered.map(user => {
-    const isEvaluated = evaluations.some(ev => 
-      ev.evaluatee_id === user.id && 
-      ev.period_id === activePeriod?.id && 
+    const isEvaluated = evaluations.some(ev =>
+      ev.evaluatee_id === user.id &&
+      ev.period_id === activePeriod?.id &&
       ev.status === "submitted"
     );
 
@@ -109,7 +130,7 @@ const renderEvaluablesList = () => {
 
     const statusBadge = isEvaluated
       ? `<span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400 flex items-center gap-1">
-          <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+          <svg class="h-3.5 w-3.5" aria-hidden="true" focusable="false" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
           Evaluado
          </span>`
       : `<span class="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-600 dark:bg-amber-950/20 dark:text-amber-400">Pendiente</span>`;
@@ -160,20 +181,36 @@ export const setupEvaluables = async () => {
     }
   });
 
-  try {
-    const [evalsList, activePeriodData, allEvaluables] = await Promise.all([
-      evaluationService.getByEvaluator(currentUser.id),
-      periodService.get().then(periods => periods.find(p => p.is_active) || periods[0]),
-      evaluablesService.get()
-    ]);
+  // Carga extraida para poder reintentarla: antes, si fallaba la red, los
+  // skeletons quedaban animandose para siempre y solo se veia un toast de 3s.
+  const load = async () => {
+    const container = document.getElementById("evaluables-list");
+    container?.setAttribute("aria-busy", "true");
 
-    evaluations = evalsList;
-    activePeriod = activePeriodData;
-    evaluables = allEvaluables;
+    try {
+      const [evalsList, activePeriodData, allEvaluables] = await Promise.all([
+        evaluationService.getByEvaluator(currentUser.id),
+        periodService.get().then(periods => periods.find(p => p.is_active) || periods[0]),
+        evaluablesService.get()
+      ]);
 
-    renderEvaluablesList();
-  } catch (err) {
-    showToast("Error", "error", "No se pudieron cargar los evaluables disponibles.");
-    console.error(err);
-  }
+      evaluations = evalsList;
+      activePeriod = activePeriodData;
+      evaluables = allEvaluables;
+
+      renderEvaluablesList();
+    } catch (err) {
+      showToast("Error", "error", "No se pudieron cargar los evaluables disponibles.");
+      console.error(err);
+      if (container) {
+        container.className = "mt-8";
+        container.innerHTML = renderLoadError();
+        document.getElementById("evaluables-retry")?.addEventListener("click", load);
+      }
+    } finally {
+      container?.setAttribute("aria-busy", "false");
+    }
+  };
+
+  await load();
 };
