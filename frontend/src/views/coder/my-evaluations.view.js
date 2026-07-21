@@ -59,8 +59,8 @@ export const setupMyEvaluations = async () => {
     }
 
     container.innerHTML = evaluations.map(ev => {
-      const evaluatee = usersMap.get(ev.evaluatee_id);
-      const period = periodsMap.get(ev.period_id);
+      const evaluatee = usersMap.get(Number(ev.evaluatee_id)) || usersMap.get(String(ev.evaluatee_id));
+      const period = periodsMap.get(Number(ev.period_id)) || periodsMap.get(String(ev.period_id));
       const evaluateeName = evaluatee ? evaluatee.name : `Usuario #${ev.evaluatee_id}`;
       const evaluateeRole = evaluatee?.roles?.length
         ? evaluatee.roles.map(r => r.replace('_', ' ')).join(' / ')
@@ -99,7 +99,7 @@ export const setupMyEvaluations = async () => {
       const evaluation = evaluations.find(e => e.id === evalId);
       if (!evaluation) return;
 
-      const evaluatee = usersMap.get(evaluation.evaluatee_id);
+      const evaluatee = usersMap.get(Number(evaluation.evaluatee_id)) || usersMap.get(String(evaluation.evaluatee_id));
       const evaluateeName = evaluatee ? evaluatee.name : `Usuario #${evaluation.evaluatee_id}`;
 
       const template = templatesMap.get(evaluation.form_id);
@@ -112,10 +112,12 @@ export const setupMyEvaluations = async () => {
         const questionData = questionsMap.get(String(ans.question_id));
         const questionText = questionData ? questionData.text : `Pregunta #${ans.question_id}`;
         
+        const inputType = questionData ? (questionData.type || questionData.input_type) : null;
+        
         let answerDisplay = '';
-        if (questionData && (questionData.input_type === 'scale' || questionData.input_type === 'scale_1_5')) {
+        if (inputType === 'scale' || inputType === 'scale_1_5') {
           answerDisplay = `<div class="mt-2 text-sm"><span class="font-bold text-[var(--brand-bg)] text-2xl">${ans.score || 'N/A'}</span> <span class="text-[var(--text-muted)] font-medium">/ 5</span></div>`;
-        } else if (questionData && questionData.input_type === 'yes_no') {
+        } else if (inputType === 'yes_no') {
           answerDisplay = `<div class="mt-2 inline-flex items-center rounded-xl bg-[var(--brand-bg)]/10 px-4 py-2 text-sm font-bold text-[var(--brand-bg)]">${ans.comment || 'N/A'}</div>`;
         } else {
            answerDisplay = ans.comment ? `<p class="mt-2 rounded-xl bg-[var(--bg-base)] p-4 text-sm text-[var(--text-main)] border border-[var(--border-main)]">"${ans.comment}"</p>` : `<p class="mt-2 text-sm text-[var(--text-muted)] italic">Sin respuesta</p>`;

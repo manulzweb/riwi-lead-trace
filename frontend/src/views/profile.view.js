@@ -4,7 +4,7 @@ import { escapeHtml } from "../utils/validators";
 
 export const renderProfile = () => {
   const user = authService.getSession();
-  const name  = escapeHtml(user?.name  ?? "");
+  const name = escapeHtml(user?.name ?? "");
   const email = escapeHtml(user?.email ?? "");
 
   return `
@@ -37,7 +37,7 @@ export const renderProfile = () => {
 };
 
 export const setupProfile = () => {
-  const form    = document.getElementById("profile-form");
+  const form = document.getElementById("profile-form");
   const saveBtn = document.getElementById("save-btn");
   if (!form || !saveBtn) return;
 
