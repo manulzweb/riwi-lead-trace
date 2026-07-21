@@ -1,4 +1,3 @@
-import { formsService } from "../services/forms.service";
 import { evaluationService } from "../services/evaluation.service";
 import { request } from "../services/api.service";
 
@@ -12,20 +11,23 @@ const to100Scale = (avg1to5) => Math.round(((avg1to5 - 1) / 4) * 100);
 // cruzando las respuestas de evaluations con las preguntas de sus forms.
 export const getCategoryBreakdown = async (evaluateeId, periodId) => {
   try {
-    const forms = await formsService.getForms();
+    const evaluations = await evaluationService.getByEvaluatee(evaluateeId);
+    const periodEvals = evaluations.filter((e) => e.period_id === periodId && e.status === "submitted");
+
+    if (periodEvals.length === 0) return [];
+
+    const uniqueFormIds = [...new Set(periodEvals.map(e => e.form_id))];
     const questionsMap = new Map();
 
-    for (const temp of forms) {
+    for (const formId of uniqueFormIds) {
       try {
-        const questions = await request(`/questions?form_id=${temp.id}`);
+        const questions = await request(`/questions?form_id=${formId}&include_inactive=true`);
         questions.forEach((q) => questionsMap.set(q.id, q));
       } catch (e) {
         console.error(e);
       }
     }
 
-    const evaluations = await evaluationService.getByEvaluatee(evaluateeId);
-    const periodEvals = evaluations.filter((e) => e.period_id === periodId && e.status === "submitted");
 
     const categoryScores = {};
     periodEvals.forEach((ev) => {

@@ -4,6 +4,7 @@ export const showEvaluationDetailModal = (evaluation, evaluateeName, form, quest
   const answersHtml = evaluation.answers.map(ans => {
     const questionData = questionsMap.get(String(ans.question_id));
     const questionText = questionData ? questionData.text : `Pregunta #${ans.question_id}`;
+    const categoryName = questionData?.category || 'General';
     
     let answerDisplay = '';
     if (questionData && (questionData.input_type === 'scale' || questionData.input_type === 'scale_1_5')) {
@@ -31,7 +32,10 @@ export const showEvaluationDetailModal = (evaluation, evaluateeName, form, quest
     }
 
     return `
-      <div class="bg-[var(--bg-panel)] border border-[var(--border-main)] rounded-2xl p-5 mb-4 shadow-sm transition-shadow hover:shadow-md">
+      <div class="bg-[var(--bg-panel)] border border-[var(--border-main)] rounded-2xl p-5 mb-4 shadow-sm transition-shadow hover:shadow-md relative overflow-hidden">
+        <div class="mb-3 inline-block px-2.5 py-1 bg-[var(--brand-bg)] bg-opacity-10 text-[var(--brand-bg)] text-[11px] font-black rounded-lg tracking-wider uppercase">
+          ${categoryName}
+        </div>
         <h4 class="text-sm font-bold text-[var(--text-main)] leading-relaxed">${questionText}</h4>
         ${answerDisplay}
       </div>

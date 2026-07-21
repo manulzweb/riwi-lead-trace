@@ -16,14 +16,15 @@ router = APIRouter()
     "/questions", 
     response_model=List[QuestionOut],
     summary="Obtener preguntas de una plantilla",
-    response_description="Lista de preguntas activas de la plantilla"
+    response_description="Lista de preguntas de la plantilla"
 )
 def get_questions(
     form_id: int = Query(..., description="ID del form"),
+    include_inactive: bool = Query(False, description="Incluir preguntas inactivas"),
 ):
-    """Consulta anidada sobre `questions` filtrando por `form_id` e `is_active=TRUE`."""
+    """Consulta anidada sobre `questions` filtrando por `form_id`."""
     try:
-        return question_service.get_questions_by_form(form_id, only_active=True)
+        return question_service.get_questions_by_form(form_id, only_active=not include_inactive)
     except Exception as e:
         logger.error(f"Error fetching questions: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
