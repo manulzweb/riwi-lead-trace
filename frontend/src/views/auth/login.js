@@ -7,7 +7,7 @@ import { backgroundComponent } from "../../components/background.js";
 import { langSwitcherComponent, setupLangSwitcher } from "../../components/lang-switcher.js";
 
 export const renderLogin = () => `
-  <div class="relative min-h-screen w-full overflow-hidden bg-slate-50 dark:bg-slate-900">
+  <div class="relative min-h-screen w-full overflow-hidden">
 
     ${backgroundComponent()}
     ${langSwitcherComponent("es")}
