@@ -73,7 +73,7 @@ export const sidebarComponent = (isActive) => {
       ]},
       { label: "Administración", icon: icons.settings, submenu: [
         { href: "/admin/periods", label: "Periodos", icon: icons.clock },
-        { href: "/admin/activity-log", label: "Bitácora", icon: icons.activity },
+        { href: "/admin/activity-log", label: "Actividad", icon: icons.activity },
         { href: "/admin/settings", label: "Configuración", icon: icons.settings }
       ]}
     ];

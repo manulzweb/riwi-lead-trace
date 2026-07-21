@@ -13,7 +13,7 @@ const getDefaults = async () => await request('/settings/defaults');
 
 const updateSettings = async (data) => await request('/settings', jsonOptions('PUT', data));
 
-// Devuelve el CSV de la bitacora como Blob. Lanza un error con la misma forma
+// Devuelve el CSV del registro como Blob. Lanza un error con la misma forma
 // que `request` (status/detail) para que las vistas discriminen por err.status.
 const downloadActivityLogCsv = async () => {
   const response = await fetch(`${BASE_URL}/activity-log/export`, { cache: 'no-store' });

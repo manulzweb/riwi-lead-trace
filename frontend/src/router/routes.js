@@ -107,7 +107,7 @@ export const ROUTES = {
     allowedRoles: ["admin"],
   },
   "/admin/activity-log": {
-    title: "Bitácora | LeadTrace",
+    title: "Actividad | LeadTrace",
     renderView: renderActivityLog,
     initSetup: setupActivityLog,
     requireAuth: true,

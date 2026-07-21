@@ -18,10 +18,9 @@ export const renderActivityLog = () => `
   <main class="mx-auto max-w-4xl px-6 py-10">
     <section>
       <p class="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--brand-bg)]">Admin</p>
-      <h1 class="mt-1 text-4xl font-black tracking-tight text-[var(--text-main)]">Bitácora de actividad</h1>
-      <p class="mt-4 text-[var(--text-muted)]">
-        Últimas acciones administrativas: abrir/cerrar ciclos, editar preguntas y eliminar categorías.
-        Registro de conveniencia -- sin JWT, la identidad de quien actuó no está verificada criptográficamente.
+      <h1 class="mt-1 text-4xl font-black tracking-tight text-[var(--text-main)]">Registro de Actividad</h1>
+      <p class="mt-2 text-sm font-medium text-[var(--text-muted)]">
+        Monitoreo de acciones administrativas del sistema.
       </p>
     </section>
 
@@ -46,7 +45,7 @@ export const renderActivityLog = () => `
 // a recargar toda la pagina cuando falla la red.
 const renderLoadError = () => `
   <div class="text-center py-8 rounded-2xl border border-[var(--danger-border)] bg-[var(--danger-bg)]">
-    <p class="text-sm text-[var(--danger-text)]">No se pudo cargar la bitácora.</p>
+    <p class="text-sm text-[var(--danger-text)]">No se pudo cargar el registro.</p>
     <button type="button" id="activity-log-retry"
       class="mt-4 inline-flex items-center justify-center rounded-2xl bg-[var(--brand-bg)] px-5 py-2.5 text-sm font-bold text-[var(--brand-text)] hover:bg-[var(--brand-hover)] transition cursor-pointer focus:ring-4 focus:ring-[var(--border-main)]">
       Reintentar
@@ -88,7 +87,7 @@ export const setupActivityLog = async () => {
       }).join("");
     } catch (err) {
       console.error(err);
-      showToast("Error", "error", "No se pudo cargar la bitácora.");
+      showToast("Error", "error", "No se pudo cargar el registro.");
       listContainer.innerHTML = renderLoadError();
       document.getElementById("activity-log-retry")?.addEventListener("click", load);
     } finally {

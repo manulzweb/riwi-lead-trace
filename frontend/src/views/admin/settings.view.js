@@ -200,12 +200,12 @@ const renderForm = (s) => `
           <label for="s_log_retention_days" class="flex flex-wrap items-center gap-2 text-sm font-bold text-[var(--text-main)] mb-1">
             Retención de Logs (Días)
             ${comingSoonBadge()}
-            ${tooltipIcon('Ajuste previsto, aún sin implementar. Hoy nada purga la "Bitácora": la tabla crece sin límite y ningún registro se elimina por antigüedad. El único tope real es la exportación CSV, que se corta en las 10 000 filas más recientes. El valor se guarda, pero no cambia el comportamiento.')}
+            ${tooltipIcon('Ajuste previsto, aún sin implementar. Hoy nada purga el "Registro de Actividad": la tabla crece sin límite y ningún registro se elimina por antigüedad. El único tope real es la exportación CSV, que se corta en las 10 000 filas más recientes. El valor se guarda, pero no cambia el comportamiento.')}
           </label>
           <input type="number" id="s_log_retention_days" min="1" value="${escapeHtml(s.log_retention_days)}" disabled aria-disabled="true" aria-describedby="note_log_retention_days" class="w-full rounded-xl border border-[var(--border-main)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text-main)] outline-none transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
           ${comingSoonNote(
             "note_log_retention_days",
-            "ninguna tarea purga la bitácora todavía; los registros se conservan indefinidamente."
+            "ninguna tarea purga el registro todavía; los datos se conservan indefinidamente."
           )}
         </div>
 
@@ -293,7 +293,7 @@ export const setupAdminSettings = () => {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `bitacora-auditoria-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.download = `registro-actividad-${new Date().toISOString().slice(0, 10)}.csv`;
       document.body.appendChild(link);
       link.click();
       link.remove();
