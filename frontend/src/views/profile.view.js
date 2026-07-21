@@ -9,9 +9,10 @@ export const renderProfile = () => {
 
   return `
     ${navBarComponent()}
-    <main class="mx-auto max-w-3xl px-6 py-10">
-      <section class="rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-8 shadow-xl">
-        <p class="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--brand-bg)]">Cuenta</p>
+    <main class="w-full px-6 py-10 transition-all duration-300 ease-in-out">
+      <div class="mx-auto max-w-3xl">
+        <section class="rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-8 shadow-xl">
+          <p class="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--brand-bg)]">Cuenta</p>
         <h1 class="mt-2 text-4xl font-black tracking-tight text-[var(--text-main)]">Mi perfil</h1>
         <p class="mt-4 text-[var(--text-muted)]">Consulta y actualiza tus datos personales.</p>
 
@@ -32,6 +33,7 @@ export const renderProfile = () => {
           </button>
         </form>
       </section>
+      </div>
     </main>
   `;
 };
