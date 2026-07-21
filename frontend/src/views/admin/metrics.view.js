@@ -1,5 +1,3 @@
-import { toPng } from "html-to-image";
-import { jsPDF } from "jspdf";
 import { navBarComponent } from "../../components/navbar";
 import { dropdownComponent, setupDropdown } from "../../components/dropdown";
 import { metricsService } from "../../services/metrics.service";
@@ -116,40 +114,10 @@ export const setupMetrics = async () => {
   if (!kpiEvals || !kpiIcp || !kpiPart || !gridContainer || !periodContainer) return;
 
   downloadBtn?.addEventListener("click", async () => {
-    downloadBtn.disabled = true;
-    showToast("Generando PDF...", "info");
-    
-    // Escondemos botones temporalmente
-    downloadBtn.style.display = 'none';
-    
-    try {
-      // Necesitamos fondo blanco porque html-to-image respetará transparencias
-      // La propiedad fetchRequest nos salta problemas de CORS con Google Fonts
-      const dataUrl = await toPng(reportElement, { 
-        backgroundColor: '#ffffff',
-        skipFonts: true, // Ignorar intentos fallidos de descargar fuentes si hay CORS
-        pixelRatio: 2 // Mejor calidad
-      });
-      
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgProps = pdf.getImageProperties(dataUrl);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      // Calculamos altura manteniendo el aspect ratio
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-      
-      pdf.addImage(dataUrl, 'PNG', 0, 10, pdfWidth, pdfHeight);
-      
-      const periodName = periods.find(p => p.id === currentPeriodId)?.name ?? "periodo";
-      pdf.save(`metricas-icp-${periodName}.pdf`);
-      
-      showToast("PDF descargado correctamente", "success");
-    } catch (err) {
-      showToast("Error", "error", "No se pudo generar el PDF.");
-      console.error(err);
-    } finally {
-      downloadBtn.style.display = '';
-      downloadBtn.disabled = false;
-    }
+    // Usar la impresión nativa del navegador es mucho más robusto
+    // y evita errores de CORS (SecurityError, Event isTrusted: true)
+    // causados por librerías tipo html-to-image intentando leer fuentes.
+    window.print();
   });
 
   let periods = [];
