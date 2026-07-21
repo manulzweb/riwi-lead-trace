@@ -13,7 +13,11 @@ TUTOR_FORM_ID = 2  # 'Evaluación a Tutor' en database/schema.sql
 
 
 def _close_seed_period():
-    conn.execute(text("UPDATE periods SET is_active = FALSE WHERE id = :id"), {"id": SEED_ACTIVE_PERIOD_ID})
+    # Cierra TODOS los periodos, no solo el sembrado: otros modulos de test
+    # (test_evaluations) crean periodos propios y los dejan activos, y basta uno
+    # abierto para que /forms responda 409. Sin esto el resultado depende del
+    # orden de ejecucion de los archivos.
+    conn.execute(text("UPDATE periods SET is_active = FALSE"))
     conn.commit()
 
 

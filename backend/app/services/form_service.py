@@ -65,6 +65,11 @@ class FormService:
         self._validate_creation_payload(payload, tolerance)
 
         with engine.begin() as conn:
+            # Crear tambien modifica el instrumento: deactivate_forms_for_role retira
+            # la plantilla que los coders puedan estar respondiendo ahora mismo. Por eso
+            # exige periodo cerrado igual que update_form y delete_form (regla 6).
+            self._assert_no_active_period(conn)
+
             role_id = self.repo.get_role_id_by_name(conn, payload.target_role)
             if not role_id:
                 raise InvalidRoleException(f"Rol '{payload.target_role}' no existe en BD.")

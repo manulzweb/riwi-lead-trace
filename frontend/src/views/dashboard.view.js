@@ -424,4 +424,4 @@ const renderDashboardContent = async (content, user, name, role) => {
       });
     }
   }
-
+};
