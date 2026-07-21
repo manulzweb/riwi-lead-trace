@@ -4,6 +4,7 @@ from app.schemas.period import PeriodCreate, PeriodUpdate
 from app.services import activity_log_service
 from app.repositories.period_repository import PeriodRepository
 from app.exceptions.period_exceptions import PeriodNotFoundException
+import fastapi
 
 class PeriodService:
     def __init__(self, repository: PeriodRepository = None):
@@ -32,7 +33,7 @@ class PeriodService:
                 
             return self.repo.get_period_by_id(conn, new_id)
 
-    def update_period(self, period_id: int, period: PeriodUpdate) -> Optional[Dict[str, Any]]:
+    def update_period(self, period_id: int, period: PeriodUpdate, background_tasks: Optional['fastapi.BackgroundTasks'] = None) -> Optional[Dict[str, Any]]:
         admin_id = period.admin_id
         values = {}
         if period.name is not None: values["name"] = period.name
@@ -62,6 +63,14 @@ class PeriodService:
                     target_id=period_id,
                     detail=period_name,
                 )
+                
+                # Check if period was closed, and if so trigger the background task
+                if values["is_active"] is False and background_tasks is not None:
+                    from app.services.settings_service import settings_service
+                    from app.services.ai_service import generate_missing_summaries_for_period
+                    system_settings = settings_service.get_settings()
+                    if system_settings.get("ai_auto_summary", False):
+                        background_tasks.add_task(generate_missing_summaries_for_period, period_id)
 
             return self.repo.get_period_by_id(conn, period_id)
 
@@ -83,8 +92,8 @@ def get_period(period_id: int):
 def create_period(period: PeriodCreate):
     return period_service.create_period(period)
 
-def update_period(period_id: int, period: PeriodUpdate):
-    return period_service.update_period(period_id, period)
+def update_period(period_id: int, period: PeriodUpdate, background_tasks: Optional['fastapi.BackgroundTasks'] = None):
+    return period_service.update_period(period_id, period, background_tasks)
 
 def delete_period(period_id: int):
     return period_service.delete_period(period_id)

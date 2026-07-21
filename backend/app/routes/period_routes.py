@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, BackgroundTasks
 from typing import List
 import logging
 from app.schemas.period import PeriodCreate, PeriodUpdate, PeriodOut
@@ -58,10 +58,10 @@ def create_period(period: PeriodCreate):
     response_description="El período actualizado",
     responses={404: {"description": "Período no encontrado"}}
 )
-def update_period(period_id: int, period: PeriodUpdate):
+def update_period(period_id: int, period: PeriodUpdate, background_tasks: BackgroundTasks):
     """Mutación completa de la entidad `periods`. Dispara reconciliación de la bandera `is_active` si se establece en true."""
     try:
-        return period_service.update_period(period_id, period)
+        return period_service.update_period(period_id, period, background_tasks)
     except PeriodNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
@@ -75,10 +75,10 @@ def update_period(period_id: int, period: PeriodUpdate):
     response_description="El período actualizado",
     responses={404: {"description": "Período no encontrado"}}
 )
-def patch_period(period_id: int, period: PeriodUpdate):
+def patch_period(period_id: int, period: PeriodUpdate, background_tasks: BackgroundTasks):
     """Mutación parcial de la entidad `periods`."""
     try:
-        return period_service.update_period(period_id, period)
+        return period_service.update_period(period_id, period, background_tasks)
     except PeriodNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:

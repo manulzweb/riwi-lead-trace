@@ -170,6 +170,36 @@ Por favor, proporciona un resumen estructurado con un tono constructivo y profes
         except Exception:
             return True
 
+    def generate_missing_summaries_for_period(self, period_id: int):
+        from app.services.metrics_service import metrics_service
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Background task starting: generating missing AI summaries for period {period_id}")
+
+        try:
+            # Get all evaluatees for the period
+            ranking = metrics_service.get_overall_ranking(period_id)
+            # Only those with a valid average_score have enough evaluations to generate a summary
+            valid_evaluatees = [e for e in ranking if e.get("average_score") is not None]
+
+            generated_count = 0
+            with engine.connect() as conn:
+                for evaluatee in valid_evaluatees:
+                    evaluatee_id = evaluatee["id"]
+                    # Check if cache already exists. If yes, skip to respect user's condition.
+                    cached = self.repo.get_cached_summary(conn, evaluatee_id, period_id)
+                    if not cached:
+                        try:
+                            logger.info(f"Generating AI summary for evaluatee {evaluatee_id} in period {period_id}")
+                            self.get_or_generate_ai_summary(evaluatee_id, period_id)
+                            generated_count += 1
+                        except Exception as e:
+                            logger.error(f"Error generating summary for evaluatee {evaluatee_id}: {e}")
+            
+            logger.info(f"Background task finished: generated {generated_count} missing summaries.")
+        except Exception as e:
+            logger.error(f"Error in background task generate_missing_summaries_for_period: {e}")
+
 ai_service = AIService()
 
 def get_or_generate_ai_summary(evaluatee_id: int, period_id: int):
@@ -177,3 +207,6 @@ def get_or_generate_ai_summary(evaluatee_id: int, period_id: int):
 
 def check_question_category_coherence(question_text: str, category: str):
     return ai_service.check_question_category_coherence(question_text, category)
+
+def generate_missing_summaries_for_period(period_id: int):
+    return ai_service.generate_missing_summaries_for_period(period_id)
