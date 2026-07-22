@@ -80,15 +80,15 @@ export const sidebarComponent = (isActive) => {
   } else if (role === "team_leader") {
     navConfig = [
       { href: "/dashboard", label: "Dashboard", icon: icons.home },
-      { label: "Evaluations", icon: icons.evaluations, submenu: [
-        { href: "/my-results", label: "My Results", icon: icons.chart }
+      { label: "Evaluaciones", icon: icons.evaluations, submenu: [
+        { href: "/my-results", label: "Mis Resultados", icon: icons.chart }
       ]}
     ];
   } else {
     // tutor or coder
     navConfig = [
       { href: "/dashboard", label: "Dashboard", icon: icons.home },
-      { label: "Evaluations", icon: icons.evaluations, submenu: [
+      { label: "Evaluaciones", icon: icons.evaluations, submenu: [
         // /evaluables solo existe para el Coder (allowedRoles en routes.js), y
         // este bloque lo comparten tutor y coder: al tutor se le ocultaría un
         // enlace que el router le rechazaría igual.
@@ -98,10 +98,10 @@ export const sidebarComponent = (isActive) => {
         // evaluaciones: el Coder se quedaba sin forma de volver salvo
         // escribiendo la URL a mano.
         ...(role === "coder"
-          ? [{ href: "/evaluables", label: "To-Do Evaluations", icon: icons.list }]
+          ? [{ href: "/evaluables", label: "Por Evaluar", icon: icons.list }]
           : []),
-        { href: "/evaluations/new", label: "New Evaluation", icon: icons.create },
-        { href: "/evaluations", label: "My Evaluations", icon: icons.list }
+        { href: "/evaluations/new", label: "Nueva Evaluación", icon: icons.create },
+        { href: "/evaluations", label: "Mis Evaluaciones", icon: icons.list }
       ]}
     ];
   }
