@@ -213,11 +213,113 @@ const renderDashboardContent = async (content, user, name, role) => {
   } else if (role === "team_leader" || role === "tutor") {
     // Leader / Tutor View
     const summary = selectedPeriodId ? await metricsService.getSummary(selectedPeriodId) : { evaluatees: [] };
-    const myStats = summary.evaluatees?.find(e => String(e.id) === String(user.id)) || { n_evals: 0, average_score: 0, status: "Sin datos" };
+    const myStats = summary.evaluatees?.find(e => String(e.id) === String(user.id)) || { n_evals: 0, average_score: 0, status: "Sin datos", clan_name: "" };
 
+    const validEvaluatees = summary.evaluatees?.filter(e => e.average_score !== null) || [];
+    
+    let motivationalCard = '';
+    let myClanHtml = '';
+
+    if (role === "team_leader" && validEvaluatees.length > 0) {
+      // Ranking Motivacional
+      const tlList = validEvaluatees.filter(e => e.role === "team_leader").sort((a, b) => b.average_score - a.average_score);
+      const myIndex = tlList.findIndex(e => String(e.id) === String(user.id));
+      
+      if (myIndex !== -1) {
+        const myRank = myIndex + 1;
+        const total = tlList.length;
+        const percentile = Math.round(((total - myRank) / total) * 100);
+        let msg = "";
+        let medalIcon = "";
+        
+        if (myRank === 1) {
+          msg = `¡Felicidades! Eres el Team Leader #1 de la plataforma en este periodo.`;
+          medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/><path d="M11 12 5.12 2.2"/><path d="m13 12 5.88-9.8"/><path d="M8 7h8"/><circle cx="12" cy="17" r="5"/><path d="M12 14.7v4.6"/></svg>';
+        } else if (myRank === 2) {
+          msg = `¡Excelente trabajo! Eres el Team Leader #2 de la plataforma en este periodo.`;
+          medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B8B8B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"> <path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/> <path d="M11 12 5.12 2.2"/> <path d="m13 12 5.88-9.8"/> <path d="M8 7h8"/> <circle cx="12" cy="17" r="5"/> <path d="M10.4 15.6c.4-.6 1-.9 1.7-.9.8 0 1.4.4 1.4 1 0 .6-.3.9-1.1 1.5l-1.8 1.3H14"/> </svg>';
+        } else if (myRank === 3) {
+          msg = `¡Gran esfuerzo! Eres el Team Leader #3 de la plataforma en este periodo.`;
+          medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B87333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"> <path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/> <path d="M11 12 5.12 2.2"/> <path d="m13 12 5.88-9.8"/> <path d="M8 7h8"/> <circle cx="12" cy="17" r="5"/> <path d="M10.5 15h2c.6 0 1 .3 1 .8s-.4.8-1 .8"/> <path d="M12.5 16.6c.8 0 1.2.4 1.2 1s-.5 1-1.4 1c-.6 0-1.1-.2-1.5-.6"/> </svg>';
+        } else if (percentile >= 50) {
+          msg = `Estás superando al ${percentile}% de los líderes. ¡Continúa así!`;
+        } else {
+          msg = `¡Sigue esforzándote para subir en el ranking!`;
+        }
+
+        motivationalCard = `
+          <div class="col-span-1 md:col-span-2 lg:col-span-3 mb-2">
+            <div class="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-main)] shadow-sm px-6 py-4 flex items-center gap-4">
+              ${medalIcon ? `<div class="flex-shrink-0 p-2 bg-[var(--bg-base)] rounded-xl border border-[var(--border-main)]">${medalIcon}</div>` : ''}
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-lg font-black text-[var(--text-main)]">Puesto #${myRank}</span>
+                </div>
+                <p class="text-[var(--text-muted)] text-sm">${msg}</p>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // Comparativa de periodo actual con anterior
+    let comparisonHtml = "";
+    if (selectedPeriodId) {
+      const sortedPeriods = [...currentPeriods].sort((a, b) => new Date(b.starts_at) - new Date(a.starts_at));
+      const currIdx = sortedPeriods.findIndex(p => String(p.id) === String(selectedPeriodId));
+      if (currIdx !== -1 && currIdx + 1 < sortedPeriods.length) {
+        const prevPeriod = sortedPeriods[currIdx + 1];
+        try {
+          const prevSummary = await metricsService.getSummary(prevPeriod.id);
+          const prevMyStats = prevSummary.evaluatees?.find(e => String(e.id) === String(user.id));
+          
+          if (prevMyStats) {
+            const prevScore = prevMyStats.average_score ?? 0;
+            const currScore = myStats.average_score ?? 0;
+            let compMsg = "Te mantuviste igual respecto al periodo anterior.";
+            let compIconColor = "text-amber-500";
+            let compIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14" /></svg>`;
+            
+            if (currScore > prevScore) {
+              compMsg = `¡Mejoraste tu calificación en ${Math.round(currScore - prevScore)} puntos!`;
+              compIconColor = "text-green-500";
+              compIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>`;
+            } else if (currScore < prevScore) {
+              compMsg = `Tu calificación bajó ${Math.round(prevScore - currScore)} puntos. ¡No te desanimes!`;
+              compIconColor = "text-red-500";
+              compIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>`;
+            }
+
+            const valueHtml = `${currScore} <span class="text-sm text-[var(--text-muted)] font-bold">Actual</span> <span class="text-2xl text-[var(--brand-bg)] mx-1">VS</span> ${prevScore} <span class="text-sm text-[var(--text-muted)] font-bold">Anterior</span>`;
+            
+            comparisonHtml = StatsCard({
+              title: "Comparativa ICP",
+              value: valueHtml,
+              icon: `<div class="${compIconColor}">${compIcon}</div>`,
+              description: compMsg
+            });
+          }
+        } catch (e) {
+          console.warn("Could not fetch previous period metrics", e);
+        }
+      }
+    }
+    
+    if (!comparisonHtml) {
+      comparisonHtml = StatsCard({
+        title: "Comparativa ICP",
+        value: "N/A",
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`,
+        description: "No hay periodo anterior para comparar"
+      });
+    }
+
+    html += motivationalCard;
     html += `
       ${StatsCard({ title: "Evaluaciones Recibidas", value: myStats.n_evals, icon: icons.users, description: "En el periodo actual" })}
       ${StatsCard({ title: "Puntaje Promedio ICP", value: (myStats.average_score ?? 0) + "/100", icon: icons.star, description: "Estado: " + myStats.status })}
+      ${comparisonHtml}
     `;
 
     if (role === "tutor") {
