@@ -1,10 +1,17 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-import traceback
+import logging
 import uuid
 
 from app.config.config import settings
+from app.config.logging_config import setup_logging
+
+# Lo primero: instala handlers y formato antes de que cualquier modulo emita
+# su primer log. Sin esto, Python cae al handler `lastResort` y los mensajes
+# salen sin timestamp, sin nivel y sin nombre del logger.
+setup_logging()
+logger = logging.getLogger(__name__)
 from app.routes import auth_routes, category_routes, check, period_routes, user_routes, form_routes, evaluation_routes, metrics_routes, question_routes, activity_log_routes, settings_routes, cohort_routes, clan_routes
 
 tags_metadata = [
@@ -77,8 +84,15 @@ app.add_middleware(
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     error_id = str(uuid.uuid4())
-    print(f"ERROR NO CONTROLADO [{error_id}]: {exc}")
-    traceback.print_exc()
+    # logger.exception (no print + traceback.print_exc): adjunta el traceback
+    # completo y lo emite por el MISMO canal y formato que el resto de la app.
+    # Antes iba a stdout mientras los logger.* iban a stderr -- dos streams sin
+    # sincronizar que en el visor de Render se intercalaban en desorden.
+    # El error_id es el mismo que recibe el cliente: es lo que permite
+    # correlacionar el reporte de un usuario con la linea exacta del log.
+    logger.exception(
+        "Error no controlado [%s] en %s %s", error_id, request.method, request.url.path
+    )
     return JSONResponse(
         status_code=500,
         content={

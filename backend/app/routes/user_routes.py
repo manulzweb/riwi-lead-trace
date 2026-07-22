@@ -18,8 +18,8 @@ def get_users(role: Optional[str] = Query(None, description="Filtrar por rol (ej
     """Consulta indexada sobre la tabla `users` mediante el campo `role_id`."""
     try:
         return user_service.get_users(role)
-    except Exception as e:
-        logger.error(f"Error fetching users: {e}")
+    except Exception:
+        logger.exception("Error fetching users")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al consultar usuarios")
 
 @router.get("/evaluables", response_model=List[UserOut])
@@ -27,8 +27,8 @@ def get_evaluables(evaluator_id: Optional[int] = Query(None, description="Si se 
     """Consulta filtrada con un array `IN` sobre `role_id` para resolver entidades evaluables (`team_leader`, `tutor`)."""
     try:
         return user_service.get_evaluables(evaluator_id)
-    except Exception as e:
-        logger.error(f"Error fetching evaluables: {e}")
+    except Exception:
+        logger.exception("Error fetching evaluables")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.get("/users/{user_id}", response_model=UserOut)
@@ -41,8 +41,8 @@ def get_user(user_id: int):
         return user
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Error fetching user: {e}")
+    except Exception:
+        logger.exception("Error fetching user")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.post(
@@ -59,8 +59,8 @@ def create_user(user: UserCreate):
         return user_service.create_user(user)
     except EmailAlreadyExistsException as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error creating user: {e}")
+    except Exception:
+        logger.exception("Error creating user")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.put(
@@ -78,8 +78,8 @@ def update_user(user_id: int, user: UserUpdate):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except EmailAlreadyExistsException as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error updating user: {e}")
+    except Exception:
+        logger.exception("Error updating user")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.patch("/users/{user_id}", response_model=UserOut)
@@ -91,8 +91,8 @@ def patch_user(user_id: int, user: UserUpdate):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except EmailAlreadyExistsException as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error patching user: {e}")
+    except Exception:
+        logger.exception("Error patching user")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -110,6 +110,6 @@ def delete_user(user_id: int):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except UserInUseException as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error deleting user: {e}")
+    except Exception:
+        logger.exception("Error deleting user")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")

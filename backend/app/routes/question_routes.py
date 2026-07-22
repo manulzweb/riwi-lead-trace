@@ -25,8 +25,8 @@ def get_questions(
     """Consulta anidada sobre `questions` filtrando por `form_id`."""
     try:
         return question_service.get_questions_by_form(form_id, only_active=not include_inactive)
-    except Exception as e:
-        logger.error(f"Error fetching questions: {e}")
+    except Exception:
+        logger.exception("Error fetching questions")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.post(
@@ -44,8 +44,8 @@ def post_question(payload: QuestionCreate):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except (FormNotFoundException, CategoryNotFoundException) as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error creating question: {e}")
+    except Exception:
+        logger.exception("Error creating question")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.delete("/questions/{question_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -62,8 +62,8 @@ def delete_question(question_id: int):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except ActivePeriodExistsException as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error deleting question {question_id}: {e}")
+    except Exception:
+        logger.exception("Error deleting question %s", question_id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.patch(
@@ -84,8 +84,8 @@ def patch_question_text(question_id: int, payload: QuestionTextPatch):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except InvalidQuestionTypeException as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error patching question {question_id}: {e}")
+    except Exception:
+        logger.exception("Error patching question %s", question_id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.put(
@@ -102,8 +102,8 @@ def put_question_weights(payload: WeightsUpdate):
     except ActivePeriodExistsException as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except InvalidWeightsException as e:
-        logger.error(f"InvalidWeightsException: {e}. Payload: {payload}")
+        logger.exception("InvalidWeightsException. Payload: %s", payload)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error updating weights: {e}")
+    except Exception:
+        logger.exception("Error updating weights")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")

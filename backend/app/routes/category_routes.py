@@ -18,8 +18,8 @@ def get_categories():
     """Consulta de lectura total sobre la entidad `categories`."""
     try:
         return category_service.get_categories()
-    except Exception as e:
-        logger.error(f"Error fetching categories: {e}")
+    except Exception:
+        logger.exception("Error fetching categories")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al listar categorías")
 
 @router.post(
@@ -35,8 +35,8 @@ def create_category(payload: CategoryCreate):
         return category_service.create_category(payload.name)
     except CategoryAlreadyExistsException as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error creating category: {e}")
+    except Exception:
+        logger.exception("Error creating category")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al crear categoría")
 
 @router.put(
@@ -54,8 +54,8 @@ def put_category(category_id: int, payload: CategoryUpdate):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except CategoryAlreadyExistsException as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error updating category {category_id}: {e}")
+    except Exception:
+        logger.exception("Error updating category %s", category_id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al actualizar categoría")
 
 @router.patch(
@@ -73,8 +73,8 @@ def update_category(category_id: int, payload: CategoryUpdate):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except CategoryAlreadyExistsException as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error patching category {category_id}: {e}")
+    except Exception:
+        logger.exception("Error patching category %s", category_id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al parchear categoría")
 
 @router.delete("/categories/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -87,6 +87,6 @@ def delete_category(category_id: int, admin_id: int = None):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except CategoryInUseException as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error deleting category {category_id}: {e}")
+    except Exception:
+        logger.exception("Error deleting category %s", category_id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al eliminar categoría")

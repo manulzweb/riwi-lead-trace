@@ -27,6 +27,6 @@ def login(credentials: LoginRequest):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except (InvalidCredentialsException, InactiveUserException) as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error during login: {e}")
+    except Exception:
+        logger.exception("Error during login")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")

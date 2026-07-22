@@ -16,8 +16,8 @@ def get_metrics_summary(period_id: int = Query(..., description="ID del periodo 
     """Agrega y normaliza las métricas de ICP on-read basándose en vistas pre-calculadas en BD."""
     try:
         return metrics_service.get_metrics_summary(period_id)
-    except Exception as e:
-        logger.error(f"Error fetching metrics summary for period {period_id}: {e}")
+    except Exception:
+        logger.exception("Error fetching metrics summary for period %s", period_id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al generar métricas")
 
 @router.get(
@@ -29,8 +29,8 @@ def get_score_history(evaluatee_id: int = Query(..., description="ID de la perso
     """Consulta el historial de puntuaciones utilizando las vistas pre-calculadas de la BD."""
     try:
         return metrics_service.get_score_history(evaluatee_id)
-    except Exception as e:
-        logger.error(f"Error fetching score history for user {evaluatee_id}: {e}")
+    except Exception:
+        logger.exception("Error fetching score history for user %s", evaluatee_id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al obtener historial")
 
 @router.get(
@@ -50,6 +50,6 @@ def get_ai_summary(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except AIServiceUnavailableException as e:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error generating AI summary: {e}")
+    except Exception:
+        logger.exception("Error generating AI summary")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error generando resumen IA")

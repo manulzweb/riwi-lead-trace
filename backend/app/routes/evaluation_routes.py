@@ -39,8 +39,8 @@ def create_evaluation(evaluation: EvaluationCreate):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except (InvalidRoleException, InvalidClanException) as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
-    except Exception as e:
-        logger.error(f"Internal error creating evaluation: {e}")
+    except Exception:
+        logger.exception("Internal error creating evaluation")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al guardar la evaluación.")
 
 @router.get(
@@ -80,6 +80,6 @@ def get_evaluations(
             )
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Internal error fetching evaluations: {e}")
+    except Exception:
+        logger.exception("Internal error fetching evaluations")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al consultar las evaluaciones.")

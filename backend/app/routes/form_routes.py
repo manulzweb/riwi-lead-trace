@@ -39,8 +39,8 @@ def get_forms(
             kind=kind,
             include_archived=(archived == "include"),
         )
-    except Exception as e:
-        logger.error(f"Error fetching forms: {e}")
+    except Exception:
+        logger.exception("Error fetching forms")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al consultar formularios")
 
 @router.post(
@@ -66,8 +66,8 @@ def create_form(payload: FormCreate):
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
     except CategoryNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error creating form form: {e}")
+    except Exception:
+        logger.exception("Error creating form form")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al crear plantilla")
 
 @router.put("/forms/{form_id}", response_model=FormOut)
@@ -79,8 +79,8 @@ def update_form(form_id: int, payload: FormUpdate):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except ActivePeriodExistsException as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error updating form form {form_id}: {e}")
+    except Exception:
+        logger.exception("Error updating form form %s", form_id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.delete(
@@ -110,6 +110,6 @@ def delete_form(form_id: int):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except ActivePeriodExistsException as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error deleting form form {form_id}: {e}")
+    except Exception:
+        logger.exception("Error deleting form form %s", form_id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")

@@ -18,8 +18,8 @@ def get_periods():
     """Consulta de la tabla `periods`. Retorna el historial completo de ciclos."""
     try:
         return period_service.get_periods()
-    except Exception as e:
-        logger.error(f"Error fetching periods: {e}")
+    except Exception:
+        logger.exception("Error fetching periods")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.get("/periods/{period_id}", response_model=PeriodOut)
@@ -32,8 +32,8 @@ def get_period(period_id: int):
         return period
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Error fetching period {period_id}: {e}")
+    except Exception:
+        logger.exception("Error fetching period %s", period_id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.post(
@@ -47,8 +47,8 @@ def create_period(period: PeriodCreate):
     """Inserta un nuevo ciclo. Implementa un trigger lógico en el servicio para hacer toggle (desactivar) los periodos previos si `is_active` es verdadero."""
     try:
         return period_service.create_period(period)
-    except Exception as e:
-        logger.error(f"Error creating period: {e}")
+    except Exception:
+        logger.exception("Error creating period")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.put(
@@ -64,8 +64,8 @@ def update_period(period_id: int, period: PeriodUpdate, background_tasks: Backgr
         return period_service.update_period(period_id, period, background_tasks)
     except PeriodNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error updating period {period_id}: {e}")
+    except Exception:
+        logger.exception("Error updating period %s", period_id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.patch(
@@ -81,8 +81,8 @@ def patch_period(period_id: int, period: PeriodUpdate, background_tasks: Backgro
         return period_service.update_period(period_id, period, background_tasks)
     except PeriodNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error patching period {period_id}: {e}")
+    except Exception:
+        logger.exception("Error patching period %s", period_id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.delete("/periods/{period_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -95,6 +95,6 @@ def delete_period(period_id: int):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except PeriodHasEvaluationsException as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error deleting period {period_id}: {e}")
+    except Exception:
+        logger.exception("Error deleting period %s", period_id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
