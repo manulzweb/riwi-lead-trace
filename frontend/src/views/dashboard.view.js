@@ -127,8 +127,8 @@ const renderDashboardContent = async (content, user, name, role) => {
         <h1 class="text-3xl font-bold text-[var(--text-main)]">Bienvenido, ${name}</h1>
         <p class="text-[var(--text-muted)] mt-1">Aquí tienes un resumen de tu actividad en LeadTrace.</p>
       </div>
-      ${role === 'admin' && currentPeriods.length > 0 ? `
-        <div class="flex flex-col md:flex-row gap-4 z-20 relative w-full md:w-auto flex-wrap justify-end">
+      ${['admin', 'team_leader', 'tutor'].includes(role) && currentPeriods.length > 0 ? `
+        <div class="flex flex-col sm:flex-row gap-4 z-20 relative w-full sm:w-auto">
           <div class="w-full sm:w-48">
             <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="dashboard-period-filter-btn">Periodo</label>
             ${dropdownComponent('dashboard-period-filter', currentPeriods.map(p => ({
@@ -136,21 +136,20 @@ const renderDashboardContent = async (content, user, name, role) => {
     label: p.name + (p.is_active ? ' (Activo)' : '')
   })), selectedPeriodId)}
           </div>
+          ${role === 'admin' ? `
           <div class="w-full sm:w-48" id="dashboard-cohort-filter-container">
             <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="dashboard-cohort-filter-btn">Cohorte</label>
             ${dropdownComponent('dashboard-cohort-filter', [{ value: 'all', label: 'Todas' }], 'all')}
           </div>
-          <div class="w-full sm:w-48" id="clan-filter-container">
-            <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="dashboard-clan-filter-btn">Clan</label>
-            ${dropdownComponent('dashboard-clan-filter', [{ value: 'all', label: 'Todos' }], 'all')}
-          </div>
+          ` : ''}
         </div>
       ` : ''}
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-0 transition-opacity duration-500 ease-out" id="dashboard-cards">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="dashboard-cards">
   `;
 
   let currentKpis = null;
+  const isPendingParticipation = (e) => e.status !== "submitted" && e.status !== "evaluado";
 
   if (role === "admin") {
     // Admin View
@@ -178,13 +177,13 @@ const renderDashboardContent = async (content, user, name, role) => {
     html += `
       ${StatsCard({
       title: "Alertas Activas",
-      value: `<span class="animate-number" data-value="${alertIconColor === "text-green-500" ? 0 : 1}">${alertIconColor === "text-green-500" ? "Todo OK" : "Atención"}</span>`,
+      value: alertIconColor === "text-green-500" ? "Todo OK" : "Atención",
       icon: `<svg aria-hidden="true" focusable="false" class="w-6 h-6 ${alertIconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
       description: alertMsg
     })}
-      ${StatsCard({ title: "ICP Global Promedio", value: `<span class="animate-number" data-value="${kpis.average_score}">${kpis.average_score}</span><span class="text-2xl text-[var(--text-muted)] ml-1">/100</span>`, icon: icons.star, description: "Desempeño de la plataforma" })}
+      ${StatsCard({ title: "ICP Global Promedio", value: kpis.average_score + "/100", icon: icons.star, description: "Desempeño de la plataforma" })}
       
-      <div class="col-span-1 md:col-span-2 lg:col-span-1">
+      <div class="col-span-1 md:grid-cols-2 lg:col-span-1">
         ${Card({
       className: "h-full flex flex-col p-6",
       children: `
@@ -195,226 +194,132 @@ const renderDashboardContent = async (content, user, name, role) => {
           `
     })}
       </div>
+      
       <div class="col-span-1 md:col-span-2 lg:col-span-3 mt-4">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
           <h2 class="text-xl font-bold text-[var(--text-main)]">Top Rendimiento (ICP)</h2>
+          <div class="w-full sm:w-64 z-10 relative" id="clan-filter-container">
+            <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="dashboard-clan-filter-btn">Filtrar por Clan</label>
+            ${dropdownComponent('dashboard-clan-filter', [{ value: 'all', label: 'Todos los clanes' }], 'all')}
+          </div>
         </div>
-        <div class="flex flex-col md:flex-row gap-6" id="dashboard-top-tables">
-        </div>
+        <div class="flex flex-col md:flex-row gap-6" id="dashboard-top-tables"></div>
       </div>
-    </div>
     `;
 
-    content.innerHTML = html;
-    
-    // Trigger reflow to start fade-in animation
-    const dashboardCards = document.getElementById('dashboard-cards');
-    if (dashboardCards) {
-      void dashboardCards.offsetWidth;
-      dashboardCards.classList.remove('opacity-0');
-      dashboardCards.classList.add('opacity-100');
-    }
-
-    // Run counter animations
-    document.querySelectorAll('.animate-number').forEach(el => {
-      const text = el.innerText;
-      const target = parseFloat(el.getAttribute('data-value'));
-      if (isNaN(target) || target === 0) return; // Skip non-numeric or 0 values
-
-      const duration = 1200;
-      const startTime = performance.now();
-      const animate = (currentTime) => {
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const easeProgress = 1 - Math.pow(1 - progress, 3); // Cubic ease-out
-        const current = (easeProgress * target);
-        
-        el.innerText = Number.isInteger(target) ? Math.round(current) : current.toFixed(1);
-        
-        if (progress < 1) {
-          requestAnimationFrame(animate);
-        } else {
-          el.innerText = text;
-        }
-      };
-      requestAnimationFrame(animate);
-    });
-
-    // Initialize participation doughnut chart
-    const pChartCtx = document.getElementById('participation-chart');
-    if (pChartCtx && currentKpis) {
-      const rootStyle = getComputedStyle(document.documentElement);
-      const brandColor = rootStyle.getPropertyValue('--brand-bg').trim() || '#4f46e5';
-      const emptyColor = rootStyle.getPropertyValue('--border-main').trim() || '#e5e7eb';
-      
-      const total = currentKpis.total_evaluations;
-      const rate = currentKpis.participation_rate;
-      const possible = rate > 0 ? Math.round((total / (rate / 100))) : 0;
-      const pending = Math.max(0, possible - total);
-
-      import('chart.js/auto').then(({ default: Chart }) => {
-        new Chart(pChartCtx, {
-          type: 'doughnut',
-          data: {
-            labels: ['Participación', 'Pendiente'],
-            datasets: [{
-              data: [total, pending],
-              backgroundColor: [brandColor, emptyColor],
-              borderWidth: 0,
-              hoverOffset: 4
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '75%',
-            plugins: {
-              legend: { display: false }
-            }
-          }
-        });
-      }).catch(e => console.error("Chart load error:", e));
-    }
-
-    // Extract unique clans
     const validEvaluatees = summary.evaluatees?.filter(e => e.average_score !== null) || [];
-    const clans = [...new Set(validEvaluatees.map(e => e.clan_name).filter(Boolean))].sort();
-
-    // Se guarda para que el filtro por clan no vuelva a pedir la API.
     dashboardEvaluatees = validEvaluatees;
 
-    const uniqueCohorts = [...new Set(validEvaluatees.map(e => e.cohort_name).filter(Boolean))].sort();
-    const cohortContainer = document.getElementById('dashboard-cohort-filter-container');
-    const clanContainer = document.getElementById('clan-filter-container');
-
-    const updateDashboardTables = () => {
-      const clanSelector = document.getElementById('dashboard-clan-filter');
-      const currentClan = clanSelector ? clanSelector.dataset.value || 'all' : 'all';
-      const cohortSelector = document.getElementById('dashboard-cohort-filter');
-      const currentCohort = cohortSelector ? cohortSelector.dataset.value || 'all' : 'all';
-
-      let filtered = dashboardEvaluatees;
-      if (currentClan !== 'all') filtered = filtered.filter(e => e.clan_name === currentClan);
-      if (currentCohort !== 'all') filtered = filtered.filter(e => e.cohort_name === currentCohort);
-
-      const topTutors = filtered.filter(e => e.role === "tutor").sort((a, b) => b.average_score - a.average_score).slice(0, 3);
-      const topLeaders = filtered.filter(e => e.role === "team_leader").sort((a, b) => b.average_score - a.average_score).slice(0, 3);
-
-      const buildTable = (title, data) => `
-        <div class="bg-[var(--bg-panel)] rounded-3xl border border-[var(--border-main)] shadow-sm overflow-hidden flex-1">
-          <div class="p-4 border-b border-[var(--border-main)] bg-[var(--bg-base)]">
-            <h3 class="text-lg font-bold text-[var(--text-main)]">${title}</h3>
-          </div>
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="border-b border-[var(--border-main)] text-[var(--text-muted)] text-sm bg-[var(--bg-panel)]">
-                <th scope="col" class="px-4 py-3 font-semibold w-16 text-center">#</th>
-                <th scope="col" class="px-4 py-3 font-semibold">Nombre</th>
-                <th scope="col" class="px-4 py-3 font-semibold text-right">ICP</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-[var(--border-main)]">
-              ${data.length > 0 ? data.map((e, index) => {
-        let medalIcon = "";
-        let rowClass = "hover:bg-[var(--bg-base)] transition-colors";
-        if (index === 0) {
-          medalIcon = '<span title="1er Puesto - Oro" class="cursor-help inline-block"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"><title>1er Puesto - Oro</title><path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/><path d="M11 12 5.12 2.2"/><path d="m13 12 5.88-9.8"/><path d="M8 7h8"/><circle cx="12" cy="17" r="5"/><path d="M12 14.7v4.6"/></svg></span>';
-        } else if (index === 1) {
-          medalIcon = '<span title="2do Puesto - Plata" class="cursor-help inline-block"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B8B8B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"><title>2do Puesto - Plata</title><path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/> <path d="M11 12 5.12 2.2"/> <path d="m13 12 5.88-9.8"/> <path d="M8 7h8"/> <circle cx="12" cy="17" r="5"/> <path d="M10.4 15.6c.4-.6 1-.9 1.7-.9.8 0 1.4.4 1.4 1 0 .6-.3.9-1.1 1.5l-1.8 1.3H14"/> </svg></span>';
-        } else if (index === 2) {
-          medalIcon = '<span title="3er Puesto - Bronce" class="cursor-help inline-block"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B87333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"><title>3er Puesto - Bronce</title><path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/> <path d="M11 12 5.12 2.2"/> <path d="m13 12 5.88-9.8"/> <path d="M8 7h8"/> <circle cx="12" cy="17" r="5"/> <path d="M10.5 15h2c.6 0 1 .3 1 .8s-.4.8-1 .8"/> <path d="M12.5 16.6c.8 0 1.2.4 1.2 1s-.5 1-1.4 1c-.6 0-1.1-.2-1.5-.6"/> </svg></span>';
-        } else {
-          medalIcon = `<span class="font-bold text-[var(--text-muted)]">${index + 1}</span>`;
-        }
-        return `
-                  <tr class="${rowClass}">
-                    <td class="px-4 py-3 text-center">${medalIcon}</td>
-                    <td class="px-4 py-3 font-bold text-[var(--text-main)] truncate">
-                      ${escapeHtml(e.name)}
-                      <span class="block text-xs font-normal text-[var(--text-muted)]">${escapeHtml(e.cohort_name || 'Sin cohorte')} - ${escapeHtml(e.clan_name || 'Sin clan')}</span>
-                    </td>
-                    <td class="px-4 py-3 text-right font-black text-[var(--text-main)]">${e.average_score}</td>
-                  </tr>
-                `;
-      }).join('') : `
-                <tr>
-                  <td colspan="3" class="px-4 py-10 text-center text-[var(--text-muted)]">
-                    <div class="flex flex-col items-center justify-center gap-3">
-                      <svg class="w-12 h-12 text-[var(--border-main)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
-                      <p class="text-sm font-medium">Aún no hay suficientes datos en este segmento.</p>
-                    </div>
-                  </td>
-                </tr>
-              `}
-            </tbody>
-          </table>
-        </div>
-      `;
-      document.getElementById('dashboard-top-tables').innerHTML = buildTable("Top Team Leaders", topLeaders) + buildTable("Top Tutores", topTutors);
-    };
-
-    const updateClanDropdown = (selectedCohort) => {
-      let filteredClans = masterClans;
-      if (selectedCohort && selectedCohort !== 'all') {
-        filteredClans = filteredClans.filter(c => c.cohort_name === selectedCohort);
-      }
-      const opts = [{ value: 'all', label: 'Todos' }, ...filteredClans.map(c => ({ value: c.name, label: c.name }))];
-      clanContainer.innerHTML = `
-        <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="dashboard-clan-filter-btn">Clan</label>
-        ${dropdownComponent('dashboard-clan-filter', opts, 'all')}
-      `;
-      setupDropdown('dashboard-clan-filter', updateDashboardTables);
-    };
-
-    if (cohortContainer) {
-      const opts = [{ value: 'all', label: 'Todas' }, ...masterCohorts.map(c => ({ value: c.name, label: c.name }))];
-      cohortContainer.innerHTML = `
-        <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="dashboard-cohort-filter-btn">Cohorte</label>
-        ${dropdownComponent('dashboard-cohort-filter', opts, 'all')}
-      `;
-      setupDropdown('dashboard-cohort-filter', (val) => {
-        updateClanDropdown(val);
-        updateDashboardTables();
-      });
-    }
-
-    if (clanContainer) {
-      updateClanDropdown('all');
-    }
-
-    setupDropdown('dashboard-clan-filter', updateDashboardTables);
-    setupDropdown('dashboard-cohort-filter', updateDashboardTables);
-
-    updateDashboardTables();
-
-    if (currentPeriods.length > 0) {
-      setupDropdown('dashboard-period-filter', async (val) => {
-        selectedPeriodId = val;
-        content.innerHTML = `
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          ${Array(4).fill(`
-            <div class="h-32 rounded-[2rem] bg-[var(--bg-panel)] p-6 shadow-sm border border-[var(--border-main)] flex flex-col justify-between">
-              <div class="h-4 w-24 skeleton-shimmer rounded-sm"></div>
-              <div class="h-8 w-16 skeleton-shimmer rounded-sm"></div>
-            </div>
-          `).join("")}
-        </div>
-        <div class="h-64 rounded-[2rem] bg-[var(--bg-panel)] p-6 shadow-sm border border-[var(--border-main)] flex flex-col mt-6">
-          <div class="h-6 w-48 skeleton-shimmer rounded-sm mb-6"></div>
-          <div class="flex-1 skeleton-shimmer rounded-xl"></div>
-        </div>
-        `;
-        await renderDashboardContent(content, user, name, role);
-      });
-    }
   } else if (role === "team_leader" || role === "tutor") {
     // Leader / Tutor View
     const summary = selectedPeriodId ? await metricsService.getSummary(selectedPeriodId) : { evaluatees: [] };
-    const myStats = summary.evaluatees?.find(e => e.id === user.id) || { n_evals: 0, average_score: 0, status: "Sin datos" };
+    const myStats = summary.evaluatees?.find(e => String(e.id) === String(user.id)) || { n_evals: 0, average_score: 0, status: "Sin datos", clan_name: "" };
 
+    const validEvaluatees = summary.evaluatees?.filter(e => e.average_score !== null) || [];
+    
+    let motivationalCard = '';
+    let myClanHtml = '';
+
+    if (role === "team_leader" && validEvaluatees.length > 0) {
+      // Ranking Motivacional
+      const tlList = validEvaluatees.filter(e => e.role === "team_leader").sort((a, b) => b.average_score - a.average_score);
+      const myIndex = tlList.findIndex(e => String(e.id) === String(user.id));
+      
+      if (myIndex !== -1) {
+        const myRank = myIndex + 1;
+        const total = tlList.length;
+        const percentile = Math.round(((total - myRank) / total) * 100);
+        let msg = "";
+        let medalIcon = "";
+        
+        if (myRank === 1) {
+          msg = `¡Felicidades! Eres el Team Leader #1 de la plataforma en este periodo.`;
+          medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/><path d="M11 12 5.12 2.2"/><path d="m13 12 5.88-9.8"/><path d="M8 7h8"/><circle cx="12" cy="17" r="5"/><path d="M12 14.7v4.6"/></svg>';
+        } else if (myRank === 2) {
+          msg = `¡Excelente trabajo! Eres el Team Leader #2 de la plataforma en este periodo.`;
+          medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B8B8B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"> <path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/> <path d="M11 12 5.12 2.2"/> <path d="m13 12 5.88-9.8"/> <path d="M8 7h8"/> <circle cx="12" cy="17" r="5"/> <path d="M10.4 15.6c.4-.6 1-.9 1.7-.9.8 0 1.4.4 1.4 1 0 .6-.3.9-1.1 1.5l-1.8 1.3H14"/> </svg>';
+        } else if (myRank === 3) {
+          msg = `¡Gran esfuerzo! Eres el Team Leader #3 de la plataforma en este periodo.`;
+          medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B87333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"> <path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/> <path d="M11 12 5.12 2.2"/> <path d="m13 12 5.88-9.8"/> <path d="M8 7h8"/> <circle cx="12" cy="17" r="5"/> <path d="M10.5 15h2c.6 0 1 .3 1 .8s-.4.8-1 .8"/> <path d="M12.5 16.6c.8 0 1.2.4 1.2 1s-.5 1-1.4 1c-.6 0-1.1-.2-1.5-.6"/> </svg>';
+        } else if (percentile >= 50) {
+          msg = `Estás superando al ${percentile}% de los líderes. ¡Continúa así!`;
+        } else {
+          msg = `¡Sigue esforzándote para subir en el ranking!`;
+        }
+
+        motivationalCard = `
+          <div class="col-span-1 md:col-span-2 lg:col-span-3 mb-2">
+            <div class="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-main)] shadow-sm px-6 py-4 flex items-center gap-4">
+              ${medalIcon ? `<div class="flex-shrink-0 p-2 bg-[var(--bg-base)] rounded-xl border border-[var(--border-main)]">${medalIcon}</div>` : ''}
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-lg font-black text-[var(--text-main)]">Puesto #${myRank}</span>
+                </div>
+                <p class="text-[var(--text-muted)] text-sm">${msg}</p>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // Comparativa de periodo actual con anterior
+    let comparisonHtml = "";
+    if (selectedPeriodId) {
+      const sortedPeriods = [...currentPeriods].sort((a, b) => new Date(b.starts_at) - new Date(a.starts_at));
+      const currIdx = sortedPeriods.findIndex(p => String(p.id) === String(selectedPeriodId));
+      if (currIdx !== -1 && currIdx + 1 < sortedPeriods.length) {
+        const prevPeriod = sortedPeriods[currIdx + 1];
+        try {
+          const prevSummary = await metricsService.getSummary(prevPeriod.id);
+          const prevMyStats = prevSummary.evaluatees?.find(e => String(e.id) === String(user.id));
+          
+          if (prevMyStats) {
+            const prevScore = prevMyStats.average_score ?? 0;
+            const currScore = myStats.average_score ?? 0;
+            let compMsg = "Te mantuviste igual respecto al periodo anterior.";
+            let compIconColor = "text-amber-500";
+            let compIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14" /></svg>`;
+            
+            if (currScore > prevScore) {
+              compMsg = `¡Mejoraste tu calificación en ${Math.round(currScore - prevScore)} puntos!`;
+              compIconColor = "text-green-500";
+              compIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>`;
+            } else if (currScore < prevScore) {
+              compMsg = `Tu calificación bajó ${Math.round(prevScore - currScore)} puntos. ¡No te desanimes!`;
+              compIconColor = "text-red-500";
+              compIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>`;
+            }
+
+            const valueHtml = `${currScore} <span class="text-sm text-[var(--text-muted)] font-bold">Actual</span> <span class="text-2xl text-[var(--brand-bg)] mx-1">VS</span> ${prevScore} <span class="text-sm text-[var(--text-muted)] font-bold">Anterior</span>`;
+            
+            comparisonHtml = StatsCard({
+              title: "Comparativa ICP",
+              value: valueHtml,
+              icon: `<div class="${compIconColor}">${compIcon}</div>`,
+              description: compMsg
+            });
+          }
+        } catch (e) {
+          console.warn("Could not fetch previous period metrics", e);
+        }
+      }
+    }
+    
+    if (!comparisonHtml) {
+      comparisonHtml = StatsCard({
+        title: "Comparativa ICP",
+        value: "N/A",
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`,
+        description: "No hay periodo anterior para comparar"
+      });
+    }
+
+    html += motivationalCard;
     html += `
       ${StatsCard({ title: "Evaluaciones Recibidas", value: myStats.n_evals, icon: icons.users, description: "En el periodo actual" })}
       ${StatsCard({ title: "Puntaje Promedio ICP", value: (myStats.average_score ?? 0) + "/100", icon: icons.star, description: "Estado: " + myStats.status })}
+      ${comparisonHtml}
     `;
 
     if (role === "tutor") {
@@ -422,16 +327,18 @@ const renderDashboardContent = async (content, user, name, role) => {
       const pending = myEvals.filter(isPendingParticipation).length;
       html += StatsCard({ title: "Evaluaciones por Hacer", value: pending, icon: icons.clock, description: "Pendientes de enviar" });
     }
-    
-    html += `</div>`;
-    content.innerHTML = html;
-
   } else {
     // Coder View
-    const myEvals = await evaluationService.getByEvaluator(user.id, 100);
+    const [myEvals, evaluables] = await Promise.all([
+      evaluationService.getByEvaluator(user.id, 100),
+      // Importante: Si 'evaluablesService' no está definido, se debe manejar.
+      // Suponiendo que es una variable global o servicio importado similar a los otros.
+      typeof window !== 'undefined' && window.evaluablesService ? await window.evaluablesService.get() : []
+    ]);
     const completed = myEvals.filter(e => !isPendingParticipation(e)).length;
     const drafts = myEvals.filter(isPendingParticipation);
-    const pending = drafts.length;
+    const totalEvaluables = evaluables ? evaluables.length : 0;
+    const pending = Math.max(0, totalEvaluables - completed);
 
     window.__coderStats = { completed, pending };
 
@@ -456,14 +363,153 @@ const renderDashboardContent = async (content, user, name, role) => {
         <div class="bg-[var(--bg-panel)] rounded-3xl border border-[var(--border-main)] p-8 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6 h-full">
           <div>
             <h2 class="text-2xl font-bold text-[var(--text-main)] mb-2">¡Hola, ${user.name.split(' ')[0]}!</h2>
+            ${drafts.length > 0 ? `
+              <p class="text-[var(--text-muted)]">Tienes <strong class="text-[var(--brand-bg)]">${drafts.length} evaluación(es)</strong> en borrador. Completa tus evaluaciones para seguir contribuyendo al crecimiento del equipo.</p>
+            ` : `
+              <p class="text-[var(--text-muted)]">Actualmente no tienes borradores pendientes. Anímate a iniciar una nueva evaluación.</p>
+            `}
+          </div>
+          <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto shrink-0">
+            ${drafts.length > 0 ? `
+              <a href="/evaluations?filter=draft" class="inline-flex items-center justify-center rounded-2xl bg-[var(--brand-bg)] px-6 py-3.5 text-sm font-bold text-white transition hover:bg-[var(--brand-hover)] shadow-md w-full sm:w-auto">
+                Continuar Borradores
+              </a>
+            ` : `
+              <a href="/evaluables" class="inline-flex items-center justify-center rounded-2xl bg-[var(--brand-bg)] px-6 py-3.5 text-sm font-bold text-white transition hover:bg-[var(--brand-hover)] shadow-md w-full sm:w-auto">
+                Elegir Evaluado
+              </a>
+            `}
+            <a href="/evaluations" class="inline-flex items-center justify-center rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] px-6 py-3.5 text-sm font-bold text-[var(--text-main)] transition hover:bg-[var(--border-main)] w-full sm:w-auto">
+              Ver Historial
+            </a>
           </div>
         </div>
       </div>
-    </div>
+    `;
+  }
+
+  html += `</div>`;
+  content.innerHTML = html;
+
+  if (role === "admin") {
+    const buildTable = (title, data) => `
+      <div class="bg-[var(--bg-panel)] rounded-3xl border border-[var(--border-main)] shadow-sm overflow-hidden flex-1">
+        <div class="p-4 border-b border-[var(--border-main)] bg-[var(--bg-base)]">
+          <h3 class="text-lg font-bold text-[var(--text-main)]">${title}</h3>
+        </div>
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b border-[var(--border-main)] text-[var(--text-muted)] text-sm bg-[var(--bg-panel)]">
+              <th class="px-4 py-3 font-semibold w-16 text-center">#</th>
+              <th class="px-4 py-3 font-semibold">Nombre</th>
+              <th class="px-4 py-3 font-semibold text-right">ICP</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-[var(--border-main)]">
+            ${data.length > 0 ? data.map((e, index) => {
+      let medalIcon = "";
+      let rowClass = "hover:bg-[var(--bg-base)] transition-colors";
+      if (index === 0) {
+        medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"><path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/><path d="M11 12 5.12 2.2"/><path d="m13 12 5.88-9.8"/><path d="M8 7h8"/><circle cx="12" cy="17" r="5"/><path d="M12 14.7v4.6"/></svg>';
+      } else if (index === 1) {
+        medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B8B8B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"> <path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/> <path d="M11 12 5.12 2.2"/> <path d="m13 12 5.88-9.8"/> <path d="M8 7h8"/> <circle cx="12" cy="17" r="5"/> <path d="M10.4 15.6c.4-.6 1-.9 1.7-.9.8 0 1.4.4 1.4 1 0 .6-.3.9-1.1 1.5l-1.8 1.3H14"/> </svg>';
+      } else if (index === 2) {
+        medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B87333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"> <path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/> <path d="M11 12 5.12 2.2"/> <path d="m13 12 5.88-9.8"/> <path d="M8 7h8"/> <circle cx="12" cy="17" r="5"/> <path d="M10.5 15h2c.6 0 1 .3 1 .8s-.4.8-1 .8"/> <path d="M12.5 16.6c.8 0 1.2.4 1.2 1s-.5 1-1.4 1c-.6 0-1.1-.2-1.5-.6"/> </svg>';
+      } else {
+        medalIcon = `<span class="font-bold text-[var(--text-muted)]">${index + 1}</span>`;
+      }
+      return `
+                <tr class="${rowClass}">
+                  <td class="px-4 py-3 text-center">${medalIcon}</td>
+                  <td class="px-4 py-3 font-bold text-[var(--text-main)] truncate">
+                    ${escapeHtml(e.name)}
+                    <span class="block text-xs font-normal text-[var(--text-muted)]">${escapeHtml(e.cohort_name || 'Sin cohorte')} - ${escapeHtml(e.clan_name || 'Sin clan')}</span>
+                  </td>
+                  <td class="px-4 py-3 text-right font-black text-[var(--text-main)]">${e.average_score}</td>
+                </tr>
+              `;
+    }).join('') : `
+              <tr>
+                <td colspan="3" class="px-4 py-6 text-center text-[var(--text-muted)]">No hay suficientes datos.</td>
+              </tr>
+            `}
+          </tbody>
+        </table>
+      </div>
     `;
 
-    content.innerHTML = html;
+    const updateDashboardTables = () => {
+      const clanSelector = document.getElementById('dashboard-clan-filter');
+      const currentClan = clanSelector ? clanSelector.dataset.value || 'all' : 'all';
+      const cohortSelector = document.getElementById('dashboard-cohort-filter');
+      const currentCohort = cohortSelector ? cohortSelector.dataset.value || 'all' : 'all';
 
+      let filtered = dashboardEvaluatees;
+      if (currentClan !== 'all') filtered = filtered.filter(e => e.clan_name === currentClan);
+      if (currentCohort !== 'all') filtered = filtered.filter(e => e.cohort_name === currentCohort);
+
+      const topTutors = filtered.filter(e => e.role === "tutor").sort((a, b) => b.average_score - a.average_score).slice(0, 3);
+      const topLeaders = filtered.filter(e => e.role === "team_leader").sort((a, b) => b.average_score - a.average_score).slice(0, 3);
+
+      const tableContent = buildTable("Top Team Leaders", topLeaders) + buildTable("Top Tutores", topTutors);
+      const container = document.getElementById('dashboard-top-tables');
+      if (container) container.innerHTML = tableContent;
+    };
+
+    const clanContainer = document.getElementById('clan-filter-container');
+    const updateClanDropdown = (selectedCohort) => {
+      let filteredClans = [];
+      const clansList = [...new Set(dashboardEvaluatees.filter(c => selectedCohort === 'all' || c.cohort_name === selectedCohort).map(e => e.clan_name).filter(Boolean))].sort();
+      const opts = [{ value: 'all', label: 'Todos los clanes' }, ...clansList.map(c => ({ value: c, label: c }))];
+      if (clanContainer) {
+        clanContainer.innerHTML = dropdownComponent('dashboard-clan-filter', opts, 'all');
+        setupDropdown('dashboard-clan-filter', updateDashboardTables);
+      }
+    };
+
+    const cohortContainer = document.getElementById('dashboard-cohort-filter-container');
+    if (cohortContainer) {
+      const cohortsList = [...new Set(dashboardEvaluatees.map(e => e.cohort_name).filter(Boolean))].sort();
+      const opts = [{ value: 'all', label: 'Todas las cohortes' }, ...cohortsList.map(c => ({ value: c, label: c }))];
+      cohortContainer.innerHTML = `<label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="dashboard-cohort-filter-btn">Cohorte</label>
+        ${dropdownComponent('dashboard-cohort-filter', opts, 'all')}`;
+      setupDropdown('dashboard-cohort-filter', (val) => {
+        updateClanDropdown(val);
+        updateDashboardTables();
+      });
+    }
+
+    if (clanContainer) {
+      updateClanDropdown('all');
+    }
+    
+    // Initial draw
+    updateDashboardTables();
+
+  }
+
+  if (['admin', 'team_leader', 'tutor'].includes(role) && currentPeriods.length > 0) {
+    setupDropdown('dashboard-period-filter', async (val) => {
+      selectedPeriodId = val;
+      content.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        ${Array(4).fill(`
+          <div class="h-32 rounded-[2rem] bg-[var(--bg-panel)] p-6 shadow-sm border border-[var(--border-main)] flex flex-col justify-between">
+            <div class="h-4 w-24 skeleton-shimmer rounded-sm"></div>
+            <div class="h-8 w-16 skeleton-shimmer rounded-sm"></div>
+          </div>
+        `).join("")}
+      </div>
+      <div class="h-64 rounded-[2rem] bg-[var(--bg-panel)] p-6 shadow-sm border border-[var(--border-main)] flex flex-col mt-6">
+        <div class="h-6 w-48 skeleton-shimmer rounded-sm mb-6"></div>
+        <div class="flex-1 skeleton-shimmer rounded-xl"></div>
+      </div>
+      `;
+      await renderDashboardContent(content, user, name, role);
+    });
+  }
+  
+  if (role === "coder" && window.__coderStats) {
     const ctx = document.getElementById('coder-participation-chart');
     if (ctx) {
       const rootStyle = getComputedStyle(document.documentElement);
@@ -471,7 +517,6 @@ const renderDashboardContent = async (content, user, name, role) => {
       const draftColor = rootStyle.getPropertyValue('--accent-amber').trim() || '#f59e0b';
 
       const { completed, pending } = window.__coderStats;
-      const total = completed + pending;
 
       import('chart.js/auto').then(({ default: Chart }) => {
         new Chart(ctx, {
