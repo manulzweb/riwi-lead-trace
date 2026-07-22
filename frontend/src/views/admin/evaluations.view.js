@@ -347,13 +347,13 @@ export const setupAdminEvaluations = () => {
   btnBack.addEventListener("click", showList);
 
   const updateWeightCounter = () => {
-    const total = questions.reduce((sum, q) => sum + (parseInt(q.weight) || 0), 0);
+    const total = questions.reduce((sum, q) => sum + (parseFloat(q.weight) || 0), 0);
     const counterSpan = document.getElementById("total-weight-value");
     if (counterSpan) {
-      counterSpan.textContent = total;
-      if (total === 100) {
+      counterSpan.textContent = Number.isInteger(total) ? total : total.toFixed(1);
+      if (Math.abs(total - 100) <= 0.1) {
         counterSpan.className = "text-lg text-emerald-500";
-      } else if (total > 100) {
+      } else if (total > 100.1) {
         counterSpan.className = "text-lg text-[var(--danger-text)]";
       } else {
         counterSpan.className = "text-lg text-[var(--text-main)]";
@@ -493,14 +493,15 @@ export const setupAdminEvaluations = () => {
       input.addEventListener("input", (e) => {
         const id = e.target.dataset.id;
         const q = questions.find(item => item.id === id);
-        if (q) {
-          let val = parseInt(e.target.value) || 0;
-          if (val < 0) {
-            val = 0;
-            e.target.value = 0;
+        if (e.target.classList.contains("q-weight-input")) {
+          let val = parseFloat(e.target.value) || 0;
+          if (val < 0) val = 0;
+          if (val > 100) val = 100;
+          e.target.value = val;
+          if (q) {
+            q.weight = val;
+            updateWeightCounter();
           }
-          q.weight = val;
-          updateWeightCounter();
         }
       });
     });
@@ -565,14 +566,14 @@ export const setupAdminEvaluations = () => {
     }
 
     // Validar suma de puntos (100)
-    const totalWeight = questions.reduce((sum, q) => sum + (parseInt(q.weight) || 0), 0);
+    const totalWeight = questions.reduce((sum, q) => sum + (parseFloat(q.weight) || 0), 0);
     const hasScale = questions.some(q => q.type === 'scale_1_5');
 
-    if (hasScale && totalWeight !== 100) {
+    if (hasScale && Math.abs(totalWeight - 100) > 0.1) {
       if (totalWeight < 100) {
-        showToast("Faltan puntos", "warning", `La suma total es ${totalWeight}. Debes sumar exactamente 100.`);
+        showToast("Faltan puntos", "warning", `La suma total es ${totalWeight.toFixed(1)}. Debes sumar exactamente 100.`);
       } else {
-        showToast("Sobran puntos", "warning", `La suma total es ${totalWeight}. Has superado el límite de 100.`);
+        showToast("Sobran puntos", "warning", `La suma total es ${totalWeight.toFixed(1)}. Has superado el límite de 100.`);
       }
       return;
     }
