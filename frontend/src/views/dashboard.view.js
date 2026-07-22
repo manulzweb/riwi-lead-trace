@@ -385,27 +385,35 @@ const renderDashboardContent = async (content, user, name, role) => {
         await renderDashboardContent(content, user, name, role);
       });
     }
-  } else if (role === "team_leader" || role === "tutor") {
-    // Leader / Tutor View
-    const summary = selectedPeriodId ? await metricsService.getSummary(selectedPeriodId) : { evaluatees: [] };
-    const myStats = summary.evaluatees?.find(e => e.id === user.id) || { n_evals: 0, average_score: 0, status: "Sin datos" };
+  } else {
+    // Leader, Tutor and Coder combined view
+    if (role === "team_leader" || role === "tutor") {
+      const summary = selectedPeriodId ? await metricsService.getSummary(selectedPeriodId) : { evaluatees: [] };
+      const myStats = summary.evaluatees?.find(e => e.id === user.id) || { n_evals: 0, average_score: 0, status: "Sin datos" };
 
-    html += `
-      ${StatsCard({ title: "Evaluaciones Recibidas", value: `<span class="animate-number" data-value="${myStats.n_evals}">${myStats.n_evals}</span>`, icon: icons.users, description: "En el periodo actual" })}
-      ${StatsCard({ title: "Puntaje Promedio ICP", value: `<span class="animate-number" data-value="${myStats.average_score ?? 0}">${myStats.average_score ?? 0}</span><span class="text-2xl text-[var(--text-muted)] ml-1">/100</span>`, icon: icons.star, description: "Estado: " + myStats.status })}
-    `;
+      html += `
+        ${StatsCard({ title: "Evaluaciones Recibidas", value: `<span class="animate-number" data-value="${myStats.n_evals}">${myStats.n_evals}</span>`, icon: icons.users, description: "En el periodo actual" })}
+        ${StatsCard({ title: "Puntaje Promedio ICP", value: `<span class="animate-number" data-value="${myStats.average_score ?? 0}">${myStats.average_score ?? 0}</span><span class="text-2xl text-[var(--text-muted)] ml-1">/100</span>`, icon: icons.star, description: "Estado: " + myStats.status })}
+      `;
+    }
+
+    if (role === "team_leader") {
+      html += `</div>`;
+      content.innerHTML = html;
+      return;
+    }
 
     if (role === "tutor") {
-      const myEvals = await evaluationService.getByEvaluator(user.id, 100);
-      const pending = myEvals.filter(isPendingParticipation).length;
-      html += StatsCard({ title: "Evaluaciones por Hacer", value: `<span class="animate-number" data-value="${pending}">${pending}</span>`, icon: icons.clock, description: "Pendientes de enviar" });
+      html += `
+        <div class="col-span-1 md:col-span-2 lg:col-span-3 mt-2 mb-2 flex items-center gap-4">
+          <div class="h-px bg-[var(--border-main)] flex-1"></div>
+          <span class="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Tu progreso como coder</span>
+          <div class="h-px bg-[var(--border-main)] flex-1"></div>
+        </div>
+      `;
     }
-    
-    html += `</div>`;
-    content.innerHTML = html;
 
-  } else {
-    // Coder View
+    // Tutor or Coder View
     const [myEvals, allEvaluables] = await Promise.all([
       evaluationService.getByEvaluator(user.id, 100),
       evaluablesService.get(user.id)
