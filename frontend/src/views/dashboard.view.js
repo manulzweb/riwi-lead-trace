@@ -118,7 +118,7 @@ const renderDashboardContent = async (content, user, name, role) => {
         <h1 class="text-3xl font-bold text-[var(--text-main)]">Bienvenido, ${name}</h1>
         <p class="text-[var(--text-muted)] mt-1">Aquí tienes un resumen de tu actividad en LeadTrace.</p>
       </div>
-      ${role === 'admin' && currentPeriods.length > 0 ? `
+      ${['admin', 'team_leader', 'tutor'].includes(role) && currentPeriods.length > 0 ? `
         <div class="flex flex-col sm:flex-row gap-4 z-20 relative w-full sm:w-auto">
           <div class="w-full sm:w-48">
             <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="dashboard-period-filter-btn">Periodo</label>
@@ -127,10 +127,12 @@ const renderDashboardContent = async (content, user, name, role) => {
     label: p.name + (p.is_active ? ' (Activo)' : '')
   })), selectedPeriodId)}
           </div>
+          ${role === 'admin' ? `
           <div class="w-full sm:w-48" id="dashboard-cohort-filter-container">
             <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="dashboard-cohort-filter-btn">Cohorte</label>
             ${dropdownComponent('dashboard-cohort-filter', [{ value: 'all', label: 'Todas' }], 'all')}
           </div>
+          ` : ''}
         </div>
       ` : ''}
     </div>
@@ -138,6 +140,7 @@ const renderDashboardContent = async (content, user, name, role) => {
   `;
 
   let currentKpis = null;
+  const isPendingParticipation = (e) => e.status !== "submitted" && e.status !== "evaluado";
 
   if (role === "admin") {
     // Admin View
@@ -171,7 +174,7 @@ const renderDashboardContent = async (content, user, name, role) => {
     })}
       ${StatsCard({ title: "ICP Global Promedio", value: kpis.average_score + "/100", icon: icons.star, description: "Desempeño de la plataforma" })}
       
-      <div class="col-span-1 md:col-span-2 lg:col-span-1">
+      <div class="col-span-1 md:grid-cols-2 lg:col-span-1">
         ${Card({
       className: "h-full flex flex-col p-6",
       children: `
@@ -182,18 +185,147 @@ const renderDashboardContent = async (content, user, name, role) => {
           `
     })}
       </div>
+      
+      <div class="col-span-1 md:col-span-2 lg:col-span-3 mt-4">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+          <h2 class="text-xl font-bold text-[var(--text-main)]">Top Rendimiento (ICP)</h2>
+          <div class="w-full sm:w-64 z-10 relative" id="clan-filter-container">
+            <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="dashboard-clan-filter-btn">Filtrar por Clan</label>
+            ${dropdownComponent('dashboard-clan-filter', [{ value: 'all', label: 'Todos los clanes' }], 'all')}
+          </div>
+        </div>
+        <div class="flex flex-col md:flex-row gap-6" id="dashboard-top-tables"></div>
+      </div>
     `;
 
-    // Extract unique clans
     const validEvaluatees = summary.evaluatees?.filter(e => e.average_score !== null) || [];
-    const clans = [...new Set(validEvaluatees.map(e => e.clan_name).filter(Boolean))].sort();
-
-    // Se guarda para que el filtro por clan no vuelva a pedir la API.
     dashboardEvaluatees = validEvaluatees;
 
-    const uniqueCohorts = [...new Set(validEvaluatees.map(e => e.cohort_name).filter(Boolean))].sort();
-    const cohortContainer = document.getElementById('cohort-filter-container');
-    const clanContainer = document.getElementById('clan-filter-container');
+  } else if (role === "team_leader" || role === "tutor") {
+    // Leader / Tutor View
+    const summary = selectedPeriodId ? await metricsService.getSummary(selectedPeriodId) : { evaluatees: [] };
+    const myStats = summary.evaluatees?.find(e => String(e.id) === String(user.id)) || { n_evals: 0, average_score: 0, status: "Sin datos" };
+
+    html += `
+      ${StatsCard({ title: "Evaluaciones Recibidas", value: myStats.n_evals, icon: icons.users, description: "En el periodo actual" })}
+      ${StatsCard({ title: "Puntaje Promedio ICP", value: (myStats.average_score ?? 0) + "/100", icon: icons.star, description: "Estado: " + myStats.status })}
+    `;
+
+    if (role === "tutor") {
+      const myEvals = await evaluationService.getByEvaluator(user.id, 100);
+      const pending = myEvals.filter(isPendingParticipation).length;
+      html += StatsCard({ title: "Evaluaciones por Hacer", value: pending, icon: icons.clock, description: "Pendientes de enviar" });
+    }
+  } else {
+    // Coder View
+    const [myEvals, evaluables] = await Promise.all([
+      evaluationService.getByEvaluator(user.id, 100),
+      // Importante: Si 'evaluablesService' no está definido, se debe manejar.
+      // Suponiendo que es una variable global o servicio importado similar a los otros.
+      typeof window !== 'undefined' && window.evaluablesService ? await window.evaluablesService.get() : []
+    ]);
+    const completed = myEvals.filter(e => !isPendingParticipation(e)).length;
+    const drafts = myEvals.filter(isPendingParticipation);
+    const totalEvaluables = evaluables ? evaluables.length : 0;
+    const pending = Math.max(0, totalEvaluables - completed);
+
+    window.__coderStats = { completed, pending };
+
+    html += `
+      ${StatsCard({ title: "Completadas", value: completed, icon: icons.check, description: "Evaluaciones enviadas" })}
+      ${StatsCard({ title: "Borradores", value: pending, icon: icons.clock, description: "Evaluaciones en curso" })}
+      
+      ${Card({
+      className: "h-full flex flex-col p-6 lg:row-span-2 shadow-sm border border-[var(--border-main)]",
+      children: `
+          <h3 class="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider text-left w-full mb-4">Progreso Actual</h3>
+          <div class="flex-1 flex flex-col items-center justify-center w-full min-h-[200px]">
+            ${completed + pending === 0
+          ? `<div class="text-center text-[var(--text-muted)] italic my-auto">Aún no hay datos para graficar.</div>`
+          : `<div class="relative w-48 h-48 my-4"><canvas id="coder-participation-chart"></canvas></div>`
+        }
+          </div>
+        `
+    })}
+      
+      <div class="col-span-1 md:col-span-2 lg:col-span-2 mt-4 lg:mt-0">
+        <div class="bg-[var(--bg-panel)] rounded-3xl border border-[var(--border-main)] p-8 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6 h-full">
+          <div>
+            <h2 class="text-2xl font-bold text-[var(--text-main)] mb-2">¡Hola, ${user.name.split(' ')[0]}!</h2>
+            ${drafts.length > 0 ? `
+              <p class="text-[var(--text-muted)]">Tienes <strong class="text-[var(--brand-bg)]">${drafts.length} evaluación(es)</strong> en borrador. Completa tus evaluaciones para seguir contribuyendo al crecimiento del equipo.</p>
+            ` : `
+              <p class="text-[var(--text-muted)]">Actualmente no tienes borradores pendientes. Anímate a iniciar una nueva evaluación.</p>
+            `}
+          </div>
+          <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto shrink-0">
+            ${drafts.length > 0 ? `
+              <a href="/evaluations?filter=draft" class="inline-flex items-center justify-center rounded-2xl bg-[var(--brand-bg)] px-6 py-3.5 text-sm font-bold text-white transition hover:bg-[var(--brand-hover)] shadow-md w-full sm:w-auto">
+                Continuar Borradores
+              </a>
+            ` : `
+              <a href="/evaluables" class="inline-flex items-center justify-center rounded-2xl bg-[var(--brand-bg)] px-6 py-3.5 text-sm font-bold text-white transition hover:bg-[var(--brand-hover)] shadow-md w-full sm:w-auto">
+                Elegir Evaluado
+              </a>
+            `}
+            <a href="/evaluations" class="inline-flex items-center justify-center rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] px-6 py-3.5 text-sm font-bold text-[var(--text-main)] transition hover:bg-[var(--border-main)] w-full sm:w-auto">
+              Ver Historial
+            </a>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  html += `</div>`;
+  content.innerHTML = html;
+
+  if (role === "admin") {
+    const buildTable = (title, data) => `
+      <div class="bg-[var(--bg-panel)] rounded-3xl border border-[var(--border-main)] shadow-sm overflow-hidden flex-1">
+        <div class="p-4 border-b border-[var(--border-main)] bg-[var(--bg-base)]">
+          <h3 class="text-lg font-bold text-[var(--text-main)]">${title}</h3>
+        </div>
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b border-[var(--border-main)] text-[var(--text-muted)] text-sm bg-[var(--bg-panel)]">
+              <th class="px-4 py-3 font-semibold w-16 text-center">#</th>
+              <th class="px-4 py-3 font-semibold">Nombre</th>
+              <th class="px-4 py-3 font-semibold text-right">ICP</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-[var(--border-main)]">
+            ${data.length > 0 ? data.map((e, index) => {
+      let medalIcon = "";
+      let rowClass = "hover:bg-[var(--bg-base)] transition-colors";
+      if (index === 0) {
+        medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"><path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/><path d="M11 12 5.12 2.2"/><path d="m13 12 5.88-9.8"/><path d="M8 7h8"/><circle cx="12" cy="17" r="5"/><path d="M12 14.7v4.6"/></svg>';
+      } else if (index === 1) {
+        medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B8B8B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"> <path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/> <path d="M11 12 5.12 2.2"/> <path d="m13 12 5.88-9.8"/> <path d="M8 7h8"/> <circle cx="12" cy="17" r="5"/> <path d="M10.4 15.6c.4-.6 1-.9 1.7-.9.8 0 1.4.4 1.4 1 0 .6-.3.9-1.1 1.5l-1.8 1.3H14"/> </svg>';
+      } else if (index === 2) {
+        medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B87333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"> <path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/> <path d="M11 12 5.12 2.2"/> <path d="m13 12 5.88-9.8"/> <path d="M8 7h8"/> <circle cx="12" cy="17" r="5"/> <path d="M10.5 15h2c.6 0 1 .3 1 .8s-.4.8-1 .8"/> <path d="M12.5 16.6c.8 0 1.2.4 1.2 1s-.5 1-1.4 1c-.6 0-1.1-.2-1.5-.6"/> </svg>';
+      } else {
+        medalIcon = `<span class="font-bold text-[var(--text-muted)]">${index + 1}</span>`;
+      }
+      return `
+                <tr class="${rowClass}">
+                  <td class="px-4 py-3 text-center">${medalIcon}</td>
+                  <td class="px-4 py-3 font-bold text-[var(--text-main)] truncate">
+                    ${escapeHtml(e.name)}
+                    <span class="block text-xs font-normal text-[var(--text-muted)]">${escapeHtml(e.cohort_name || 'Sin cohorte')} - ${escapeHtml(e.clan_name || 'Sin clan')}</span>
+                  </td>
+                  <td class="px-4 py-3 text-right font-black text-[var(--text-main)]">${e.average_score}</td>
+                </tr>
+              `;
+    }).join('') : `
+              <tr>
+                <td colspan="3" class="px-4 py-6 text-center text-[var(--text-muted)]">No hay suficientes datos.</td>
+              </tr>
+            `}
+          </tbody>
+        </table>
+      </div>
+    `;
 
     const updateDashboardTables = () => {
       const clanSelector = document.getElementById('dashboard-clan-filter');
@@ -208,67 +340,28 @@ const renderDashboardContent = async (content, user, name, role) => {
       const topTutors = filtered.filter(e => e.role === "tutor").sort((a, b) => b.average_score - a.average_score).slice(0, 3);
       const topLeaders = filtered.filter(e => e.role === "team_leader").sort((a, b) => b.average_score - a.average_score).slice(0, 3);
 
-      const buildTable = (title, data) => `
-        <div class="bg-[var(--bg-panel)] rounded-3xl border border-[var(--border-main)] shadow-sm overflow-hidden flex-1">
-          <div class="p-4 border-b border-[var(--border-main)] bg-[var(--bg-base)]">
-            <h3 class="text-lg font-bold text-[var(--text-main)]">${title}</h3>
-          </div>
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="border-b border-[var(--border-main)] text-[var(--text-muted)] text-sm bg-[var(--bg-panel)]">
-                <th class="px-4 py-3 font-semibold w-16 text-center">#</th>
-                <th class="px-4 py-3 font-semibold">Nombre</th>
-                <th class="px-4 py-3 font-semibold text-right">ICP</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-[var(--border-main)]">
-              ${data.length > 0 ? data.map((e, index) => {
-        let medalIcon = "";
-        let rowClass = "hover:bg-[var(--bg-base)] transition-colors";
-        if (index === 0) {
-          medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"><path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/><path d="M11 12 5.12 2.2"/><path d="m13 12 5.88-9.8"/><path d="M8 7h8"/><circle cx="12" cy="17" r="5"/><path d="M12 14.7v4.6"/></svg>';
-        } else if (index === 1) {
-          medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B8B8B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"> <path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/> <path d="M11 12 5.12 2.2"/> <path d="m13 12 5.88-9.8"/> <path d="M8 7h8"/> <circle cx="12" cy="17" r="5"/> <path d="M10.4 15.6c.4-.6 1-.9 1.7-.9.8 0 1.4.4 1.4 1 0 .6-.3.9-1.1 1.5l-1.8 1.3H14"/> </svg>';
-        } else if (index === 2) {
-          medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B87333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"> <path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/> <path d="M11 12 5.12 2.2"/> <path d="m13 12 5.88-9.8"/> <path d="M8 7h8"/> <circle cx="12" cy="17" r="5"/> <path d="M10.5 15h2c.6 0 1 .3 1 .8s-.4.8-1 .8"/> <path d="M12.5 16.6c.8 0 1.2.4 1.2 1s-.5 1-1.4 1c-.6 0-1.1-.2-1.5-.6"/> </svg>';
-        } else {
-          medalIcon = `<span class="font-bold text-[var(--text-muted)]">${index + 1}</span>`;
-        }
-        return `
-                  <tr class="${rowClass}">
-                    <td class="px-4 py-3 text-center">${medalIcon}</td>
-                    <td class="px-4 py-3 font-bold text-[var(--text-main)] truncate">
-                      ${escapeHtml(e.name)}
-                      <span class="block text-xs font-normal text-[var(--text-muted)]">${escapeHtml(e.cohort_name || 'Sin cohorte')} - ${escapeHtml(e.clan_name || 'Sin clan')}</span>
-                    </td>
-                    <td class="px-4 py-3 text-right font-black text-[var(--text-main)]">${e.average_score}</td>
-                  </tr>
-                `;
-      }).join('') : `
-                <tr>
-                  <td colspan="3" class="px-4 py-6 text-center text-[var(--text-muted)]">No hay suficientes datos.</td>
-                </tr>
-              `}
-            </tbody>
-          </table>
-        </div>
-      `;
-      document.getElementById('dashboard-top-tables').innerHTML = buildTable("Top Team Leaders", topLeaders) + buildTable("Top Tutores", topTutors);
+      const tableContent = buildTable("Top Team Leaders", topLeaders) + buildTable("Top Tutores", topTutors);
+      const container = document.getElementById('dashboard-top-tables');
+      if (container) container.innerHTML = tableContent;
     };
 
+    const clanContainer = document.getElementById('clan-filter-container');
     const updateClanDropdown = (selectedCohort) => {
-      let filteredClans = masterClans;
-      if (selectedCohort && selectedCohort !== 'all') {
-        filteredClans = filteredClans.filter(c => c.cohort_name === selectedCohort);
+      let filteredClans = [];
+      const clansList = [...new Set(dashboardEvaluatees.filter(c => selectedCohort === 'all' || c.cohort_name === selectedCohort).map(e => e.clan_name).filter(Boolean))].sort();
+      const opts = [{ value: 'all', label: 'Todos los clanes' }, ...clansList.map(c => ({ value: c, label: c }))];
+      if (clanContainer) {
+        clanContainer.innerHTML = dropdownComponent('dashboard-clan-filter', opts, 'all');
+        setupDropdown('dashboard-clan-filter', updateDashboardTables);
       }
-      const opts = [{ value: 'all', label: 'Todos' }, ...filteredClans.map(c => ({ value: c.name, label: c.name }))];
-      clanContainer.innerHTML = dropdownComponent('dashboard-clan-filter', opts, 'all');
-      setupDropdown('dashboard-clan-filter', updateDashboardTables);
     };
 
+    const cohortContainer = document.getElementById('dashboard-cohort-filter-container');
     if (cohortContainer) {
-      const opts = [{ value: 'all', label: 'Todas' }, ...masterCohorts.map(c => ({ value: c.name, label: c.name }))];
-      cohortContainer.innerHTML = dropdownComponent('dashboard-cohort-filter', opts, 'all');
+      const cohortsList = [...new Set(dashboardEvaluatees.map(e => e.cohort_name).filter(Boolean))].sort();
+      const opts = [{ value: 'all', label: 'Todas las cohortes' }, ...cohortsList.map(c => ({ value: c, label: c }))];
+      cohortContainer.innerHTML = `<label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="dashboard-cohort-filter-btn">Cohorte</label>
+        ${dropdownComponent('dashboard-cohort-filter', opts, 'all')}`;
       setupDropdown('dashboard-cohort-filter', (val) => {
         updateClanDropdown(val);
         updateDashboardTables();
@@ -278,31 +371,34 @@ const renderDashboardContent = async (content, user, name, role) => {
     if (clanContainer) {
       updateClanDropdown('all');
     }
+    
+    // Initial draw
+    updateDashboardTables();
 
-    setupDropdown('dashboard-clan-filter', updateDashboardTables);
-    setupDropdown('dashboard-cohort-filter', updateDashboardTables);
+  }
 
-    if (currentPeriods.length > 0) {
-      setupDropdown('dashboard-period-filter', async (val) => {
-        selectedPeriodId = val;
-        content.innerHTML = `
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          ${Array(4).fill(`
-            <div class="h-32 rounded-[2rem] bg-[var(--bg-panel)] p-6 shadow-sm border border-[var(--border-main)] flex flex-col justify-between">
-              <div class="h-4 w-24 skeleton-shimmer rounded-sm"></div>
-              <div class="h-8 w-16 skeleton-shimmer rounded-sm"></div>
-            </div>
-          `).join("")}
-        </div>
-        <div class="h-64 rounded-[2rem] bg-[var(--bg-panel)] p-6 shadow-sm border border-[var(--border-main)] flex flex-col mt-6">
-          <div class="h-6 w-48 skeleton-shimmer rounded-sm mb-6"></div>
-          <div class="flex-1 skeleton-shimmer rounded-xl"></div>
-        </div>
-        `;
-        await renderDashboardContent(content, user, name, role);
-      });
-    }
-  } else if (role === "coder" && window.__coderStats) {
+  if (['admin', 'team_leader', 'tutor'].includes(role) && currentPeriods.length > 0) {
+    setupDropdown('dashboard-period-filter', async (val) => {
+      selectedPeriodId = val;
+      content.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        ${Array(4).fill(`
+          <div class="h-32 rounded-[2rem] bg-[var(--bg-panel)] p-6 shadow-sm border border-[var(--border-main)] flex flex-col justify-between">
+            <div class="h-4 w-24 skeleton-shimmer rounded-sm"></div>
+            <div class="h-8 w-16 skeleton-shimmer rounded-sm"></div>
+          </div>
+        `).join("")}
+      </div>
+      <div class="h-64 rounded-[2rem] bg-[var(--bg-panel)] p-6 shadow-sm border border-[var(--border-main)] flex flex-col mt-6">
+        <div class="h-6 w-48 skeleton-shimmer rounded-sm mb-6"></div>
+        <div class="flex-1 skeleton-shimmer rounded-xl"></div>
+      </div>
+      `;
+      await renderDashboardContent(content, user, name, role);
+    });
+  }
+  
+  if (role === "coder" && window.__coderStats) {
     const ctx = document.getElementById('coder-participation-chart');
     if (ctx) {
       const rootStyle = getComputedStyle(document.documentElement);
@@ -310,7 +406,6 @@ const renderDashboardContent = async (content, user, name, role) => {
       const draftColor = rootStyle.getPropertyValue('--accent-amber').trim() || '#f59e0b';
 
       const { completed, pending } = window.__coderStats;
-      const total = completed + pending;
 
       import('chart.js/auto').then(({ default: Chart }) => {
         new Chart(ctx, {
