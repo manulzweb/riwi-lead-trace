@@ -3,7 +3,8 @@ from typing import List
 import logging
 from app.schemas.period import PeriodCreate, PeriodUpdate, PeriodOut
 from app.services.period_service import period_service
-from app.exceptions.period_exceptions import PeriodNotFoundException, PeriodHasEvaluationsException
+
+from app.exceptions.base import ApplicationException
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -62,8 +63,11 @@ def update_period(period_id: int, period: PeriodUpdate, background_tasks: Backgr
     """Mutación completa de la entidad `periods`. Dispara reconciliación de la bandera `is_active` si se establece en true."""
     try:
         return period_service.update_period(period_id, period, background_tasks)
-    except PeriodNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ApplicationException:
+        # Excepcion de dominio: la traduce el handler global leyendo su
+        # http_status. El `raise` pelado va ANTES del `except Exception`:
+        # sin el, el generico la capturaria y la volveria un 500.
+        raise
     except Exception:
         logger.exception("Error updating period %s", period_id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
@@ -79,8 +83,11 @@ def patch_period(period_id: int, period: PeriodUpdate, background_tasks: Backgro
     """Mutación parcial de la entidad `periods`."""
     try:
         return period_service.update_period(period_id, period, background_tasks)
-    except PeriodNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ApplicationException:
+        # Excepcion de dominio: la traduce el handler global leyendo su
+        # http_status. El `raise` pelado va ANTES del `except Exception`:
+        # sin el, el generico la capturaria y la volveria un 500.
+        raise
     except Exception:
         logger.exception("Error patching period %s", period_id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
@@ -91,10 +98,11 @@ def delete_period(period_id: int):
     try:
         period_service.delete_period(period_id)
         return None
-    except PeriodNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except PeriodHasEvaluationsException as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except ApplicationException:
+        # Excepcion de dominio: la traduce el handler global leyendo su
+        # http_status. El `raise` pelado va ANTES del `except Exception`:
+        # sin el, el generico la capturaria y la volveria un 500.
+        raise
     except Exception:
         logger.exception("Error deleting period %s", period_id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")

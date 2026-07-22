@@ -2,7 +2,8 @@ from fastapi import APIRouter, Query, HTTPException, status
 import logging
 from app.services.metrics_service import metrics_service
 from app.services.ai_service import ai_service
-from app.exceptions.ai_exceptions import InsufficientDataException, AIServiceUnavailableException
+
+from app.exceptions.base import ApplicationException
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -46,10 +47,11 @@ def get_ai_summary(
     try:
         summary = ai_service.get_or_generate_ai_summary(evaluatee_id, period_id)
         return {"summary": summary}
-    except InsufficientDataException as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    except AIServiceUnavailableException as e:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e))
+    except ApplicationException:
+        # Excepcion de dominio: la traduce el handler global leyendo su
+        # http_status. El `raise` pelado va ANTES del `except Exception`:
+        # sin el, el generico la capturaria y la volveria un 500.
+        raise
     except Exception:
         logger.exception("Error generating AI summary")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error generando resumen IA")

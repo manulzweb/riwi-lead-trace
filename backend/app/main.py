@@ -6,6 +6,7 @@ import uuid
 
 from app.config.config import settings
 from app.config.logging_config import setup_logging
+from app.exceptions.base import ApplicationException
 
 # Lo primero: instala handlers y formato antes de que cualquier modulo emita
 # su primer log. Sin esto, Python cae al handler `lastResort` y los mensajes
@@ -81,6 +82,31 @@ app.add_middleware(
 # que no dice nada por si mismo, se imprime en el log del servidor junto al
 # traceback y permite localizar el error exacto a partir de lo que reporte el
 # usuario. El detalle tecnico se queda del lado del servidor.
+@app.exception_handler(ApplicationException)
+async def application_exception_handler(request: Request, exc: ApplicationException):
+    """Traduce TODA excepcion de dominio a su respuesta HTTP.
+
+    El handler NO decide el codigo: lo lee de la excepcion. Sin `isinstance`,
+    sin `if` por tipo. El codigo pertenece a la clase (ver
+    `app/exceptions/base.py`), que es lo que permite que las DOS clases
+    llamadas `InvalidRoleException` -- 422 en `form_exceptions`, 403 en
+    `evaluation_exceptions` -- convivan sin que este handler tenga que
+    distinguirlas.
+
+    La respuesta es identica a la que producia `HTTPException` en cada route:
+    `{"detail": "<mensaje>"}` con `application/json`. Sin ese formato exacto
+    el contrato de la API cambiaria y el front dejaria de leer `err.detail`.
+
+    Starlette resuelve el handler recorriendo el MRO de la excepcion, asi que
+    este gana sobre el de `Exception` para cualquier subclase de
+    `ApplicationException`.
+    """
+    return JSONResponse(
+        status_code=exc.http_status,
+        content={"detail": str(exc)},
+    )
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     error_id = str(uuid.uuid4())

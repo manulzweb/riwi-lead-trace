@@ -3,10 +3,8 @@ from typing import List, Optional, Union
 import logging
 from app.schemas.evaluation_details import EvaluationCreate, EvaluationDetailOut, EvaluationHistoryOut
 from app.services.evaluation_service import evaluation_service
-from app.exceptions.evaluation_exceptions import (
-    PeriodNotFoundException, PeriodNotActiveException, EvaluationAlreadyExistsException,
-    EvaluateeNotFoundException, InvalidRoleException, InvalidClanException
-)
+
+from app.exceptions.base import ApplicationException
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -29,16 +27,11 @@ def create_evaluation(evaluation: EvaluationCreate):
     no está activo."""
     try:
         return evaluation_service.create_evaluation(evaluation)
-    except PeriodNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except PeriodNotActiveException as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except EvaluationAlreadyExistsException as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except EvaluateeNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except (InvalidRoleException, InvalidClanException) as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except ApplicationException:
+        # Excepcion de dominio: la traduce el handler global leyendo su
+        # http_status. El `raise` pelado va ANTES del `except Exception`:
+        # sin el, el generico la capturaria y la volveria un 500.
+        raise
     except Exception:
         logger.exception("Internal error creating evaluation")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al guardar la evaluación.")

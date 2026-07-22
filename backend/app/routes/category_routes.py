@@ -3,7 +3,8 @@ from typing import List
 import logging
 from app.schemas.category import CategoryCreate, CategoryOut, CategoryUpdate
 from app.services.category_service import category_service
-from app.exceptions.category_exceptions import CategoryAlreadyExistsException, CategoryNotFoundException, CategoryInUseException
+
+from app.exceptions.base import ApplicationException
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -33,8 +34,11 @@ def create_category(payload: CategoryCreate):
     """Inserta una nueva categoría en la base de datos."""
     try:
         return category_service.create_category(payload.name)
-    except CategoryAlreadyExistsException as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except ApplicationException:
+        # Excepcion de dominio: la traduce el handler global leyendo su
+        # http_status. El `raise` pelado va ANTES del `except Exception`:
+        # sin el, el generico la capturaria y la volveria un 500.
+        raise
     except Exception:
         logger.exception("Error creating category")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al crear categoría")
@@ -50,10 +54,11 @@ def put_category(category_id: int, payload: CategoryUpdate):
     """Actualiza el campo `name` de una categoría existente de manera total."""
     try:
         return category_service.update_category(category_id, payload.name)
-    except CategoryNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except CategoryAlreadyExistsException as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except ApplicationException:
+        # Excepcion de dominio: la traduce el handler global leyendo su
+        # http_status. El `raise` pelado va ANTES del `except Exception`:
+        # sin el, el generico la capturaria y la volveria un 500.
+        raise
     except Exception:
         logger.exception("Error updating category %s", category_id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al actualizar categoría")
@@ -69,10 +74,11 @@ def update_category(category_id: int, payload: CategoryUpdate):
     """Actualiza el campo `name` de una categoría existente de manera parcial."""
     try:
         return category_service.update_category(category_id, payload.name)
-    except CategoryNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except CategoryAlreadyExistsException as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except ApplicationException:
+        # Excepcion de dominio: la traduce el handler global leyendo su
+        # http_status. El `raise` pelado va ANTES del `except Exception`:
+        # sin el, el generico la capturaria y la volveria un 500.
+        raise
     except Exception:
         logger.exception("Error patching category %s", category_id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al parchear categoría")
@@ -83,10 +89,11 @@ def delete_category(category_id: int, admin_id: int = None):
     try:
         category_service.delete_category(category_id, admin_id)
         return None
-    except CategoryNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except CategoryInUseException as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except ApplicationException:
+        # Excepcion de dominio: la traduce el handler global leyendo su
+        # http_status. El `raise` pelado va ANTES del `except Exception`:
+        # sin el, el generico la capturaria y la volveria un 500.
+        raise
     except Exception:
         logger.exception("Error deleting category %s", category_id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al eliminar categoría")

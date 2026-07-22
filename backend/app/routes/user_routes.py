@@ -3,7 +3,8 @@ from typing import List, Optional
 import logging
 from app.schemas.user import UserCreate, UserUpdate, UserOut
 from app.services.user_service import user_service
-from app.exceptions.user_exceptions import UserNotFoundException, EmailAlreadyExistsException, UserInUseException
+
+from app.exceptions.base import ApplicationException
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -57,8 +58,11 @@ def create_user(user: UserCreate):
     """Inserta un registro transaccional en `users` (aplica hash bcrypt sincrónico al password) y asocia FK en `user_roles`."""
     try:
         return user_service.create_user(user)
-    except EmailAlreadyExistsException as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except ApplicationException:
+        # Excepcion de dominio: la traduce el handler global leyendo su
+        # http_status. El `raise` pelado va ANTES del `except Exception`:
+        # sin el, el generico la capturaria y la volveria un 500.
+        raise
     except Exception:
         logger.exception("Error creating user")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
@@ -74,10 +78,11 @@ def update_user(user_id: int, user: UserUpdate):
     """Operación PUT (Reemplazo total) sobre `users` y recálculo/reemplazo de entradas en `user_roles`."""
     try:
         return user_service.update_user(user_id, user)
-    except UserNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except EmailAlreadyExistsException as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except ApplicationException:
+        # Excepcion de dominio: la traduce el handler global leyendo su
+        # http_status. El `raise` pelado va ANTES del `except Exception`:
+        # sin el, el generico la capturaria y la volveria un 500.
+        raise
     except Exception:
         logger.exception("Error updating user")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
@@ -87,10 +92,11 @@ def patch_user(user_id: int, user: UserUpdate):
     """Operación PATCH (Reemplazo parcial) sobre `users`. Muta únicamente los campos proporcionados en el payload sin afectar la entidad completa."""
     try:
         return user_service.update_user(user_id, user)
-    except UserNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except EmailAlreadyExistsException as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except ApplicationException:
+        # Excepcion de dominio: la traduce el handler global leyendo su
+        # http_status. El `raise` pelado va ANTES del `except Exception`:
+        # sin el, el generico la capturaria y la volveria un 500.
+        raise
     except Exception:
         logger.exception("Error patching user")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
@@ -106,10 +112,11 @@ def delete_user(user_id: int):
     try:
         user_service.delete_user(user_id)
         return None
-    except UserNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except UserInUseException as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except ApplicationException:
+        # Excepcion de dominio: la traduce el handler global leyendo su
+        # http_status. El `raise` pelado va ANTES del `except Exception`:
+        # sin el, el generico la capturaria y la volveria un 500.
+        raise
     except Exception:
         logger.exception("Error deleting user")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")

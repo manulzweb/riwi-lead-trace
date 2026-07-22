@@ -3,10 +3,8 @@ import logging
 from fastapi import APIRouter, HTTPException, Query, status
 from app.schemas.form import FormOut, FormCreate, FormUpdate, FormDeleteResult
 from app.services.form_service import form_service
-from app.exceptions.form_exceptions import (
-    ActivePeriodExistsException, InvalidRoleException, InvalidWeightException, 
-    CategoryNotFoundException, FormNotFoundException
-)
+
+from app.exceptions.base import ApplicationException
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -60,12 +58,11 @@ def create_form(payload: FormCreate):
     """Transacción compuesta: inserta `forms` y realiza bulk insert de esquemas hijos (`questions`). Valida constraint `is_active`."""
     try:
         return form_service.create_form(payload)
-    except ActivePeriodExistsException as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except (InvalidRoleException, InvalidWeightException) as e:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
-    except CategoryNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ApplicationException:
+        # Excepcion de dominio: la traduce el handler global leyendo su
+        # http_status. El `raise` pelado va ANTES del `except Exception`:
+        # sin el, el generico la capturaria y la volveria un 500.
+        raise
     except Exception:
         logger.exception("Error creating form form")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al crear plantilla")
@@ -75,10 +72,11 @@ def update_form(form_id: int, payload: FormUpdate):
     """Mutación parcial (PATCH) sobre `forms.title` o `description`. Exclusivo estado cerrado."""
     try:
         return form_service.update_form(form_id, payload)
-    except FormNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except ActivePeriodExistsException as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except ApplicationException:
+        # Excepcion de dominio: la traduce el handler global leyendo su
+        # http_status. El `raise` pelado va ANTES del `except Exception`:
+        # sin el, el generico la capturaria y la volveria un 500.
+        raise
     except Exception:
         logger.exception("Error updating form form %s", form_id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
@@ -106,10 +104,11 @@ def delete_form(form_id: int):
     """
     try:
         return form_service.delete_form(form_id)
-    except FormNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except ActivePeriodExistsException as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except ApplicationException:
+        # Excepcion de dominio: la traduce el handler global leyendo su
+        # http_status. El `raise` pelado va ANTES del `except Exception`:
+        # sin el, el generico la capturaria y la volveria un 500.
+        raise
     except Exception:
         logger.exception("Error deleting form form %s", form_id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")

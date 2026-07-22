@@ -3,11 +3,8 @@ from typing import List
 import logging
 from app.schemas.question import QuestionCreate, QuestionOut, QuestionTextPatch, WeightsUpdate
 from app.services.question_service import question_service
-from app.exceptions.question_exceptions import (
-    ActivePeriodExistsException, QuestionNotFoundException, QuestionAlreadyReplacedException,
-    InvalidQuestionTypeException, SemanticsNotCoherentException, FormNotFoundException,
-    CategoryNotFoundException, InvalidWeightsException
-)
+
+from app.exceptions.base import ApplicationException
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -40,10 +37,11 @@ def post_question(payload: QuestionCreate):
     """Inserta una nueva tupla en `questions` y la asocia al form. Valida el state del periodo global (debe estar inactivo)."""
     try:
         return question_service.create_question(payload)
-    except ActivePeriodExistsException as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except (FormNotFoundException, CategoryNotFoundException) as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ApplicationException:
+        # Excepcion de dominio: la traduce el handler global leyendo su
+        # http_status. El `raise` pelado va ANTES del `except Exception`:
+        # sin el, el generico la capturaria y la volveria un 500.
+        raise
     except Exception:
         logger.exception("Error creating question")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
@@ -58,10 +56,11 @@ def delete_question(question_id: int):
         return None
     except HTTPException as e:
         raise e
-    except QuestionNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except ActivePeriodExistsException as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except ApplicationException:
+        # Excepcion de dominio: la traduce el handler global leyendo su
+        # http_status. El `raise` pelado va ANTES del `except Exception`:
+        # sin el, el generico la capturaria y la volveria un 500.
+        raise
     except Exception:
         logger.exception("Error deleting question %s", question_id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
@@ -76,14 +75,11 @@ def patch_question_text(question_id: int, payload: QuestionTextPatch):
     """Genera una nueva versión de la pregunta y desactiva la anterior. Valida coherencia semántica (NLP) contra su categoría original. Precondición: periodo cerrado."""
     try:
         return question_service.version_question_text(question_id, payload.text, payload.confirm, payload.admin_id)
-    except QuestionNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except ActivePeriodExistsException as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except (QuestionAlreadyReplacedException, SemanticsNotCoherentException) as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except InvalidQuestionTypeException as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except ApplicationException:
+        # Excepcion de dominio: la traduce el handler global leyendo su
+        # http_status. El `raise` pelado va ANTES del `except Exception`:
+        # sin el, el generico la capturaria y la volveria un 500.
+        raise
     except Exception:
         logger.exception("Error patching question %s", question_id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
@@ -99,11 +95,11 @@ def put_question_weights(payload: WeightsUpdate):
     """Mutación masiva de la columna `weight_percent` para preguntas de escala. Transaccional. Constraint: la suma debe ser exactamente 100.0."""
     try:
         return question_service.update_weights(payload)
-    except ActivePeriodExistsException as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except InvalidWeightsException as e:
-        logger.exception("InvalidWeightsException. Payload: %s", payload)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
+    except ApplicationException:
+        # Excepcion de dominio: la traduce el handler global leyendo su
+        # http_status. El `raise` pelado va ANTES del `except Exception`:
+        # sin el, el generico la capturaria y la volveria un 500.
+        raise
     except Exception:
         logger.exception("Error updating weights")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
