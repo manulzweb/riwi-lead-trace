@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, status
 from typing import List
 import logging
 from app.schemas.category import CategoryCreate, CategoryOut, CategoryUpdate
@@ -17,11 +17,7 @@ router = APIRouter()
 )
 def get_categories():
     """Consulta de lectura total sobre la entidad `categories`."""
-    try:
-        return category_service.get_categories()
-    except Exception:
-        logger.exception("Error fetching categories")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al listar categorías")
+    return category_service.get_categories()
 
 @router.post(
     "/categories", 
@@ -35,13 +31,11 @@ def create_category(payload: CategoryCreate):
     try:
         return category_service.create_category(payload.name)
     except ApplicationException:
-        # Excepcion de dominio: la traduce el handler global leyendo su
-        # http_status. El `raise` pelado va ANTES del `except Exception`:
-        # sin el, el generico la capturaria y la volveria un 500.
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
         raise
-    except Exception:
-        logger.exception("Error creating category")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al crear categoría")
 
 @router.put(
     "/categories/{category_id}", 
@@ -55,13 +49,11 @@ def put_category(category_id: int, payload: CategoryUpdate):
     try:
         return category_service.update_category(category_id, payload.name)
     except ApplicationException:
-        # Excepcion de dominio: la traduce el handler global leyendo su
-        # http_status. El `raise` pelado va ANTES del `except Exception`:
-        # sin el, el generico la capturaria y la volveria un 500.
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
         raise
-    except Exception:
-        logger.exception("Error updating category %s", category_id)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al actualizar categoría")
 
 @router.patch(
     "/categories/{category_id}", 
@@ -75,13 +67,11 @@ def update_category(category_id: int, payload: CategoryUpdate):
     try:
         return category_service.update_category(category_id, payload.name)
     except ApplicationException:
-        # Excepcion de dominio: la traduce el handler global leyendo su
-        # http_status. El `raise` pelado va ANTES del `except Exception`:
-        # sin el, el generico la capturaria y la volveria un 500.
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
         raise
-    except Exception:
-        logger.exception("Error patching category %s", category_id)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al parchear categoría")
 
 @router.delete("/categories/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_category(category_id: int, admin_id: int = None):
@@ -90,10 +80,8 @@ def delete_category(category_id: int, admin_id: int = None):
         category_service.delete_category(category_id, admin_id)
         return None
     except ApplicationException:
-        # Excepcion de dominio: la traduce el handler global leyendo su
-        # http_status. El `raise` pelado va ANTES del `except Exception`:
-        # sin el, el generico la capturaria y la volveria un 500.
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
         raise
-    except Exception:
-        logger.exception("Error deleting category %s", category_id)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al eliminar categoría")

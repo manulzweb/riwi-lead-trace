@@ -20,11 +20,7 @@ def get_questions(
     include_inactive: bool = Query(False, description="Incluir preguntas inactivas"),
 ):
     """Consulta anidada sobre `questions` filtrando por `form_id`."""
-    try:
-        return question_service.get_questions_by_form(form_id, only_active=not include_inactive)
-    except Exception:
-        logger.exception("Error fetching questions")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+    return question_service.get_questions_by_form(form_id, only_active=not include_inactive)
 
 @router.post(
     "/questions", 
@@ -38,13 +34,11 @@ def post_question(payload: QuestionCreate):
     try:
         return question_service.create_question(payload)
     except ApplicationException:
-        # Excepcion de dominio: la traduce el handler global leyendo su
-        # http_status. El `raise` pelado va ANTES del `except Exception`:
-        # sin el, el generico la capturaria y la volveria un 500.
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
         raise
-    except Exception:
-        logger.exception("Error creating question")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.delete("/questions/{question_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_question(question_id: int):
@@ -57,13 +51,11 @@ def delete_question(question_id: int):
     except HTTPException as e:
         raise e
     except ApplicationException:
-        # Excepcion de dominio: la traduce el handler global leyendo su
-        # http_status. El `raise` pelado va ANTES del `except Exception`:
-        # sin el, el generico la capturaria y la volveria un 500.
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
         raise
-    except Exception:
-        logger.exception("Error deleting question %s", question_id)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.patch(
     "/questions/{question_id}", 
@@ -76,13 +68,11 @@ def patch_question_text(question_id: int, payload: QuestionTextPatch):
     try:
         return question_service.version_question_text(question_id, payload.text, payload.confirm, payload.admin_id)
     except ApplicationException:
-        # Excepcion de dominio: la traduce el handler global leyendo su
-        # http_status. El `raise` pelado va ANTES del `except Exception`:
-        # sin el, el generico la capturaria y la volveria un 500.
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
         raise
-    except Exception:
-        logger.exception("Error patching question %s", question_id)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.put(
     "/questions/weights", 
@@ -96,10 +86,8 @@ def put_question_weights(payload: WeightsUpdate):
     try:
         return question_service.update_weights(payload)
     except ApplicationException:
-        # Excepcion de dominio: la traduce el handler global leyendo su
-        # http_status. El `raise` pelado va ANTES del `except Exception`:
-        # sin el, el generico la capturaria y la volveria un 500.
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
         raise
-    except Exception:
-        logger.exception("Error updating weights")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")

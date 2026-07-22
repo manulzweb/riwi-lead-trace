@@ -17,20 +17,12 @@ router = APIRouter()
 )
 def get_users(role: Optional[str] = Query(None, description="Filtrar por rol (ej. team_leader, tutor)")):
     """Consulta indexada sobre la tabla `users` mediante el campo `role_id`."""
-    try:
-        return user_service.get_users(role)
-    except Exception:
-        logger.exception("Error fetching users")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al consultar usuarios")
+    return user_service.get_users(role)
 
 @router.get("/evaluables", response_model=List[UserOut])
 def get_evaluables(evaluator_id: Optional[int] = Query(None, description="Si se envía, excluye de la lista al propio usuario aunque tenga otro ID (por email)")):
     """Consulta filtrada con un array `IN` sobre `role_id` para resolver entidades evaluables (`team_leader`, `tutor`)."""
-    try:
-        return user_service.get_evaluables(evaluator_id)
-    except Exception:
-        logger.exception("Error fetching evaluables")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+    return user_service.get_evaluables(evaluator_id)
 
 @router.get("/users/{user_id}", response_model=UserOut)
 def get_user(user_id: int):
@@ -42,9 +34,6 @@ def get_user(user_id: int):
         return user
     except HTTPException:
         raise
-    except Exception:
-        logger.exception("Error fetching user")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.post(
     "/users", 
@@ -59,13 +48,11 @@ def create_user(user: UserCreate):
     try:
         return user_service.create_user(user)
     except ApplicationException:
-        # Excepcion de dominio: la traduce el handler global leyendo su
-        # http_status. El `raise` pelado va ANTES del `except Exception`:
-        # sin el, el generico la capturaria y la volveria un 500.
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
         raise
-    except Exception:
-        logger.exception("Error creating user")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.put(
     "/users/{user_id}", 
@@ -79,13 +66,11 @@ def update_user(user_id: int, user: UserUpdate):
     try:
         return user_service.update_user(user_id, user)
     except ApplicationException:
-        # Excepcion de dominio: la traduce el handler global leyendo su
-        # http_status. El `raise` pelado va ANTES del `except Exception`:
-        # sin el, el generico la capturaria y la volveria un 500.
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
         raise
-    except Exception:
-        logger.exception("Error updating user")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.patch("/users/{user_id}", response_model=UserOut)
 def patch_user(user_id: int, user: UserUpdate):
@@ -93,13 +78,11 @@ def patch_user(user_id: int, user: UserUpdate):
     try:
         return user_service.update_user(user_id, user)
     except ApplicationException:
-        # Excepcion de dominio: la traduce el handler global leyendo su
-        # http_status. El `raise` pelado va ANTES del `except Exception`:
-        # sin el, el generico la capturaria y la volveria un 500.
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
         raise
-    except Exception:
-        logger.exception("Error patching user")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_user(user_id: int):
@@ -113,10 +96,8 @@ def delete_user(user_id: int):
         user_service.delete_user(user_id)
         return None
     except ApplicationException:
-        # Excepcion de dominio: la traduce el handler global leyendo su
-        # http_status. El `raise` pelado va ANTES del `except Exception`:
-        # sin el, el generico la capturaria y la volveria un 500.
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
         raise
-    except Exception:
-        logger.exception("Error deleting user")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")

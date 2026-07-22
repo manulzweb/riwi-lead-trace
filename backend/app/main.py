@@ -116,8 +116,17 @@ async def global_exception_handler(request: Request, exc: Exception):
     # sincronizar que en el visor de Render se intercalaban en desorden.
     # El error_id es el mismo que recibe el cliente: es lo que permite
     # correlacionar el reporte de un usuario con la linea exacta del log.
+    # `path_params` conserva el contexto que antes ponia cada router a mano
+    # (`logger.exception("Error updating category %s", category_id)`). Al
+    # centralizar, ese id se perderia; FastAPI ya lo tiene resuelto aqui como
+    # {"category_id": 7}, asi que se recupera sin devolver logica a los routers.
+    #
+    # Solo path params: NO query string ni body. El body puede traer
+    # contrasenas y el query string ids de sesion; el log no es sitio para eso.
+    contexto = request.path_params or {}
     logger.exception(
-        "Error no controlado [%s] en %s %s", error_id, request.method, request.url.path
+        "Error no controlado [%s] en %s %s %s",
+        error_id, request.method, request.url.path, contexto or "",
     )
     return JSONResponse(
         status_code=500,

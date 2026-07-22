@@ -1,6 +1,6 @@
 from typing import List, Literal, Optional
 import logging
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Query, status
 from app.schemas.form import FormOut, FormCreate, FormUpdate, FormDeleteResult
 from app.services.form_service import form_service
 
@@ -31,15 +31,11 @@ def get_forms(
     quien olvide pasar los parámetros obtiene la respuesta más restrictiva,
     nunca una plantilla ni un formulario archivado.
     """
-    try:
-        return form_service.get_forms(
-            role_name=target_role,
-            kind=kind,
-            include_archived=(archived == "include"),
-        )
-    except Exception:
-        logger.exception("Error fetching forms")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al consultar formularios")
+    return form_service.get_forms(
+        role_name=target_role,
+        kind=kind,
+        include_archived=(archived == "include"),
+    )
 
 @router.post(
     "/forms", 
@@ -59,13 +55,11 @@ def create_form(payload: FormCreate):
     try:
         return form_service.create_form(payload)
     except ApplicationException:
-        # Excepcion de dominio: la traduce el handler global leyendo su
-        # http_status. El `raise` pelado va ANTES del `except Exception`:
-        # sin el, el generico la capturaria y la volveria un 500.
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
         raise
-    except Exception:
-        logger.exception("Error creating form form")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al crear plantilla")
 
 @router.put("/forms/{form_id}", response_model=FormOut)
 def update_form(form_id: int, payload: FormUpdate):
@@ -73,13 +67,11 @@ def update_form(form_id: int, payload: FormUpdate):
     try:
         return form_service.update_form(form_id, payload)
     except ApplicationException:
-        # Excepcion de dominio: la traduce el handler global leyendo su
-        # http_status. El `raise` pelado va ANTES del `except Exception`:
-        # sin el, el generico la capturaria y la volveria un 500.
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
         raise
-    except Exception:
-        logger.exception("Error updating form form %s", form_id)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.delete(
     "/forms/{form_id}",
@@ -105,10 +97,8 @@ def delete_form(form_id: int):
     try:
         return form_service.delete_form(form_id)
     except ApplicationException:
-        # Excepcion de dominio: la traduce el handler global leyendo su
-        # http_status. El `raise` pelado va ANTES del `except Exception`:
-        # sin el, el generico la capturaria y la volveria un 500.
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
         raise
-    except Exception:
-        logger.exception("Error deleting form form %s", form_id)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")

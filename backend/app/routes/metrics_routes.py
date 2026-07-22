@@ -15,11 +15,7 @@ router = APIRouter()
 )
 def get_metrics_summary(period_id: int = Query(..., description="ID del periodo a consultar")):
     """Agrega y normaliza las métricas de ICP on-read basándose en vistas pre-calculadas en BD."""
-    try:
-        return metrics_service.get_metrics_summary(period_id)
-    except Exception:
-        logger.exception("Error fetching metrics summary for period %s", period_id)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al generar métricas")
+    return metrics_service.get_metrics_summary(period_id)
 
 @router.get(
     "/metrics/history",
@@ -28,11 +24,7 @@ def get_metrics_summary(period_id: int = Query(..., description="ID del periodo 
 )
 def get_score_history(evaluatee_id: int = Query(..., description="ID de la persona evaluada")):
     """Consulta el historial de puntuaciones utilizando las vistas pre-calculadas de la BD."""
-    try:
-        return metrics_service.get_score_history(evaluatee_id)
-    except Exception:
-        logger.exception("Error fetching score history for user %s", evaluatee_id)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al obtener historial")
+    return metrics_service.get_score_history(evaluatee_id)
 
 @router.get(
     "/metrics/ai-summary",
@@ -48,9 +40,10 @@ def get_ai_summary(
         summary = ai_service.get_or_generate_ai_summary(evaluatee_id, period_id)
         return {"summary": summary}
     except ApplicationException:
-        # Excepcion de dominio: la traduce el handler global leyendo su
-        # http_status. El `raise` pelado va ANTES del `except Exception`:
-        # sin el, el generico la capturaria y la volveria un 500.
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
         raise
     except Exception:
         logger.exception("Error generating AI summary")

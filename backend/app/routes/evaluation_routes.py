@@ -28,13 +28,11 @@ def create_evaluation(evaluation: EvaluationCreate):
     try:
         return evaluation_service.create_evaluation(evaluation)
     except ApplicationException:
-        # Excepcion de dominio: la traduce el handler global leyendo su
-        # http_status. El `raise` pelado va ANTES del `except Exception`:
-        # sin el, el generico la capturaria y la volveria un 500.
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
         raise
-    except Exception:
-        logger.exception("Internal error creating evaluation")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al guardar la evaluación.")
 
 @router.get(
     "/evaluations",
@@ -73,6 +71,3 @@ def get_evaluations(
             )
     except HTTPException:
         raise
-    except Exception:
-        logger.exception("Internal error fetching evaluations")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al consultar las evaluaciones.")

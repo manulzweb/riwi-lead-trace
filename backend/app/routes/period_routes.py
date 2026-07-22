@@ -17,11 +17,7 @@ router = APIRouter()
 )
 def get_periods():
     """Consulta de la tabla `periods`. Retorna el historial completo de ciclos."""
-    try:
-        return period_service.get_periods()
-    except Exception:
-        logger.exception("Error fetching periods")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+    return period_service.get_periods()
 
 @router.get("/periods/{period_id}", response_model=PeriodOut)
 def get_period(period_id: int):
@@ -33,9 +29,6 @@ def get_period(period_id: int):
         return period
     except HTTPException:
         raise
-    except Exception:
-        logger.exception("Error fetching period %s", period_id)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.post(
     "/periods", 
@@ -46,11 +39,7 @@ def get_period(period_id: int):
 )
 def create_period(period: PeriodCreate):
     """Inserta un nuevo ciclo. Implementa un trigger lógico en el servicio para hacer toggle (desactivar) los periodos previos si `is_active` es verdadero."""
-    try:
-        return period_service.create_period(period)
-    except Exception:
-        logger.exception("Error creating period")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+    return period_service.create_period(period)
 
 @router.put(
     "/periods/{period_id}", 
@@ -64,13 +53,11 @@ def update_period(period_id: int, period: PeriodUpdate, background_tasks: Backgr
     try:
         return period_service.update_period(period_id, period, background_tasks)
     except ApplicationException:
-        # Excepcion de dominio: la traduce el handler global leyendo su
-        # http_status. El `raise` pelado va ANTES del `except Exception`:
-        # sin el, el generico la capturaria y la volveria un 500.
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
         raise
-    except Exception:
-        logger.exception("Error updating period %s", period_id)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.patch(
     "/periods/{period_id}", 
@@ -84,13 +71,11 @@ def patch_period(period_id: int, period: PeriodUpdate, background_tasks: Backgro
     try:
         return period_service.update_period(period_id, period, background_tasks)
     except ApplicationException:
-        # Excepcion de dominio: la traduce el handler global leyendo su
-        # http_status. El `raise` pelado va ANTES del `except Exception`:
-        # sin el, el generico la capturaria y la volveria un 500.
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
         raise
-    except Exception:
-        logger.exception("Error patching period %s", period_id)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.delete("/periods/{period_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_period(period_id: int):
@@ -99,10 +84,8 @@ def delete_period(period_id: int):
         period_service.delete_period(period_id)
         return None
     except ApplicationException:
-        # Excepcion de dominio: la traduce el handler global leyendo su
-        # http_status. El `raise` pelado va ANTES del `except Exception`:
-        # sin el, el generico la capturaria y la volveria un 500.
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
         raise
-    except Exception:
-        logger.exception("Error deleting period %s", period_id)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")

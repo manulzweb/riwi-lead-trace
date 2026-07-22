@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, status
 import logging
 from app.schemas.auth import LoginRequest, LoginResponse
 from app.services.auth_service import auth_service
@@ -27,6 +27,3 @@ def login(credentials: LoginRequest):
         # `except Exception`: sin el, el generico de abajo la capturaria y la
         # convertiria en 500 antes de que el handler llegue a verla.
         raise
-    except Exception:
-        logger.exception("Error during login")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
