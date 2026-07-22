@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
-from app.database import get_db
+from app.config.database import get_db
 
 router = APIRouter(prefix="/clans")
 
-@router.get("/")
+@router.get("")
 def get_clans(db = Depends(get_db)):
     query = text("""
         SELECT cl.id, cl.cohort_id, cl.number, cl.name as clan_name, co.name as cohort_name

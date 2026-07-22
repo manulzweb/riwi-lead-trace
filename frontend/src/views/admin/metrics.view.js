@@ -132,9 +132,13 @@ export const setupMetrics = async () => {
   });
 
   let periods = [];
+  let masterCohorts = [];
+  let masterClans = [];
   let currentPeriodId = null;
   let currentRoleFilter = "all";
   let currentCohortFilter = "all";
+  let currentRealCohortFilter = "all";
+  let currentClanFilter = "all";
   const historyCharts = new Map(); // evaluateeId -> instancia de Chart.js activa, para destruirla antes de recrearla
 
   // Extraida a funcion para que el boton "Reintentar" del estado de error pueda

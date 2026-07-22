@@ -60,8 +60,9 @@ export const renderDashboard = () => {
 };
 
 let currentPeriods = [];
+let masterCohorts = [];
+let masterClans = [];
 let selectedPeriodId = null;
-// Evaluables validos del periodo ya cargado, para que el filtro por clan no
 // tenga que volver a pedir /metrics. Antes vivia en window.__dashboardEvaluatees:
 // un global sobrevive a la navegacion y podia servir datos rancios de una
 // sesion o un periodo anterior. Como variable de modulo se reasigna en cada
@@ -81,7 +82,15 @@ export const setupDashboard = async () => {
   const load = async () => {
     content.setAttribute("aria-busy", "true");
     try {
-      currentPeriods = await periodService.get();
+      const results = await Promise.all([
+        periodService.get(),
+        cohortsService.get(),
+        clansService.get()
+      ]);
+      currentPeriods = results[0];
+      masterCohorts = results[1];
+      masterClans = results[2];
+      
       const activePeriod = currentPeriods.find(p => p.is_active) || currentPeriods[0];
       selectedPeriodId = activePeriod ? String(activePeriod.id) : null;
 
