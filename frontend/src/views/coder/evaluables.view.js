@@ -93,8 +93,8 @@ const renderEvaluablesList = () => {
 
   const currentUser = authService.getSession();
 
-  // Filtrar según el rol seleccionado (Excluir al usuario logueado)
-  let filtered = evaluables.filter(u => u.id !== currentUser?.id);
+  // Filtrar según el rol seleccionado (Excluir al usuario logueado y solo de su mismo clan)
+  let filtered = evaluables.filter(u => u.id !== currentUser?.id && u.clan_id === currentUser?.clan_id);
 
   if (currentFilter !== "all") {
     filtered = filtered.filter(u => u.roles?.includes(currentFilter));
@@ -193,7 +193,7 @@ export const setupEvaluables = async () => {
       const [evalsList, activePeriodData, allEvaluables] = await Promise.all([
         evaluationService.getByEvaluator(currentUser.id),
         periodService.get().then(periods => periods.find(p => p.is_active) || periods[0]),
-        evaluablesService.get()
+        evaluablesService.get(currentUser.id)
       ]);
 
       evaluations = evalsList;

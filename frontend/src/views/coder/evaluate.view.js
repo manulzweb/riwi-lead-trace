@@ -1,6 +1,6 @@
 import { navBarComponent } from "../../components/navbar";
 import { dropdownComponent, setupDropdown } from "../../components/dropdown";
-import { userService } from "../../services/users.service";
+import { evaluablesService } from "../../services/evaluables.service";
 import { evaluationService } from "../../services/evaluation.service";
 import { periodService } from "../../services/periods.service";
 import { authService } from "../../services/auth.service";
@@ -184,7 +184,9 @@ export const setupEvaluate = async () => {
   };
 
   try {
-    allUsers = await userService.get();
+    // /evaluables (no /users): devuelve solo Tutores y Team Leaders que ESTE
+    // coder puede evaluar, ya filtrados por clan en el servidor.
+    allUsers = await evaluablesService.get(currentUser.id);
     const periods = await periodService.get();
     activePeriod = periods.find(p => p.is_active) || (periods.length ? periods[0] : null);
 
@@ -250,11 +252,14 @@ export const setupEvaluate = async () => {
         .filter(e => e.period_id === activePeriod.id)
         .map(e => String(e.evaluatee_id));
 
-      const filtered = allUsers.filter(u => 
-        u.roles?.includes(role) && 
-        u.id !== currentUser.id && 
-        !evaluatedIds.includes(String(u.id)) &&
-        (u.clan_id === currentUser.clan_id || !currentUser.clan_id) // solo del mismo clan
+      // Sin filtro de clan: `allUsers` ya viene filtrado por el servidor
+      // (GET /evaluables?evaluator_id=...). Filtrarlo aqui por `clan_id`
+      // excluia a TODOS los Team Leaders, porque su clan_id es NULL y su
+      // relacion con clanes vive en `team_leader_clans`.
+      const filtered = allUsers.filter(u =>
+        u.roles?.includes(role) &&
+        u.id !== currentUser.id &&
+        !evaluatedIds.includes(String(u.id))
       );
 
       if (filtered.length === 0) {

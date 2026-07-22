@@ -401,15 +401,19 @@ const renderDashboardContent = async (content, user, name, role) => {
     // Coder View
     const [myEvals, allEvaluables] = await Promise.all([
       evaluationService.getByEvaluator(user.id, 100),
-      evaluablesService.get()
+      evaluablesService.get(user.id)
     ]);
     
-    // Solo puede evaluar a gente de su mismo clan (y que no sea el mismo)
-    const evaluables = allEvaluables ? allEvaluables.filter(u => u.id !== user.id && (u.clan_id === user.clan_id || !user.clan_id)) : [];
-    
+    // El filtro por clan NO se hace aqui: lo aplica el servidor, que es la
+    // autoridad (evaluation_service._validate_permissions). Filtrarlo en el
+    // cliente por `clan_id` estaba EXCLUYENDO a todos los Team Leaders --
+    // un TL tiene `users.clan_id = NULL` y su relacion con clanes vive en la
+    // tabla `team_leader_clans` (N:M, un TL puede llevar varios clanes).
+    // Aqui solo se descarta al propio usuario, que no es una regla de clan.
+    const evaluables = allEvaluables ? allEvaluables.filter(u => u.id !== user.id) : [];
+
     const completedEvals = myEvals.filter(e => !isPendingParticipation(e));
     const completed = completedEvals.length;
-    const drafts = myEvals.filter(isPendingParticipation).length;
     const totalEvaluables = evaluables.length;
     const pending = Math.max(0, totalEvaluables - completed);
     
@@ -426,7 +430,7 @@ const renderDashboardContent = async (content, user, name, role) => {
 
     html += `
       ${StatsCard({ title: "Completadas", value: `<span class="animate-number" data-value="${completed}">${completed}</span>`, icon: icons.check, description: "Evaluaciones enviadas" })}
-      ${StatsCard({ title: "Personas por Evaluar", value: `<span class="animate-number" data-value="${pending}">${pending}</span>`, icon: icons.clock, description: "De tu mismo clan" })}
+      ${StatsCard({ title: "Personas por Evaluar", value: `<span class="animate-number" data-value="${pending}">${pending}</span>`, icon: icons.clock, description: "Pendientes de evaluar" })}
       
       ${Card({
       className: "h-full flex flex-col p-6 lg:row-span-2 shadow-sm border border-[var(--border-main)]",
@@ -441,22 +445,29 @@ const renderDashboardContent = async (content, user, name, role) => {
         `
     })}
 
-      ${pendingRoles.size > 0 ? `
-      <div class="col-span-1 md:col-span-2 lg:col-span-2 h-full">
-        <div class="bg-[var(--info-bg)] border border-[var(--info-border)] text-[var(--info-text)] px-6 py-4 rounded-[2rem] flex flex-col sm:flex-row items-center justify-between shadow-sm h-full">
-          <div class="flex items-center gap-3 mb-4 sm:mb-0">
-            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            <div>
-              <p class="font-bold text-sm">¡Tienes encuestas disponibles!</p>
-              <p class="text-xs mt-1">Aún te falta evaluar a: <strong>${Array.from(pendingRoles).join(" y ")}</strong> de tu clan.</p>
+      <!-- Saludo + aviso de pendientes en UNA sola tarjeta. Antes eran dos
+           excluyentes: el aviso reemplazaba al saludo, asi que al no haber
+           pendientes la rejilla quedaba con un hueco vacio. El saludo se
+           muestra siempre; el aviso se suma solo cuando hay algo que evaluar. -->
+      <div class="col-span-1 md:col-span-2 lg:col-span-2 mt-4 lg:mt-0">
+        <div class="bg-[var(--bg-panel)] rounded-3xl border border-[var(--border-main)] p-8 shadow-sm flex flex-col justify-center gap-4 h-full">
+          <h2 class="text-2xl font-bold text-[var(--text-main)]">¡Hola, ${escapeHtml(user.name.split(' ')[0])}!</h2>
+          ${pendingRoles.size > 0 ? `
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl bg-[var(--info-bg)] border border-[var(--info-border)] text-[var(--info-text)] px-5 py-4">
+              <div class="flex items-center gap-3">
+                <svg class="h-6 w-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <div>
+                  <p class="font-bold text-sm">¡Tienes encuestas disponibles!</p>
+                  <p class="text-xs mt-1">Aún te falta evaluar a: <strong>${escapeHtml(Array.from(pendingRoles).join(" y "))}</strong>.</p>
+                </div>
+              </div>
+              <a href="/evaluables" data-navigo class="whitespace-nowrap inline-flex items-center justify-center rounded-xl bg-[var(--brand-bg)] px-4 py-2 text-sm font-bold text-[var(--brand-text)] hover:bg-[var(--brand-hover)] transition shadow-sm">
+                Ir a evaluar
+              </a>
             </div>
-          </div>
-          <a href="/evaluables" data-navigo class="whitespace-nowrap inline-flex items-center justify-center rounded-xl bg-[var(--brand-bg)] px-4 py-2 text-sm font-bold text-[var(--brand-text)] hover:bg-[var(--brand-hover)] transition shadow-sm">
-            Ir a evaluar
-          </a>
+          ` : ''}
         </div>
       </div>
-      ` : ''}
     </div>
     `;
 

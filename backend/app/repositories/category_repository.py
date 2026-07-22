@@ -14,7 +14,7 @@ class CategoryRepository:
             rows = conn.execute(query).mappings().all()
             return [dict(r) for r in rows]
         except SQLAlchemyError as e:
-            logger.error(f"Error fetching categories: {e}")
+            logger.exception("Error fetching categories")
             raise
 
     def get_category_by_name(self, conn: Connection, name: str) -> Optional[Dict[str, Any]]:
