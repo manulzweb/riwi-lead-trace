@@ -347,20 +347,34 @@ const renderDashboardContent = async (content, user, name, role) => {
     if (currentPeriods.length > 0) {
       setupDropdown('dashboard-period-filter', async (val) => {
         selectedPeriodId = val;
-        content.innerHTML = `
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          ${Array(4).fill(`
-            <div class="h-32 rounded-[2rem] bg-[var(--bg-panel)] p-6 shadow-sm border border-[var(--border-main)] flex flex-col justify-between">
-              <div class="h-4 w-24 skeleton-shimmer rounded-sm"></div>
-              <div class="h-8 w-16 skeleton-shimmer rounded-sm"></div>
+        
+        // Disable dropdowns to show loading state
+        const periodBtn = document.getElementById("dashboard-period-filter-btn");
+        if (periodBtn) {
+            periodBtn.disabled = true;
+            periodBtn.innerHTML = '<span class="flex items-center gap-2"><svg class="animate-spin h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Cargando...</span>';
+        }
+        
+        const dashboardCards = document.getElementById("dashboard-cards");
+        if (dashboardCards) {
+          dashboardCards.innerHTML = `
+            <div class="col-span-full">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                ${Array(4).fill(`
+                  <div class="h-32 rounded-[2rem] bg-[var(--bg-panel)] p-6 shadow-sm border border-[var(--border-main)] flex flex-col justify-between">
+                    <div class="h-4 w-24 skeleton-shimmer rounded-sm"></div>
+                    <div class="h-8 w-16 skeleton-shimmer rounded-sm"></div>
+                  </div>
+                `).join("")}
+              </div>
+              <div class="h-64 rounded-[2rem] bg-[var(--bg-panel)] p-6 shadow-sm border border-[var(--border-main)] flex flex-col mt-6">
+                <div class="h-6 w-48 skeleton-shimmer rounded-sm mb-6"></div>
+                <div class="flex-1 skeleton-shimmer rounded-xl"></div>
+              </div>
             </div>
-          `).join("")}
-        </div>
-        <div class="h-64 rounded-[2rem] bg-[var(--bg-panel)] p-6 shadow-sm border border-[var(--border-main)] flex flex-col mt-6">
-          <div class="h-6 w-48 skeleton-shimmer rounded-sm mb-6"></div>
-          <div class="flex-1 skeleton-shimmer rounded-xl"></div>
-        </div>
-        `;
+          `;
+        }
+        
         await renderDashboardContent(content, user, name, role);
       });
     }
@@ -385,18 +399,34 @@ const renderDashboardContent = async (content, user, name, role) => {
 
   } else {
     // Coder View
-    const [myEvals, evaluables] = await Promise.all([
+    const [myEvals, allEvaluables] = await Promise.all([
       evaluationService.getByEvaluator(user.id, 100),
       evaluablesService.get()
     ]);
-    const completed = myEvals.filter(e => !isPendingParticipation(e)).length;
+    
+    // Solo puede evaluar a gente de su mismo clan (y que no sea el mismo)
+    const evaluables = allEvaluables ? allEvaluables.filter(u => u.id !== user.id && (u.clan_id === user.clan_id || !user.clan_id)) : [];
+    
+    const completedEvals = myEvals.filter(e => !isPendingParticipation(e));
+    const completed = completedEvals.length;
     const drafts = myEvals.filter(isPendingParticipation).length;
-    const totalEvaluables = evaluables ? evaluables.length : 0;
+    const totalEvaluables = evaluables.length;
     const pending = Math.max(0, totalEvaluables - completed);
+    
+    // Averiguar si hay formularios disponibles y para que roles
+    // Para no hacer 2 peticiones mas, usamos evaluables que ya estan filtrados
+    const evaluatedIds = completedEvals.map(e => String(e.evaluatee_id));
+    const pendingUsers = evaluables.filter(u => !evaluatedIds.includes(String(u.id)));
+    
+    let pendingRoles = new Set();
+    pendingUsers.forEach(u => {
+        if (u.roles && u.roles.includes("team_leader")) pendingRoles.add("Team Leader");
+        if (u.roles && u.roles.includes("tutor")) pendingRoles.add("Tutor");
+    });
 
     html += `
       ${StatsCard({ title: "Completadas", value: `<span class="animate-number" data-value="${completed}">${completed}</span>`, icon: icons.check, description: "Evaluaciones enviadas" })}
-      ${StatsCard({ title: "Por Evaluar / Borradores", value: `<span class="animate-number" data-value="${pending}">${pending}</span>`, icon: icons.clock, description: "Pendientes o en curso" })}
+      ${StatsCard({ title: "Personas por Evaluar", value: `<span class="animate-number" data-value="${pending}">${pending}</span>`, icon: icons.clock, description: "De tu mismo clan" })}
       
       ${Card({
       className: "h-full flex flex-col p-6 lg:row-span-2 shadow-sm border border-[var(--border-main)]",
@@ -410,14 +440,23 @@ const renderDashboardContent = async (content, user, name, role) => {
           </div>
         `
     })}
-      
-      <div class="col-span-1 md:col-span-2 lg:col-span-2 mt-4 lg:mt-0">
-        <div class="bg-[var(--bg-panel)] rounded-3xl border border-[var(--border-main)] p-8 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6 h-full">
-          <div>
-            <h2 class="text-2xl font-bold text-[var(--text-main)] mb-2">¡Hola, ${escapeHtml(user.name.split(' ')[0])}!</h2>
+
+      ${pendingRoles.size > 0 ? `
+      <div class="col-span-1 md:col-span-2 lg:col-span-2 h-full">
+        <div class="bg-[var(--info-bg)] border border-[var(--info-border)] text-[var(--info-text)] px-6 py-4 rounded-[2rem] flex flex-col sm:flex-row items-center justify-between shadow-sm h-full">
+          <div class="flex items-center gap-3 mb-4 sm:mb-0">
+            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <div>
+              <p class="font-bold text-sm">¡Tienes encuestas disponibles!</p>
+              <p class="text-xs mt-1">Aún te falta evaluar a: <strong>${Array.from(pendingRoles).join(" y ")}</strong> de tu clan.</p>
+            </div>
           </div>
+          <a href="/evaluables" data-navigo class="whitespace-nowrap inline-flex items-center justify-center rounded-xl bg-[var(--brand-bg)] px-4 py-2 text-sm font-bold text-[var(--brand-text)] hover:bg-[var(--brand-hover)] transition shadow-sm">
+            Ir a evaluar
+          </a>
         </div>
       </div>
+      ` : ''}
     </div>
     `;
 

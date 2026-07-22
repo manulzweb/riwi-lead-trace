@@ -204,6 +204,13 @@ export const setupEvaluate = async () => {
     currentForm = null;
     progressContainer.classList.add("hidden");
 
+      document.getElementById('evaluatee-container').outerHTML = `
+          <div id="evaluatee-container">
+            <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="evaluatee">Persona a evaluar</label>
+            ${dropdownComponent('evaluatee', [{ value: '', label: 'Cargando...' }], '')}
+          </div>`;
+        setupDropdown('evaluatee');
+
     if (!role) {
       document.getElementById('evaluatee-container').outerHTML = `
         <div id="evaluatee-container">
@@ -243,7 +250,12 @@ export const setupEvaluate = async () => {
         .filter(e => e.period_id === activePeriod.id)
         .map(e => String(e.evaluatee_id));
 
-      const filtered = allUsers.filter(u => u.roles?.includes(role) && u.id !== currentUser.id && !evaluatedIds.includes(String(u.id)));
+      const filtered = allUsers.filter(u => 
+        u.roles?.includes(role) && 
+        u.id !== currentUser.id && 
+        !evaluatedIds.includes(String(u.id)) &&
+        (u.clan_id === currentUser.clan_id || !currentUser.clan_id) // solo del mismo clan
+      );
 
       if (filtered.length === 0) {
         document.getElementById('evaluatee-container').outerHTML = `
