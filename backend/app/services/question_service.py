@@ -16,19 +16,15 @@ class QuestionService:
     def __init__(self, repository: QuestionRepository = None):
         self.repo = repository or QuestionRepository()
 
-    def _assert_no_active_period(self, conn):
-        # NO se condiciona al ajuste `strict_entity_lock` de la configuracion
-        # global, a pesar de que la UI de admin lo describe como si lo hiciera.
-        # La regla ADMIN-02 (CLAUDE.md) es incondicional: las preguntas solo se
-        # editan con el periodo CERRADO. Este metodo protege create/delete/
-        # versionado/reponderacion, es decir toda mutacion del instrumento; si
-        # un flag pudiera apagarlo, se podria cambiar el cuestionario mientras
-        # hay evaluaciones en curso y las respuestas ya enviadas quedarian
-        # atadas a preguntas o pesos distintos de los que se respondieron.
-        # Queda sin cablear a proposito: es un conflicto UI <-> regla 6 que
-        # decide el equipo, no una vuelta que se pueda dar en el codigo.
-        if self.repo.has_active_period(conn):
-            raise ActivePeriodExistsException("No se pueden editar preguntas mientras haya un periodo activo. Cierra el periodo primero.")
+    def _assert_no_active_period(self, conn, form_id: int):
+        from sqlalchemy import text
+        query = text("SELECT is_form FROM forms WHERE id = :form_id")
+        result = conn.execute(query, {"form_id": form_id}).fetchone()
+        
+        # Si es un form activo (no es plantilla), validamos
+        if result and not result[0]:
+            if self.repo.has_active_period(conn):
+                raise ActivePeriodExistsException("No se pueden editar preguntas mientras haya un periodo activo. Cierra el periodo primero.")
 
     def get_question(self, question_id: int) -> Optional[Dict[str, Any]]:
         with engine.connect() as conn:
@@ -40,11 +36,12 @@ class QuestionService:
 
     def version_question_text(self, question_id: int, new_text: str, confirm: bool, admin_id: int = None) -> Dict[str, Any]:
         with engine.begin() as conn:
-            self._assert_no_active_period(conn)
-
             original = self.repo.get_question_by_id(conn, question_id)
             if original is None:
                 raise QuestionNotFoundException("Pregunta no encontrada.")
+            
+            self._assert_no_active_period(conn, original["form_id"])
+
             if not original["is_active"]:
                 raise QuestionAlreadyReplacedException("Esta pregunta ya fue reemplazada por una version mas nueva.")
             if original["input_type"] not in ["scale", "text"]:
@@ -82,10 +79,10 @@ class QuestionService:
 
     def create_question(self, payload: QuestionCreate) -> Dict[str, Any]:
         with engine.begin() as conn:
-            self._assert_no_active_period(conn)
-
             if not self.repo.form_exists(conn, payload.form_id):
                 raise FormNotFoundException("Plantilla no encontrada.")
+
+            self._assert_no_active_period(conn, payload.form_id)
 
             if not self.repo.category_exists(conn, payload.category_id):
                 raise CategoryNotFoundException("Categoria no encontrada.")
@@ -132,11 +129,11 @@ class QuestionService:
         # flujo. El descuadre solo persiste si el admin abandona la edicion a
         # medias -- reportado al equipo, no se arregla por cuenta propia.
         with engine.begin() as conn:
-            self._assert_no_active_period(conn)
-            
             existing = self.repo.get_question_by_id(conn, question_id)
             if existing is None:
                 return False
+                
+            self._assert_no_active_period(conn, existing["form_id"])
                 
             if existing["is_active"]:
                 self.repo.deactivate_question(conn, question_id)
@@ -149,7 +146,7 @@ class QuestionService:
         tolerance = resolve_weight_tolerance(settings_service.get_settings())
 
         with engine.begin() as conn:
-            self._assert_no_active_period(conn)
+            self._assert_no_active_period(conn, payload.form_id)
 
             current = self.repo.get_questions_by_form(conn, payload.form_id, only_active=True)
             current_scale = {q["id"] for q in current if q["input_type"] == "scale"}

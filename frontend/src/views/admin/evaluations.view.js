@@ -246,23 +246,11 @@ export const setupAdminEvaluations = () => {
       }
     }
 
-    btnCreate.disabled = hasActivePeriod;
-    btnCreate.classList.toggle("opacity-50", hasActivePeriod);
-    btnCreate.classList.toggle("cursor-not-allowed", hasActivePeriod);
-    btnCreate.title = hasActivePeriod ? "Cierra el periodo activo para poder crear formularios." : "";
-
     if (btnQuickPeriod) {
       btnQuickPeriod.disabled = hasActivePeriod;
       btnQuickPeriod.classList.toggle("opacity-50", hasActivePeriod);
       btnQuickPeriod.classList.toggle("cursor-not-allowed", hasActivePeriod);
       btnQuickPeriod.title = hasActivePeriod ? "Ya hay un periodo activo. Ciérralo primero." : "";
-    }
-
-    if (btnSave) {
-      btnSave.disabled = hasActivePeriod;
-      btnSave.classList.toggle("opacity-50", hasActivePeriod);
-      btnSave.classList.toggle("cursor-not-allowed", hasActivePeriod);
-      btnSave.title = hasActivePeriod ? "Cierra el periodo activo para poder guardar cambios." : "";
     }
   };
 
@@ -278,7 +266,6 @@ export const setupAdminEvaluations = () => {
     };
 
     btnQuickPeriod.addEventListener("click", () => {
-      if (hasActivePeriod) return;
       quickPeriodModal.classList.remove("hidden");
       setTimeout(() => {
         quickPeriodModal.classList.remove("opacity-0");
@@ -558,10 +545,6 @@ export const setupAdminEvaluations = () => {
 
   // --- GUARDADO ---
   btnSave.addEventListener("click", async () => {
-    if (hasActivePeriod) {
-      showToast("Periodo activo", "warning", "Cierra el periodo activo para poder guardar cambios.");
-      return;
-    }
 
     const title = inputTitle.value.trim();
     if (!title) {
@@ -737,6 +720,12 @@ export const setupAdminEvaluations = () => {
                 ${dateStr ? `<span class="text-xs font-medium text-[var(--text-muted)]">${dateStr}</span>` : ''}
               </div>
               <div class="flex items-center">
+                ${t.is_form ? `
+                <button class="btn-use-template text-[var(--brand-bg)] hover:text-[var(--brand-hover)] transition-colors p-2 font-bold text-xs flex items-center gap-1" data-id="${t.id}" title="Usar esta plantilla como formulario activo">
+                  <svg class="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                  Usar Plantilla
+                </button>
+                ` : ''}
                 <button class="btn-clone-form text-[var(--text-muted)] hover:text-[var(--brand-bg)] transition-colors p-2" data-id="${t.id}" title="Duplicar Formulario">
                   <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                 </button>
@@ -797,11 +786,12 @@ export const setupAdminEvaluations = () => {
       });
     });
 
-    // Eventos para duplicar
-    document.querySelectorAll(".btn-clone-form").forEach(btn => {
+    // Eventos para duplicar y usar plantilla
+    document.querySelectorAll(".btn-clone-form, .btn-use-template").forEach(btn => {
       btn.addEventListener("click", async (e) => {
         e.stopPropagation(); // Prevenir que abra modo edición
         const id = btn.dataset.id;
+        const isUsingTemplate = btn.classList.contains("btn-use-template");
         try {
           const forms = await formsService.getForms();
           const form = forms.find(t => t.id === id || t.id === parseInt(id));
@@ -809,7 +799,7 @@ export const setupAdminEvaluations = () => {
           if (form) {
             editId = null; // Important: this makes it a new form!
             originalQuestions = [];
-            inputTitle.value = "Copia de " + form.title;
+            inputTitle.value = isUsingTemplate ? form.title : ("Copia de " + form.title);
             inputDesc.value = form.description || "";
 
             const evaluatorRoleEl = document.getElementById("evaluator-role");
@@ -831,10 +821,10 @@ export const setupAdminEvaluations = () => {
 
             renderQuestions();
             showBuilder();
-            showToast("Formulario duplicado", "success", "Ahora estás creando un nuevo formulario basado en el anterior.");
+            showToast(isUsingTemplate ? "Plantilla lista para activar" : "Formulario duplicado", "success", isUsingTemplate ? "Guarda el formulario para activarlo en las evaluaciones." : "Ahora estás creando un nuevo formulario basado en el anterior.");
           }
         } catch (error) {
-          showToast("Error", "error", "Error al duplicar el formulario.");
+          showToast("Error", "error", "Error al procesar el formulario.");
         }
       });
     });
