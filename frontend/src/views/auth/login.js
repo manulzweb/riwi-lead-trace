@@ -4,7 +4,6 @@ import { renderRoute } from "../../router/router";
 import { showToast } from "../../components/alerts";
 import { setButtonLoadingState, createDebouncedValidator, validateSync, showFieldError } from "../../utils/formUtils";
 import { backgroundComponent } from "../../components/background.js";
-import { langSwitcherComponent, setupLangSwitcher } from "../../components/lang-switcher.js";
 
 const loginSchema = {
   email: z.string().min(1, "El correo es obligatorio").email("Formato de correo inválido"),
@@ -15,7 +14,6 @@ export const renderLogin = () => `
   <div class="relative min-h-screen w-full overflow-hidden">
 
     ${backgroundComponent()}
-    ${langSwitcherComponent("es")}
 
     <div class="flex min-h-screen items-center justify-center p-4">
       <form class="w-full max-w-md rounded-3xl border border-white/30 bg-white/95 p-6 sm:p-10 shadow-2xl backdrop-blur-xl transition-all sm:hover:scale-[1.02]">
@@ -123,7 +121,6 @@ const handleLoginSubmit = (elements) => async (event) => {
 };
 
 export const setupLogin = () => {
-  setupLangSwitcher();
 
   const elements = getViewElements();
   if (!elements.form || !elements.emailInput || !elements.passwordInput || !elements.emailError || !elements.passwordError) return;

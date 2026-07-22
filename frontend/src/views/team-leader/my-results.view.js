@@ -5,7 +5,10 @@ import { evaluationService } from "../../services/evaluation.service";
 import { periodService } from "../../services/periods.service";
 import { authService } from "../../services/auth.service";
 import { showToast } from "../../components/alerts";
-import { emptyStateComponent } from "../../components/emptyState";
+import { emptyStateComponent } from "../../components/emptyState.js";
+import { setupPagination } from "../../components/pagination";
+import { marked } from "marked";
+import DOMPurify from "dompurify";
 import { escapeHtml } from "../../utils/validators";
 
 export const renderMyResults = () => `
@@ -40,7 +43,7 @@ export const renderMyResults = () => `
     </section>
 
     <section class="mt-10">
-      <h2 class="text-2xl font-bold text-[var(--text-main)] mb-6">Comentarios y Detalles</h2>
+      <h2 class="text-2xl font-bold text-[var(--text-main)] mb-6">Feedback y Comentarios</h2>
       <div id="feedback-list" class="grid gap-4" aria-live="polite" aria-busy="true">
         <div class="h-20 skeleton-shimmer rounded-3xl"></div>
       </div>
@@ -179,23 +182,58 @@ export const setupMyResults = async () => {
         });
       });
 
-      const textAnswers = allAnswers.filter(ans => ans.comment);
+      const textAnswers = allAnswers.filter(ans => ans.comment && ans.comment.toLowerCase() !== "sí" && ans.comment.toLowerCase() !== "no");
 
-      if (textAnswers.length === 0) {
-        feedbackList.innerHTML = `
+      let aiSummaryHtml = '';
+      try {
+        const aiSummary = await metricsService.getAiSummary(userId, periodId);
+        if (aiSummary && aiSummary.summary) {
+          aiSummaryHtml = `
+            <section class="mb-10">
+              <h2 class="text-xl font-black text-[var(--text-main)] mb-4 flex items-center gap-2">
+                <svg class="h-6 w-6 text-[var(--brand-bg)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                SmartFeedback
+              </h2>
+              <article class="rounded-2xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-8 shadow-sm">
+                <div class="markdown-body prose dark:prose-invert max-w-none text-[var(--text-main)]">
+                  ${DOMPurify.sanitize(marked.parse(aiSummary.summary))}
+                </div>
+              </article>
+            </section>
+          `;
+        }
+      } catch (err) {
+        console.warn("No se pudo obtener el resumen IA", err);
+      }
+
+      feedbackList.innerHTML = `
+        ${aiSummaryHtml}
+        <section>
+          <h2 class="text-xl font-black text-[var(--text-main)] mb-4 flex items-center gap-2">
+            <svg class="h-6 w-6 text-[var(--brand-bg)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+            Comentarios
+          </h2>
+          <div id="comments-pagination-container"></div>
+        </section>
+      `;
+
+      const commentsContainer = document.getElementById("comments-pagination-container");
+
+      setupPagination({
+        data: textAnswers,
+        itemsPerPage: 5,
+        container: commentsContainer,
+        emptyStateHtml: `
           <article class="rounded-3xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-10 text-center text-[var(--text-muted)]">
             No hay comentarios escritos detallados todavía para este periodo.
           </article>
-        `;
-        return;
-      }
-
-      feedbackList.innerHTML = textAnswers.map(ans => `
-        <article class="rounded-2xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-5 shadow-sm">
-          <p class="text-sm font-semibold uppercase tracking-wider text-[var(--brand-bg)] mb-2">Comentario de Coder</p>
-          <p class="text-[var(--text-main)] italic">"${escapeHtml(ans.comment)}"</p>
-        </article>
-      `).join("");
+        `,
+        renderItem: (ans) => `
+          <article class="rounded-2xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-5 shadow-sm mb-2">
+            <p class="text-[var(--text-main)] italic">"${escapeHtml(ans.comment)}"</p>
+          </article>
+        `
+      });
 
     } catch (err) {
       showToast("Error", "error", "No se pudieron obtener tus resultados.");

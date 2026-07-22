@@ -68,7 +68,8 @@ class FormService:
             # Crear tambien modifica el instrumento: deactivate_forms_for_role retira
             # la plantilla que los coders puedan estar respondiendo ahora mismo. Por eso
             # exige periodo cerrado igual que update_form y delete_form (regla 6).
-            self._assert_no_active_period(conn)
+            if not payload.is_form:
+                self._assert_no_active_period(conn)
 
             role_id = self.repo.get_role_id_by_name(conn, payload.target_role)
             if not role_id:
@@ -109,11 +110,12 @@ class FormService:
 
     def update_form(self, form_id: int, payload: FormUpdate) -> Optional[Dict[str, Any]]:
         with engine.begin() as conn:
-            self._assert_no_active_period(conn)
-
             existing = self.repo.get_form_by_id(conn, form_id)
             if not existing:
                 raise FormNotFoundException("Plantilla no encontrada.")
+
+            if not existing["is_form"]:
+                self._assert_no_active_period(conn)
 
             values = {}
             if payload.title is not None: values["title"] = payload.title
@@ -127,11 +129,14 @@ class FormService:
 
     def delete_form(self, form_id: int) -> bool:
         with engine.begin() as conn:
-            self._assert_no_active_period(conn)
-            
             existing = self.repo.get_form_by_id(conn, form_id)
             if not existing:
                 raise FormNotFoundException("Plantilla no encontrada.")
+
+            if not existing["is_form"]:
+                self._assert_no_active_period(conn)
+
+            deleted = self.repo.delete_form(conn, form_id)
                 
             if existing["is_active"]:
                 self.repo.deactivate_form(conn, form_id)

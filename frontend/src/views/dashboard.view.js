@@ -8,7 +8,9 @@ import { periodService } from "../services/periods.service";
 import { cohortsService } from "../services/cohorts.service";
 import { clansService } from "../services/clans.service";
 import { dropdownComponent, setupDropdown } from "../components/dropdown";
-import { Chart } from 'chart.js/auto';
+import { evaluablesService } from "../services/evaluables.service";
+import { getMedalIcon } from "../components/icons";
+import { tableComponent } from "../components/table";
 
 const icons = {
   check: `<svg aria-hidden="true" focusable="false" class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
@@ -128,7 +130,7 @@ const renderDashboardContent = async (content, user, name, role) => {
         <p class="text-[var(--text-muted)] mt-1">Aquí tienes un resumen de tu actividad en LeadTrace.</p>
       </div>
       ${role === 'admin' && currentPeriods.length > 0 ? `
-        <div class="flex flex-col sm:flex-row gap-4 z-20 relative w-full sm:w-auto">
+        <div class="flex flex-col md:flex-row gap-4 z-20 relative w-full md:w-auto flex-wrap justify-end">
           <div class="w-full sm:w-48">
             <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="dashboard-period-filter-btn">Periodo</label>
             ${dropdownComponent('dashboard-period-filter', currentPeriods.map(p => ({
@@ -140,10 +142,14 @@ const renderDashboardContent = async (content, user, name, role) => {
             <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="dashboard-cohort-filter-btn">Cohorte</label>
             ${dropdownComponent('dashboard-cohort-filter', [{ value: 'all', label: 'Todas' }], 'all')}
           </div>
+          <div class="w-full sm:w-48" id="clan-filter-container">
+            <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="dashboard-clan-filter-btn">Clan</label>
+            ${dropdownComponent('dashboard-clan-filter', [{ value: 'all', label: 'Todos' }], 'all')}
+          </div>
         </div>
       ` : ''}
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="dashboard-cards">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-0 transition-opacity duration-500 ease-out" id="dashboard-cards">
   `;
 
   let currentKpis = null;
@@ -174,11 +180,11 @@ const renderDashboardContent = async (content, user, name, role) => {
     html += `
       ${StatsCard({
       title: "Alertas Activas",
-      value: alertIconColor === "text-green-500" ? "Todo OK" : "Atención",
+      value: `<span class="animate-number" data-value="${alertIconColor === "text-green-500" ? 0 : 1}">${alertIconColor === "text-green-500" ? "Todo OK" : "Atención"}</span>`,
       icon: `<svg aria-hidden="true" focusable="false" class="w-6 h-6 ${alertIconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
       description: alertMsg
     })}
-      ${StatsCard({ title: "ICP Global Promedio", value: kpis.average_score + "/100", icon: icons.star, description: "Desempeño de la plataforma" })}
+      ${StatsCard({ title: "ICP Global Promedio", value: `<span class="animate-number" data-value="${kpis.average_score}">${kpis.average_score}</span><span class="text-2xl text-[var(--text-muted)] ml-1">/100</span>`, icon: icons.star, description: "Desempeño de la plataforma" })}
       
       <div class="col-span-1 md:col-span-2 lg:col-span-1">
         ${Card({
@@ -191,7 +197,53 @@ const renderDashboardContent = async (content, user, name, role) => {
           `
     })}
       </div>
+      <div class="col-span-1 md:col-span-2 lg:col-span-3 mt-4">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+          <h2 class="text-xl font-bold text-[var(--text-main)]">Top Rendimiento (ICP)</h2>
+        </div>
+        <div class="flex flex-col md:flex-row gap-6" id="dashboard-top-tables">
+        </div>
+      </div>
+    </div>
     `;
+
+    content.innerHTML = html;
+
+    // Initialize participation doughnut chart
+    const pChartCtx = document.getElementById('participation-chart');
+    if (pChartCtx && currentKpis) {
+      const rootStyle = getComputedStyle(document.documentElement);
+      const brandColor = rootStyle.getPropertyValue('--brand-bg').trim() || '#4f46e5';
+      const emptyColor = rootStyle.getPropertyValue('--border-main').trim() || '#e5e7eb';
+      
+      const total = currentKpis.total_evaluations;
+      const rate = currentKpis.participation_rate;
+      const possible = rate > 0 ? Math.round((total / (rate / 100))) : 0;
+      const pending = Math.max(0, possible - total);
+
+      import('chart.js/auto').then(({ default: Chart }) => {
+        new Chart(pChartCtx, {
+          type: 'doughnut',
+          data: {
+            labels: ['Participación', 'Pendiente'],
+            datasets: [{
+              data: [total, pending],
+              backgroundColor: [brandColor, emptyColor],
+              borderWidth: 0,
+              hoverOffset: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '75%',
+            plugins: {
+              legend: { display: false }
+            }
+          }
+        });
+      }).catch(e => console.error("Chart load error:", e));
+    }
 
     // Extract unique clans
     const validEvaluatees = summary.evaluatees?.filter(e => e.average_score !== null) || [];
@@ -201,7 +253,7 @@ const renderDashboardContent = async (content, user, name, role) => {
     dashboardEvaluatees = validEvaluatees;
 
     const uniqueCohorts = [...new Set(validEvaluatees.map(e => e.cohort_name).filter(Boolean))].sort();
-    const cohortContainer = document.getElementById('cohort-filter-container');
+    const cohortContainer = document.getElementById('dashboard-cohort-filter-container');
     const clanContainer = document.getElementById('clan-filter-container');
 
     const updateDashboardTables = () => {
@@ -217,51 +269,44 @@ const renderDashboardContent = async (content, user, name, role) => {
       const topTutors = filtered.filter(e => e.role === "tutor").sort((a, b) => b.average_score - a.average_score).slice(0, 3);
       const topLeaders = filtered.filter(e => e.role === "team_leader").sort((a, b) => b.average_score - a.average_score).slice(0, 3);
 
-      const buildTable = (title, data) => `
-        <div class="bg-[var(--bg-panel)] rounded-3xl border border-[var(--border-main)] shadow-sm overflow-hidden flex-1">
-          <div class="p-4 border-b border-[var(--border-main)] bg-[var(--bg-base)]">
-            <h3 class="text-lg font-bold text-[var(--text-main)]">${title}</h3>
+      const buildTable = (title, data) => tableComponent({
+        title,
+        columns: [
+          { label: "#", align: "center", width: "16" },
+          { label: "Nombre", align: "left" },
+          { label: "ICP", align: "right" }
+        ],
+        data,
+        emptyStateHtml: `
+          <div class="flex flex-col items-center justify-center gap-3">
+            <svg class="w-12 h-12 text-[var(--border-main)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
+            <p class="text-sm font-medium">Aún no hay suficientes datos en este segmento.</p>
           </div>
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="border-b border-[var(--border-main)] text-[var(--text-muted)] text-sm bg-[var(--bg-panel)]">
-                <th class="px-4 py-3 font-semibold w-16 text-center">#</th>
-                <th class="px-4 py-3 font-semibold">Nombre</th>
-                <th class="px-4 py-3 font-semibold text-right">ICP</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-[var(--border-main)]">
-              ${data.length > 0 ? data.map((e, index) => {
-        let medalIcon = "";
-        let rowClass = "hover:bg-[var(--bg-base)] transition-colors";
-        if (index === 0) {
-          medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"><path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/><path d="M11 12 5.12 2.2"/><path d="m13 12 5.88-9.8"/><path d="M8 7h8"/><circle cx="12" cy="17" r="5"/><path d="M12 14.7v4.6"/></svg>';
-        } else if (index === 1) {
-          medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B8B8B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"> <path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/> <path d="M11 12 5.12 2.2"/> <path d="m13 12 5.88-9.8"/> <path d="M8 7h8"/> <circle cx="12" cy="17" r="5"/> <path d="M10.4 15.6c.4-.6 1-.9 1.7-.9.8 0 1.4.4 1.4 1 0 .6-.3.9-1.1 1.5l-1.8 1.3H14"/> </svg>';
-        } else if (index === 2) {
-          medalIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B87333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"> <path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/> <path d="M11 12 5.12 2.2"/> <path d="m13 12 5.88-9.8"/> <path d="M8 7h8"/> <circle cx="12" cy="17" r="5"/> <path d="M10.5 15h2c.6 0 1 .3 1 .8s-.4.8-1 .8"/> <path d="M12.5 16.6c.8 0 1.2.4 1.2 1s-.5 1-1.4 1c-.6 0-1.1-.2-1.5-.6"/> </svg>';
-        } else {
-          medalIcon = `<span class="font-bold text-[var(--text-muted)]">${index + 1}</span>`;
+        `,
+        renderRow: (e, index) => {
+          let medalIcon = "";
+          let rowClass = "hover:bg-[var(--bg-base)] transition-colors";
+          
+          const rankIcon = getMedalIcon(index + 1);
+          if (rankIcon) {
+            const titles = ["1er Puesto - Oro", "2do Puesto - Plata", "3er Puesto - Bronce"];
+            medalIcon = `<span title="${titles[index]}" class="cursor-help inline-block mx-auto flex justify-center">${rankIcon}</span>`;
+          } else {
+            medalIcon = `<span class="font-bold text-[var(--text-muted)]">${index + 1}</span>`;
+          }
+          
+          return `
+            <tr class="${rowClass}">
+              <td class="px-4 py-3 text-center">${medalIcon}</td>
+              <td class="px-4 py-3 font-bold text-[var(--text-main)] truncate">
+                ${escapeHtml(e.name)}
+                <span class="block text-xs font-normal text-[var(--text-muted)]">${escapeHtml(e.cohort_name || 'Sin cohorte')} - ${escapeHtml(e.clan_name || 'Sin clan')}</span>
+              </td>
+              <td class="px-4 py-3 text-right font-black text-[var(--text-main)]">${e.average_score}</td>
+            </tr>
+          `;
         }
-        return `
-                  <tr class="${rowClass}">
-                    <td class="px-4 py-3 text-center">${medalIcon}</td>
-                    <td class="px-4 py-3 font-bold text-[var(--text-main)] truncate">
-                      ${escapeHtml(e.name)}
-                      <span class="block text-xs font-normal text-[var(--text-muted)]">${escapeHtml(e.cohort_name || 'Sin cohorte')} - ${escapeHtml(e.clan_name || 'Sin clan')}</span>
-                    </td>
-                    <td class="px-4 py-3 text-right font-black text-[var(--text-main)]">${e.average_score}</td>
-                  </tr>
-                `;
-      }).join('') : `
-                <tr>
-                  <td colspan="3" class="px-4 py-6 text-center text-[var(--text-muted)]">No hay suficientes datos.</td>
-                </tr>
-              `}
-            </tbody>
-          </table>
-        </div>
-      `;
+      });
       document.getElementById('dashboard-top-tables').innerHTML = buildTable("Top Team Leaders", topLeaders) + buildTable("Top Tutores", topTutors);
     };
 
@@ -271,13 +316,19 @@ const renderDashboardContent = async (content, user, name, role) => {
         filteredClans = filteredClans.filter(c => c.cohort_name === selectedCohort);
       }
       const opts = [{ value: 'all', label: 'Todos' }, ...filteredClans.map(c => ({ value: c.name, label: c.name }))];
-      clanContainer.innerHTML = dropdownComponent('dashboard-clan-filter', opts, 'all');
+      clanContainer.innerHTML = `
+        <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="dashboard-clan-filter-btn">Clan</label>
+        ${dropdownComponent('dashboard-clan-filter', opts, 'all')}
+      `;
       setupDropdown('dashboard-clan-filter', updateDashboardTables);
     };
 
     if (cohortContainer) {
       const opts = [{ value: 'all', label: 'Todas' }, ...masterCohorts.map(c => ({ value: c.name, label: c.name }))];
-      cohortContainer.innerHTML = dropdownComponent('dashboard-cohort-filter', opts, 'all');
+      cohortContainer.innerHTML = `
+        <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="dashboard-cohort-filter-btn">Cohorte</label>
+        ${dropdownComponent('dashboard-cohort-filter', opts, 'all')}
+      `;
       setupDropdown('dashboard-cohort-filter', (val) => {
         updateClanDropdown(val);
         updateDashboardTables();
@@ -290,6 +341,8 @@ const renderDashboardContent = async (content, user, name, role) => {
 
     setupDropdown('dashboard-clan-filter', updateDashboardTables);
     setupDropdown('dashboard-cohort-filter', updateDashboardTables);
+
+    updateDashboardTables();
 
     if (currentPeriods.length > 0) {
       setupDropdown('dashboard-period-filter', async (val) => {
@@ -311,23 +364,82 @@ const renderDashboardContent = async (content, user, name, role) => {
         await renderDashboardContent(content, user, name, role);
       });
     }
-  } else if (role === "coder" && window.__coderStats) {
+  } else if (role === "team_leader" || role === "tutor") {
+    // Leader / Tutor View
+    const summary = selectedPeriodId ? await metricsService.getSummary(selectedPeriodId) : { evaluatees: [] };
+    const myStats = summary.evaluatees?.find(e => e.id === user.id) || { n_evals: 0, average_score: 0, status: "Sin datos" };
+
+    html += `
+      ${StatsCard({ title: "Evaluaciones Recibidas", value: `<span class="animate-number" data-value="${myStats.n_evals}">${myStats.n_evals}</span>`, icon: icons.users, description: "En el periodo actual" })}
+      ${StatsCard({ title: "Puntaje Promedio ICP", value: `<span class="animate-number" data-value="${myStats.average_score ?? 0}">${myStats.average_score ?? 0}</span><span class="text-2xl text-[var(--text-muted)] ml-1">/100</span>`, icon: icons.star, description: "Estado: " + myStats.status })}
+    `;
+
+    if (role === "tutor") {
+      const myEvals = await evaluationService.getByEvaluator(user.id, 100);
+      const pending = myEvals.filter(isPendingParticipation).length;
+      html += StatsCard({ title: "Evaluaciones por Hacer", value: `<span class="animate-number" data-value="${pending}">${pending}</span>`, icon: icons.clock, description: "Pendientes de enviar" });
+    }
+    
+    html += `</div>`;
+    content.innerHTML = html;
+
+  } else {
+    // Coder View
+    const [myEvals, evaluables] = await Promise.all([
+      evaluationService.getByEvaluator(user.id, 100),
+      evaluablesService.get()
+    ]);
+    const completed = myEvals.filter(e => !isPendingParticipation(e)).length;
+    const drafts = myEvals.filter(isPendingParticipation).length;
+    const totalEvaluables = evaluables ? evaluables.length : 0;
+    const pending = Math.max(0, totalEvaluables - completed);
+
+    html += `
+      ${StatsCard({ title: "Completadas", value: `<span class="animate-number" data-value="${completed}">${completed}</span>`, icon: icons.check, description: "Evaluaciones enviadas" })}
+      ${StatsCard({ title: "Por Evaluar / Borradores", value: `<span class="animate-number" data-value="${pending}">${pending}</span>`, icon: icons.clock, description: "Pendientes o en curso" })}
+      
+      ${Card({
+      className: "h-full flex flex-col p-6 lg:row-span-2 shadow-sm border border-[var(--border-main)]",
+      children: `
+          <h3 class="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider text-left w-full mb-4">Progreso Actual</h3>
+          <div class="flex-1 flex flex-col items-center justify-center w-full min-h-[200px]">
+            ${completed + pending === 0
+          ? `<div class="text-center text-[var(--text-muted)] italic my-auto">Aún no hay datos para graficar.</div>`
+          : `<div class="relative w-48 h-48 my-4"><canvas id="coder-participation-chart"></canvas></div>`
+        }
+          </div>
+        `
+    })}
+      
+      <div class="col-span-1 md:col-span-2 lg:col-span-2 mt-4 lg:mt-0">
+        <div class="bg-[var(--bg-panel)] rounded-3xl border border-[var(--border-main)] p-8 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6 h-full">
+          <div>
+            <h2 class="text-2xl font-bold text-[var(--text-main)] mb-2">¡Hola, ${escapeHtml(user.name.split(' ')[0])}!</h2>
+          </div>
+        </div>
+      </div>
+    </div>
+    `;
+
+    content.innerHTML = html;
+
     const ctx = document.getElementById('coder-participation-chart');
     if (ctx) {
       const rootStyle = getComputedStyle(document.documentElement);
       const brandColor = rootStyle.getPropertyValue('--brand-bg').trim() || '#4f46e5';
       const draftColor = rootStyle.getPropertyValue('--accent-amber').trim() || '#f59e0b';
 
-      const { completed, pending } = window.__coderStats;
-      const total = completed + pending;
+      const chartCompleted = completed;
+      const chartPending = pending;
+      const total = chartCompleted + chartPending;
 
       import('chart.js/auto').then(({ default: Chart }) => {
         new Chart(ctx, {
           type: 'doughnut',
           data: {
-            labels: ['Completadas', 'Borradores'],
+            labels: ['Completadas', 'Pendientes'],
             datasets: [{
-              data: [completed, pending],
+              data: [chartCompleted, chartPending],
               backgroundColor: [brandColor, draftColor],
               borderWidth: 0,
               hoverOffset: 4
@@ -385,4 +497,37 @@ const renderDashboardContent = async (content, user, name, role) => {
       }).catch(err => console.error("Error loading Chart.js", err));
     }
   }
+  
+  // Trigger reflow to start fade-in animation for all roles
+  const dashboardCards = document.getElementById('dashboard-cards');
+  if (dashboardCards) {
+    void dashboardCards.offsetWidth;
+    dashboardCards.classList.remove('opacity-0');
+    dashboardCards.classList.add('opacity-100');
+  }
+
+  // Run counter animations for all roles
+  document.querySelectorAll('.animate-number').forEach(el => {
+    const text = el.innerText;
+    const target = parseFloat(el.getAttribute('data-value'));
+    if (isNaN(target) || target === 0) return; // Skip non-numeric or 0 values
+
+    const duration = 1200;
+    const startTime = performance.now();
+    const animate = (currentTime) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easeProgress = 1 - Math.pow(1 - progress, 3); // Cubic ease-out
+      const current = (easeProgress * target);
+      
+      el.innerText = Number.isInteger(target) ? Math.round(current) : current.toFixed(1);
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        el.innerText = text;
+      }
+    };
+    requestAnimationFrame(animate);
+  });
 };

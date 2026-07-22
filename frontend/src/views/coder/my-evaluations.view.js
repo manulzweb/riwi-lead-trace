@@ -97,11 +97,10 @@ export const setupMyEvaluations = async () => {
           : 'Colaborador';
         const periodName = period ? period.name : `Periodo #${ev.period_id}`;
 
-        // Cada entrada es una PARTICIPACION, no una evaluacion. En las anonimas
-        // el backend no puede devolver el contenido (`evaluation_id` es NULL: el
-        // vinculo con las respuestas no existe en la BD), asi que no hay `status`
-        // ni `submitted_at` que mostrar -- solo la fecha en que se participo.
+        // Cada entrada es una PARTICIPACION, no una evaluacion completa directamente,
+        // pero incluimos evaluation_id y answers desde el backend.
         const isAnonymous = evaluationService.isAnonymousParticipation(ev);
+        const hasDetail = evaluationService.hasVisibleDetail(ev);
 
         // Tokens semanticos de global.css: cambian solos en dark mode, asi que
         // ya no hacen falta las variantes `dark:`.
@@ -124,17 +123,14 @@ export const setupMyEvaluations = async () => {
         const formattedDate = dateSource ? formatDateLong(dateSource) : "No enviada";
         const dateLabel = isAnonymous ? "Enviada el" : "Fecha";
 
-        // Anonima: se explica POR QUE no hay detalle, en vez de dejar un hueco o
-        // un boton que no lleva a ninguna parte.
-        const detailSlot = isAnonymous
-          ? `<p class="max-w-xs text-xs leading-relaxed text-[var(--text-muted)] sm:text-right">
-             El detalle no se muestra porque tus respuestas se guardaron sin ningún vínculo con tu identidad.
-             Nadie puede recuperarlas ni saber que fueron tuyas — tampoco el equipo administrador.
-           </p>`
-          : `<button type="button" class="cursor-pointer rounded-xl border border-[var(--border-main)] bg-[var(--bg-base)] px-4 py-2 text-xs font-bold text-[var(--text-main)] transition hover:bg-[var(--border-main)]"
+        const detailSlot = hasDetail
+          ? `<button type="button" class="cursor-pointer rounded-xl border border-[var(--border-main)] bg-[var(--bg-base)] px-4 py-2 text-xs font-bold text-[var(--text-main)] transition hover:bg-[var(--border-main)]"
              data-eval-id="${escapeHtml(String(ev.evaluation_id))}">
              Ver detalle
-           </button>`;
+           </button>`
+          : `<p class="max-w-xs text-xs leading-relaxed text-[var(--text-muted)] sm:text-right">
+             El detalle no está disponible.
+           </p>`;
 
         return `
         <article class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-3xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-md transition-all hover:shadow-lg">

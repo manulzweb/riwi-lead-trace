@@ -106,8 +106,8 @@ export const sidebarComponent = (isActive) => {
       <div class="p-6 border-b border-[var(--border-main)] flex items-center justify-between lg:hidden">
         <div>
           <div class="flex items-center gap-2">
-            <img src="../../public/icons/riwi_logo_oscuro.png" alt="Logo Riwi" class="logo-light block w-auto h-6 object-contain">
-            <img src="../../public/icons/riwi_logo.png" alt="Logo Riwi" class="logo-dark block w-auto h-6 object-contain">
+            <img src="/icons/riwi_logo_oscuro.png" alt="Logo Riwi" class="logo-light block w-auto h-6 object-contain">
+            <img src="/icons/riwi_logo.png" alt="Logo Riwi" class="logo-dark block w-auto h-6 object-contain">
             <h2 class="text-xl mt-1 font-medium font-black text-[var(--text-main)] ">
             LeadTrace
           </h2>

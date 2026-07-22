@@ -41,7 +41,7 @@ export const renderEvaluate = () => `
       <p class="mt-2 text-[var(--text-muted)]">Completa el formulario estructurado para evaluar a tu Team Leader o Tutor.</p>
     </div>
 
-    <div class="mb-8 hidden sticky top-0 z-40 bg-[var(--bg-base)]/80 py-4 backdrop-blur-md border-b border-[var(--border-main)] -mx-6 px-6" id="progress-container">
+    <div class="mb-8 hidden sticky top-20 z-40 bg-[var(--bg-secondary)]/30 py-4 backdrop-blur-md border-[var(--border-main)] mx-6 px-6 rounded-full max-w-4xl" id="progress-container">
       <div class="flex justify-between items-center mb-2">
         <div class="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
           <span id="progress-text">0 de 0 respondidas</span> (<span id="progress-percentage">0%</span>)
@@ -89,23 +89,27 @@ export const renderEvaluate = () => `
         <div>
           <h3 class="text-base font-bold text-[var(--text-main)]">Envío Anónimo</h3>
           <p id="anon-help" class="text-sm text-[var(--text-muted)]">
-            Si lo activas, tus respuestas se guardan sin ningún vínculo con tu identidad: ni el equipo administrador
-            puede saber quién las envió. Queda registrado que participaste, pero no qué respondiste — por eso el
-            detalle tampoco aparecerá en tu historial. Es irreversible.
+            Si lo activas, tu evaluación será anónima para el Team Leader o Tutor evaluado. Sin embargo, se guardará en tu historial privado para que puedas revisar tus respuestas en el futuro.
           </p>
         </div>
       </section>
 
-      <div class="flex flex-col-reverse sm:flex-row justify-end gap-4">
-        <button type="button" id="draft-btn"
-          class="cursor-pointer rounded-2xl border border-[var(--border-main)] bg-transparent px-6 py-3 text-sm font-bold text-[var(--text-main)] transition-all hover:bg-[var(--bg-base)] hover:shadow-sm">
+      
+      <div class="flex flex-col-reverse sm:flex-row justify-end gap-4" id="wizard-buttons">
+        <button type="button" id="prev-btn" class="hidden cursor-pointer rounded-2xl border border-[var(--border-main)] bg-transparent px-6 py-3 text-sm font-bold text-[var(--text-main)] transition-all hover:bg-[var(--bg-base)] hover:shadow-sm">
+          Anterior
+        </button>
+        <button type="button" id="next-btn" class="hidden cursor-pointer rounded-2xl bg-[var(--brand-bg)] px-6 py-3 text-sm font-bold text-[var(--brand-text)] transition-all hover:bg-[var(--brand-hover)] hover:shadow-md focus:ring-4 focus:ring-[var(--border-main)]">
+          Siguiente
+        </button>
+        <button type="button" id="draft-btn" class="cursor-pointer rounded-2xl border border-[var(--border-main)] bg-transparent px-6 py-3 text-sm font-bold text-[var(--text-main)] transition-all hover:bg-[var(--bg-base)] hover:shadow-sm">
           Guardar borrador
         </button>
-        <button type="submit" id="submit-btn"
-          class="cursor-pointer rounded-2xl bg-[var(--brand-bg)] px-6 py-3 text-sm font-bold text-[var(--brand-text)] transition-all hover:bg-[var(--brand-hover)] hover:shadow-md focus:ring-4 focus:ring-[var(--border-main)]">
+        <button type="submit" id="submit-btn" class="hidden cursor-pointer rounded-2xl bg-[var(--brand-bg)] px-6 py-3 text-sm font-bold text-[var(--brand-text)] transition-all hover:bg-[var(--brand-hover)] hover:shadow-md focus:ring-4 focus:ring-[var(--border-main)]">
           Enviar evaluación
         </button>
       </div>
+
     </form>
     </div>
   </main>
@@ -147,7 +151,7 @@ export const setupEvaluate = async () => {
       anonymous: anonCheck.checked,
       answers: answers
     };
-    localStorage.setItem("evaluation_draft", JSON.stringify(draft));
+    localStorage.setItem(`evaluation_draft_${currentUser.id}_${evaluatee.value}`,  JSON.stringify(draft));
 
     // Feedback visual
     const indicator = document.getElementById("autosave-indicator");
@@ -288,7 +292,15 @@ export const setupEvaluate = async () => {
     }
   };
 
+  
   targetRole.addEventListener("change", handleRoleChange);
+
+  evaluatee.addEventListener("change", () => {
+    if (evaluatee.value) {
+      loadDraft(targetRole.value);
+    }
+  });
+
 
   // 2.5 Preselección por parámetros de consulta (query params)
   const params = new URLSearchParams(window.location.search);
@@ -301,25 +313,80 @@ export const setupEvaluate = async () => {
     evaluatee.value = preselectedId;
   }
 
-  const renderQuestions = (questions) => {
-    qContainer.innerHTML = "";
-    const grouped = {};
+  
+  let currentStep = 0;
+  let wizardPages = [];
+  const QUESTIONS_PER_STEP = 3;
 
-    questions.forEach(q => {
-      if (!grouped[q.category]) grouped[q.category] = [];
-      grouped[q.category].push(q);
+  const updateWizardUI = () => {
+    wizardPages.forEach((page, idx) => {
+      if (idx === currentStep) {
+        page.classList.remove("hidden");
+      } else {
+        page.classList.add("hidden");
+      }
     });
 
-    for (const [category, qs] of Object.entries(grouped)) {
-      const catSection = document.createElement("div");
-      catSection.className = "mb-6 last:mb-0";
+    const prevBtn = document.getElementById("prev-btn");
+    const nextBtn = document.getElementById("next-btn");
+    const submitBtn = document.getElementById("submit-btn");
 
-      const catHeader = document.createElement("h3");
-      catHeader.className = "text-xl font-bold text-[var(--text-main)] mb-6";
-      catHeader.textContent = category;
-      catSection.appendChild(catHeader);
+    if (currentStep === 0) {
+      prevBtn.classList.add("hidden");
+    } else {
+      prevBtn.classList.remove("hidden");
+    }
 
-      qs.forEach(q => {
+    if (currentStep === wizardPages.length - 1) {
+      nextBtn.classList.add("hidden");
+      submitBtn.classList.remove("hidden");
+    } else {
+      nextBtn.classList.remove("hidden");
+      submitBtn.classList.add("hidden");
+    }
+  };
+
+  const nextBtn = document.getElementById("next-btn");
+  const prevBtn = document.getElementById("prev-btn");
+
+  nextBtn.addEventListener("click", () => {
+    if (currentStep < wizardPages.length - 1) {
+      currentStep++;
+      updateWizardUI();
+    }
+  });
+
+  prevBtn.addEventListener("click", () => {
+    if (currentStep > 0) {
+      currentStep--;
+      updateWizardUI();
+    }
+  });
+
+  const renderQuestions = (questions) => {
+    qContainer.innerHTML = "";
+    wizardPages = [];
+    currentStep = 0;
+
+    if (questions.length === 0) return;
+
+    for (let i = 0; i < questions.length; i += QUESTIONS_PER_STEP) {
+      const pageQuestions = questions.slice(i, i + QUESTIONS_PER_STEP);
+      const pageDiv = document.createElement("div");
+      pageDiv.className = "wizard-page hidden";
+
+      // Para mostrar la categoria
+      let currentCategory = null;
+
+      pageQuestions.forEach(q => {
+        if (q.category !== currentCategory) {
+          currentCategory = q.category;
+          const catHeader = document.createElement("h3");
+          catHeader.className = "text-xl font-bold text-[var(--text-main)] mb-6";
+          catHeader.textContent = currentCategory;
+          pageDiv.appendChild(catHeader);
+        }
+
         const qDiv = document.createElement("div");
         qDiv.className = "mb-8 last:mb-0 question-group";
         qDiv.dataset.questionId = q.id;
@@ -334,19 +401,19 @@ export const setupEvaluate = async () => {
           const scaleDiv = document.createElement("div");
           scaleDiv.className = "grid grid-cols-5 gap-3";
 
-          for (let i = 1; i <= 5; i++) {
+          for (let val = 1; val <= 5; val++) {
             const btn = document.createElement("button");
             btn.type = "button";
             btn.className = "flex h-12 w-full items-center justify-center rounded-xl border border-[var(--border-main)] bg-transparent text-sm font-medium text-[var(--text-muted)] transition-all hover:border-[var(--brand-hover)] focus:outline-none";
-            btn.textContent = i;
-            btn.dataset.value = i;
+            btn.textContent = val;
+            btn.dataset.value = val;
 
             btn.addEventListener("click", () => {
               scaleDiv.querySelectorAll("button").forEach(b => {
                 b.classList.remove("border-[var(--brand-bg)]", "text-[var(--brand-bg)]", "shadow-sm", "bg-[var(--brand-bg)]/10");
               });
               btn.classList.add("border-[var(--brand-bg)]", "text-[var(--brand-bg)]", "shadow-sm", "bg-[var(--brand-bg)]/10");
-              qDiv.dataset.selectedValue = i;
+              qDiv.dataset.selectedValue = val;
 
               const errorMsg = qDiv.querySelector(".error-msg");
               if (errorMsg) errorMsg.classList.add("hidden");
@@ -410,11 +477,13 @@ export const setupEvaluate = async () => {
           qDiv.appendChild(textarea);
         }
 
-        catSection.appendChild(qDiv);
+        pageDiv.appendChild(qDiv);
       });
 
-      qContainer.appendChild(catSection);
+      wizardPages.push(pageDiv);
+      qContainer.appendChild(pageDiv);
     }
+    updateWizardUI();
   };
 
   // Lógica de guardado manual del borrador (mantiene el toast original)
@@ -427,7 +496,7 @@ export const setupEvaluate = async () => {
 
   // Lógica de carga de borrador
   const loadDraft = (currentRole) => {
-    const savedDraft = localStorage.getItem("evaluation_draft");
+    const savedDraft = localStorage.getItem(`evaluation_draft_${currentUser.id}_${evaluatee.value}`);
     if (savedDraft) {
       try {
         const draft = JSON.parse(savedDraft);
@@ -475,7 +544,7 @@ export const setupEvaluate = async () => {
         question_id: parseInt(el.dataset.questionId),
         type,
         score: (type === "scale" || type === "scale_1_5") ? (val ? parseInt(val) : null) : null,
-        comment: (type === "open_text" || type === "yes_no") ? (val || null) : null,
+        comment: (type === "text" || type === "open_text" || type === "yes_no") ? (val || null) : null,
       };
     });
 
@@ -515,7 +584,7 @@ export const setupEvaluate = async () => {
       await evaluationService.create(evaluationData);
 
       showToast("¡Evaluación enviada!", "success", "Tu feedback ha sido registrado exitosamente.");
-      localStorage.removeItem("evaluation_draft");
+      localStorage.removeItem(`evaluation_draft_${currentUser.id}_${evaluatee.value}`);
       window.history.pushState({}, "", "/evaluations");
       renderRoute();
     } catch (err) {
@@ -524,7 +593,7 @@ export const setupEvaluate = async () => {
 
       // El borrador nunca se borro, pero se reescribe con lo ultimo respondido
       // por si el usuario cambio algo despues de cargarlo.
-      localStorage.setItem("evaluation_draft", JSON.stringify({
+      localStorage.setItem(`evaluation_draft_${currentUser.id}_${evaluatee.value}`,  JSON.stringify({
         role: targetRole.value,
         evaluatee: evaluatee.value,
         anonymous: anonCheck.checked,

@@ -41,13 +41,17 @@ export const renderMetrics = () => `
         <h1 class="mt-1 text-4xl font-black tracking-tight text-[var(--text-main)]">Métricas ICP</h1>
         <p class="mt-4 text-[var(--text-muted)]">Índice de Calidad Percibida general por líder, tutor y periodo.</p>
       </div>
-      <button id="download-pdf-btn" type="button"
-        class="shrink-0 rounded-2xl border border-[var(--border-main)] bg-[var(--brand-bg)] px-4 py-2 text-sm font-semibold text-[var(--brand-text)] transition-all hover:bg-[var(--brand-hover)]">
-        Descargar PDF
-      </button>
+      <div class="flex flex-col items-end print:hidden">
+        <button id="download-pdf-btn" type="button"
+          class="shrink-0 rounded-2xl border border-[var(--border-main)] bg-[var(--brand-bg)] px-4 py-2 text-sm font-semibold text-[var(--brand-text)] transition-all hover:bg-[var(--brand-hover)] flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          Descargar PDF
+        </button>
+        <p class="text-[10px] text-[var(--text-muted)] mt-1.5 max-w-[200px] text-right leading-tight">Solo se incluirán los resultados visibles según tus filtros y búsqueda.</p>
+      </div>
     </section>
 
-    <section class="mt-6 flex gap-4 flex-wrap items-center">
+    <section class="mt-6 flex gap-4 flex-wrap items-center print:hidden">
       <div class="flex flex-col gap-1 w-48">
         <label class="text-sm font-semibold text-[var(--text-muted)]">Periodo:</label>
         <div id="period-dropdown-container">
@@ -66,14 +70,21 @@ export const renderMetrics = () => `
 
       <div class="flex flex-col gap-1 w-48">
         <label class="text-sm font-semibold text-[var(--text-muted)]">Filtrar por cohorte:</label>
-        <div id="cohort-dropdown-container">
-          <!-- Se llena dinámicamente -->
+        <div id="real-cohort-dropdown-container">
+          <!-- Se llena con initMasterFilters -->
+        </div>
+      </div>
+      <div class="flex flex-col gap-1 w-48">
+        <label class="text-sm font-semibold text-[var(--text-muted)]">Filtrar por clan:</label>
+        <div id="clan-dropdown-container">
+          <!-- Se llena con initMasterFilters -->
         </div>
       </div>
     </section>
 
     <div id="metrics-report" class="mt-8 bg-[var(--bg-base)]">
-      <p id="report-period-label" class="mb-4 text-sm text-[var(--text-muted)]"></p>
+      <p id="report-period-label" class="mb-2 text-sm text-[var(--text-muted)]"></p>
+      <div id="print-filters-label" class="hidden print:block text-sm text-[var(--text-muted)] mb-4 pb-4 border-b border-[var(--border-main)]"></div>
 
       <section id="kpis-section" class="grid gap-6 sm:grid-cols-3" aria-live="polite">
         <article class="rounded-3xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-lg">
@@ -95,12 +106,32 @@ export const renderMetrics = () => `
 
       <!-- ----- Resultados detallados ----- -->
       <section class="mt-10">
-        <h2 class="text-2xl font-bold text-[var(--text-main)] mb-6">Resultados Detallados</h2>
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 print:hidden">
+          <h2 class="text-2xl font-bold text-[var(--text-main)]">Resultados Detallados</h2>
+          <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div class="relative w-full sm:w-64">
+              <input type="text" id="search-metrics" placeholder="Buscar por nombre..." class="w-full rounded-2xl border border-[var(--border-main)] bg-[var(--bg-panel)] px-4 py-2 pl-10 text-sm focus:border-[var(--brand-bg)] focus:outline-none focus:ring-1 focus:ring-[var(--brand-bg)]">
+              <svg class="absolute left-3 top-2.5 h-4 w-4 text-[var(--text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-sm font-semibold text-[var(--text-muted)]">Ordenar por:</span>
+              <div id="sort-dropdown-container">
+                ${dropdownComponent('sort-metrics', [
+                  {value: 'score_desc', label: 'Mayor ICP'},
+                  {value: 'score_asc', label: 'Menor ICP'},
+                  {value: 'evals_desc', label: 'Más evaluaciones'},
+                  {value: 'name_asc', label: 'Nombre (A-Z)'}
+                ], 'score_desc')}
+              </div>
+            </div>
+          </div>
+        </div>
         <div id="metrics-grid" class="grid gap-4 md:grid-cols-2 lg:grid-cols-3" aria-live="polite">
           <div class="h-32 skeleton-shimmer rounded-3xl"></div>
           <div class="h-32 skeleton-shimmer rounded-3xl"></div>
           <div class="h-32 skeleton-shimmer rounded-3xl"></div>
         </div>
+        <div id="pagination-container" class="mt-8 flex justify-center items-center gap-2 flex-wrap print:hidden"></div>
       </section>
     </div>
     </div>
@@ -125,10 +156,15 @@ export const setupMetrics = async () => {
   if (!kpiEvals || !kpiIcp || !kpiPart || !gridContainer || !periodContainer) return;
 
   downloadBtn?.addEventListener("click", async () => {
-    // Usar la impresión nativa del navegador es mucho más robusto
-    // y evita errores de CORS (SecurityError, Event isTrusted: true)
-    // causados por librerías tipo html-to-image intentando leer fuentes.
-    window.print();
+    // Para imprimir, mostramos todos los resultados temporalmente (sin paginación)
+    renderGrid(currentPeriodId, true);
+    
+    // Pequeña pausa para permitir que el DOM se actualice antes de abrir el diálogo de impresión
+    setTimeout(() => {
+      window.print();
+      // Restauramos la vista paginada
+      renderGrid(currentPeriodId, false);
+    }, 500);
   });
 
   let periods = [];
@@ -139,6 +175,12 @@ export const setupMetrics = async () => {
   let currentCohortFilter = "all";
   let currentRealCohortFilter = "all";
   let currentClanFilter = "all";
+  
+  let currentSearchQuery = "";
+  let currentFilteredList = [];
+  let currentPage = 1;
+  const itemsPerPage = 6;
+  let currentSort = "score_desc";
   const historyCharts = new Map(); // evaluateeId -> instancia de Chart.js activa, para destruirla antes de recrearla
 
   // Extraida a funcion para que el boton "Reintentar" del estado de error pueda
@@ -176,6 +218,27 @@ export const setupMetrics = async () => {
       // 3. Inicializar el componente dinámico
       setupDropdown('filter-period');
       const periodSelector = document.getElementById("filter-period");
+
+      setupDropdown('sort-metrics');
+      const sortSelector = document.getElementById("sort-metrics");
+      if (sortSelector) {
+        sortSelector.addEventListener("change", (e) => {
+          currentSort = e.target.value;
+          currentPage = 1;
+          renderGrid();
+        });
+      }
+
+      const searchInput = document.getElementById("search-metrics");
+      if (searchInput) {
+        searchInput.addEventListener("input", (e) => {
+          currentSearchQuery = e.target.value.toLowerCase().trim();
+          currentPage = 1;
+          // Volvemos a aplicar filtros a partir del listado base en loadMetrics
+          // Pero loadMetrics hace fetch, así que mejor extraemos el filtrado
+          applyFilters();
+        });
+      }
 
       await loadMetrics(currentPeriodId, currentRoleFilter);
 
@@ -312,119 +375,205 @@ export const setupMetrics = async () => {
 
       const summary = await metricsService.getSummary(periodId);
 
-      kpiEvals.textContent = summary.kpis.total_evaluations;
-      kpiIcp.textContent = `${summary.kpis.average_score}/100`;
-      kpiPart.textContent = `${summary.kpis.participation_rate}%`;
+      const runCounter = (el, target, suffix = '') => {
+        const duration = 1200;
+        const startTime = performance.now();
+        const numTarget = parseFloat(target);
+        if (isNaN(numTarget) || numTarget === 0) {
+          el.textContent = target + suffix;
+          return;
+        }
+        const animate = (currentTime) => {
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const easeProgress = 1 - Math.pow(1 - progress, 3);
+          const current = easeProgress * numTarget;
+          el.textContent = (Number.isInteger(numTarget) ? Math.round(current) : current.toFixed(1)) + suffix;
+          if (progress < 1) requestAnimationFrame(animate);
+          else el.textContent = target + suffix;
+        };
+        requestAnimationFrame(animate);
+      };
+
+      runCounter(kpiEvals, summary.kpis.total_evaluations);
+      runCounter(kpiIcp, summary.kpis.average_score, '/100');
+      runCounter(kpiPart, summary.kpis.participation_rate, '%');
 
       if (reportPeriodLabel) {
         const periodName = periods.find(p => p.id === periodId)?.name ?? "";
         reportPeriodLabel.textContent = `Periodo: ${periodName} - generado el ${formatDate(new Date())}`;
       }
 
-      let list = summary.evaluatees;
-
-      // Actualizar el dropdown de cohortes basándonos en los evaluatees disponibles
-      const cohortContainer = document.getElementById("cohort-dropdown-container");
-      if (cohortContainer) {
-        const uniqueCohorts = [...new Set(summary.evaluatees.map(e => e.clan_name).filter(Boolean))].sort();
-        const cohortOptions = [
-          { value: 'all', label: 'Todos los clanes' },
-          ...uniqueCohorts.map(c => ({ value: c, label: c }))
-        ];
-        
-        cohortContainer.innerHTML = dropdownComponent('filter-cohort', cohortOptions, currentCohortFilter);
-        setupDropdown('filter-cohort');
-        const cohortSelector = document.getElementById("filter-cohort");
-        if (cohortSelector) {
-          // Remover listeners previos
-          const newSelector = cohortSelector.cloneNode(true);
-          cohortSelector.parentNode.replaceChild(newSelector, cohortSelector);
-          newSelector.addEventListener("change", async (e) => {
-            currentCohortFilter = e.target.value;
-            // No hacemos un await de loadMetrics sino que recalculamos localmente para no saturar la BD
-            // O mejor, disparamos loadMetrics para recalcular el layout completo
-            await loadMetrics(currentPeriodId, currentRoleFilter);
-          });
-        }
-      }
-
-      if (roleFilter !== "all") {
-        list = list.filter(e => e.role === roleFilter);
-      }
-      
-      if (currentCohortFilter !== "all") {
-        list = list.filter(e => e.clan_name === currentCohortFilter);
-      }
-
-      renderHighlights(list);
-
-      if (list.length === 0) {
-        gridContainer.innerHTML = emptyStateComponent(
-          "Sin resultados",
-          "No se encontraron líderes o tutores con este filtro."
-        );
-        return;
-      }
-
-      const hasValidScores = list.some(e => e.average_score !== null);
-      if (!hasValidScores) {
-        gridContainer.innerHTML = emptyStateComponent(
-          "Esperando más evaluaciones",
-          "Aún no hay suficientes datos. Debemos recibir un mínimo de evaluaciones (al menos 3 por persona) para poder calcular y mostrar las métricas del ICP."
-        );
-        return;
-      }
-
-      gridContainer.innerHTML = list.map(ev => {
-        const scoreText = ev.average_score !== null ? `${ev.average_score}` : "--";
-
-        // Badge neutro por defecto: tokens, no grises literales de Tailwind
-        // (bg-gray-*/text-gray-* no reaccionan al tema y rompen el dark mode).
-        let statusBadgeClass = "bg-[var(--bg-base)] text-[var(--text-muted)]";
-        if (ev.status === "Sólido") statusBadgeClass = "bg-[var(--success-bg)] text-[var(--success-text)]";
-        if (ev.status === "En riesgo") statusBadgeClass = "bg-[var(--danger-bg)] text-[var(--danger-text)]";
-        if (ev.status === "Estable") statusBadgeClass = "bg-[var(--warning-bg)] text-[var(--warning-text)]";
-
-        return `
-          <article class="metrics-card rounded-3xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-md transition-all hover:shadow-lg cursor-pointer" data-id="${ev.id}" data-period="${periodId}">
-            <div class="flex items-start justify-between pointer-events-none">
-              <div>
-                <h3 class="text-lg font-bold text-[var(--text-main)]">${escapeHtml(ev.name)}</h3>
-                <p class="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">${escapeHtml(ev.role.replace('_', ' '))}</p>
-              </div>
-              <span class="rounded-full px-3 py-1 text-xs font-semibold ${statusBadgeClass}">${escapeHtml(ev.status)}</span>
-            </div>
-
-            <div class="mt-6 flex justify-between items-end border-t border-[var(--border-main)] pt-4 pointer-events-none">
-              <div>
-                <p class="text-xs text-[var(--text-muted)]">Evaluaciones</p>
-                <p class="text-sm mt-1 text-[var(--text-main)]">${ev.n_evals}</p>
-              </div>
-              <div class="text-right">
-                <p class="text-xs text-[var(--text-muted)]">ICP</p>
-                <p class="text-3xl font-black text-[var(--brand-bg)] mt-1">${scoreText}</p>
-              </div>
-            </div>
-
-            <button class="btn-toggle-detail mt-4 w-full text-center text-xs font-semibold text-[var(--brand-bg)] pointer-events-none">
-              Ver detalle por categoría e historial ↓
-            </button>
-            <div id="detail-${ev.id}" data-detail-panel class="mt-4 hidden border-t border-[var(--border-main)] pt-4 cursor-default"></div>
-          </article>
-        `;
-      }).join("");
-
-      document.querySelectorAll(".metrics-card").forEach(card => {
-        card.addEventListener("click", () => toggleDetail(card));
-        // Un click dentro del panel de detalle no debe plegar la tarjeta.
-        // Antes era un `onclick="event.stopPropagation()"` inline en el markup.
-        card.querySelector("[data-detail-panel]")
-          ?.addEventListener("click", (e) => e.stopPropagation());
-      });
+      // Almacenamos el original antes de aplicar los filtros locales
+      window.currentMasterList = summary.evaluatees;
+      applyFilters();
 
     } catch (err) {
       showToast("Error", "error", "No se pudieron actualizar las métricas.");
       console.error(err);
+    }
+  }
+
+  function applyFilters() {
+    let list = window.currentMasterList || [];
+    
+    if (currentRoleFilter !== "all") {
+      list = list.filter(e => e.role === currentRoleFilter);
+    }
+    if (currentRealCohortFilter !== "all") {
+      list = list.filter(e => e.cohort_name === currentRealCohortFilter);
+    }
+    if (currentClanFilter !== "all") {
+      list = list.filter(e => e.clan_name === currentClanFilter);
+    }
+    if (currentSearchQuery) {
+      list = list.filter(e => e.name.toLowerCase().includes(currentSearchQuery));
+    }
+
+    renderHighlights(list);
+    currentFilteredList = list;
+    
+    // Actualizar etiqueta de impresion
+    const printLbl = document.getElementById("print-filters-label");
+    if (printLbl) {
+      let fText = [];
+      if (currentRoleFilter !== "all") fText.push(`Rol: ${currentRoleFilter === "team_leader" ? "Team Leaders" : "Tutores"}`);
+      if (currentRealCohortFilter !== "all") fText.push(`Cohorte: ${currentRealCohortFilter}`);
+      if (currentClanFilter !== "all") fText.push(`Clan: ${currentClanFilter}`);
+      if (currentSearchQuery) fText.push(`Búsqueda: "${currentSearchQuery}"`);
+      
+      if (fText.length > 0) {
+        printLbl.innerHTML = `<strong>Filtros aplicados:</strong> ${fText.join(" | ")}`;
+      } else {
+        printLbl.innerHTML = `<strong>Filtros aplicados:</strong> Ninguno (Mostrando todos)`;
+      }
+    }
+
+    renderGrid(currentPeriodId);
+  }
+
+  function renderGrid(periodId = currentPeriodId, printMode = false) {
+    const paginationContainer = document.getElementById("pagination-container");
+    if (currentFilteredList.length === 0) {
+      gridContainer.innerHTML = emptyStateComponent(
+        "Sin resultados",
+        "No se encontraron líderes o tutores con este filtro."
+      );
+      if (paginationContainer) paginationContainer.innerHTML = "";
+      return;
+    }
+
+    const hasValidScores = currentFilteredList.some(e => e.average_score !== null);
+    if (!hasValidScores) {
+      gridContainer.innerHTML = emptyStateComponent(
+        "Esperando más evaluaciones",
+        "Aún no hay suficientes datos. Debemos recibir un mínimo de evaluaciones (al menos 3 por persona) para poder calcular y mostrar las métricas del ICP."
+      );
+      if (paginationContainer) paginationContainer.innerHTML = "";
+      return;
+    }
+
+    // Apply sorting
+    let sortedList = [...currentFilteredList];
+    sortedList.sort((a, b) => {
+      switch (currentSort) {
+        case 'score_desc':
+          return (b.average_score || 0) - (a.average_score || 0);
+        case 'score_asc':
+          return (a.average_score || 0) - (b.average_score || 0);
+        case 'evals_desc':
+          return (b.n_evals || 0) - (a.n_evals || 0);
+        case 'name_asc':
+          return a.name.localeCompare(b.name);
+        default:
+          return 0;
+      }
+    });
+
+    // Pagination
+    let paginatedList = sortedList;
+    let totalPages = 1;
+
+    if (!printMode) {
+      totalPages = Math.ceil(sortedList.length / itemsPerPage);
+      if (currentPage > totalPages) currentPage = Math.max(1, totalPages);
+      
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      paginatedList = sortedList.slice(startIndex, startIndex + itemsPerPage);
+    }
+
+    gridContainer.innerHTML = paginatedList.map(ev => {
+      const scoreText = ev.average_score !== null ? `${ev.average_score}` : "--";
+
+      // Badge neutro por defecto: tokens, no grises literales de Tailwind
+      // (bg-gray-*/text-gray-* no reaccionan al tema y rompen el dark mode).
+      let statusBadgeClass = "bg-[var(--bg-base)] text-[var(--text-muted)]";
+      if (ev.status === "Sólido") statusBadgeClass = "bg-[var(--success-bg)] text-[var(--success-text)]";
+      if (ev.status === "En riesgo") statusBadgeClass = "bg-[var(--danger-bg)] text-[var(--danger-text)]";
+      if (ev.status === "Estable") statusBadgeClass = "bg-[var(--warning-bg)] text-[var(--warning-text)]";
+
+      return `
+        <article class="metrics-card rounded-3xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-md transition-all hover:shadow-lg cursor-pointer" data-id="${ev.id}" data-period="${periodId}">
+          <div class="flex items-start justify-between pointer-events-none">
+            <div>
+              <h3 class="text-lg font-bold text-[var(--text-main)]">${escapeHtml(ev.name)}</h3>
+              <p class="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">${escapeHtml(ev.role.replace('_', ' '))}</p>
+            </div>
+            <span class="rounded-full px-3 py-1 text-xs font-semibold ${statusBadgeClass}">${escapeHtml(ev.status)}</span>
+          </div>
+
+          <div class="mt-6 flex justify-between items-end border-t border-[var(--border-main)] pt-4 pointer-events-none">
+            <div>
+              <p class="text-xs text-[var(--text-muted)]">Evaluaciones</p>
+              <p class="text-sm mt-1 text-[var(--text-main)]">${ev.n_evals}</p>
+            </div>
+            <div class="text-right">
+              <p class="text-xs text-[var(--text-muted)]">ICP</p>
+              <p class="text-3xl font-black text-[var(--brand-bg)] mt-1">${scoreText}</p>
+            </div>
+          </div>
+
+          <button class="btn-toggle-detail mt-4 w-full text-center text-xs font-semibold text-[var(--brand-bg)] pointer-events-none">
+            Ver detalle por categoría e historial ↓
+          </button>
+          <div id="detail-${ev.id}" data-detail-panel class="mt-4 hidden border-t border-[var(--border-main)] pt-4 cursor-default"></div>
+        </article>
+      `;
+    }).join("");
+
+    document.querySelectorAll(".metrics-card").forEach(card => {
+      card.addEventListener("click", () => toggleDetail(card));
+      // Un click dentro del panel de detalle no debe plegar la tarjeta.
+      // Antes era un `onclick="event.stopPropagation()"` inline en el markup.
+      card.querySelector("[data-detail-panel]")
+        ?.addEventListener("click", (e) => e.stopPropagation());
+    });
+
+    // Render pagination controls
+    if (paginationContainer) {
+      if (totalPages > 1) {
+        let paginationHtml = '';
+        for (let i = 1; i <= totalPages; i++) {
+          const isActive = i === currentPage;
+          paginationHtml += `
+            <button class="btn-page w-10 h-10 rounded-xl font-bold transition-all ${isActive ? 'bg-[var(--brand-bg)] text-[var(--brand-text)] shadow-md' : 'bg-[var(--bg-panel)] text-[var(--text-muted)] border border-[var(--border-main)] hover:border-[var(--brand-bg)] hover:text-[var(--brand-bg)]'}" data-page="${i}">
+              ${i}
+            </button>
+          `;
+        }
+        paginationContainer.innerHTML = paginationHtml;
+
+        document.querySelectorAll(".btn-page").forEach(btn => {
+          btn.addEventListener("click", (e) => {
+            currentPage = parseInt(e.currentTarget.dataset.page);
+            renderGrid(periodId);
+            // Scroll back to top of grid
+            document.getElementById('metrics-grid').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          });
+        });
+      } else {
+        paginationContainer.innerHTML = "";
+      }
     }
   }
 

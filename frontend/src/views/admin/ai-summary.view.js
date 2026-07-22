@@ -6,6 +6,7 @@ import { metricsService } from "../../services/metrics.service";
 import { showToast } from "../../components/alerts";
 import { escapeHtml } from "../../utils/validators";
 import { marked } from "marked";
+import DOMPurify from "dompurify";
 
 const SPINNER_SVG = `<svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
 
@@ -16,7 +17,7 @@ export const renderAiSummary = () => `
     <section>
       <p class="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--brand-bg)]">Admin · IA</p>
       <h1 class="mt-1 text-4xl font-black tracking-tight text-[var(--text-main)]">Resumen con IA</h1>
-      <p class="mt-4 text-[var(--text-muted)]">Genera un resumen de feedback usando Claude AI a partir de evaluaciones agregadas y anonimizadas.</p>
+      <p class="mt-4 text-[var(--text-muted)]">Genera un resumen de feedback usando Gemini a partir de evaluaciones agregadas y anonimizadas.</p>
     </section>
 
     <section class="mt-8 rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-8 shadow-xl">
@@ -155,7 +156,7 @@ export const setupAiSummary = async () => {
 
     try {
       const { summary } = await metricsService.getAiSummary(evaluateeId, periodId);
-      resultContent.innerHTML = marked.parse(summary);
+      resultContent.innerHTML = DOMPurify.sanitize(marked.parse(summary));
       resultSection.classList.remove("hidden");
     } catch (err) {
       showToast("Error", "error", "No se pudo generar el resumen (¿hay suficientes evaluaciones enviadas en ese periodo?).");
