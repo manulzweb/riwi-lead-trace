@@ -6,6 +6,7 @@ import { setupModalA11y } from "../../utils/modalA11y";
 import { authService } from "../../services/auth.service";
 import { searchBoxComponent, setupSearch } from "../../components/searchBox";
 import { emptyStateComponent } from "../../components/emptyState.js";
+import { setupPagination } from "../../components/pagination";
 import { z } from "zod";
 
 // Estado de error del listado: ofrece reintentar en vez de pedir recargar la
@@ -124,103 +125,71 @@ export const setupAdminCategories = () => {
 
   let allCategories = [];
   let currentFilteredCategories = [];
-  let currentPage = 1;
-  const itemsPerPage = 5;
+  let paginationInstance = null;
   const searchSlot = document.getElementById("category-search-slot");
 
   const renderCategoriesList = (categories) => {
-    if (categories !== currentFilteredCategories) {
-      currentFilteredCategories = categories;
-      currentPage = 1;
-    }
+    currentFilteredCategories = categories;
     
-    const totalPages = Math.ceil(currentFilteredCategories.length / itemsPerPage) || 1;
-    if (currentPage > totalPages) currentPage = totalPages;
-    
-    const startIdx = (currentPage - 1) * itemsPerPage;
-    const paginatedData = currentFilteredCategories.slice(startIdx, startIdx + itemsPerPage);
-
-    if (!paginatedData || paginatedData.length === 0) {
-      listContainer.innerHTML = emptyStateComponent(
-        allCategories.length === 0 ? "No hay categorías" : "Sin resultados",
-        allCategories.length === 0 ? "Crea la primera categoría para poder clasificar preguntas." : "Ninguna categoría coincide con la búsqueda."
-      );
+    if (paginationInstance) {
+      paginationInstance.updateData(categories);
       return;
     }
 
-    let html = paginatedData.map(c => `
-      <div class="flex items-center justify-between gap-4 rounded-2xl bg-[var(--bg-panel)] p-4 shadow-sm border border-[var(--border-main)] transition-all hover:shadow-md">
-        <h3 class="font-bold text-[var(--text-main)]">${escapeHtml(c.name)}</h3>
-        <div class="flex items-center gap-2">
-          <button class="btn-edit-category rounded-lg px-4 py-2 text-xs font-bold text-[var(--text-muted)] bg-[var(--bg-base)] hover:bg-[var(--border-main)] transition-colors cursor-pointer" data-id="${c.id}" title="Editar categoría">
-            Editar
-          </button>
-          <button class="btn-delete-category p-2 text-[var(--text-muted)] hover:bg-[var(--danger-bg)] hover:text-[var(--danger-text)] rounded-lg transition-colors cursor-pointer" data-id="${c.id}" title="Eliminar categoría">
-            <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-          </button>
+    paginationInstance = setupPagination({
+      data: categories,
+      itemsPerPage: 5,
+      container: listContainer,
+      emptyStateHtml: emptyStateComponent(
+        allCategories.length === 0 ? "No hay categorías" : "Sin resultados",
+        allCategories.length === 0 ? "Crea la primera categoría para poder clasificar preguntas." : "Ninguna categoría coincide con la búsqueda."
+      ),
+      renderItem: (c) => `
+        <div class="flex items-center justify-between gap-4 rounded-2xl bg-[var(--bg-panel)] p-4 shadow-sm border border-[var(--border-main)] transition-all hover:shadow-md">
+          <h3 class="font-bold text-[var(--text-main)]">${escapeHtml(c.name)}</h3>
+          <div class="flex items-center gap-2">
+            <button class="btn-edit-category rounded-lg px-4 py-2 text-xs font-bold text-[var(--text-muted)] bg-[var(--bg-base)] hover:bg-[var(--border-main)] transition-colors cursor-pointer" data-id="${c.id}" title="Editar categoría">
+              Editar
+            </button>
+            <button class="btn-delete-category p-2 text-[var(--text-muted)] hover:bg-[var(--danger-bg)] hover:text-[var(--danger-text)] rounded-lg transition-colors cursor-pointer" data-id="${c.id}" title="Eliminar categoría">
+              <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
+          </div>
         </div>
-      </div>
-    `).join("");
+      `,
+      onRenderCompleted: () => {
+        listContainer.querySelectorAll(".btn-edit-category").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const id = parseInt(btn.dataset.id);
+            const category = allCategories.find(c => c.id === id);
+            if (category) openEditModal(category, btn);
+          });
+        });
 
-    if (totalPages > 1) {
-      html += `
-        <div class="flex justify-between items-center mt-4 px-2">
-          <button class="btn-prev-page px-4 py-2 rounded-xl font-bold bg-[var(--bg-base)] text-[var(--text-muted)] border border-[var(--border-main)] hover:bg-[var(--border-main)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer" ${currentPage === 1 ? 'disabled' : ''}>Anterior</button>
-          <span class="text-sm font-semibold text-[var(--text-muted)]">Página ${currentPage} de ${totalPages}</span>
-          <button class="btn-next-page px-4 py-2 rounded-xl font-bold bg-[var(--bg-base)] text-[var(--text-muted)] border border-[var(--border-main)] hover:bg-[var(--border-main)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer" ${currentPage === totalPages ? 'disabled' : ''}>Siguiente</button>
-        </div>
-      `;
-    }
+        listContainer.querySelectorAll(".btn-delete-category").forEach(btn => {
+          btn.addEventListener("click", async (e) => {
+            const id = e.currentTarget.dataset.id;
+            if (!(await showConfirm("¿Estás seguro de que deseas eliminar esta categoría?"))) return;
 
-    listContainer.innerHTML = html;
+            const originalCats = [...allCategories];
+            allCategories = allCategories.filter(c => c.id != id);
+            renderCategoriesList(allCategories);
 
-    if (totalPages > 1) {
-      listContainer.querySelector(".btn-prev-page")?.addEventListener("click", () => {
-        if (currentPage > 1) {
-          currentPage--;
-          renderCategoriesList(currentFilteredCategories);
-        }
-      });
-      listContainer.querySelector(".btn-next-page")?.addEventListener("click", () => {
-        if (currentPage < totalPages) {
-          currentPage++;
-          renderCategoriesList(currentFilteredCategories);
-        }
-      });
-    }
-
-    listContainer.querySelectorAll(".btn-edit-category").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const id = parseInt(btn.dataset.id);
-        const category = allCategories.find(c => c.id === id);
-        if (category) openEditModal(category, btn);
-      });
-    });
-
-    listContainer.querySelectorAll(".btn-delete-category").forEach(btn => {
-      btn.addEventListener("click", async (e) => {
-        const id = e.currentTarget.dataset.id;
-        if (!(await showConfirm("¿Estás seguro de que deseas eliminar esta categoría?"))) return;
-
-        // Optimistic UI: Eliminar de la lista inmediatamente
-        const originalCategories = [...allCategories];
-        allCategories = allCategories.filter(c => c.id != id);
-        renderCategoriesList(allCategories);
-
-        try {
-          await categoryService.remove(id, authService.getSession()?.id);
-          showToast("Categoría eliminada", "success");
-        } catch (error) {
-          // Rollback en caso de error
-          allCategories = originalCategories;
-          renderCategoriesList(allCategories);
-          
-          const msg = error?.status === 409
-            ? "No se puede eliminar: hay preguntas que usan esta categoría."
-            : "Error al eliminar la categoría.";
-          showToast(msg, "error");
-        }
-      });
+            try {
+              await categoryService.remove(id, authService.getSession()?.id);
+              showToast("Categoría eliminada", "success");
+              loadCategories();
+            } catch (error) {
+              allCategories = originalCats;
+              renderCategoriesList(allCategories);
+              const msg = error?.status === 409
+                ? "No se puede eliminar: hay preguntas usando esta categoría."
+                : "Error al eliminar la categoría.";
+              showToast(msg, "error");
+            }
+          });
+        });
+      }
     });
   };
 

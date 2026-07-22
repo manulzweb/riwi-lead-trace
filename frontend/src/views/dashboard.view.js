@@ -9,6 +9,8 @@ import { cohortsService } from "../services/cohorts.service";
 import { clansService } from "../services/clans.service";
 import { dropdownComponent, setupDropdown } from "../components/dropdown";
 import { evaluablesService } from "../services/evaluables.service";
+import { getMedalIcon } from "../components/icons";
+import { tableComponent } from "../components/table";
 
 const icons = {
   check: `<svg aria-hidden="true" focusable="false" class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
@@ -267,56 +269,44 @@ const renderDashboardContent = async (content, user, name, role) => {
       const topTutors = filtered.filter(e => e.role === "tutor").sort((a, b) => b.average_score - a.average_score).slice(0, 3);
       const topLeaders = filtered.filter(e => e.role === "team_leader").sort((a, b) => b.average_score - a.average_score).slice(0, 3);
 
-      const buildTable = (title, data) => `
-        <div class="bg-[var(--bg-panel)] rounded-3xl border border-[var(--border-main)] shadow-sm overflow-hidden flex-1">
-          <div class="p-4 border-b border-[var(--border-main)] bg-[var(--bg-base)]">
-            <h3 class="text-lg font-bold text-[var(--text-main)]">${title}</h3>
+      const buildTable = (title, data) => tableComponent({
+        title,
+        columns: [
+          { label: "#", align: "center", width: "16" },
+          { label: "Nombre", align: "left" },
+          { label: "ICP", align: "right" }
+        ],
+        data,
+        emptyStateHtml: `
+          <div class="flex flex-col items-center justify-center gap-3">
+            <svg class="w-12 h-12 text-[var(--border-main)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
+            <p class="text-sm font-medium">Aún no hay suficientes datos en este segmento.</p>
           </div>
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="border-b border-[var(--border-main)] text-[var(--text-muted)] text-sm bg-[var(--bg-panel)]">
-                <th scope="col" class="px-4 py-3 font-semibold w-16 text-center">#</th>
-                <th scope="col" class="px-4 py-3 font-semibold">Nombre</th>
-                <th scope="col" class="px-4 py-3 font-semibold text-right">ICP</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-[var(--border-main)]">
-              ${data.length > 0 ? data.map((e, index) => {
-        let medalIcon = "";
-        let rowClass = "hover:bg-[var(--bg-base)] transition-colors";
-        if (index === 0) {
-          medalIcon = '<span title="1er Puesto - Oro" class="cursor-help inline-block"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"><title>1er Puesto - Oro</title><path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/><path d="M11 12 5.12 2.2"/><path d="m13 12 5.88-9.8"/><path d="M8 7h8"/><circle cx="12" cy="17" r="5"/><path d="M12 14.7v4.6"/></svg></span>';
-        } else if (index === 1) {
-          medalIcon = '<span title="2do Puesto - Plata" class="cursor-help inline-block"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B8B8B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"><title>2do Puesto - Plata</title><path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/> <path d="M11 12 5.12 2.2"/> <path d="m13 12 5.88-9.8"/> <path d="M8 7h8"/> <circle cx="12" cy="17" r="5"/> <path d="M10.4 15.6c.4-.6 1-.9 1.7-.9.8 0 1.4.4 1.4 1 0 .6-.3.9-1.1 1.5l-1.8 1.3H14"/> </svg></span>';
-        } else if (index === 2) {
-          medalIcon = '<span title="3er Puesto - Bronce" class="cursor-help inline-block"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B87333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"><title>3er Puesto - Bronce</title><path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/> <path d="M11 12 5.12 2.2"/> <path d="m13 12 5.88-9.8"/> <path d="M8 7h8"/> <circle cx="12" cy="17" r="5"/> <path d="M10.5 15h2c.6 0 1 .3 1 .8s-.4.8-1 .8"/> <path d="M12.5 16.6c.8 0 1.2.4 1.2 1s-.5 1-1.4 1c-.6 0-1.1-.2-1.5-.6"/> </svg></span>';
-        } else {
-          medalIcon = `<span class="font-bold text-[var(--text-muted)]">${index + 1}</span>`;
+        `,
+        renderRow: (e, index) => {
+          let medalIcon = "";
+          let rowClass = "hover:bg-[var(--bg-base)] transition-colors";
+          
+          const rankIcon = getMedalIcon(index + 1);
+          if (rankIcon) {
+            const titles = ["1er Puesto - Oro", "2do Puesto - Plata", "3er Puesto - Bronce"];
+            medalIcon = `<span title="${titles[index]}" class="cursor-help inline-block mx-auto flex justify-center">${rankIcon}</span>`;
+          } else {
+            medalIcon = `<span class="font-bold text-[var(--text-muted)]">${index + 1}</span>`;
+          }
+          
+          return `
+            <tr class="${rowClass}">
+              <td class="px-4 py-3 text-center">${medalIcon}</td>
+              <td class="px-4 py-3 font-bold text-[var(--text-main)] truncate">
+                ${escapeHtml(e.name)}
+                <span class="block text-xs font-normal text-[var(--text-muted)]">${escapeHtml(e.cohort_name || 'Sin cohorte')} - ${escapeHtml(e.clan_name || 'Sin clan')}</span>
+              </td>
+              <td class="px-4 py-3 text-right font-black text-[var(--text-main)]">${e.average_score}</td>
+            </tr>
+          `;
         }
-        return `
-                  <tr class="${rowClass}">
-                    <td class="px-4 py-3 text-center">${medalIcon}</td>
-                    <td class="px-4 py-3 font-bold text-[var(--text-main)] truncate">
-                      ${escapeHtml(e.name)}
-                      <span class="block text-xs font-normal text-[var(--text-muted)]">${escapeHtml(e.cohort_name || 'Sin cohorte')} - ${escapeHtml(e.clan_name || 'Sin clan')}</span>
-                    </td>
-                    <td class="px-4 py-3 text-right font-black text-[var(--text-main)]">${e.average_score}</td>
-                  </tr>
-                `;
-      }).join('') : `
-                <tr>
-                  <td colspan="3" class="px-4 py-10 text-center text-[var(--text-muted)]">
-                    <div class="flex flex-col items-center justify-center gap-3">
-                      <svg class="w-12 h-12 text-[var(--border-main)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
-                      <p class="text-sm font-medium">Aún no hay suficientes datos en este segmento.</p>
-                    </div>
-                  </td>
-                </tr>
-              `}
-            </tbody>
-          </table>
-        </div>
-      `;
+      });
       document.getElementById('dashboard-top-tables').innerHTML = buildTable("Top Team Leaders", topLeaders) + buildTable("Top Tutores", topTutors);
     };
 

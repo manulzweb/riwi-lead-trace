@@ -5,6 +5,7 @@ import { escapeHtml } from "../../utils/validators";
 import { formatDateTime } from "../../utils/date";
 import { emptyStateComponent } from "../../components/emptyState.js";
 import { dropdownComponent, setupDropdown } from "../../components/dropdown.js";
+import { setupPagination } from "../../components/pagination.js";
 
 const ACTION_LABELS = {
   period_opened: "Abrió un ciclo",
@@ -82,66 +83,38 @@ export const setupActivityLog = async () => {
 
   let allEntries = [];
   let filteredEntries = [];
-  let currentPage = 1;
-  const ITEMS_PER_PAGE = 10;
+  let paginationInstance = null;
 
   const renderList = () => {
-    if (filteredEntries.length === 0) {
-      listContainer.innerHTML = emptyStateComponent(
-        "Sin resultados",
-        "No se encontraron acciones que coincidan con la búsqueda."
-      );
+    if (paginationInstance) {
+      paginationInstance.updateData(filteredEntries);
       return;
     }
 
-    const totalPages = Math.ceil(filteredEntries.length / ITEMS_PER_PAGE);
-    if (currentPage > totalPages) currentPage = totalPages;
+    paginationInstance = setupPagination({
+      data: filteredEntries,
+      itemsPerPage: 10,
+      container: listContainer,
+      emptyStateHtml: emptyStateComponent(
+        "Sin resultados",
+        "No se encontraron acciones que coincidan con la búsqueda."
+      ),
+      renderItem: (entry) => {
+        const label = ACTION_LABELS[entry.action] || entry.action;
+        const actor = entry.admin_name || (entry.admin_id ? `Usuario #${entry.admin_id}` : "Desconocido");
+        const date = formatDateTime(entry.created_at);
 
-    const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
-    const paginated = filteredEntries.slice(startIdx, startIdx + ITEMS_PER_PAGE);
-
-    let html = paginated.map(entry => {
-      const label = ACTION_LABELS[entry.action] || entry.action;
-      const actor = entry.admin_name || (entry.admin_id ? `Usuario #${entry.admin_id}` : "Desconocido");
-      const date = formatDateTime(entry.created_at);
-
-      return `
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-2xl bg-[var(--bg-panel)] p-4 shadow-sm border border-[var(--border-main)] hover:border-[var(--brand-bg)]/30 transition-colors">
-          <div>
-            <p class="text-sm font-bold text-[var(--text-main)]">${escapeHtml(label)}</p>
-            <p class="text-xs text-[var(--text-muted)]">${escapeHtml(actor)} ${entry.detail ? `— ${escapeHtml(entry.detail)}` : ""}</p>
+        return `
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-2xl bg-[var(--bg-panel)] p-4 shadow-sm border border-[var(--border-main)] hover:border-[var(--brand-bg)]/30 transition-colors">
+            <div>
+              <p class="text-sm font-bold text-[var(--text-main)]">${escapeHtml(label)}</p>
+              <p class="text-xs text-[var(--text-muted)]">${escapeHtml(actor)} ${entry.detail ? `— ${escapeHtml(entry.detail)}` : ""}</p>
+            </div>
+            <span class="text-xs font-medium text-[var(--text-muted)] shrink-0 bg-[var(--bg-base)] px-2 py-1 rounded-md">${escapeHtml(date)}</span>
           </div>
-          <span class="text-xs font-medium text-[var(--text-muted)] shrink-0 bg-[var(--bg-base)] px-2 py-1 rounded-md">${escapeHtml(date)}</span>
-        </div>
-      `;
-    }).join("");
-
-    if (totalPages > 1) {
-      html += `
-        <div class="flex justify-between items-center mt-4 px-2">
-          <button class="btn-prev-page px-4 py-2 rounded-xl font-bold bg-[var(--bg-base)] text-[var(--text-muted)] border border-[var(--border-main)] hover:bg-[var(--border-main)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer" ${currentPage === 1 ? 'disabled' : ''}>Anterior</button>
-          <span class="text-sm font-semibold text-[var(--text-muted)]">Página ${currentPage} de ${totalPages}</span>
-          <button class="btn-next-page px-4 py-2 rounded-xl font-bold bg-[var(--bg-base)] text-[var(--text-muted)] border border-[var(--border-main)] hover:bg-[var(--border-main)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer" ${currentPage === totalPages ? 'disabled' : ''}>Siguiente</button>
-        </div>
-      `;
-    }
-
-    listContainer.innerHTML = html;
-
-    if (totalPages > 1) {
-      listContainer.querySelector(".btn-prev-page")?.addEventListener("click", () => {
-        if (currentPage > 1) {
-          currentPage--;
-          renderList();
-        }
-      });
-      listContainer.querySelector(".btn-next-page")?.addEventListener("click", () => {
-        if (currentPage < totalPages) {
-          currentPage++;
-          renderList();
-        }
-      });
-    }
+        `;
+      }
+    });
   };
 
   const applyFilters = () => {
@@ -156,7 +129,6 @@ export const setupActivityLog = async () => {
       return matchesSearch && matchesAction;
     });
 
-    currentPage = 1;
     renderList();
   };
 

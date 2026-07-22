@@ -6,6 +6,7 @@ import { periodService } from "../../services/periods.service";
 import { authService } from "../../services/auth.service";
 import { showToast } from "../../components/alerts";
 import { emptyStateComponent } from "../../components/emptyState.js";
+import { setupPagination } from "../../components/pagination";
 import { marked } from "marked";
 import { escapeHtml } from "../../utils/validators";
 
@@ -204,74 +205,34 @@ export const setupMyResults = async () => {
         console.warn("No se pudo obtener el resumen IA", err);
       }
 
-      let currentPage = 1;
-      const itemsPerPage = 5;
-      
-      const renderComments = () => {
-        let commentsHtml = '';
-        if (textAnswers.length === 0) {
-          commentsHtml = `
-            <article class="rounded-3xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-10 text-center text-[var(--text-muted)]">
-              No hay comentarios escritos detallados todavía para este periodo.
-            </article>
-          `;
-        } else {
-          const totalPages = Math.ceil(textAnswers.length / itemsPerPage);
-          if (currentPage > totalPages) currentPage = totalPages;
-          
-          const startIdx = (currentPage - 1) * itemsPerPage;
-          const currentItems = textAnswers.slice(startIdx, startIdx + itemsPerPage);
-          
-          commentsHtml = currentItems.map(ans => `
-            <article class="rounded-2xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-5 shadow-sm mb-2">
-              <p class="text-[var(--text-main)] italic">"${escapeHtml(ans.comment)}"</p>
-            </article>
-          `).join("");
+      feedbackList.innerHTML = `
+        ${aiSummaryHtml}
+        <section>
+          <h2 class="text-xl font-black text-[var(--text-main)] mb-4 flex items-center gap-2">
+            <svg class="h-6 w-6 text-[var(--brand-bg)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+            Comentarios
+          </h2>
+          <div id="comments-pagination-container"></div>
+        </section>
+      `;
 
-          if (totalPages > 1) {
-            commentsHtml += `
-              <div class="flex items-center justify-between mt-6 pt-4 border-t border-[var(--border-main)]">
-                <button class="btn-prev-page px-4 py-2 rounded-xl font-bold bg-[var(--bg-base)] text-[var(--text-muted)] border border-[var(--border-main)] hover:bg-[var(--border-main)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer" ${currentPage === 1 ? 'disabled' : ''}>Anterior</button>
-                <span class="text-sm font-semibold text-[var(--text-muted)]">Página ${currentPage} de ${totalPages}</span>
-                <button class="btn-next-page px-4 py-2 rounded-xl font-bold bg-[var(--bg-base)] text-[var(--text-muted)] border border-[var(--border-main)] hover:bg-[var(--border-main)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer" ${currentPage === totalPages ? 'disabled' : ''}>Siguiente</button>
-              </div>
-            `;
-          }
-        }
-        
-        feedbackList.innerHTML = `
-          ${aiSummaryHtml}
-          <section>
-            <h2 class="text-xl font-black text-[var(--text-main)] mb-4 flex items-center gap-2">
-              <svg class="h-6 w-6 text-[var(--brand-bg)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-              Comentarios
-            </h2>
-            ${commentsHtml}
-          </section>
-        `;
-        
-        const prevBtn = feedbackList.querySelector('.btn-prev-page');
-        const nextBtn = feedbackList.querySelector('.btn-next-page');
-        if (prevBtn) {
-          prevBtn.addEventListener('click', () => {
-            if (currentPage > 1) {
-              currentPage--;
-              renderComments();
-            }
-          });
-        }
-        if (nextBtn) {
-          nextBtn.addEventListener('click', () => {
-            const totalPages = Math.ceil(textAnswers.length / itemsPerPage);
-            if (currentPage < totalPages) {
-              currentPage++;
-              renderComments();
-            }
-          });
-        }
-      };
+      const commentsContainer = document.getElementById("comments-pagination-container");
 
-      renderComments();
+      setupPagination({
+        data: textAnswers,
+        itemsPerPage: 5,
+        container: commentsContainer,
+        emptyStateHtml: `
+          <article class="rounded-3xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-10 text-center text-[var(--text-muted)]">
+            No hay comentarios escritos detallados todavía para este periodo.
+          </article>
+        `,
+        renderItem: (ans) => `
+          <article class="rounded-2xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-5 shadow-sm mb-2">
+            <p class="text-[var(--text-main)] italic">"${escapeHtml(ans.comment)}"</p>
+          </article>
+        `
+      });
 
     } catch (err) {
       showToast("Error", "error", "No se pudieron obtener tus resultados.");

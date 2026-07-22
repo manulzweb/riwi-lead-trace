@@ -7,6 +7,7 @@ import { setupModalA11y } from "../../utils/modalA11y";
 import { authService } from "../../services/auth.service";
 import { searchBoxComponent, setupSearch } from "../../components/searchBox";
 import { emptyStateComponent } from "../../components/emptyState.js";
+import { setupPagination } from "../../components/pagination";
 import { z } from "zod";
 
 // Clases del input del modal, extraidas para no repetir la misma cadena en los
@@ -102,6 +103,9 @@ export const setupAdminPeriods = () => {
   const submitBtn = form.querySelector("button[type='submit']");
 
   let editPeriodId = null;
+  let allPeriods = [];
+  let currentFilteredPeriods = [];
+  let paginationInstance = null;
 
   const modalA11y = setupModalA11y(modal, () => closeModal());
 
@@ -109,7 +113,6 @@ export const setupAdminPeriods = () => {
   const openModal = (triggerEl) => {
     modal.classList.remove("hidden");
     modalA11y.onOpen(triggerEl);
-    // timeout for transitions
     setTimeout(() => {
       modal.classList.remove("opacity-0");
       modal.firstElementChild.classList.remove("scale-95");
@@ -148,40 +151,31 @@ export const setupAdminPeriods = () => {
   if (btnCreate) btnCreate.addEventListener("click", openCreateModal);
   if (btnCancel) btnCancel.addEventListener("click", closeModal);
 
-  // Renderizar Ciclos
-  let allPeriods = [];
-  let currentFilteredPeriods = [];
-  let currentPage = 1;
-  const itemsPerPage = 5;
+  const applyFiltersAndRender = () => {
+    renderPeriodsList(currentFilteredPeriods);
+  };
 
   const renderPeriodsList = (list) => {
-      if (list !== currentFilteredPeriods) {
-        currentFilteredPeriods = list;
-        currentPage = 1;
-      }
-      
-      const totalPages = Math.ceil(currentFilteredPeriods.length / itemsPerPage) || 1;
-      if (currentPage > totalPages) currentPage = totalPages;
-      
-      const startIdx = (currentPage - 1) * itemsPerPage;
-      const paginatedData = currentFilteredPeriods.slice(startIdx, startIdx + itemsPerPage);
+    currentFilteredPeriods = list;
+    
+    if (paginationInstance) {
+      paginationInstance.updateData(list);
+      return;
+    }
 
-      if (!paginatedData || paginatedData.length === 0) {
-        listContainer.innerHTML = emptyStateComponent(
-          allPeriods.length === 0 ? "No hay periodos" : "Sin resultados",
-          allPeriods.length === 0 ? "Abre un nuevo periodo para que tu equipo empiece a evaluar." : "Ningún periodo coincide con la búsqueda."
-        );
-        return;
-      }
-
-      let html = paginatedData.map(p => {
+    paginationInstance = setupPagination({
+      data: list,
+      itemsPerPage: 5,
+      container: listContainer,
+      emptyStateHtml: emptyStateComponent(
+        allPeriods.length === 0 ? "No hay periodos" : "Sin resultados",
+        allPeriods.length === 0 ? "Abre un nuevo periodo para que tu equipo empiece a evaluar." : "Ningún periodo coincide con la búsqueda."
+      ),
+      renderItem: (p) => {
         const statusBadge = p.is_active 
           ? statusBadgeComponent({ variant: "dot", status: "Activa" }) 
           : statusBadgeComponent({ variant: "dot", status: "Cerrado" });
           
-        // Botones "suaves": fondo tintado + texto del mismo tono, via tokens
-        // semanticos. El hover se resuelve con opacidad en vez de un segundo
-        // tono literal, para no necesitar un token extra por familia.
         const actionBtn = p.is_active
           ? `<button class="btn-toggle-period rounded-lg px-4 py-2 text-xs font-bold text-[var(--danger-text)] bg-[var(--danger-bg)] hover:opacity-80 transition-opacity cursor-pointer" data-id="${p.id}" data-action="close">Cerrar Ciclo</button>`
           : `<button class="btn-toggle-period rounded-lg px-4 py-2 text-xs font-bold text-[var(--success-text)] bg-[var(--success-bg)] hover:opacity-80 transition-opacity cursor-pointer" data-id="${p.id}" data-action="open">Reabrir Ciclo</button>`;
@@ -209,104 +203,77 @@ export const setupAdminPeriods = () => {
             </div>
           </div>
         `;
-      }).join("");
-
-      if (totalPages > 1) {
-        html += `
-          <div class="flex justify-between items-center mt-4 px-2">
-            <button class="btn-prev-page px-4 py-2 rounded-xl font-bold bg-[var(--bg-base)] text-[var(--text-muted)] border border-[var(--border-main)] hover:bg-[var(--border-main)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer" ${currentPage === 1 ? 'disabled' : ''}>Anterior</button>
-            <span class="text-sm font-semibold text-[var(--text-muted)]">Página ${currentPage} de ${totalPages}</span>
-            <button class="btn-next-page px-4 py-2 rounded-xl font-bold bg-[var(--bg-base)] text-[var(--text-muted)] border border-[var(--border-main)] hover:bg-[var(--border-main)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer" ${currentPage === totalPages ? 'disabled' : ''}>Siguiente</button>
-          </div>
-        `;
-      }
-
-      listContainer.innerHTML = html;
-
-      if (totalPages > 1) {
-        listContainer.querySelector(".btn-prev-page")?.addEventListener("click", () => {
-          if (currentPage > 1) {
-            currentPage--;
-            renderPeriodsList(currentFilteredPeriods);
-          }
-        });
-        listContainer.querySelector(".btn-next-page")?.addEventListener("click", () => {
-          if (currentPage < totalPages) {
-            currentPage++;
-            renderPeriodsList(currentFilteredPeriods);
-          }
-        });
-      }
-
-      // Lógica de los botones de Activar/Desactivar
-      listContainer.querySelectorAll(".btn-toggle-period").forEach(btn => {
-        btn.addEventListener("click", async (e) => {
-          const id = parseInt(e.target.dataset.id);
-          const action = e.target.dataset.action;
-          const newStatus = action === "open" ? true : false;
-          
-          // Optimistic UI: cambiar el estado local
-          const originalPeriods = [...allPeriods];
-          const periodIndex = allPeriods.findIndex(p => p.id === id);
-          if (periodIndex !== -1) {
-            // Si abrimos un ciclo, cerramos los demás
-            if (newStatus) {
-              allPeriods.forEach(p => p.is_active = false);
+      },
+      onRenderCompleted: () => {
+        // Lógica de los botones de Activar/Desactivar
+        document.querySelectorAll(".btn-toggle-period").forEach(btn => {
+          btn.addEventListener("click", async (e) => {
+            const id = parseInt(e.target.dataset.id);
+            const action = e.target.dataset.action;
+            const newStatus = action === "open" ? true : false;
+            
+            // Optimistic UI
+            const originalPeriods = [...allPeriods];
+            const periodIndex = allPeriods.findIndex(p => p.id === id);
+            if (periodIndex !== -1) {
+              if (newStatus) {
+                allPeriods.forEach(p => p.is_active = false);
+              }
+              allPeriods[periodIndex].is_active = newStatus;
+              renderPeriodsList(allPeriods);
             }
-            allPeriods[periodIndex].is_active = newStatus;
-            renderPeriodsList(allPeriods);
-          }
 
-          try {
-            await periodService.update(id, { is_active: newStatus, admin_id: authService.getSession()?.id });
-            showToast(newStatus ? "Ciclo Abierto Exitosamente" : "Ciclo Cerrado", "success");
-            loadPeriods(); // Recargar la lista por si el backend ajustó algo más
-          } catch (error) {
-            // Rollback
-            allPeriods = originalPeriods;
-            renderPeriodsList(allPeriods);
-            showToast("Error al cambiar estado", "error");
-          }
+            try {
+              await periodService.update(id, { is_active: newStatus, admin_id: authService.getSession()?.id });
+              showToast(newStatus ? "Ciclo Abierto Exitosamente" : "Ciclo Cerrado", "success");
+              loadPeriods(); 
+            } catch (error) {
+              // Rollback
+              allPeriods = originalPeriods;
+              renderPeriodsList(allPeriods);
+              showToast("Error al cambiar estado", "error");
+            }
+          });
         });
-      });
 
-      // Lógica del botón Editar
-      document.querySelectorAll(".btn-edit-period").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const id = parseInt(btn.dataset.id);
-          const period = allPeriods.find(p => p.id === id);
-          if (period) openEditModal(period, btn);
+        // Lógica del botón Editar
+        document.querySelectorAll(".btn-edit-period").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const id = parseInt(btn.dataset.id);
+            const period = allPeriods.find(p => p.id === id);
+            if (period) openEditModal(period, btn);
+          });
         });
-      });
 
-      // Lógica del botón Eliminar
-      document.querySelectorAll(".btn-delete-period").forEach(btn => {
-        btn.addEventListener("click", async (e) => {
-          const id = e.currentTarget.dataset.id;
-          if (!(await showConfirm("¿Estás seguro de que deseas eliminar este ciclo? Esta acción no se puede deshacer."))) return;
+        // Lógica del botón Eliminar
+        document.querySelectorAll(".btn-delete-period").forEach(btn => {
+          btn.addEventListener("click", async (e) => {
+            const id = e.currentTarget.dataset.id;
+            if (!(await showConfirm("¿Estás seguro de que deseas eliminar este ciclo? Esta acción no se puede deshacer."))) return;
 
-          // Optimistic UI
-          const originalPeriods = [...allPeriods];
-          allPeriods = allPeriods.filter(p => p.id != id);
-          renderPeriodsList(allPeriods);
-
-          try {
-            await periodService.remove(id);
-            showToast("Ciclo eliminado", "success");
-            loadPeriods();
-          } catch (error) {
-            // Rollback
-            allPeriods = originalPeriods;
+            // Optimistic UI
+            const originalPeriods = [...allPeriods];
+            allPeriods = allPeriods.filter(p => p.id != id);
             renderPeriodsList(allPeriods);
 
-            const msg = error?.status === 409
-              ? "No se puede eliminar: ya hay evaluaciones registradas en este ciclo."
-              : "Error al eliminar el ciclo.";
-            showToast(msg, "error");
-          }
-        });
-      });
+            try {
+              await periodService.remove(id);
+              showToast("Ciclo eliminado", "success");
+              loadPeriods();
+            } catch (error) {
+              // Rollback
+              allPeriods = originalPeriods;
+              renderPeriodsList(allPeriods);
 
+              const msg = error?.status === 409
+                ? "No se puede eliminar: ya hay evaluaciones registradas en este ciclo."
+                : "Error al eliminar el ciclo.";
+              showToast(msg, "error");
+            }
+          });
+        });
+      }
+    });
   };
 
   const searchSlot = document.getElementById("period-search-slot");
