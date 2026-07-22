@@ -262,6 +262,31 @@ export const setupEvaluate = async () => {
       </div>`;
   };
 
+  // El formulario no se pinta hasta saber A QUIEN se evalua. Antes aparecia en
+  // cuanto se elegia el rol, lo que sugeria que ya se podia responder cuando
+  // todavia faltaba el dato principal -- y el borrador se cargaba con la clave
+  // sin persona.
+  const mostrarFormulario = (role) => {
+    document.getElementById('anonymous-section')?.classList.remove('hidden');
+    document.getElementById('wizard-buttons')?.classList.remove('hidden');
+    renderQuestions(currentForm.questions);
+    progressContainer.classList.remove("hidden");
+    updateProgress();
+    loadDraft(role);
+  };
+
+  const pedirQueElijaPersona = () => {
+    document.getElementById('anonymous-section')?.classList.add('hidden');
+    document.getElementById('wizard-buttons')?.classList.add('hidden');
+    progressContainer.classList.add("hidden");
+    qContainer.innerHTML = `
+      <div class="rounded-[2rem] border border-dashed border-[var(--border-main)] bg-[var(--bg-panel)] p-10 text-center">
+        <p class="text-sm text-[var(--text-muted)]">
+          Elige a la persona que vas a evaluar para ver el formulario.
+        </p>
+      </div>`;
+  };
+
   const handleRoleChange = async () => {
     const role = targetRole.value;
     qContainer.innerHTML = "";
@@ -366,10 +391,19 @@ export const setupEvaluate = async () => {
         return;
       }
 
-      const evaluateeOptions = [
-        { value: '', label: 'Selecciona una persona...' },
-        ...filtered.map(u => ({ value: u.id, label: `${u.name} (${u.email})` }))
-      ];
+      // Caso habitual en Riwi: un clan tiene UN tutor y UN team leader. Con un
+      // solo candidato, obligar a abrir el desplegable para elegir la unica
+      // opcion posible es pedir una decision que no existe.
+      const unicoCandidato = filtered.length === 1 ? filtered[0] : null;
+
+      const evaluateeOptions = unicoCandidato
+        // Sin opcion vacia: no hay nada entre lo que elegir, y dejarla
+        // permitiria "deseleccionar" al unico evaluable posible.
+        ? [{ value: unicoCandidato.id, label: `${unicoCandidato.name} (${unicoCandidato.email})` }]
+        : [
+            { value: '', label: 'Selecciona una persona...' },
+            ...filtered.map(u => ({ value: u.id, label: `${u.name} (${u.email})` }))
+          ];
 
       document.getElementById('evaluatee-container').outerHTML = `
         <div id="evaluatee-container">
@@ -378,11 +412,14 @@ export const setupEvaluate = async () => {
         </div>`;
       setupDropdown('evaluatee');
 
-      renderQuestions(currentForm.questions);
-
-      progressContainer.classList.remove("hidden");
-      updateProgress();
-      loadDraft(role);
+      if (unicoCandidato) {
+        // setDropdownValue NO despacha 'change' (solo lo hace el click del
+        // usuario), asi que el formulario se muestra a mano.
+        setDropdownValue('evaluatee', unicoCandidato.id);
+        mostrarFormulario(role);
+      } else {
+        pedirQueElijaPersona();
+      }
     } catch (err) {
       // 404 = no hay formulario activo para ese rol (ver contrato de /forms).
       if (err.status === 404) {
@@ -412,7 +449,13 @@ export const setupEvaluate = async () => {
   document.addEventListener("change", (e) => {
     if (e.target?.id !== "evaluatee") return;
     if (evaluateeValue()) {
-      loadDraft(targetRole.value);
+      // Recien aqui hay a quien evaluar: se pinta el formulario (que ademas
+      // carga el borrador con la clave ya completa, persona incluida).
+      mostrarFormulario(targetRole.value);
+    } else {
+      // Volvio a "Selecciona una persona...": se retira el formulario para no
+      // dejar respuestas a la vista sin destinatario.
+      pedirQueElijaPersona();
     }
   });
 
@@ -774,9 +817,10 @@ export const setupEvaluate = async () => {
     if (preselectedRole && personaLista) {
       document.getElementById('target-role-container')?.classList.add('hidden');
       document.getElementById('evaluatee-container')?.classList.add('hidden');
-      // El borrador se carga a mano: el listener de 'change' no dispara cuando
-      // la seleccion la hace el codigo, no el usuario.
-      loadDraft(preselectedRole);
+      // A mano: el listener de 'change' no dispara cuando la seleccion la hace
+      // el codigo. Sin esto el formulario se quedaria oculto tras
+      // `pedirQueElijaPersona()` pese a venir la persona resuelta en la URL.
+      mostrarFormulario(preselectedRole);
     }
   };
 
