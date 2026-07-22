@@ -173,10 +173,14 @@ CREATE TABLE forms (
     -- evaluaciones y por tanto no se puede borrar de verdad.
     archived_at    TIMESTAMP NULL,
     created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    -- SIN `ON UPDATE CASCADE` a proposito, a diferencia del resto de FKs del
+    -- esquema: MySQL prohibe que una columna con accion referencial participe
+    -- en un CHECK (ERROR 3823), y aqui el CHECK vale mas. `roles` es un
+    -- catalogo sembrado cuyos ids no cambian nunca, asi que el CASCADE no
+    -- protegia de nada real; el CHECK si evita formularios vivos sin rol.
     CONSTRAINT fk_form_role
         FOREIGN KEY (target_role_id)
         REFERENCES roles(id)
-        ON UPDATE CASCADE
         ON DELETE RESTRICT,
     -- El invariante NO vive solo en el servicio: una plantilla puede no tener
     -- rol, pero un formulario vivo SIEMPRE debe tenerlo. MySQL 8.0.16+ lo
