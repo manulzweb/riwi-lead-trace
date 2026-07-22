@@ -8,7 +8,7 @@ import { periodService } from "../services/periods.service";
 import { cohortsService } from "../services/cohorts.service";
 import { clansService } from "../services/clans.service";
 import { dropdownComponent, setupDropdown } from "../components/dropdown";
-import { Chart } from 'chart.js/auto';
+import { evaluablesService } from "../services/evaluables.service";
 
 const icons = {
   check: `<svg aria-hidden="true" focusable="false" class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
@@ -395,16 +395,18 @@ const renderDashboardContent = async (content, user, name, role) => {
 
   } else {
     // Coder View
-    const myEvals = await evaluationService.getByEvaluator(user.id, 100);
+    const [myEvals, evaluables] = await Promise.all([
+      evaluationService.getByEvaluator(user.id, 100),
+      evaluablesService.get()
+    ]);
     const completed = myEvals.filter(e => !isPendingParticipation(e)).length;
-    const drafts = myEvals.filter(isPendingParticipation);
-    const pending = drafts.length;
-
-    window.__coderStats = { completed, pending };
+    const drafts = myEvals.filter(isPendingParticipation).length;
+    const totalEvaluables = evaluables ? evaluables.length : 0;
+    const pending = Math.max(0, totalEvaluables - completed);
 
     html += `
       ${StatsCard({ title: "Completadas", value: `<span class="animate-number" data-value="${completed}">${completed}</span>`, icon: icons.check, description: "Evaluaciones enviadas" })}
-      ${StatsCard({ title: "Borradores", value: `<span class="animate-number" data-value="${pending}">${pending}</span>`, icon: icons.clock, description: "Evaluaciones en curso" })}
+      ${StatsCard({ title: "Por Evaluar / Borradores", value: `<span class="animate-number" data-value="${pending}">${pending}</span>`, icon: icons.clock, description: "Pendientes o en curso" })}
       
       ${Card({
       className: "h-full flex flex-col p-6 lg:row-span-2 shadow-sm border border-[var(--border-main)]",
@@ -437,16 +439,17 @@ const renderDashboardContent = async (content, user, name, role) => {
       const brandColor = rootStyle.getPropertyValue('--brand-bg').trim() || '#4f46e5';
       const draftColor = rootStyle.getPropertyValue('--accent-amber').trim() || '#f59e0b';
 
-      const { completed, pending } = window.__coderStats;
-      const total = completed + pending;
+      const chartCompleted = completed;
+      const chartPending = pending;
+      const total = chartCompleted + chartPending;
 
       import('chart.js/auto').then(({ default: Chart }) => {
         new Chart(ctx, {
           type: 'doughnut',
           data: {
-            labels: ['Completadas', 'Borradores'],
+            labels: ['Completadas', 'Pendientes'],
             datasets: [{
-              data: [completed, pending],
+              data: [chartCompleted, chartPending],
               backgroundColor: [brandColor, draftColor],
               borderWidth: 0,
               hoverOffset: 4
