@@ -41,6 +41,19 @@ export const renderAdminEvaluations = () => `
     
     <!-- 1. VISTA LISTA DE PLANTILLAS -->
     <div id="list-view" class="block transition-all duration-300">
+      <!-- Pestañas: separan el instrumento VIVO (lo que responden los coders)
+           de las plantillas base, que son inertes. Roles ARIA para que el
+           cambio de pestaña sea perceptible con lector de pantalla. -->
+      <div role="tablist" aria-label="Tipo de formulario" class="mb-6 flex items-center gap-1 border-b border-[var(--border-main)]">
+        <button role="tab" id="tab-forms" aria-controls="forms-container" aria-selected="true" data-tab="forms"
+          class="tab-btn -mb-px border-b-2 px-4 py-3 text-sm font-bold transition-colors border-[var(--brand-bg)] text-[var(--brand-bg)]">
+          Formularios
+        </button>
+        <button role="tab" id="tab-templates" aria-controls="forms-container" aria-selected="false" data-tab="templates"
+          class="tab-btn -mb-px border-b-2 px-4 py-3 text-sm font-bold transition-colors border-transparent text-[var(--text-muted)] hover:text-[var(--text-main)]">
+          Plantillas
+        </button>
+      </div>
       <div id="form-search-slot" class="mb-6 max-w-sm"></div>
       <div id="forms-container" class="mt-8" aria-live="polite" aria-busy="true">
         <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -114,20 +127,30 @@ export const renderAdminEvaluations = () => `
               </div>
             </div>
             <div>
-              <label class="mb-2 block text-sm font-bold text-[var(--text-main)]">Rol a Evaluar (A quién se evalúa)</label>
+              <label class="mb-2 block text-sm font-bold text-[var(--text-main)]" for="form-role">Rol a Evaluar (A quién se evalúa)</label>
               <div>
                 ${dropdownComponent('form-role', [
+  { value: '', label: 'Cualquier rol (solo plantillas)' },
   { value: 'tutor', label: 'Tutores' },
   { value: 'team_leader', label: 'Team Leaders' }
 ], 'tutor')}
               </div>
+              <!-- "Cualquier rol" solo es valido en una plantilla. Un formulario
+                   vivo sin rol lo rechaza el backend (422) y detras MySQL
+                   (chk_form_role_required); aqui se avisa antes por UX. -->
+              <p id="form-role-hint" class="mt-2 text-xs text-[var(--text-muted)]">
+                Una plantilla puede no tener rol; un formulario activo siempre lo necesita.
+              </p>
             </div>
             <div>
               <label class="mb-2 block text-sm font-bold text-[var(--text-main)]">Tipo de Formulario</label>
               <div class="flex items-center gap-3 mt-4">
-                <input type="checkbox" id="is-form-checkbox" class="w-5 h-5 rounded border-[var(--border-main)] text-[var(--brand-bg)] focus:ring-[var(--brand-bg)]">
-                <label for="is-form-checkbox" class="text-sm font-bold text-[var(--text-main)] cursor-pointer">Guardar como Plantilla Base</label>
+                <input type="checkbox" id="is-template-checkbox" class="w-5 h-5 rounded border-[var(--border-main)] text-[var(--brand-bg)] focus:ring-[var(--brand-bg)]">
+                <label for="is-template-checkbox" class="text-sm font-bold text-[var(--text-main)] cursor-pointer">Guardar como Plantilla Base</label>
               </div>
+              <p class="mt-2 text-xs text-[var(--text-muted)]">
+                Una plantilla es inerte: nunca la responde un Coder hasta que la uses para crear un formulario.
+              </p>
             </div>
           </div>
         </div>
@@ -328,8 +351,12 @@ export const setupAdminEvaluations = () => {
   };
 
   btnCreate.addEventListener("click", async () => {
-    if (hasActivePeriod) {
-      showToast("Periodo activo", "warning", "Cierra el periodo activo para poder crear formularios.");
+    // Una plantilla es inerte: crearla no toca el instrumento que los coders
+    // estan respondiendo, asi que NO exige periodo cerrado. Solo el formulario
+    // vivo lo exige (regla 6), porque crearlo desactiva el anterior.
+    const creatingTemplate = activeTab === "templates";
+    if (hasActivePeriod && !creatingTemplate) {
+      showToast("Periodo activo", "warning", "Cierra el periodo activo para poder crear formularios. Las plantillas sí se pueden crear ahora.");
       return;
     }
     // Resetear constructor para nueva formulario
@@ -337,9 +364,12 @@ export const setupAdminEvaluations = () => {
     originalQuestions = [];
     inputTitle.value = "";
     inputDesc.value = "";
-    selectRole.value = "tutor";
+    // Una plantilla nace generica ("Cualquier rol"); un formulario vivo necesita rol.
+    selectRole.value = creatingTemplate ? "" : "tutor";
     document.getElementById("evaluator-role").value = "coder";
-    document.getElementById("is-form-checkbox").checked = false;
+    // Preseleccionado segun la pestaña activa: crear una plantilla no depende
+    // de que el admin recuerde marcar el checkbox.
+    document.getElementById("is-template-checkbox").checked = creatingTemplate;
     questions = [{ id: Date.now().toString(), text: "", type: "scale_1_5", categoryId: 1, weight: 100 }];
     await showBuilder();
   });
@@ -587,13 +617,26 @@ export const setupAdminEvaluations = () => {
       weight: parseFloat(q.weight) || 0
     }));
 
+    const isTemplate = document.getElementById("is-template-checkbox").checked;
+    const targetRole = document.getElementById("form-role").value;
+
+    // Un formulario vivo SIEMPRE necesita rol. Aviso temprano por UX; la
+    // autoridad sigue siendo el backend (422) y chk_form_role_required en MySQL.
+    if (!isTemplate && !targetRole) {
+      showToast(
+        "Falta el rol a evaluar", "error",
+        "Un formulario activo debe apuntar a Tutores o Team Leaders. 'Cualquier rol' solo es válido en una plantilla."
+      );
+      return;
+    }
+
     const formData = {
       title,
       description: inputDesc.value.trim(),
-      targetRole: document.getElementById("form-role").value,
+      targetRole,
       questions: formattedQuestions,
       adminId: authService.getSession()?.id,
-      isForm: document.getElementById("is-form-checkbox").checked,
+      isTemplate,
     };
     if (editId) {
       formData.id = editId;
@@ -678,13 +721,23 @@ export const setupAdminEvaluations = () => {
 
   // --- RENDERIZADO DE LA LISTA ---
   let allForms = [];
+  // Pestaña activa: 'forms' (instrumento vivo) | 'templates' (plantillas base).
+  let activeTab = "forms";
   const formSearchSlot = document.getElementById("form-search-slot");
+
+  // allForms trae ambos tipos en una sola peticion (?kind=all); la pestaña
+  // solo decide cual subconjunto se muestra.
+  const formsForActiveTab = () => allForms.filter((f) => !!f.is_template === (activeTab === "templates"));
 
   const renderFormCards = (forms) => {
     if (forms.length === 0) {
+      const isEmpty = formsForActiveTab().length === 0;
+      const emptyCopy = activeTab === "templates"
+        ? ["No hay plantillas", "Crea una plantilla base para reutilizarla al armar formularios."]
+        : ["No hay formularios", "Comienza creando un nuevo formulario de evaluación."];
       formsContainer.innerHTML = emptyStateComponent(
-        allForms.length === 0 ? "No hay formularios" : "Sin resultados",
-        allForms.length === 0 ? "Comienza creando un nuevo formulario de evaluación." : "Ningún formulario coincide con la búsqueda."
+        isEmpty ? emptyCopy[0] : "Sin resultados",
+        isEmpty ? emptyCopy[1] : "Ningún formulario coincide con la búsqueda."
       );
       return;
     }
@@ -700,15 +753,15 @@ export const setupAdminEvaluations = () => {
             <div>
               <div class="flex items-center justify-between mb-4">
                 <span class="inline-flex items-center rounded-full bg-[var(--brand-bg)]/10 px-3 py-1 text-xs font-bold text-[var(--brand-bg)] capitalize">
-                  🎯 Para: ${escapeHtml((t.targetRole || t.target_role || '').replace('_', ' '))}
+                  🎯 Para: ${escapeHtml((t.targetRole || t.target_role || '').replace('_', ' ') || 'Cualquier rol')}
                 </span>
                 <span class="text-xs text-[var(--text-muted)] font-medium shrink-0 ml-2">
                   ${t.questions ? t.questions.length : 0} preg.
                 </span>
               </div>
-              ${t.is_form ? `
-                <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-950/20 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400 mb-2" title="Es una formulario base: no recibe respuestas hasta que se use para crear un formulario activo.">
-                  📋 Formulario base
+              ${t.is_template ? `
+                <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-950/20 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400 mb-2" title="Plantilla base: es inerte, ningún Coder la responde hasta que la uses para crear un formulario activo.">
+                  📋 Plantilla
                 </span>
               ` : ''}
               <h3 class="text-xl font-bold text-[var(--text-main)] font-heading leading-tight">${escapeHtml(t.title)}</h3>
@@ -721,7 +774,7 @@ export const setupAdminEvaluations = () => {
                 ${dateStr ? `<span class="text-xs font-medium text-[var(--text-muted)]">${dateStr}</span>` : ''}
               </div>
               <div class="flex items-center">
-                ${t.is_form ? `
+                ${t.is_template ? `
                 <button class="btn-use-template text-[var(--brand-bg)] hover:text-[var(--brand-hover)] transition-colors p-2 font-bold text-xs flex items-center gap-1" data-id="${t.id}" title="Usar esta plantilla como formulario activo">
                   <svg class="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                   Usar Plantilla
@@ -760,9 +813,11 @@ export const setupAdminEvaluations = () => {
             // dropdownComponent update requires us to use the specific DOM ID and maybe dispatch change
             const evaluatorRoleEl = document.getElementById("evaluator-role");
             if (evaluatorRoleEl) { evaluatorRoleEl.value = form.evaluatorRole || "coder"; }
-            if (selectRole) { selectRole.value = form.targetRole || form.target_role || "tutor"; }
-            const isFormCheckbox = document.getElementById("is-form-checkbox");
-            if (isFormCheckbox) { isFormCheckbox.checked = !!form.is_form; }
+            // "" (Cualquier rol) es un valor legitimo en una plantilla generica,
+            // asi que NO se cae a "tutor" cuando el rol viene vacio.
+            if (selectRole) { selectRole.value = form.targetRole || ""; }
+            const isTemplateCheckbox = document.getElementById("is-template-checkbox");
+            if (isTemplateCheckbox) { isTemplateCheckbox.checked = !!form.is_template; }
 
             // getFormForEdit trae el weight_percent real (GET /forms no lo expone) y
             // convierte input_type/category_id al formato que usa el constructor visual.
@@ -805,9 +860,13 @@ export const setupAdminEvaluations = () => {
 
             const evaluatorRoleEl = document.getElementById("evaluator-role");
             if (evaluatorRoleEl) { evaluatorRoleEl.value = form.evaluatorRole || "coder"; }
-            if (selectRole) { selectRole.value = form.targetRole || form.target_role || "tutor"; }
-            const isFormCheckbox = document.getElementById("is-form-checkbox");
-            if (isFormCheckbox) { isFormCheckbox.checked = false; } // Por defecto no es plantilla al duplicar
+            // Al instanciar una plantilla GENERICA el rol queda vacio a proposito:
+            // el admin tiene que elegirlo antes de guardar (se valida al guardar).
+            if (selectRole) { selectRole.value = form.targetRole || ""; }
+            const isTemplateCheckbox = document.getElementById("is-template-checkbox");
+            // Usar una plantilla produce un formulario VIVO, no otra plantilla.
+            // Duplicar conserva el tipo del original.
+            if (isTemplateCheckbox) { isTemplateCheckbox.checked = isUsingTemplate ? false : !!form.is_template; }
 
             // Reset IDs for the cloned questions (mismo mapeo que el modo edición,
             // ver getFormForEdit, pero con IDs nuevos para que se creen como preguntas nuevas)
@@ -822,7 +881,15 @@ export const setupAdminEvaluations = () => {
 
             renderQuestions();
             showBuilder();
-            showToast(isUsingTemplate ? "Plantilla lista para activar" : "Formulario duplicado", "success", isUsingTemplate ? "Guarda el formulario para activarlo en las evaluaciones." : "Ahora estás creando un nuevo formulario basado en el anterior.");
+            showToast(
+              isUsingTemplate ? "Plantilla lista para activar" : "Formulario duplicado",
+              "success",
+              isUsingTemplate
+                ? (form.targetRole
+                    ? "Guarda el formulario para activarlo en las evaluaciones."
+                    : "Elige el rol a evaluar antes de guardar: esta plantilla es genérica.")
+                : "Ahora estás creando un nuevo formulario basado en el anterior."
+            );
           }
         } catch (error) {
           showToast("Error", "error", "Error al procesar el formulario.");
@@ -835,10 +902,20 @@ export const setupAdminEvaluations = () => {
       btn.addEventListener("click", async (e) => {
         e.stopPropagation();
         const id = e.target.dataset.id || e.target.closest('.btn-delete-form').dataset.id;
-        if (await showConfirm("¿Estás seguro de que deseas eliminar este formulario?")) {
+        if (await showConfirm(
+          "¿Eliminar este formulario?",
+          "Si nunca se respondió, se borra por completo. Si ya tiene evaluaciones, se archiva: sale de esta lista pero su historial se conserva intacto.",
+          "warning"
+        )) {
           try {
-            await formsService.deleteForm(id);
-            showToast("Formulario eliminado", "success");
+            const result = await formsService.deleteForm(id);
+            // El backend dice cual de los dos caminos ocurrio; mostrar siempre
+            // "eliminado" seria falso para un formulario con historial.
+            if (result?.action === "archived") {
+              showToast("Formulario archivado", "success", `Tiene ${result.evaluations_count} evaluación(es), así que su historial se conservó.`);
+            } else {
+              showToast("Formulario eliminado", "success", "No tenía evaluaciones, así que se borró por completo.");
+            }
             renderFormsList();
           } catch (error) {
             if (error.status === 409) {
@@ -889,14 +966,40 @@ export const setupAdminEvaluations = () => {
       return;
     }
 
-    renderFormCards(allForms);
+    const visible = formsForActiveTab();
+    renderFormCards(visible);
 
     if (formSearchSlot) {
       // Se regenera para no acumular listeners de recargas anteriores.
-      formSearchSlot.innerHTML = searchBoxComponent('form-search', 'Buscar formulario por título...');
-      setupSearch('form-search', allForms, ['title', 'description'], renderFormCards);
+      // La busqueda opera solo sobre la pestaña activa, no sobre allForms.
+      formSearchSlot.innerHTML = searchBoxComponent(
+        'form-search',
+        activeTab === "templates" ? 'Buscar plantilla por título...' : 'Buscar formulario por título...'
+      );
+      setupSearch('form-search', visible, ['title', 'description'], renderFormCards);
     }
   };
+
+  // --- PESTAÑAS ---
+  document.querySelectorAll(".tab-btn").forEach((tab) => {
+    tab.addEventListener("click", async () => {
+      if (activeTab === tab.dataset.tab) return;
+      activeTab = tab.dataset.tab;
+
+      document.querySelectorAll(".tab-btn").forEach((other) => {
+        const selected = other === tab;
+        other.setAttribute("aria-selected", String(selected));
+        other.classList.toggle("border-[var(--brand-bg)]", selected);
+        other.classList.toggle("text-[var(--brand-bg)]", selected);
+        other.classList.toggle("border-transparent", !selected);
+        other.classList.toggle("text-[var(--text-muted)]", !selected);
+      });
+
+      // El boton principal cambia de significado segun la pestaña.
+      btnCreate.lastChild.textContent = activeTab === "templates" ? " Nueva Plantilla" : " Nuevo Formulario";
+      await renderFormsList();
+    });
+  });
 
   // Inicializar mostrando la lista
   refreshPeriodGate();

@@ -1,8 +1,5 @@
 import { request, jsonOptions } from './api.service.js';
 
-// Unicos roles evaluables (ver CLAUDE.md / form_service.EVALUABLE_ROLES en el backend).
-const TARGET_ROLES = ['team_leader', 'tutor'];
-
 // Mapea entre los codigos de tipo que usa el constructor visual (Sebastian)
 // y el input_type real que espera el backend (questions.input_type).
 const TYPE_TO_INPUT_TYPE = {
@@ -31,27 +28,31 @@ const getDefaultCategoryId = () => {
   return defaultCategoryIdPromise;
 };
 
-// GET /forms?target_role= devuelve un arreglo (la formulario activa de ESE
-// rol, si existe). Como solo hay 2 roles evaluables, se piden ambas en
-// paralelo y se arma la lista a partir de eso.
+// Mapea target_role_id -> nombre del rol, para que la vista no tenga que
+// resolverlo. Los ids salen del seed (database/02_dml.sql).
+const ROLE_ID_TO_NAME = { 2: 'team_leader', 3: 'tutor' };
+const withRoleName = (form) => ({
+  ...form,
+  // null en plantillas genericas: la vista lo muestra como "Cualquier rol".
+  targetRole: ROLE_ID_TO_NAME[form.target_role_id] || null,
+});
+
+// Grilla del admin: pide TODO (formularios vivos + plantillas), sin archivados.
+//
+// Antes esto hacia fan-out sobre ['team_leader','tutor'] en paralelo, lo que
+// con plantillas genericas (target_role_id NULL) NUNCA las habria encontrado:
+// no pertenecen a ningun rol. Una sola llamada sin target_role las incluye, y
+// de paso es una peticion en vez de dos.
 const getForms = async () => {
-  const results = await Promise.all(
-    TARGET_ROLES.map(async (targetRole) => {
-      try {
-        const forms = await request(`/forms?target_role=${targetRole}`);
-        // Mapeamos todas las formularios que devuelva el backend
-        return forms.map(t => ({ ...t, targetRole }));
-      } catch (error) {
-        // Si la API arroja 404 porque todavía no hay formularios creadas para este rol,
-        // devolvemos un array vacío para no romper nada. Se compara el status
-        // real que expone api.service.js, no el texto del mensaje.
-        if (error.status === 404) return [];
-        throw error; 
-      }
-    })
-  );
-  // results es un array de arrays (uno por rol), lo aplanamos a una sola lista
-  return results.flat();
+  const forms = await request('/forms?kind=all');
+  return forms.map(withRoleName);
+};
+
+// Historial del Coder: necesita resolver el titulo de formularios ya
+// archivados, asi que es el unico consumidor que pide archived=include.
+const getFormsForHistory = async () => {
+  const forms = await request('/forms?kind=all&archived=include');
+  return forms.map(withRoleName);
 };
 
 // Para editar, ademas del texto (que ya viene en /forms) hace falta el peso
@@ -83,8 +84,10 @@ const createForm = async (formData) => {
   const payload = {
     title: formData.title,
     description: formData.description || null,
-    target_role: formData.targetRole,
-    is_form: formData.isForm || false,
+    // null solo es valido en plantillas; en un formulario vivo el backend
+    // responde 422 (y detras esta chk_form_role_required en MySQL).
+    target_role: formData.targetRole || null,
+    is_template: formData.isTemplate || false,
     questions: await Promise.all(formData.questions.map(toQuestionPayload)),
   };
   return await request('/forms', jsonOptions('POST', payload));
@@ -164,14 +167,20 @@ const updateForm = async (id, formData, onCoherenceConfirm) => {
     }));
   }
 
-  const forms = await request(`/forms?target_role=${formData.targetRole}`);
-  return forms[0];
+  // Se relee con kind=all a proposito: si lo editado fue una PLANTILLA, el
+  // default kind=form no la devolveria (es inerte) y esto quedaria en undefined.
+  const forms = await request('/forms?kind=all');
+  return forms.map(withRoleName).find((f) => f.id === Number(id));
 };
 
+// Devuelve { action: 'deleted' | 'archived', evaluations_count }. La vista
+// necesita el `action` para decir que paso de verdad: un formulario con
+// historial no se borra, se archiva, y decir "eliminado" seria falso.
 const deleteForm = async (id) => await request(`/forms/${id}`, { method: 'DELETE' });
 
 export const formsService = {
   getForms,
+  getFormsForHistory,
   getFormForEdit,
   createForm,
   updateForm,

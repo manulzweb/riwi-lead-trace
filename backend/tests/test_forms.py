@@ -179,7 +179,8 @@ def test_actualizar_plantilla_inexistente_da_404(client):
         _reopen_seed_period()
 
 
-def test_borrar_plantilla_la_desactiva_sin_borrarla_fisicamente(client):
+def test_borrar_formulario_sin_uso_lo_borra_de_verdad(client):
+    """Sin evaluaciones no hay historial que proteger, asi que desaparece."""
     _close_seed_period()
     new_id = None
     try:
@@ -187,15 +188,151 @@ def test_borrar_plantilla_la_desactiva_sin_borrarla_fisicamente(client):
         new_id = created["id"]
 
         response = client.delete(f"/forms/{new_id}")
-        assert response.status_code == 204
+        assert response.status_code == 200
+        assert response.json() == {"action": "deleted", "evaluations_count": 0}
 
-        row = conn.execute(text("SELECT is_active FROM forms WHERE id = :id"), {"id": new_id}).scalar()
-        assert not row  # sigue en la tabla, solo desactivada
+        row = conn.execute(text("SELECT id FROM forms WHERE id = :id"), {"id": new_id}).first()
+        assert row is None  # se borro de verdad, no quedo una tumba desactivada
+        preguntas = conn.execute(text("SELECT COUNT(*) FROM questions WHERE form_id = :id"), {"id": new_id}).scalar()
+        assert preguntas == 0
+        new_id = None  # ya no hay nada que limpiar
     finally:
         if new_id is not None:
             _delete_form_and_questions(new_id)
         conn.execute(text("UPDATE forms SET is_active = TRUE WHERE id = 1"))
         conn.commit()
+        _reopen_seed_period()
+
+
+def test_borrar_formulario_con_evaluaciones_lo_archiva_y_conserva_el_historial(client):
+    """LA garantia central: 'borrar formularios pero no su historial'.
+
+    Un formulario ya respondido no se puede borrar -- ni siquiera queriendo:
+    evaluations.form_id es ON DELETE RESTRICT. Se archiva, y la evaluacion
+    sigue exactamente donde estaba.
+    """
+    _close_seed_period()
+    new_id = None
+    eval_id = None
+    try:
+        created = client.post("/forms", json=_make_payload()).json()
+        new_id = created["id"]
+
+        # Evaluacion insertada directo: crearla por API exigiria periodo activo,
+        # y el borrado de un formulario vivo exige lo contrario.
+        evaluatee_id = conn.execute(text("SELECT id FROM users LIMIT 1")).scalar()
+        eval_id = conn.execute(
+            text("""INSERT INTO evaluations (evaluatee_id, form_id, period_id, status)
+                    VALUES (:evaluatee_id, :form_id, :period_id, 'submitted')"""),
+            {"evaluatee_id": evaluatee_id, "form_id": new_id, "period_id": SEED_ACTIVE_PERIOD_ID},
+        ).lastrowid
+        conn.commit()
+
+        response = client.delete(f"/forms/{new_id}")
+        assert response.status_code == 200
+        assert response.json() == {"action": "archived", "evaluations_count": 1}
+
+        fila = conn.execute(
+            text("SELECT is_active, archived_at FROM forms WHERE id = :id"), {"id": new_id}
+        ).mappings().first()
+        assert fila is not None                 # NO se borro
+        assert fila["archived_at"] is not None   # quedo archivado
+        assert not fila["is_active"]
+
+        # Lo que importa: la evaluacion sobrevivio intacta.
+        sigue = conn.execute(text("SELECT id FROM evaluations WHERE id = :id"), {"id": eval_id}).first()
+        assert sigue is not None
+    finally:
+        if eval_id is not None:
+            conn.execute(text("DELETE FROM evaluations WHERE id = :id"), {"id": eval_id})
+            conn.commit()
+        if new_id is not None:
+            _delete_form_and_questions(new_id)
+        conn.execute(text("UPDATE forms SET is_active = TRUE WHERE id = 1"))
+        conn.commit()
+        _reopen_seed_period()
+
+
+# --- Plantillas (is_template) ----------------------------------------------
+
+def test_plantilla_no_aparece_en_el_listado_que_consume_el_coder(client):
+    """Regresion del defecto que motivo esta feature: GET /forms no filtraba
+    is_template, asi que una plantilla nueva (id mas alto) se convertia en el
+    formulario que respondian los coders.
+    """
+    _close_seed_period()
+    new_id = None
+    try:
+        created = client.post("/forms", json=_make_payload(
+            title="Plantilla inerte", is_template=True, target_role="team_leader"
+        )).json()
+        new_id = created["id"]
+        assert created["is_template"] is True
+
+        # La ruta del Coder: sin parametros extra.
+        visibles = client.get("/forms?target_role=team_leader").json()
+        assert new_id not in [f["id"] for f in visibles]
+
+        # El Admin si la ve cuando la pide explicitamente.
+        todas = client.get("/forms?kind=all").json()
+        assert new_id in [f["id"] for f in todas]
+    finally:
+        if new_id is not None:
+            _delete_form_and_questions(new_id)
+        _reopen_seed_period()
+
+
+def test_plantilla_generica_no_necesita_rol_pero_un_formulario_vivo_si(client):
+    """chk_form_role_required, espejado en FormCreate: target_role es opcional
+    solo cuando is_template = TRUE."""
+    _close_seed_period()
+    new_id = None
+    try:
+        ok = client.post("/forms", json=_make_payload(is_template=True, target_role=None))
+        assert ok.status_code == 201
+        new_id = ok.json()["id"]
+        assert ok.json()["target_role_id"] is None
+
+        rechazado = client.post("/forms", json=_make_payload(is_template=False, target_role=None))
+        assert rechazado.status_code == 422
+    finally:
+        if new_id is not None:
+            _delete_form_and_questions(new_id)
+        _reopen_seed_period()
+
+
+def test_crear_plantilla_no_exige_periodo_cerrado(client):
+    """Una plantilla es inerte: no desactiva nada ni toca el instrumento que
+    los coders estan respondiendo, asi que la regla 6 no aplica. Contrasta con
+    test_no_se_crea_plantilla_con_periodo_activo, que cubre el formulario vivo.
+    """
+    new_id = None
+    try:
+        response = client.post("/forms", json=_make_payload(is_template=True, target_role=None))
+        assert response.status_code == 201  # con el periodo sembrado ACTIVO
+        new_id = response.json()["id"]
+    finally:
+        if new_id is not None:
+            _delete_form_and_questions(new_id)
+
+
+def test_formulario_archivado_solo_aparece_si_se_pide(client):
+    _close_seed_period()
+    new_id = None
+    try:
+        created = client.post("/forms", json=_make_payload(is_template=True)).json()
+        new_id = created["id"]
+        conn.execute(text("UPDATE forms SET archived_at = NOW() WHERE id = :id"), {"id": new_id})
+        conn.commit()
+
+        sin_archivados = client.get("/forms?kind=all").json()
+        assert new_id not in [f["id"] for f in sin_archivados]
+
+        con_archivados = client.get("/forms?kind=all&archived=include").json()
+        assert new_id in [f["id"] for f in con_archivados]
+    finally:
+        if new_id is not None:
+            _delete_form_and_questions(new_id)
         _reopen_seed_period()
 
 
