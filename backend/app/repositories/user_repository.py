@@ -45,6 +45,27 @@ class UserRepository:
             logger.error(f"Error fetching evaluables: {e}")
             raise
 
+    def get_team_leader_clans_map(self, conn: Connection) -> Dict[int, List[int]]:
+        """{user_id: [clan_id, ...]} de TODOS los Team Leaders, en una sola query.
+
+        Se resuelve de golpe y no uno por uno a proposito: get_evaluables filtra
+        una lista completa, y consultar los clanes por cada TL seria un N+1
+        (una consulta extra por fila).
+
+        `team_leader_clans` es la unica fuente valida del clan de un TL. Su
+        `users.clan_id` es NULL -- ver can_evaluate_by_clan.
+        """
+        try:
+            query = text("SELECT user_id, clan_id FROM team_leader_clans")
+            rows = conn.execute(query).mappings().all()
+            clans_map: Dict[int, List[int]] = {}
+            for row in rows:
+                clans_map.setdefault(row["user_id"], []).append(row["clan_id"])
+            return clans_map
+        except SQLAlchemyError as e:
+            logger.error(f"Error fetching team leader clans map: {e}")
+            raise
+
     def get_user_by_id(self, conn: Connection, user_id: int) -> Optional[Dict[str, Any]]:
         try:
             query_str = self._base_user_query() + " WHERE u.id = :id GROUP BY u.id"

@@ -5,6 +5,7 @@ from app.config.database import engine
 from app.schemas.evaluation_details import EvaluationCreate
 from app.repositories.evaluation_repository import EvaluationRepository
 from app.constants.evaluation_constants import EVALUATION_STATUS_SUBMITTED, ROLE_TEAM_LEADER, ROLE_TUTOR
+from app.constants.evaluation_rules import can_evaluate_by_clan
 from app.exceptions.evaluation_exceptions import (
     PeriodNotFoundException, PeriodNotActiveException, EvaluationAlreadyExistsException,
     EvaluateeNotFoundException, InvalidRoleException, InvalidClanException
@@ -39,13 +40,19 @@ class EvaluationService:
             
         evaluator_clan = evaluator_info["clan_id"] if evaluator_info else None
 
-        if ROLE_TEAM_LEADER in evaluatee_roles:
-            tl_clans = self.repo.get_team_leader_clans(conn, evaluatee_id)
-            if evaluator_clan not in tl_clans:
+        # La condicion vive en can_evaluate_by_clan (constants/evaluation_rules.py),
+        # compartida con user_service.get_evaluables para que el listado que ve el
+        # Coder y lo que este endpoint acepta no puedan divergir. Aqui solo se
+        # traduce el "no" a la excepcion con el mensaje que corresponde.
+        tl_clans = (
+            self.repo.get_team_leader_clans(conn, evaluatee_id)
+            if ROLE_TEAM_LEADER in evaluatee_roles
+            else []
+        )
+        if not can_evaluate_by_clan(evaluator_clan, evaluatee_roles, evaluatee_info["clan_id"], tl_clans):
+            if ROLE_TEAM_LEADER in evaluatee_roles:
                 raise InvalidClanException("No puedes evaluar a un Team Leader que no tiene a cargo tu clan.")
-        else:
-            if evaluator_clan != evaluatee_info["clan_id"]:
-                raise InvalidClanException("Solo puedes evaluar a usuarios de tu mismo clan.")
+            raise InvalidClanException("Solo puedes evaluar a usuarios de tu mismo clan.")
 
     def create_evaluation(self, eval_data: EvaluationCreate) -> Optional[Dict[str, Any]]:
         with engine.begin() as conn:

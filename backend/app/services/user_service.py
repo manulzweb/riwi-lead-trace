@@ -3,6 +3,7 @@ from app.config.database import engine
 from app.config.security import hash_password
 from app.schemas.user import UserCreate, UserUpdate
 from app.repositories.user_repository import UserRepository
+from app.constants.evaluation_rules import can_evaluate_by_clan
 from app.exceptions.user_exceptions import UserNotFoundException, EmailAlreadyExistsException
 from sqlalchemy.exc import IntegrityError
 
@@ -21,13 +22,41 @@ class UserService:
             return [self._format_user(u) for u in users]
 
     def get_evaluables(self, evaluator_id: Optional[int] = None) -> List[Dict[str, Any]]:
+        """Tutores y Team Leaders que `evaluator_id` puede evaluar.
+
+        SIN `evaluator_id` devuelve la lista completa sin filtrar por clan: no
+        hay contra que comparar. Es deliberado y no es un fallo -- hay llamadas
+        legitimas sin evaluador (pantallas de admin).
+
+        Este filtro es CONVENIENCIA de UI, no una barrera: evita ofrecer a
+        alguien que `POST /evaluations` rechazaria. La autoridad sigue siendo
+        `evaluation_service._validate_permissions`, y ambos comparten la misma
+        funcion `can_evaluate_by_clan` para no poder divergir.
+        """
         with engine.connect() as conn:
             users = self.repo.get_evaluables(conn)
+
             if evaluator_id is not None:
                 evaluator = self.repo.get_user_by_id(conn, evaluator_id)
                 if evaluator:
                     evaluator_email = evaluator["email"]
                     users = [u for u in users if u["email"] != evaluator_email]
+
+                    evaluator_clan = evaluator["clan_id"]
+                    tl_clans_map = self.repo.get_team_leader_clans_map(conn)
+                    users = [
+                        u for u in users
+                        if can_evaluate_by_clan(
+                            evaluator_clan,
+                            # `roles` llega del repositorio como CSV (GROUP_CONCAT);
+                            # _format_user lo convierte a lista despues, asi que
+                            # aqui todavia hay que partirlo a mano.
+                            (u["roles"] or "").split(","),
+                            u["clan_id"],
+                            tl_clans_map.get(u["id"], []),
+                        )
+                    ]
+
             return [self._format_user(u) for u in users]
 
     def get_user(self, user_id: int) -> Optional[Dict[str, Any]]:
