@@ -19,14 +19,14 @@ export const navBarComponent = () => {
     return `
     <header class="border-b border-[var(--border-main)] bg-[var(--bg-panel)]/90 backdrop-blur sticky top-0 z-50">
       <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-        <img src="../../public/icons/riwi_logo.png" alt="Logo" class="w-auto h-8">
+        <img src="/icons/riwi_logo.png" alt="Logo" class="w-auto h-8">
         <a class="text-xl font-black text-[var(--brand-bg)] transition-colors hover:text-[var(--brand-hover)]" href="/">LeadTrace</a>
         <div class="flex items-center gap-3">
           <div class="hidden sm:block">
             <!-- Espacio reservado si se desea -->
           </div>
           <a class="rounded-full px-4 py-2 text-sm font-semibold text-[var(--text-main)] transition-all duration-300 ease-in-out hover:bg-[var(--border-main)]" href="/login">Iniciar sesión</a>
-          <a class="rounded-full bg-[var(--brand-bg)] px-4 py-2 text-sm font-semibold text-[var(--brand-text)] transition-all duration-300 ease-in-out hover:bg-[var(--brand-hover)] hover:shadow-md" href="/register">Crear cuenta</a>
+          <a class="rounded-full bg-[var(--brand-bg)] px-4 py-2 text-sm font-semibold text-[var(--brand-text)] transition-all duration-300 ease-in-out hover:bg-[var(--brand-hover)] hover:shadow-md" href="#" class="hidden">Crear cuenta</a>
         </div>
       </div>
     </header>`;
@@ -41,7 +41,7 @@ export const navBarComponent = () => {
         
         <div class="flex items-center gap-4 text-white">
           <a class="font-heading font-black font-semibold text-xl hidden sm:flex items-center gap-4 mt-1 text-white tracking-wide" href="/dashboard">
-            <img src="../../public/icons/riwi_logo.png" alt="Logo" class="w-auto h-6"> 
+            <img src="/icons/riwi_logo.png" alt="Logo" class="w-auto h-6"> 
             <span>LeadTrace</span>
           </a>
         </div>

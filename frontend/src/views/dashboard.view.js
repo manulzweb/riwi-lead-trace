@@ -414,7 +414,7 @@ const renderDashboardContent = async (content, user, name, role) => {
       <div class="col-span-1 md:col-span-2 lg:col-span-2 mt-4 lg:mt-0">
         <div class="bg-[var(--bg-panel)] rounded-3xl border border-[var(--border-main)] p-8 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6 h-full">
           <div>
-            <h2 class="text-2xl font-bold text-[var(--text-main)] mb-2">¡Hola, ${user.name.split(' ')[0]}!</h2>
+            <h2 class="text-2xl font-bold text-[var(--text-main)] mb-2">¡Hola, ${escapeHtml(user.name.split(' ')[0])}!</h2>
           </div>
         </div>
       </div>

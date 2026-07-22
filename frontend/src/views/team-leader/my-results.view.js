@@ -8,6 +8,7 @@ import { showToast } from "../../components/alerts";
 import { emptyStateComponent } from "../../components/emptyState.js";
 import { setupPagination } from "../../components/pagination";
 import { marked } from "marked";
+import DOMPurify from "dompurify";
 import { escapeHtml } from "../../utils/validators";
 
 export const renderMyResults = () => `
@@ -195,7 +196,7 @@ export const setupMyResults = async () => {
               </h2>
               <article class="rounded-2xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-8 shadow-sm">
                 <div class="markdown-body prose dark:prose-invert max-w-none text-[var(--text-main)]">
-                  ${marked.parse(aiSummary.summary)}
+                  ${DOMPurify.sanitize(marked.parse(aiSummary.summary))}
                 </div>
               </article>
             </section>
