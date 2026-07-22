@@ -1,15 +1,23 @@
 import { navBarComponent } from "../../components/navbar";
-import { dropdownComponent, setupDropdown, setDropdownValue } from "../../components/dropdown";
+import { modalComponent, setupModal } from "../../components/modal";
 import { evaluablesService } from "../../services/evaluables.service";
 import { evaluationService } from "../../services/evaluation.service";
 import { periodService } from "../../services/periods.service";
 import { authService } from "../../services/auth.service";
+import { escapeHtml } from "../../utils/validators";
 import { showToast } from "../../components/alerts";
 import { renderRoute } from "../../router/router";
 import { z } from "zod";
 
-// Preguntas de escala/si-no son obligatorias; texto abierto es opcional. La
-// validacion vive aca en vez de un if/else imperativo por cada pregunta --
+// Unica fuente de verdad de "que tipo de pregunta es obligatorio". La consumen
+// tres sitios que antes lo decidian por separado y podian divergir: la barra de
+// progreso, la validacion de envio (answerSchema) y la insignia "Opcional".
+// Las de escala y si/no son obligatorias (alimentan el ICP); el texto abierto
+// ("Comentarios adicionales", weight_percent = 0) es opcional.
+const TIPOS_OBLIGATORIOS = new Set(["scale", "scale_1_5", "yes_no"]);
+const esObligatoria = (inputType) => TIPOS_OBLIGATORIOS.has(inputType);
+
+// La validacion vive aca en vez de un if/else imperativo por cada pregunta --
 // mas facil de leer que "que hace falta para poder enviar" de un vistazo.
 const answerSchema = z.object({
   question_id: z.number(),
@@ -31,6 +39,33 @@ const evaluationAnswersSchema = z.array(answerSchema).min(1, "La evaluación deb
 let allUsers = [];
 let activePeriod = null;
 let currentForm = null;
+
+// Iniciales para el avatar (hasta dos palabras). Evita traer imagenes: el
+// backend no tiene fotos de perfil.
+const getIniciales = (name = "") =>
+  name.split(" ").filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase() || "?";
+
+const roleLabel = (role) => (role === "team_leader" ? "Team Leader" : "Tutor");
+
+// Mismo criterio de color que las tarjetas de /evaluables (azul TL, morado
+// tutor), para que el coder reconozca el rol de un vistazo entre las dos vistas.
+const roleBadge = (role) =>
+  role === "team_leader"
+    ? `<span class="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-600 dark:bg-blue-950/20 dark:text-blue-400">Team Leader</span>`
+    : `<span class="rounded-full bg-purple-50 px-2.5 py-0.5 text-xs font-semibold text-purple-600 dark:bg-purple-950/20 dark:text-purple-400">Tutor</span>`;
+
+// Tarjeta compacta del modal de seleccion. Mas pequena que la de /evaluables
+// (sin insignia de estado ni boton propio): la tarjeta entera es el boton.
+const tarjetaCompacta = (user, role) => `
+  <button type="button" data-user-id="${user.id}" data-role="${role}"
+    class="flex items-center gap-3 rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] p-3 text-left transition-all hover:border-[var(--brand-hover)] hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-hover)]">
+    <span aria-hidden="true" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--brand-bg)]/10 text-sm font-bold text-[var(--brand-bg)]">${escapeHtml(getIniciales(user.name))}</span>
+    <span class="min-w-0 flex-1">
+      <span class="block truncate text-sm font-bold text-[var(--text-main)]">${escapeHtml(user.name)}</span>
+      <span class="mt-0.5 block">${roleBadge(role)}</span>
+    </span>
+  </button>
+`;
 
 export const renderEvaluate = () => `
   ${navBarComponent()}
@@ -58,24 +93,10 @@ export const renderEvaluate = () => `
 
     <form id="evaluate-form" class="mt-8 grid gap-6">
       <section class="rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-8 shadow-sm">
-        
-        <div class="grid gap-6 md:grid-cols-2 mb-8">
-          <div id="target-role-container">
-            <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="target-role">¿A quién evalúas?</label>
-            ${dropdownComponent('target-role', [
-  { value: '', label: 'Selecciona un rol...' },
-  { value: 'team_leader', label: 'Team Leader' },
-  { value: 'tutor', label: 'Tutor' }
-], '')}
-          </div>
 
-          <div id="evaluatee-container">
-            <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="evaluatee">Persona a evaluar</label>
-            ${dropdownComponent('evaluatee', [
-  { value: '', label: 'Primero selecciona un rol...' }
-], '')}
-          </div>
-        </div>
+        <!-- Tarjeta de contexto: a quien se esta evaluando. La rellena
+             renderContextCard() cuando hay seleccion; vacia mientras no la hay. -->
+        <div id="evaluatee-context" class="mb-8 empty:mb-0"></div>
 
         <div id="questions-container" class="grid gap-8"></div>
       </section>
@@ -111,6 +132,22 @@ export const renderEvaluate = () => `
       </div>
 
     </form>
+
+    ${modalComponent({
+      id: "evaluatee-modal",
+      title: "¿A quién vas a evaluar?",
+      size: "lg",
+      children: `
+        <p class="mb-5 -mt-4 text-sm text-[var(--text-muted)]">Selecciona a un Team Leader o Tutor pendiente en este periodo.</p>
+        <div id="evaluatee-modal-list" class="grid gap-3 sm:grid-cols-2 max-h-[55vh] overflow-y-auto pr-1" aria-live="polite"></div>
+        <div class="mt-6 flex justify-end">
+          <button type="button" id="evaluatee-modal-cancel"
+            class="cursor-pointer rounded-2xl border border-[var(--border-main)] bg-transparent px-6 py-3 text-sm font-bold text-[var(--text-main)] transition-all hover:bg-[var(--bg-base)] hover:shadow-sm">
+            Cancelar
+          </button>
+        </div>
+      `,
+    })}
     </div>
   </main>
 `;
@@ -119,32 +156,23 @@ export const setupEvaluate = async () => {
   const form = document.getElementById("evaluate-form");
   const submitBtn = document.getElementById("submit-btn");
   const draftBtn = document.getElementById("draft-btn");
-  const targetRole = document.getElementById("target-role");
-  // NO se captura el nodo: `handleRoleChange()` reemplaza #evaluatee-container
-  // con `outerHTML` (4 sitios), lo que DESTRUYE y recrea #evaluatee. Una
-  // constante capturada aqui quedaria apuntando a un nodo huerfano, y escribir
-  // o leer `.value` sobre el no lanza error -- falla en silencio.
-  //
-  // Eso rompia tres cosas a la vez: la preseleccion desde la tarjeta, el
-  // evaluatee_id del envio, y sobre todo la clave del borrador
-  // (`evaluation_draft_${user}_${evaluatee.value}`), que con value vacio hacia
-  // que TODOS los borradores de todas las personas colapsaran en una sola
-  // entrada de localStorage.
-  const getEvaluatee = () => document.getElementById("evaluatee");
-  const evaluateeValue = () => getEvaluatee()?.value || "";
-  const draftKey = () => `evaluation_draft_${currentUser.id}_${evaluateeValue()}`;
+
+  // La seleccion ya no vive en el DOM (era un dropdown que se destruia y
+  // recreaba, y leerlo huerfano fallaba en silencio, colapsando todos los
+  // borradores en una sola clave de localStorage). Ahora es una variable de
+  // modulo: { id, name, email, role } o null mientras no se ha elegido.
+  let seleccion = null;
+  const draftKey = () => `evaluation_draft_${currentUser.id}_${seleccion?.id || ""}`;
 
   const qContainer = document.getElementById("questions-container");
+  const contextCard = document.getElementById("evaluatee-context");
   const anonCheck = document.getElementById("is-anonymous");
   const progressContainer = document.getElementById("progress-container");
   const progressBarFill = document.getElementById("progress-bar-fill");
   const progressText = document.getElementById("progress-text");
   const progressPercent = document.getElementById("progress-percentage");
 
-  if (!form || !submitBtn || !targetRole || !getEvaluatee() || !qContainer) return;
-
-  setupDropdown('target-role');
-  setupDropdown('evaluatee');
+  if (!form || !submitBtn || !qContainer) return;
 
   const currentUser = authService.getSession();
 
@@ -167,8 +195,8 @@ export const setupEvaluate = async () => {
     });
 
     const draft = {
-      role: targetRole.value,
-      evaluatee: evaluateeValue(),
+      role: seleccion?.role,
+      evaluatee: seleccion?.id,
       anonymous: anonCheck.checked,
       answers: answers
     };
@@ -190,14 +218,28 @@ export const setupEvaluate = async () => {
     const questionElements = qContainer.querySelectorAll("[data-question-id]");
     if (questionElements.length === 0) return;
 
+    // La barra solo cuenta preguntas obligatorias: las de texto abierto son
+    // opcionales, y contarlas hacia que el 100% exigiera escribir un comentario
+    // que nadie pide. Ver `esObligatoria`.
+    const obligatorias = Array.from(questionElements).filter(el => esObligatoria(el.dataset.inputType));
+
+    if (obligatorias.length === 0) {
+      // Formulario solo de texto (caso de borde): no hay nada obligatorio que
+      // medir, se oculta la barra en vez de mostrar NaN%. El borrador igual se
+      // guarda abajo.
+      progressContainer.classList.add("hidden");
+      saveDraftLocally();
+      return;
+    }
+
     let answered = 0;
-    questionElements.forEach(el => {
+    obligatorias.forEach(el => {
       if (el.dataset.selectedValue) answered++;
     });
 
-    const percentage = Math.round((answered / questionElements.length) * 100);
+    const percentage = Math.round((answered / obligatorias.length) * 100);
     progressBarFill.style.width = `${percentage}%`;
-    progressText.textContent = `${answered} de ${questionElements.length} respondidas`;
+    progressText.textContent = `${answered} de ${obligatorias.length} respondidas`;
     progressPercent.textContent = `${percentage}%`;
 
     // Disparar auto-guardado cada vez que cambia el progreso
@@ -262,214 +304,136 @@ export const setupEvaluate = async () => {
       </div>`;
   };
 
-  // El formulario no se pinta hasta saber A QUIEN se evalua. Antes aparecia en
-  // cuanto se elegia el rol, lo que sugeria que ya se podia responder cuando
-  // todavia faltaba el dato principal -- y el borrador se cargaba con la clave
-  // sin persona.
-  const mostrarFormulario = (role) => {
-    document.getElementById('anonymous-section')?.classList.remove('hidden');
-    document.getElementById('wizard-buttons')?.classList.remove('hidden');
-    renderQuestions(currentForm.questions);
-    progressContainer.classList.remove("hidden");
-    updateProgress();
-    loadDraft(role);
-  };
+  // Un usuario puede tener ambos roles (team_leader y tutor). Se evalua una sola
+  // vez por periodo -- el constraint uq_submission_once es (evaluador, evaluado,
+  // periodo), sin el rol -- asi que basta UNA tarjeta por persona con un rol
+  // derivado. Mismo criterio (prioridad team_leader) que las tarjetas de
+  // /evaluables, para que ambas vistas coincidan.
+  const derivarRol = (user) => (user.roles?.includes("team_leader") ? "team_leader" : "tutor");
 
-  const pedirQueElijaPersona = () => {
-    document.getElementById('anonymous-section')?.classList.add('hidden');
-    document.getElementById('wizard-buttons')?.classList.add('hidden');
-    progressContainer.classList.add("hidden");
-    qContainer.innerHTML = `
-      <div class="rounded-[2rem] border border-dashed border-[var(--border-main)] bg-[var(--bg-panel)] p-10 text-center">
-        <p class="text-sm text-[var(--text-muted)]">
-          Elige a la persona que vas a evaluar para ver el formulario.
-        </p>
+  // Tarjeta de contexto sobre el formulario: a quien se esta evaluando. El boton
+  // "Cambiar" reabre el modal de seleccion.
+  const renderContextCard = () => {
+    if (!contextCard) return;
+    if (!seleccion) { contextCard.innerHTML = ""; return; }
+    contextCard.innerHTML = `
+      <div class="flex items-center gap-4 rounded-3xl border border-[var(--border-main)] bg-[var(--bg-base)] p-5">
+        <span aria-hidden="true" class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--brand-bg)]/10 text-base font-bold text-[var(--brand-bg)]">${escapeHtml(getIniciales(seleccion.name))}</span>
+        <div class="min-w-0 flex-1">
+          <p class="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Evaluando a</p>
+          <p class="truncate text-lg font-bold text-[var(--text-main)]">${escapeHtml(seleccion.name)}</p>
+          <div class="mt-1 flex flex-wrap items-center gap-2">
+            ${roleBadge(seleccion.role)}
+            <span class="truncate text-xs text-[var(--text-muted)]">${escapeHtml(seleccion.email || "")}</span>
+          </div>
+        </div>
+        <button type="button" id="evaluatee-change"
+          class="shrink-0 cursor-pointer rounded-2xl border border-[var(--border-main)] bg-transparent px-4 py-2 text-sm font-bold text-[var(--text-main)] transition-all hover:bg-[var(--bg-panel)] hover:shadow-sm">
+          Cambiar
+        </button>
       </div>`;
+    document.getElementById("evaluatee-change")?.addEventListener("click", (e) => abrirModalSeleccion(e.currentTarget));
   };
 
-  const handleRoleChange = async () => {
-    const role = targetRole.value;
-    qContainer.innerHTML = "";
+  // Trae el formulario del rol y lo pinta. Aislado de la seleccion para que
+  // tanto la eleccion en el modal como la preseleccion por URL lo reutilicen.
+  const cargarFormulario = async (role) => {
     currentForm = null;
-    progressContainer.classList.add("hidden");
-
-    // Se restauran por si venian ocultos de un estado "completado" anterior:
-    // sin esto, pasar de un rol sin pendientes a otro con pendientes dejaba el
-    // formulario sin botones y sin la opcion de envio anonimo.
-    document.getElementById('anonymous-section')?.classList.remove('hidden');
-    document.getElementById('wizard-buttons')?.classList.remove('hidden');
-
-      document.getElementById('evaluatee-container').outerHTML = `
-          <div id="evaluatee-container">
-            <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="evaluatee">Persona a evaluar</label>
-            ${dropdownComponent('evaluatee', [{ value: '', label: 'Cargando...' }], '')}
-          </div>`;
-        setupDropdown('evaluatee');
-
-    if (!role) {
-      // Con el filtro en su valor por defecto tambien se informa el estado
-      // global: si ya no queda nadie, decirlo aqui evita que el coder tenga
-      // que probar rol por rol para descubrir que termino.
-      if (pendientesEnElPeriodo().length === 0) {
-        document.getElementById('evaluatee-container').outerHTML = `
-          <div id="evaluatee-container">
-            <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="evaluatee">Persona a evaluar</label>
-            ${dropdownComponent('evaluatee', [{ value: '', label: 'No queda nadie por evaluar' }], '')}
-          </div>`;
-        setupDropdown('evaluatee');
-        mostrarEstadoCompletado();
-        return;
-      }
-
-      document.getElementById('evaluatee-container').outerHTML = `
-        <div id="evaluatee-container">
-          <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="evaluatee">Persona a evaluar</label>
-          ${dropdownComponent('evaluatee', [{ value: '', label: 'Primero selecciona un rol...' }], '')}
-        </div>`;
-      setupDropdown('evaluatee');
-      return;
-    }
+    document.getElementById("anonymous-section")?.classList.remove("hidden");
+    document.getElementById("wizard-buttons")?.classList.remove("hidden");
+    qContainer.innerHTML = `
+      <div class="flex flex-col gap-6">
+        <div class="h-24 skeleton-shimmer rounded-3xl"></div>
+        <div class="h-24 skeleton-shimmer rounded-3xl"></div>
+        <div class="h-24 skeleton-shimmer rounded-3xl"></div>
+      </div>`;
 
     try {
-      qContainer.innerHTML = `
-        <div class="flex flex-col gap-6">
-          <div class="h-24 skeleton-shimmer rounded-3xl"></div>
-          <div class="h-24 skeleton-shimmer rounded-3xl"></div>
-          <div class="h-24 skeleton-shimmer rounded-3xl"></div>
-        </div>
-      `;
-
-      const [form, previousEvaluations] = await Promise.all([
-        evaluationService.getForm(role),
-        evaluationService.getByEvaluator(currentUser.id)
-      ]);
-      currentForm = form;
-      // Se cachea en el scope de la vista para que `pendientesEnElPeriodo()`
-      // pueda responder "¿queda alguien, en CUALQUIER rol?" sin repetir la
-      // peticion ni depender de que se haya elegido un rol.
-      misEvaluaciones = previousEvaluations;
-
-      // Personas ya evaluadas en este periodo, para sacarlas del selector.
-      //
-      // El filtro es solo por periodo, sin `form_id`, por dos razones: (1) la
-      // regla real de no-duplicado es (evaluador, evaluado, periodo) --el
-      // constraint `uq_submission_once`--, el formulario no entra; (2) las
-      // participaciones anonimas llegan con `form_id` en null (no hay vinculo
-      // con el contenido), asi que compararlo las descartaba y el coder volvia
-      // a ver en la lista a alguien que ya evaluo anonimamente, para chocar
-      // luego contra un 409. La lista de candidatos ya viene filtrada por rol,
-      // asi que no hace falta desambiguar por formulario.
-      const evaluatedIds = previousEvaluations
-        .filter(e => e.period_id === activePeriod.id)
-        .map(e => String(e.evaluatee_id));
-
-      // Sin filtro de clan: `allUsers` ya viene filtrado por el servidor
-      // (GET /evaluables?evaluator_id=...). Filtrarlo aqui por `clan_id`
-      // excluia a TODOS los Team Leaders, porque su clan_id es NULL y su
-      // relacion con clanes vive en `team_leader_clans`.
-      const filtered = allUsers.filter(u =>
-        u.roles?.includes(role) &&
-        u.id !== currentUser.id &&
-        !evaluatedIds.includes(String(u.id))
-      );
-
-      if (filtered.length === 0) {
-        document.getElementById('evaluatee-container').outerHTML = `
-          <div id="evaluatee-container">
-            <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="evaluatee">Persona a evaluar</label>
-            ${dropdownComponent('evaluatee', [{ value: '', label: 'Ya has evaluado a todos para este rol' }], '')}
-          </div>`;
-        setupDropdown('evaluatee');
-        // Si tampoco queda nadie en el OTRO rol, el mensaje correcto es el
-        // global: decir "completaste este rol" cuando ya terminaste todo deja
-        // al coder buscando en el otro filtro para nada.
-        if (pendientesEnElPeriodo().length === 0) {
-          mostrarEstadoCompletado();
-        } else {
-          qContainer.innerHTML = '<div class="text-center py-4 text-[var(--brand-bg)] font-bold">¡Has completado todas las evaluaciones para este rol en el periodo actual!</div>';
-        }
-        return;
-      }
-
-      // Caso habitual en Riwi: un clan tiene UN tutor y UN team leader. Con un
-      // solo candidato, obligar a abrir el desplegable para elegir la unica
-      // opcion posible es pedir una decision que no existe.
-      const unicoCandidato = filtered.length === 1 ? filtered[0] : null;
-
-      const evaluateeOptions = unicoCandidato
-        // Sin opcion vacia: no hay nada entre lo que elegir, y dejarla
-        // permitiria "deseleccionar" al unico evaluable posible.
-        ? [{ value: unicoCandidato.id, label: `${unicoCandidato.name} (${unicoCandidato.email})` }]
-        : [
-            { value: '', label: 'Selecciona una persona...' },
-            ...filtered.map(u => ({ value: u.id, label: `${u.name} (${u.email})` }))
-          ];
-
-      document.getElementById('evaluatee-container').outerHTML = `
-        <div id="evaluatee-container">
-          <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="evaluatee">Persona a evaluar</label>
-          ${dropdownComponent('evaluatee', evaluateeOptions, '')}
-        </div>`;
-      setupDropdown('evaluatee');
-
-      if (unicoCandidato) {
-        // setDropdownValue NO despacha 'change' (solo lo hace el click del
-        // usuario), asi que el formulario se muestra a mano.
-        setDropdownValue('evaluatee', unicoCandidato.id);
-        mostrarFormulario(role);
-      } else {
-        pedirQueElijaPersona();
-      }
+      currentForm = await evaluationService.getForm(role);
+      renderQuestions(currentForm.questions);
+      progressContainer.classList.remove("hidden");
+      updateProgress();
+      loadDraft(role);
     } catch (err) {
       // 404 = no hay formulario activo para ese rol (ver contrato de /forms).
       if (err.status === 404) {
+        document.getElementById("anonymous-section")?.classList.add("hidden");
+        document.getElementById("wizard-buttons")?.classList.add("hidden");
+        progressContainer.classList.add("hidden");
         qContainer.innerHTML = `
           <div class="text-center py-10 bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-main)] shadow-sm">
             <svg class="w-12 h-12 text-[var(--text-muted)] mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             <h3 class="text-lg font-bold text-[var(--text-main)] mb-1">Sin evaluaciones disponibles</h3>
             <p class="text-sm text-[var(--text-muted)] max-w-sm mx-auto">No hay ningún formulario de evaluación activo en este momento para el rol seleccionado.</p>
-          </div>
-        `;
-        getEvaluatee().disabled = true;
-        getEvaluatee().innerHTML = '<option value="">Sin formulario disponible</option>';
+          </div>`;
       } else {
-        qContainer.innerHTML = '<div class="text-[var(--danger-text)] bg-[var(--danger-bg)] p-4 rounded-xl text-center">Error al cargar preguntas de la formulario.</div>';
+        qContainer.innerHTML = '<div class="text-[var(--danger-text)] bg-[var(--danger-bg)] p-4 rounded-xl text-center">Error al cargar las preguntas del formulario.</div>';
         console.error(err);
       }
     }
   };
 
-  
-  targetRole.addEventListener("change", handleRoleChange);
+  // Punto unico de seleccion: fija el estado, pinta la tarjeta de contexto,
+  // cierra el modal y carga el formulario. `seleccion` queda fijado ANTES de
+  // cerrar, para que el onClose del modal no lo confunda con un cierre sin
+  // eleccion (que navega a /evaluables).
+  const seleccionarEvaluado = async (user, role) => {
+    seleccion = { id: user.id, name: user.name, email: user.email, role };
+    renderContextCard();
+    modalSel.close();
+    await cargarFormulario(role);
+  };
 
-  // Delegado en `document` y NO sobre el nodo: #evaluatee se destruye y recrea
-  // en cada handleRoleChange(), asi que un listener puesto directamente sobre
-  // el se pierde con el primer cambio de rol. El evento 'change' que despacha
-  // setupDropdown burbujea (`bubbles: true`), asi que llega hasta aqui.
-  document.addEventListener("change", (e) => {
-    if (e.target?.id !== "evaluatee") return;
-    if (evaluateeValue()) {
-      // Recien aqui hay a quien evaluar: se pinta el formulario (que ademas
-      // carga el borrador con la clave ya completa, persona incluida).
-      mostrarFormulario(targetRole.value);
-    } else {
-      // Volvio a "Selecciona una persona...": se retira el formulario para no
-      // dejar respuestas a la vista sin destinatario.
-      pedirQueElijaPersona();
+  const renderModalList = () => {
+    const list = document.getElementById("evaluatee-modal-list");
+    if (!list) return;
+    const pendientes = pendientesEnElPeriodo();
+    if (pendientes.length === 0) {
+      list.innerHTML = `<p class="col-span-full py-6 text-center text-sm text-[var(--text-muted)]">No queda nadie por evaluar en este periodo.</p>`;
+      return;
     }
+    list.innerHTML = pendientes.map(u => tarjetaCompacta(u, derivarRol(u))).join("");
+  };
+
+  const abrirModalSeleccion = (triggerEl) => {
+    renderModalList();
+    modalSel.open(triggerEl);
+  };
+
+  // El modal se cierra de tres formas (Esc, boton Cancelar, click en una
+  // tarjeta). Solo las dos primeras deben sacar al coder de la vista, y solo si
+  // NO hay nada elegido: cerrar sobre un formulario sin destinatario dejaria la
+  // pantalla muerta. Si ya hay seleccion (p.ej. abrio "Cambiar" y se arrepintio),
+  // cerrar sin elegir mantiene el formulario actual.
+  const modalSel = setupModal("evaluatee-modal", {
+    onClose: () => {
+      if (!seleccion) {
+        window.history.pushState({}, "", "/evaluables");
+        renderRoute();
+      }
+    },
   });
 
+  // Delegacion en el contenedor de la lista (no en cada tarjeta): un solo
+  // listener sobrevive a los re-render de renderModalList. El click puede caer
+  // en el avatar o el nombre, por eso closest().
+  document.getElementById("evaluatee-modal-list")?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-user-id]");
+    if (!btn) return;
+    const user = allUsers.find(u => String(u.id) === btn.dataset.userId);
+    if (user) seleccionarEvaluado(user, btn.dataset.role);
+  });
 
-  // La preselección por query params NO va aquí: `handleRoleChange()` llama a
+  document.getElementById("evaluatee-modal-cancel")?.addEventListener("click", () => modalSel.close());
+
+
+  // La entrada a la vista NO va aquí: `cargarFormulario()` llama a
   // `renderQuestions`, declarada mas abajo con `const`, y `const` no se
   // hoistea. Invocarla en este punto entra en la zona muerta temporal y lanza
-  // "Cannot access 'renderQuestions' before initialization", que abortaba el
-  // bloque entero -- por eso NADA se preseleccionaba, ni siquiera el rol.
-  //
-  // Se ejecuta al FINAL de setupEvaluate, cuando todas las declaraciones ya
-  // corrieron. Ver `aplicarPreseleccion()` abajo.
+  // "Cannot access 'renderQuestions' before initialization", que abortaria el
+  // bloque entero. Se ejecuta al FINAL de setupEvaluate. Ver `entrarALaVista()`.
 
-  
+
   let currentStep = 0;
   let wizardPages = [];
   const QUESTIONS_PER_STEP = 3;
@@ -551,6 +515,17 @@ export const setupEvaluate = async () => {
         const qLabel = document.createElement("p");
         qLabel.className = "mb-4 text-base font-medium text-[var(--text-main)]";
         qLabel.textContent = q.text;
+
+        // Insignia "Opcional" en las preguntas que no cuentan para la barra
+        // (texto abierto). Sin ella, la barra marca 100% con un textarea vacio y
+        // parece un bug: la insignia explica por que no es obligatorio.
+        if (!esObligatoria(q.input_type)) {
+          const opcional = document.createElement("span");
+          opcional.className = "ml-2 align-middle rounded-full bg-[var(--bg-base)] px-2 py-0.5 text-xs font-semibold text-[var(--text-muted)] border border-[var(--border-main)]";
+          opcional.textContent = "Opcional";
+          qLabel.appendChild(opcional);
+        }
+
         qDiv.appendChild(qLabel);
 
         if (q.input_type === "scale" || q.input_type === "scale_1_5") {
@@ -657,7 +632,9 @@ export const setupEvaluate = async () => {
       try {
         const draft = JSON.parse(savedDraft);
         if (draft.role === currentRole) {
-          if (draft.evaluatee) setDropdownValue('evaluatee', draft.evaluatee);
+          // La persona ya no se restaura del borrador: la clave del borrador ya
+          // esta namespaced por evaluado (draftKey), asi que este borrador ES el
+          // de `seleccion`. Solo quedan el toggle anonimo y las respuestas.
           if (draft.anonymous !== undefined) anonCheck.checked = draft.anonymous;
 
           qContainer.querySelectorAll("[data-question-id]").forEach(el => {
@@ -687,8 +664,8 @@ export const setupEvaluate = async () => {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    if (!currentForm || !activePeriod) {
-      showToast("Error", "error", "No se ha cargado la formulario o periodo activo.");
+    if (!currentForm || !activePeriod || !seleccion) {
+      showToast("Error", "error", "No se ha cargado el formulario, el periodo activo o la persona a evaluar.");
       return;
     }
 
@@ -721,7 +698,7 @@ export const setupEvaluate = async () => {
 
     const evaluationData = {
       evaluator_id: currentUser.id,
-      evaluatee_id: parseInt(evaluateeValue()),
+      evaluatee_id: parseInt(seleccion.id),
       form_id: currentForm.id,
       period_id: activePeriod.id,
       is_anonymous: anonCheck.checked,
@@ -750,8 +727,8 @@ export const setupEvaluate = async () => {
       // El borrador nunca se borro, pero se reescribe con lo ultimo respondido
       // por si el usuario cambio algo despues de cargarlo.
       localStorage.setItem(draftKey(),  JSON.stringify({
-        role: targetRole.value,
-        evaluatee: evaluateeValue(),
+        role: seleccion.role,
+        evaluatee: seleccion.id,
         anonymous: anonCheck.checked,
         answers: draftAnswers.reduce((acc, curr) => {
           acc[curr.question_id] = curr.score !== null ? curr.score.toString() : curr.comment;
@@ -775,54 +752,57 @@ export const setupEvaluate = async () => {
     }
   });
 
-  // --- PRESELECCIÓN POR QUERY PARAMS (va al final a proposito) ---
+  // --- ENTRADA A LA VISTA (va al final a proposito) ---
   //
-  // Se llega a esta vista de dos formas y no deben tratarse igual:
-  //   a) desde una tarjeta de /evaluables -> rol y persona YA estan decididos;
-  //      volver a preguntarlos es pedir dos veces lo mismo.
-  //   b) entrando directo a /evaluations/new -> hay que elegir ambos.
+  // Tres caminos, ninguno queda sin salida:
+  //   a) tarjeta de /evaluables (?evaluatee_id=&role=) -> persona YA decidida:
+  //      sin modal, directo al formulario.
+  //   b) enlace del sidebar (/evaluations/new sin params) -> se abre el modal.
+  //   c) sin nadie pendiente en el periodo -> estado "completado", sin modal.
   //
-  // Corre aqui, no arriba, porque `handleRoleChange()` usa `renderQuestions`,
-  // que se declara con `const` mas arriba en el cuerpo pero DESPUES del punto
-  // donde antes se llamaba. `const` no se hoistea: aquello lanzaba un
-  // ReferenceError por zona muerta temporal y abortaba toda la preseleccion.
-  const aplicarPreseleccion = async () => {
+  // Corre aqui, no arriba, porque toca `renderQuestions`, declarada con `const`
+  // mas abajo en el cuerpo. `const` no se hoistea: llamarla antes entra en la
+  // zona muerta temporal y lanza un ReferenceError que abortaba toda la entrada.
+  const entrarALaVista = async () => {
+    // Sin periodo activo no hay nada que evaluar. El toast de carga ya avisó;
+    // aquí se deja un estado claro en vez del modal o del "completado" (que
+    // mentiría: no es que terminó, es que no hay periodo). Ver regla 5.
+    if (!activePeriod) {
+      document.getElementById("anonymous-section")?.classList.add("hidden");
+      document.getElementById("wizard-buttons")?.classList.add("hidden");
+      progressContainer.classList.add("hidden");
+      qContainer.innerHTML = `
+        <div class="rounded-[2rem] border border-dashed border-[var(--border-main)] bg-[var(--bg-panel)] p-10 text-center">
+          <p class="text-sm text-[var(--text-muted)]">No hay un periodo de evaluación activo en este momento.</p>
+        </div>`;
+      return;
+    }
+
     const params = new URLSearchParams(window.location.search);
     const preselectedRole = params.get("role");
     const preselectedId = params.get("evaluatee_id");
 
-    // El rol se preselecciona aunque no venga la persona. El guard anterior
-    // exigia los dos, asi que un id ausente dejaba tambien el rol vacio.
-    if (preselectedRole) {
-      // setDropdownValue y no `.value = x`: este dropdown es un input oculto
-      // mas un boton; asignar `.value` deja la etiqueta visible en el
-      // placeholder y el usuario ve "Selecciona un rol" sobre un valor puesto.
-      setDropdownValue('target-role', preselectedRole);
-      await handleRoleChange();
-    } else if (pendientesEnElPeriodo().length === 0) {
-      // Sin rol en la URL, `handleRoleChange` no correria y la vista quedaria
-      // en "Primero selecciona un rol..." aunque ya no haya nada que evaluar.
-      // Se informa el estado global de entrada, con el filtro en su default.
+    // Preseleccion valida solo si la persona existe entre los evaluables. El rol
+    // se toma de la URL si viene, o se deriva de la persona (defensa por si la
+    // URL trae uno incoherente con los roles del usuario).
+    const preUser = preselectedId
+      ? allUsers.find(u => String(u.id) === String(preselectedId))
+      : null;
+
+    if (preUser) {
+      const role = preselectedRole || derivarRol(preUser);
+      await seleccionarEvaluado(preUser, role);
+      return;
+    }
+
+    if (pendientesEnElPeriodo().length === 0) {
       mostrarEstadoCompletado();
+      return;
     }
 
-    // La persona va DESPUES de handleRoleChange, que es quien repuebla el
-    // dropdown con la gente de ese rol: antes, la opcion no existe en el DOM.
-    const personaLista = preselectedId
-      ? setDropdownValue('evaluatee', preselectedId)
-      : false;
-
-    // Con ambos resueltos se ocultan los selectores. No se eliminan del DOM:
-    // el resto del flujo (borrador, envio) sigue leyendo #evaluatee.
-    if (preselectedRole && personaLista) {
-      document.getElementById('target-role-container')?.classList.add('hidden');
-      document.getElementById('evaluatee-container')?.classList.add('hidden');
-      // A mano: el listener de 'change' no dispara cuando la seleccion la hace
-      // el codigo. Sin esto el formulario se quedaria oculto tras
-      // `pedirQueElijaPersona()` pese a venir la persona resuelta en la URL.
-      mostrarFormulario(preselectedRole);
-    }
+    // Sin preseleccion y con pendientes: el modal es la unica via de eleccion.
+    abrirModalSeleccion();
   };
 
-  await aplicarPreseleccion();
+  await entrarALaVista();
 };
