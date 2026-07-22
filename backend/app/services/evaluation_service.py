@@ -201,11 +201,3 @@ class EvaluationService:
 evaluation_service = EvaluationService()
 
 # Facade methods to preserve exact backward compatibility for old imports
-def create_evaluation(eval_data: EvaluationCreate):
-    return evaluation_service.create_evaluation(eval_data)
-
-def get_evaluations_by_evaluator(evaluator_id: int, skip: int = 0, limit: int = 100):
-    return evaluation_service.get_evaluations_by_evaluator(evaluator_id, skip, limit)
-
-def get_evaluations_by_evaluatee(evaluatee_id: int, period_id: Optional[int] = None, hide_evaluator: bool = False, skip: int = 0, limit: int = 100):
-    return evaluation_service.get_evaluations_by_evaluatee(evaluatee_id, period_id, hide_evaluator, skip, limit)

@@ -129,24 +129,3 @@ class UserService:
 
 # Exportar una instancia global por compatibilidad y simplicidad
 user_service = UserService()
-
-def get_users(role: Optional[str] = None):
-    return user_service.get_users(role)
-
-def get_evaluables():
-    return user_service.get_evaluables()
-
-def get_user(user_id: int):
-    return user_service.get_user(user_id)
-
-def get_user_by_email(email: str):
-    return user_service.get_user_by_email(email)
-
-def create_user(user: UserCreate):
-    return user_service.create_user(user)
-
-def update_user(user_id: int, user: UserUpdate):
-    return user_service.update_user(user_id, user)
-
-def delete_user(user_id: int):
-    return user_service.delete_user(user_id)

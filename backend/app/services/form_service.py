@@ -205,18 +205,3 @@ class FormService:
             return {"action": "archived", "evaluations_count": usage}
 
 form_service = FormService()
-
-def get_forms(role_name: Optional[str] = None, kind: str = "form", include_archived: bool = False):
-    return form_service.get_forms(role_name, kind, include_archived)
-
-def get_form(form_id: int):
-    return form_service.get_form(form_id)
-
-def create_form(payload: FormCreate):
-    return form_service.create_form(payload)
-
-def update_form(form_id: int, payload: FormUpdate):
-    return form_service.update_form(form_id, payload)
-
-def delete_form(form_id: int):
-    return form_service.delete_form(form_id)

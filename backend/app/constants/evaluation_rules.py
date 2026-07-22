@@ -17,7 +17,7 @@ obliga a leer dobles negaciones en cada `if` y fue justo donde se colo un bug
 -- la version anterior devolvia "si puede" en la rama de Team Leader y "no
 puede" en la de tutor, con el mismo nombre para ambas.
 """
-from .evaluation_constants import ROLE_TEAM_LEADER
+from app.constants.role_constants import ROLE_TEAM_LEADER
 
 
 def can_evaluate_by_clan(evaluator_clan, evaluatee_roles, evaluatee_clan, tl_clans) -> bool:

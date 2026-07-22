@@ -1,5 +1,4 @@
 from typing import List, Dict, Any
-from sqlalchemy import text
 from app.config.database import engine
 from app.repositories.metrics_repository import MetricsRepository
 from app.services.settings_service import settings_service
@@ -115,9 +114,11 @@ class MetricsService:
         # Si estamos viendo todos los periodos (period_id == 0), multiplicamos por la cantidad total de periodos
         possible_evaluations = total_coders * 2
         if period_id == 0:
-            total_periods_query = text("SELECT COUNT(id) FROM periods")
             with engine.connect() as conn:
-                total_periods = conn.execute(total_periods_query).scalar() or 1
+                # `or 1` y no `or 0`: es un DENOMINADOR. Con 0 periodos el
+                # calculo de participacion se anularia; se conserva el valor
+                # que ya tenia antes de mover la query al repositorio.
+                total_periods = self.repo.get_total_periods(conn) or 1
             possible_evaluations *= total_periods
             
         participation_rate = round((total_evaluations / possible_evaluations) * 100) if possible_evaluations else 0
@@ -136,6 +137,3 @@ metrics_service = MetricsService()
 
 def get_score_history(evaluatee_id: int):
     return metrics_service.get_score_history(evaluatee_id)
-
-def get_metrics_summary(period_id: int):
-    return metrics_service.get_metrics_summary(period_id)

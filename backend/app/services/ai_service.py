@@ -174,7 +174,7 @@ Por favor, proporciona un resumen estructurado con un tono constructivo y profes
         from app.services.metrics_service import metrics_service
         import logging
         logger = logging.getLogger(__name__)
-        logger.info(f"Background task starting: generating missing AI summaries for period {period_id}")
+        logger.info("Background task starting: generating missing AI summaries for period %s", period_id)
 
         try:
             # Get all evaluatees for the period
@@ -190,20 +190,18 @@ Por favor, proporciona un resumen estructurado con un tono constructivo y profes
                     cached = self.repo.get_cached_summary(conn, evaluatee_id, period_id)
                     if not cached:
                         try:
-                            logger.info(f"Generating AI summary for evaluatee {evaluatee_id} in period {period_id}")
+                            logger.info("Generating AI summary for evaluatee %s in period %s", evaluatee_id, period_id)
                             self.get_or_generate_ai_summary(evaluatee_id, period_id)
                             generated_count += 1
                         except Exception as e:
-                            logger.error(f"Error generating summary for evaluatee {evaluatee_id}: {e}")
+                            logger.exception("Error generating summary for evaluatee %s", evaluatee_id)
             
-            logger.info(f"Background task finished: generated {generated_count} missing summaries.")
+            logger.info("Background task finished: generated %s missing summaries.", generated_count)
         except Exception as e:
-            logger.error(f"Error in background task generate_missing_summaries_for_period: {e}")
+            logger.exception("Error in background task generate_missing_summaries_for_period")
 
 ai_service = AIService()
 
-def get_or_generate_ai_summary(evaluatee_id: int, period_id: int):
-    return ai_service.get_or_generate_ai_summary(evaluatee_id, period_id)
 
 def check_question_category_coherence(question_text: str, category: str):
     return ai_service.check_question_category_coherence(question_text, category)

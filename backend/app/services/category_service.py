@@ -54,15 +54,3 @@ class CategoryService:
         return True
 
 category_service = CategoryService()
-
-def get_categories():
-    return category_service.get_categories()
-
-def create_category(name: str):
-    return category_service.create_category(name)
-
-def update_category(category_id: int, name: str):
-    return category_service.update_category(category_id, name)
-
-def delete_category(category_id: int, admin_id: int = None):
-    return category_service.delete_category(category_id, admin_id)
