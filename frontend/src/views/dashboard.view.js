@@ -206,39 +206,6 @@ const renderDashboardContent = async (content, user, name, role) => {
     `;
 
     content.innerHTML = html;
-    
-    // Trigger reflow to start fade-in animation
-    const dashboardCards = document.getElementById('dashboard-cards');
-    if (dashboardCards) {
-      void dashboardCards.offsetWidth;
-      dashboardCards.classList.remove('opacity-0');
-      dashboardCards.classList.add('opacity-100');
-    }
-
-    // Run counter animations
-    document.querySelectorAll('.animate-number').forEach(el => {
-      const text = el.innerText;
-      const target = parseFloat(el.getAttribute('data-value'));
-      if (isNaN(target) || target === 0) return; // Skip non-numeric or 0 values
-
-      const duration = 1200;
-      const startTime = performance.now();
-      const animate = (currentTime) => {
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const easeProgress = 1 - Math.pow(1 - progress, 3); // Cubic ease-out
-        const current = (easeProgress * target);
-        
-        el.innerText = Number.isInteger(target) ? Math.round(current) : current.toFixed(1);
-        
-        if (progress < 1) {
-          requestAnimationFrame(animate);
-        } else {
-          el.innerText = text;
-        }
-      };
-      requestAnimationFrame(animate);
-    });
 
     // Initialize participation doughnut chart
     const pChartCtx = document.getElementById('participation-chart');
@@ -413,14 +380,14 @@ const renderDashboardContent = async (content, user, name, role) => {
     const myStats = summary.evaluatees?.find(e => e.id === user.id) || { n_evals: 0, average_score: 0, status: "Sin datos" };
 
     html += `
-      ${StatsCard({ title: "Evaluaciones Recibidas", value: myStats.n_evals, icon: icons.users, description: "En el periodo actual" })}
-      ${StatsCard({ title: "Puntaje Promedio ICP", value: (myStats.average_score ?? 0) + "/100", icon: icons.star, description: "Estado: " + myStats.status })}
+      ${StatsCard({ title: "Evaluaciones Recibidas", value: `<span class="animate-number" data-value="${myStats.n_evals}">${myStats.n_evals}</span>`, icon: icons.users, description: "En el periodo actual" })}
+      ${StatsCard({ title: "Puntaje Promedio ICP", value: `<span class="animate-number" data-value="${myStats.average_score ?? 0}">${myStats.average_score ?? 0}</span><span class="text-2xl text-[var(--text-muted)] ml-1">/100</span>`, icon: icons.star, description: "Estado: " + myStats.status })}
     `;
 
     if (role === "tutor") {
       const myEvals = await evaluationService.getByEvaluator(user.id, 100);
       const pending = myEvals.filter(isPendingParticipation).length;
-      html += StatsCard({ title: "Evaluaciones por Hacer", value: pending, icon: icons.clock, description: "Pendientes de enviar" });
+      html += StatsCard({ title: "Evaluaciones por Hacer", value: `<span class="animate-number" data-value="${pending}">${pending}</span>`, icon: icons.clock, description: "Pendientes de enviar" });
     }
     
     html += `</div>`;
@@ -436,8 +403,8 @@ const renderDashboardContent = async (content, user, name, role) => {
     window.__coderStats = { completed, pending };
 
     html += `
-      ${StatsCard({ title: "Completadas", value: completed, icon: icons.check, description: "Evaluaciones enviadas" })}
-      ${StatsCard({ title: "Borradores", value: pending, icon: icons.clock, description: "Evaluaciones en curso" })}
+      ${StatsCard({ title: "Completadas", value: `<span class="animate-number" data-value="${completed}">${completed}</span>`, icon: icons.check, description: "Evaluaciones enviadas" })}
+      ${StatsCard({ title: "Borradores", value: `<span class="animate-number" data-value="${pending}">${pending}</span>`, icon: icons.clock, description: "Evaluaciones en curso" })}
       
       ${Card({
       className: "h-full flex flex-col p-6 lg:row-span-2 shadow-sm border border-[var(--border-main)]",
@@ -537,4 +504,37 @@ const renderDashboardContent = async (content, user, name, role) => {
       }).catch(err => console.error("Error loading Chart.js", err));
     }
   }
+  
+  // Trigger reflow to start fade-in animation for all roles
+  const dashboardCards = document.getElementById('dashboard-cards');
+  if (dashboardCards) {
+    void dashboardCards.offsetWidth;
+    dashboardCards.classList.remove('opacity-0');
+    dashboardCards.classList.add('opacity-100');
+  }
+
+  // Run counter animations for all roles
+  document.querySelectorAll('.animate-number').forEach(el => {
+    const text = el.innerText;
+    const target = parseFloat(el.getAttribute('data-value'));
+    if (isNaN(target) || target === 0) return; // Skip non-numeric or 0 values
+
+    const duration = 1200;
+    const startTime = performance.now();
+    const animate = (currentTime) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easeProgress = 1 - Math.pow(1 - progress, 3); // Cubic ease-out
+      const current = (easeProgress * target);
+      
+      el.innerText = Number.isInteger(target) ? Math.round(current) : current.toFixed(1);
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        el.innerText = text;
+      }
+    };
+    requestAnimationFrame(animate);
+  });
 };
