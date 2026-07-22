@@ -12,6 +12,7 @@ import { escapeHtml } from "../../utils/validators";
 import {
   Chart, LineController, LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Filler,
 } from "chart.js";
+import { settingsService } from "../../services/settings.service.js";
 
 Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Filler);
 
@@ -175,6 +176,10 @@ export const setupMetrics = async () => {
   let currentCohortFilter = "all";
   let currentRealCohortFilter = "all";
   let currentClanFilter = "all";
+  const settings = await settingsService.getSettings();
+  const MIN_EVALUATIONS_FOR_ICP = settings.min_evaluations_for_icp;
+  const DEFAULT_ICP = settings.default_icp;
+  
   
   let currentSearchQuery = "";
   let currentFilteredList = [];
@@ -467,7 +472,7 @@ export const setupMetrics = async () => {
     if (!hasValidScores) {
       gridContainer.innerHTML = emptyStateComponent(
         "Esperando más evaluaciones",
-        "Aún no hay suficientes datos. Debemos recibir un mínimo de evaluaciones (al menos 3 por persona) para poder calcular y mostrar las métricas del ICP."
+        `Aún no hay suficientes datos. Debemos recibir un mínimo de evaluaciones (al menos ${MIN_EVALUATIONS_FOR_ICP} por persona) para poder calcular y mostrar las métricas del ICP.`
       );
       if (paginationContainer) paginationContainer.innerHTML = "";
       return;

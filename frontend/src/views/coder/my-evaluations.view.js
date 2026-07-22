@@ -71,7 +71,9 @@ export const setupMyEvaluations = async () => {
         evaluationService.getByEvaluator(currentUser.id),
         userService.get(),
         periodService.get(),
-        formsService.getForms()
+        // getFormsForHistory (no getForms): incluye archivados, si no el
+        // historial perderia el titulo de los formularios ya retirados.
+        formsService.getFormsForHistory()
       ]);
 
       const usersMap = new Map(users.map(u => [u.id, u]));

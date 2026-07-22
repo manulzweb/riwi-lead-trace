@@ -18,10 +18,12 @@ class QuestionService:
 
     def _assert_no_active_period(self, conn, form_id: int):
         from sqlalchemy import text
-        query = text("SELECT is_form FROM forms WHERE id = :form_id")
+        query = text("SELECT is_template FROM forms WHERE id = :form_id")
         result = conn.execute(query, {"form_id": form_id}).fetchone()
-        
-        # Si es un form activo (no es plantilla), validamos
+
+        # Solo el instrumento VIVO esta protegido (regla 6): editarlo con un
+        # periodo abierto dejaria respuestas ya enviadas atadas a preguntas o
+        # pesos distintos. Una plantilla es inerte, asi que se edita cuando sea.
         if result and not result[0]:
             if self.repo.has_active_period(conn):
                 raise ActivePeriodExistsException("No se pueden editar preguntas mientras haya un periodo activo. Cierra el periodo primero.")

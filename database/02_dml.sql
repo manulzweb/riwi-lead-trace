@@ -80,10 +80,11 @@ INSERT INTO categories (name) VALUES
     ('Disponibilidad e interacción'),
     ('General');
 
--- Plantillas: una para Team Leader, una para Tutor
-INSERT INTO forms (id, title, target_role_id) VALUES
-    (1, 'Evaluación de Team Leader', 2),
-    (2, 'Evaluación de Tutor', 3);
+-- Formularios VIVOS (is_template = FALSE): los que responden los Coders.
+-- Cada uno pertenece a un rol evaluable concreto.
+INSERT INTO forms (id, title, target_role_id, is_template) VALUES
+    (1, 'Evaluación de Team Leader', 2, FALSE),
+    (2, 'Evaluación de Tutor', 3, FALSE);
 
 -- Preguntas de la plantilla de Team Leader (id=1)
 -- Categorías del ICP para TL, basadas en el MCA-21 (competencias de mentoría).
@@ -116,6 +117,39 @@ INSERT INTO questions (form_id, text, category_id, input_type, sort_order, weigh
     (2, '¿El Tutor está disponible en los canales de soporte (Slack/Discord) dentro del horario?', (SELECT id FROM categories WHERE name = 'Disponibilidad e interacción'), 'scale', 7, 12.50),
     (2, '¿Resuelve tus bloqueos técnicos puntuales en un tiempo razonable cuando le consultas?', (SELECT id FROM categories WHERE name = 'Disponibilidad e interacción'), 'scale', 8, 12.50),
     (2, 'Comentarios adicionales sobre tu Tutor (¿qué debería mantener y qué debería cambiar?)', (SELECT id FROM categories WHERE name = 'General'), 'text', 9, 0);
+
+
+-- ---------------------------------------------------------------------
+-- PLANTILLAS DE FÁBRICA (is_template = TRUE, target_role_id = NULL)
+-- ---------------------------------------------------------------------
+-- Son INERTES: GET /forms?target_role=... nunca las devuelve, así que ningún
+-- Coder las responde (ver el parámetro `kind` en form_repository).
+-- Existen para que el Admin tenga de dónde partir sin haber creado ninguna.
+-- target_role_id = NULL las hace genéricas: el rol se elige al instanciarlas
+-- (lo permite chk_form_role_required, que solo exige rol si is_template = FALSE).
+-- Ambas nacen BALANCEADAS (5 escala x 20.00 = 100.00), así que instanciarlas
+-- produce un formulario válido sin tener que reponderar.
+INSERT INTO forms (id, title, description, target_role_id, is_template) VALUES
+    (3, 'Acompañamiento y liderazgo', 'Plantilla base centrada en cómo la persona acompaña, comunica y hace crecer al equipo.', NULL, TRUE),
+    (4, 'Claridad técnica y didáctica', 'Plantilla base centrada en la calidad de la explicación técnica y el valor de lo aprendido.', NULL, TRUE);
+
+-- Preguntas de la plantilla 'Acompañamiento y liderazgo' (id=3)
+INSERT INTO questions (form_id, text, category_id, input_type, sort_order, weight_percent) VALUES
+    (3, '¿Se comunica de forma clara y oportuna a lo largo del Sprint?', (SELECT id FROM categories WHERE name = 'Comunicación efectiva'), 'scale', 1, 20.00),
+    (3, '¿Deja claro lo que se espera de ti en cada entrega?', (SELECT id FROM categories WHERE name = 'Alineación de expectativas'), 'scale', 2, 20.00),
+    (3, '¿Te trata con respeto y se interesa por tu proceso individual?', (SELECT id FROM categories WHERE name = 'Cercanía individual'), 'scale', 3, 20.00),
+    (3, '¿Está disponible cuando necesitas resolver un bloqueo?', (SELECT id FROM categories WHERE name = 'Disponibilidad e interacción'), 'scale', 4, 20.00),
+    (3, '¿Te impulsa a resolver por tu cuenta antes de darte la respuesta?', (SELECT id FROM categories WHERE name = 'Fomento de la independencia'), 'scale', 5, 20.00),
+    (3, 'Comentarios adicionales (¿qué debería mantener y qué debería cambiar?)', (SELECT id FROM categories WHERE name = 'General'), 'text', 6, 0);
+
+-- Preguntas de la plantilla 'Claridad técnica y didáctica' (id=4)
+INSERT INTO questions (form_id, text, category_id, input_type, sort_order, weight_percent) VALUES
+    (4, '¿Estructura las explicaciones de forma ordenada y fácil de seguir?', (SELECT id FROM categories WHERE name = 'Claridad y organización'), 'scale', 1, 20.00),
+    (4, '¿Verifica que entendiste antes de avanzar al siguiente tema?', (SELECT id FROM categories WHERE name = 'Verificación de comprensión'), 'scale', 2, 20.00),
+    (4, '¿Lo que enseña aporta valor técnico real y actualizado?', (SELECT id FROM categories WHERE name = 'Valor del aprendizaje'), 'scale', 3, 20.00),
+    (4, '¿Te da retroalimentación que te ayuda a mejorar tus buenas prácticas?', (SELECT id FROM categories WHERE name = 'Desarrollo profesional'), 'scale', 4, 20.00),
+    (4, '¿Explica el porqué de las decisiones técnicas, no solo el cómo?', (SELECT id FROM categories WHERE name = 'Comunicación efectiva'), 'scale', 5, 20.00),
+    (4, 'Comentarios adicionales (¿qué debería mantener y qué debería cambiar?)', (SELECT id FROM categories WHERE name = 'General'), 'text', 6, 0);
 
 
 -- Usuarios reales exportados de Esthercita
