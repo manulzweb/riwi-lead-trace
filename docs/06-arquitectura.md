@@ -185,7 +185,8 @@ render de forma local, sin un mecanismo de suscripcion compartido.
 |------|-----------------|-------|
 | `routes/` | Definir endpoints, validar I/O con Pydantic, codigos HTTP | No contiene logica de negocio |
 | `services/` | **Logica de negocio** (reglas, calculos, orquestacion) | No conoce detalles HTTP; delega el acceso a datos a `repositories/` |
-| `repositories/` | **Acceso a datos**: las queries SQL (`text()`), un archivo por entidad | No contiene reglas de negocio |
+| `repositories/` | **Acceso a datos**: las queries SQL (`text()`), un archivo por entidad. Heredan de `BaseRepository` (`fetch_one`/`fetch_all`/`fetch_scalar`/`execute`), que solo normaliza el consumo del `Result` | No contiene reglas de negocio. **No capturan excepciones** salvo para traducir `IntegrityError` a una excepcion del dominio |
+| `constants/` | Valores compartidos y **reglas puras** sin BD (ej. `can_evaluate_by_clan`) | Se testean sin levantar MySQL |
 | `schemas/` | Contratos Pydantic (validacion/serializacion) | Frontera de datos; nunca exponen campos sensibles (ej. `password_hash`) |
 
 > **No hay capa de autenticacion en el backend.** El proyecto no usa JWT ni ningun otro mecanismo
@@ -351,7 +352,14 @@ Consecuencias de diseno:
 **Backend**
 - Validacion de entrada con Pydantic -> `422` automatico con detalle por campo.
 - Errores de negocio -> `HTTPException` con codigo correcto (`400/403/404/409`).
-- Manejadores globales para excepciones no controladas -> `500` con cuerpo JSON consistente; logging.
+- Manejadores globales para excepciones no controladas -> `500` con cuerpo JSON consistente y un `error_id` opaco (UUID) que se imprime en el log para correlacionar sin filtrar la excepcion al cliente.
+- **Un solo log por error.** Los repositorios ya no capturan `SQLAlchemyError` para loguear y relanzar: eso generaba dos registros del mismo fallo (repositorio + route) y ninguno con traceback. Ahora la excepcion sube hasta el route, que es la unica capa que sabe que endpoint y que parametros venian, y ahi se registra una vez con `logger.exception()`.
+- **Logging configurado en `config/logging_config.py`** (solo stdlib): timestamp, nivel, nombre del logger, mensaje y traceback. Sin esa configuracion, Python cae al handler `lastResort` y todo sale a stderr sin formato ni traza.
+
+> **Pendiente documentado:** los 34 `try/except` de los routes que traducen excepciones de
+> dominio a HTTP podrian reducirse a handlers globales por clase base. El plan y el conflicto
+> que hoy lo bloquea (`InvalidRoleException` mapea a **403** en un modulo y a **422** en otro)
+> estan en `docs/superpowers/specs/2026-07-22-exception-handlers-plan.md`.
 
 **Frontend**
 - `api.service.js` adjunta `status`/`detail` a los errores de red y codigos no-2xx.

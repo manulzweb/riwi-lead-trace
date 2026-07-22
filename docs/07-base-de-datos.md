@@ -95,8 +95,29 @@ Justificacion ampliada en [`06-arquitectura.md`](./06-arquitectura.md).
 | id | INT PK | |
 | title | VARCHAR(120) | |
 | description | VARCHAR(255) NULL | instrucciones opcionales para quien llena el formulario |
-| target_role_id | INT FK -> roles.id | rol que se evalua (team_leader/tutor) |
-| is_active | BOOLEAN | una sola plantilla activa por rol a la vez: crear una nueva (`POST /forms`) desactiva cualquier otra del mismo `target_role_id` |
+| target_role_id | INT FK -> roles.id **NULL** | rol que se evalua (team_leader/tutor). `NULL` **solo** en plantillas genericas: el rol se elige al instanciarlas. Lo aplica el CHECK `chk_form_role_required`, no el servicio |
+| is_active | BOOLEAN | un solo formulario vivo activo por rol a la vez: crear uno nuevo (`POST /forms`) desactiva cualquier otro del mismo `target_role_id`. **No desactiva plantillas** |
+| is_template | BOOLEAN | `TRUE` = **plantilla base** reutilizable e **inerte** (ningun Coder la responde). `FALSE` = **formulario vivo**. La columna se llamaba `is_form` y significaba lo contrario de lo que decia su nombre |
+| archived_at | TIMESTAMP NULL | retirado de la grilla del Admin **sin perder historial**. Distinto de `is_active`: ese lo recibe *todo* formulario superado al activar uno nuevo, asi que reusarlo esconderia cada formulario reemplazado |
+
+> **`chk_form_role_required`** — `CHECK (is_template = TRUE OR target_role_id IS NOT NULL)`.
+> Una plantilla puede no tener rol; un formulario vivo **siempre** debe tenerlo.
+> Vive en MySQL, no en Python, asi que ningun endpoint nuevo puede saltarselo.
+>
+> Nota: `fk_form_role` es la **unica FK del esquema sin `ON UPDATE CASCADE`**. No es
+> un olvido: MySQL prohibe que una columna con accion referencial participe en un
+> CHECK (ERROR 3823), y aqui el CHECK vale mas — `roles` es un catalogo sembrado
+> cuyos ids no cambian nunca.
+
+> **Borrado que preserva el historial** — `DELETE /forms/{id}` devuelve **`200`**
+> (no `204`) con `{action: "deleted"|"archived", evaluations_count}`:
+> - sin evaluaciones -> borrado **duro** (preguntas + formulario);
+> - con evaluaciones -> **archivado** (`archived_at = NOW()`).
+>
+> El servicio cuenta evaluaciones solo para **elegir el camino**; si el `DELETE`
+> viola una FK igual, captura `IntegrityError` dentro de un `begin_nested()` y
+> archiva. La BD es la autoridad final: el peor caso es "se archivo cuando
+> esperabas un borrado", **nunca** "se perdio historial".
 
 ### `categories`
 | Atributo | Tipo | Notas |
@@ -247,7 +268,7 @@ roles (id PK, name)                                                     │
         users (id PK, full_name, email, password_hash, clan_id FK?, is_active, created_at) >──┘
         │1                         │1 (evaluatee)        │1 (evaluator, via evaluation_submissions)
         │                          │                     │
-        └──< forms (id PK, title, target_role_id FK, is_active)
+        └──< forms (id PK, title, target_role_id FK?, is_active, is_template, archived_at)
             │1
             └──< questions (id PK, form_id FK, text, category_id FK, input_type, sort_order)
                       │N
@@ -282,7 +303,8 @@ users(id, full_name, email, password_hash, clan_id->clanes?, is_active, created_
 user_roles(user_id->users, role_id->roles)         -- Relación N:M para multiples roles
 team_leader_clans(user_id->users, clan_id->clanes) -- Relación N:M exclusiva para TLs
 periods(id, name, starts_at, ends_at, is_active)
-forms(id, title, description, target_role_id->roles, is_active)
+forms(id, title, description, target_role_id->roles?, is_active, is_template, archived_at)
+                                                   -- target_role_id NULL solo si is_template (CHECK chk_form_role_required)
 categories(id, name)
 questions(id, form_id->forms, text, category_id->categories, input_type, sort_order, weight_percent)
 evaluations(id, evaluatee_id->users, form_id->forms,
@@ -308,7 +330,9 @@ ai_feedback_cache(id, evaluatee_id->users, period_id->periods, summary, model,
   almacenada en ninguna parte**, asi que no hay consulta capaz de revelarla. El precio, aceptado a
   proposito: el propio autor **tampoco** puede recuperar sus respuestas anonimas (si el pudiera, el
   admin tambien podria).
-- **Plantillas dinamicas:** `forms` + `questions` permiten cambiar criterios sin tocar codigo. El Admin puede **editar texto y activar/desactivar** preguntas (`questions.is_active`), **solo con periodo cerrado** y **versionando** (fila nueva + desactivar la anterior): asi las respuestas historicas conservan el texto que realmente respondieron y el ICP no se contamina. Ademas puede **crear plantillas nuevas** (`POST /forms`, con sus preguntas iniciales) y **agregar/quitar preguntas** de una plantilla existente (`POST`/`DELETE /questions`) — tambien solo con periodo cerrado; crear/quitar nunca versiona (no hay historial previo que preservar), solo desactiva. `target_role` esta restringido a `team_leader`/`tutor` (los unicos roles evaluables); `input_type` acepta `scale`\|`text`\|`yes_no` (`yes_no` se excluye del ICP igual que `text`).
+- **Plantillas dinamicas:** `forms` + `questions` permiten cambiar criterios sin tocar codigo. El Admin puede **editar texto y activar/desactivar** preguntas (`questions.is_active`), **solo con periodo cerrado** y **versionando** (fila nueva + desactivar la anterior): asi las respuestas historicas conservan el texto que realmente respondieron y el ICP no se contamina. Ademas puede **crear plantillas nuevas** (`POST /forms`, con sus preguntas iniciales) y **agregar/quitar preguntas** de una plantilla existente (`POST`/`DELETE /questions`) — tambien solo con periodo cerrado; crear/quitar nunca versiona (no hay historial previo que preservar), solo desactiva.
+- **Plantillas base inertes (ADMIN-03):** `forms.is_template` distingue la **plantilla** (reutilizable, nunca respondida, puede no tener rol) del **formulario vivo**. Como la plantilla no toca el instrumento en uso, **se crea y edita con periodo activo**; el formulario vivo no, porque crearlo desactiva el anterior de ese rol.
+  Lo inerte **depende de un filtro de aplicacion, no del esquema**: `GET /forms` es seguro por defecto (`kind=form`, `archived=exclude`), de modo que quien olvide los parametros recibe solo el formulario vivo y activo. Ese default es lo unico que evita el bug que ya ocurrio — el repositorio no filtraba `is_template` ni `is_active`, ordenaba por `id DESC` y el front tomaba `forms[0]`, asi que **crear una plantilla la convertia en el formulario que respondian los coders**. Toda query nueva sobre `forms` debe mantener ese filtro. `target_role` esta restringido a `team_leader`/`tutor` (los unicos roles evaluables); `input_type` acepta `scale`\|`text`\|`yes_no` (`yes_no` se excluye del ICP igual que `text`).
 - **Ventana de evaluacion controlada:** `periods.is_active` define si hay formularios disponibles. Solo **un** periodo activo a la vez (regla en `services`, transaccional); sin periodo activo, no se aceptan evaluaciones nuevas ni envios.
 - **Una respuesta por pregunta** via `evaluation_details` (normalizado), facilitando metricas por criterio/categoria.
 - **Integridad de unicidad:** un evaluador no puede evaluar dos veces al mismo evaluado en el mismo
