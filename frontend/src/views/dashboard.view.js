@@ -128,7 +128,7 @@ const renderDashboardContent = async (content, user, name, role) => {
         <p class="text-[var(--text-muted)] mt-1">Aquí tienes un resumen de tu actividad en LeadTrace.</p>
       </div>
       ${['admin', 'team_leader', 'tutor'].includes(role) && currentPeriods.length > 0 ? `
-        <div class="flex flex-col sm:flex-row gap-4 z-20 relative w-full sm:w-auto">
+        <div class="flex flex-col md:flex-row gap-4 z-20 relative w-full md:w-auto flex-wrap justify-end">
           <div class="w-full sm:w-48">
             <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="dashboard-period-filter-btn">Periodo</label>
             ${dropdownComponent('dashboard-period-filter', currentPeriods.map(p => ({
