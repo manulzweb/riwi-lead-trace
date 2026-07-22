@@ -41,7 +41,7 @@ export const renderEvaluate = () => `
       <p class="mt-2 text-[var(--text-muted)]">Completa el formulario estructurado para evaluar a tu Team Leader o Tutor.</p>
     </div>
 
-    <div class="mb-8 hidden sticky top-0 z-40 bg-[var(--bg-base)]/80 py-4 backdrop-blur-md border-b border-[var(--border-main)] -mx-6 px-6" id="progress-container">
+    <div class="mb-8 hidden sticky top-20 z-40 bg-[var(--bg-secondary)]/30 py-4 backdrop-blur-md border-[var(--border-main)] mx-6 px-6 rounded-full max-w-4xl" id="progress-container">
       <div class="flex justify-between items-center mb-2">
         <div class="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
           <span id="progress-text">0 de 0 respondidas</span> (<span id="progress-percentage">0%</span>)

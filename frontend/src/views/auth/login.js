@@ -4,7 +4,6 @@ import { renderRoute } from "../../router/router";
 import { showToast } from "../../components/alerts";
 import { setButtonLoadingState, createDebouncedValidator, validateSync, showFieldError } from "../../utils/formUtils";
 import { backgroundComponent } from "../../components/background.js";
-import { langSwitcherComponent, setupLangSwitcher } from "../../components/lang-switcher.js";
 
 const loginSchema = {
   email: z.string().min(1, "El correo es obligatorio").email("Formato de correo inválido"),
