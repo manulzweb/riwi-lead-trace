@@ -228,6 +228,7 @@ const renderDashboardContent = async (content, user, name, role) => {
       const pending = Math.max(0, possible - total);
 
       import('chart.js/auto').then(({ default: Chart }) => {
+        Chart.defaults.font.family = rootStyle.getPropertyValue('--font-body').trim() || "'Open Sans', sans-serif";
         new Chart(pChartCtx, {
           type: 'doughnut',
           data: {
@@ -574,6 +575,7 @@ const renderDashboardContent = async (content, user, name, role) => {
       const total = chartCompleted + chartPending;
 
       import('chart.js/auto').then(({ default: Chart }) => {
+        Chart.defaults.font.family = rootStyle.getPropertyValue('--font-body').trim() || "'Open Sans', sans-serif";
         new Chart(ctx, {
           type: 'doughnut',
           data: {
@@ -614,7 +616,8 @@ const renderDashboardContent = async (content, user, name, role) => {
 
               ctx.restore();
               const fontSize = (height / 110).toFixed(2);
-              ctx.font = "bold " + fontSize + "em sans-serif";
+              const fontFamily = rootStyle.getPropertyValue('--font-body').trim() || "'Open Sans', sans-serif";
+              ctx.font = `bold ${fontSize}em ${fontFamily}`;
               ctx.textBaseline = "middle";
               ctx.fillStyle = rootStyle.getPropertyValue('--text-main').trim() || "#000";
 
@@ -624,7 +627,7 @@ const renderDashboardContent = async (content, user, name, role) => {
 
               ctx.fillText(text, textX, textY);
 
-              ctx.font = "normal " + (fontSize * 0.4).toFixed(2) + "em sans-serif";
+              ctx.font = `normal ${(fontSize * 0.4).toFixed(2)}em ${fontFamily}`;
               ctx.fillStyle = rootStyle.getPropertyValue('--text-muted').trim() || "#666";
               const label = "Enviadas";
               const labelX = Math.round((width - ctx.measureText(label).width) / 2);
