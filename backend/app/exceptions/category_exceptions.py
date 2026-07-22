@@ -1,12 +1,15 @@
-class CategoryException(Exception):
+from app.exceptions.base import ApplicationException
+
+
+class CategoryException(ApplicationException):
     """Base exception for category module"""
     pass
 
 class CategoryAlreadyExistsException(CategoryException):
-    pass
+    http_status = 409
 
 class CategoryNotFoundException(CategoryException):
-    pass
+    http_status = 404
 
 class CategoryInUseException(CategoryException):
-    pass
+    http_status = 409
