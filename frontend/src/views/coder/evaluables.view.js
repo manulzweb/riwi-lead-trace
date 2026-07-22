@@ -93,8 +93,17 @@ const renderEvaluablesList = () => {
 
   const currentUser = authService.getSession();
 
-  // Filtrar según el rol seleccionado (Excluir al usuario logueado y solo de su mismo clan)
-  let filtered = evaluables.filter(u => u.id !== currentUser?.id && u.clan_id === currentUser?.clan_id);
+  // El filtro por clan NO se hace aqui: ya lo aplico el servidor
+  // (GET /evaluables?evaluator_id=..., ver can_evaluate_by_clan).
+  //
+  // Comparar `u.clan_id === currentUser.clan_id` en el cliente ELIMINABA a
+  // todos los Team Leaders: un TL tiene `users.clan_id = NULL` porque su
+  // relacion con clanes es N:M y vive en `team_leader_clans`. `null === 1` es
+  // falso, asi que desaparecia en los tres filtros -- incluido "Team Leaders",
+  // que quedaba siempre vacio.
+  //
+  // Aqui solo se descarta al propio usuario, que no es una regla de clan.
+  let filtered = evaluables.filter(u => u.id !== currentUser?.id);
 
   if (currentFilter !== "all") {
     filtered = filtered.filter(u => u.roles?.includes(currentFilter));

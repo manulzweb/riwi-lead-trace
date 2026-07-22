@@ -53,6 +53,37 @@ const registerDropdown = (container, close) => {
   document.addEventListener("click", (e) => closeDropdownsOutsideOf(e.target));
 };
 
+/**
+ * Selecciona una opcion del dropdown POR CODIGO, dejandolo igual que si el
+ * usuario la hubiera clicado.
+ *
+ * Existe porque este dropdown NO es un `<select>` nativo: es un
+ * `<input type="hidden">` (el valor) mas un `<button>` (lo que se ve). Hacer
+ * `document.getElementById(id).value = x` escribe solo en el input oculto, asi
+ * que el valor queda bien pero **la etiqueta visible sigue mostrando el
+ * placeholder** -- el usuario ve "Selecciona un rol" sobre un valor ya elegido.
+ * Ese desfase es el que rompia la preseleccion por query params.
+ *
+ * @returns {boolean} false si el dropdown o la opcion no existen (por ejemplo,
+ *   preseleccionar a alguien que no esta en la lista). No lanza: el llamador
+ *   decide si eso es un error o simplemente "no habia nada que preseleccionar".
+ */
+export const setDropdownValue = (id, value) => {
+  const input = document.getElementById(id);
+  const text = document.getElementById(`${id}-text`);
+  if (!input || !text) return false;
+
+  const option = document.querySelector(`.${id}-option[data-value="${CSS.escape(String(value))}"]`);
+  if (!option) return false;
+
+  input.value = value;
+  text.textContent = option.textContent.trim();
+
+  document.querySelectorAll(`.${id}-option`).forEach((o) => o.setAttribute("aria-selected", "false"));
+  option.setAttribute("aria-selected", "true");
+  return true;
+};
+
 export const setupDropdown = (id, onChangeCallback = null) => {
   const container = document.getElementById(`${id}-container`);
   const btn = document.getElementById(`${id}-btn`);

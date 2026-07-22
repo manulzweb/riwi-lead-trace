@@ -1,5 +1,5 @@
 import { navBarComponent } from "../../components/navbar";
-import { dropdownComponent, setupDropdown } from "../../components/dropdown";
+import { dropdownComponent, setupDropdown, setDropdownValue } from "../../components/dropdown";
 import { evaluablesService } from "../../services/evaluables.service";
 import { evaluationService } from "../../services/evaluation.service";
 import { periodService } from "../../services/periods.service";
@@ -80,7 +80,7 @@ export const renderEvaluate = () => `
         <div id="questions-container" class="grid gap-8"></div>
       </section>
 
-      <section class="flex flex-col sm:flex-row sm:items-center gap-4 rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm">
+      <section id="anonymous-section" class="flex flex-col sm:flex-row sm:items-center gap-4 rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm">
         <label class="relative inline-flex cursor-pointer items-center">
           <input type="checkbox" id="is-anonymous" name="anonymous" class="peer sr-only" aria-describedby="anon-help" />
           <span class="sr-only">Enviar esta evaluación de forma anónima</span>
@@ -120,7 +120,20 @@ export const setupEvaluate = async () => {
   const submitBtn = document.getElementById("submit-btn");
   const draftBtn = document.getElementById("draft-btn");
   const targetRole = document.getElementById("target-role");
-  const evaluatee = document.getElementById("evaluatee");
+  // NO se captura el nodo: `handleRoleChange()` reemplaza #evaluatee-container
+  // con `outerHTML` (4 sitios), lo que DESTRUYE y recrea #evaluatee. Una
+  // constante capturada aqui quedaria apuntando a un nodo huerfano, y escribir
+  // o leer `.value` sobre el no lanza error -- falla en silencio.
+  //
+  // Eso rompia tres cosas a la vez: la preseleccion desde la tarjeta, el
+  // evaluatee_id del envio, y sobre todo la clave del borrador
+  // (`evaluation_draft_${user}_${evaluatee.value}`), que con value vacio hacia
+  // que TODOS los borradores de todas las personas colapsaran en una sola
+  // entrada de localStorage.
+  const getEvaluatee = () => document.getElementById("evaluatee");
+  const evaluateeValue = () => getEvaluatee()?.value || "";
+  const draftKey = () => `evaluation_draft_${currentUser.id}_${evaluateeValue()}`;
+
   const qContainer = document.getElementById("questions-container");
   const anonCheck = document.getElementById("is-anonymous");
   const progressContainer = document.getElementById("progress-container");
@@ -128,12 +141,20 @@ export const setupEvaluate = async () => {
   const progressText = document.getElementById("progress-text");
   const progressPercent = document.getElementById("progress-percentage");
 
-  if (!form || !submitBtn || !targetRole || !evaluatee || !qContainer) return;
+  if (!form || !submitBtn || !targetRole || !getEvaluatee() || !qContainer) return;
 
   setupDropdown('target-role');
   setupDropdown('evaluatee');
 
   const currentUser = authService.getSession();
+
+  // Purga del borrador corrupto que dejo el bug de la referencia huerfana:
+  // se guardaba bajo la clave con sufijo VACIO, mezclando en una sola entrada
+  // los borradores de todas las personas (gana el ultimo que escribio). No se
+  // migra a la clave nueva a proposito: ese contenido no se puede atribuir con
+  // certeza a nadie, y adjudicarselo a la persona equivocada seria peor que
+  // perderlo. Es lo que hacia aparecer "borrador cargado" sin haber guardado.
+  localStorage.removeItem(`evaluation_draft_${currentUser.id}_`);
 
   // Lógica centralizada para auto-guardado
   let autosaveTimeout;
@@ -147,11 +168,11 @@ export const setupEvaluate = async () => {
 
     const draft = {
       role: targetRole.value,
-      evaluatee: evaluatee.value,
+      evaluatee: evaluateeValue(),
       anonymous: anonCheck.checked,
       answers: answers
     };
-    localStorage.setItem(`evaluation_draft_${currentUser.id}_${evaluatee.value}`,  JSON.stringify(draft));
+    localStorage.setItem(draftKey(),  JSON.stringify(draft));
 
     // Feedback visual
     const indicator = document.getElementById("autosave-indicator");
@@ -183,11 +204,21 @@ export const setupEvaluate = async () => {
     saveDraftLocally();
   };
 
+  // Evaluaciones que este coder ya envio. Se carga de entrada (no solo al
+  // elegir un rol) para poder decir "ya completaste todo" desde el primer
+  // render, sin obligar al coder a probar rol por rol.
+  let misEvaluaciones = [];
+
   try {
     // /evaluables (no /users): devuelve solo Tutores y Team Leaders que ESTE
     // coder puede evaluar, ya filtrados por clan en el servidor.
-    allUsers = await evaluablesService.get(currentUser.id);
-    const periods = await periodService.get();
+    const [evaluables, periods, previas] = await Promise.all([
+      evaluablesService.get(currentUser.id),
+      periodService.get(),
+      evaluationService.getByEvaluator(currentUser.id),
+    ]);
+    allUsers = evaluables;
+    misEvaluaciones = previas;
     activePeriod = periods.find(p => p.is_active) || (periods.length ? periods[0] : null);
 
     if (!activePeriod) {
@@ -200,11 +231,48 @@ export const setupEvaluate = async () => {
   }
 
   // Manejador de cambio de rol (funcion nombrada: se reutiliza para la preseleccion via query params)
+  // Personas que aun le faltan al coder en el periodo activo, SIN mirar el rol.
+  // Es lo que distingue "no queda nadie de este rol" de "ya terminaste todo",
+  // que es la diferencia entre un aviso parcial y el mensaje global.
+  const pendientesEnElPeriodo = () => {
+    if (!activePeriod) return [];
+    const yaEvaluados = misEvaluaciones
+      .filter(e => e.period_id === activePeriod.id)
+      .map(e => String(e.evaluatee_id));
+    return allUsers.filter(u => u.id !== currentUser.id && !yaEvaluados.includes(String(u.id)));
+  };
+
+  // Con todo completado, el formulario no tiene nada que hacer: se ocultan el
+  // envio anonimo y los botones. Dejarlos visibles ofrece acciones que no
+  // aplican a nada -- no hay evaluacion que guardar ni enviar.
+  const mostrarEstadoCompletado = () => {
+    document.getElementById('anonymous-section')?.classList.add('hidden');
+    document.getElementById('wizard-buttons')?.classList.add('hidden');
+    progressContainer.classList.add('hidden');
+    qContainer.innerHTML = `
+      <div class="rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-10 text-center shadow-sm">
+        <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--brand-bg)]/10 text-[var(--brand-bg)]">
+          <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        </div>
+        <h3 class="text-xl font-bold text-[var(--text-main)]">Ya completaste todas tus evaluaciones</h3>
+        <p class="mt-2 text-sm text-[var(--text-muted)] max-w-md mx-auto">
+          No te queda nadie por evaluar en este periodo, ni Team Leaders ni Tutores.
+          Puedes revisar lo que enviaste en <a href="/evaluations" data-navigo class="font-bold text-[var(--brand-bg)] hover:underline">Mis evaluaciones</a>.
+        </p>
+      </div>`;
+  };
+
   const handleRoleChange = async () => {
     const role = targetRole.value;
     qContainer.innerHTML = "";
     currentForm = null;
     progressContainer.classList.add("hidden");
+
+    // Se restauran por si venian ocultos de un estado "completado" anterior:
+    // sin esto, pasar de un rol sin pendientes a otro con pendientes dejaba el
+    // formulario sin botones y sin la opcion de envio anonimo.
+    document.getElementById('anonymous-section')?.classList.remove('hidden');
+    document.getElementById('wizard-buttons')?.classList.remove('hidden');
 
       document.getElementById('evaluatee-container').outerHTML = `
           <div id="evaluatee-container">
@@ -214,6 +282,20 @@ export const setupEvaluate = async () => {
         setupDropdown('evaluatee');
 
     if (!role) {
+      // Con el filtro en su valor por defecto tambien se informa el estado
+      // global: si ya no queda nadie, decirlo aqui evita que el coder tenga
+      // que probar rol por rol para descubrir que termino.
+      if (pendientesEnElPeriodo().length === 0) {
+        document.getElementById('evaluatee-container').outerHTML = `
+          <div id="evaluatee-container">
+            <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="evaluatee">Persona a evaluar</label>
+            ${dropdownComponent('evaluatee', [{ value: '', label: 'No queda nadie por evaluar' }], '')}
+          </div>`;
+        setupDropdown('evaluatee');
+        mostrarEstadoCompletado();
+        return;
+      }
+
       document.getElementById('evaluatee-container').outerHTML = `
         <div id="evaluatee-container">
           <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="evaluatee">Persona a evaluar</label>
@@ -237,6 +319,10 @@ export const setupEvaluate = async () => {
         evaluationService.getByEvaluator(currentUser.id)
       ]);
       currentForm = form;
+      // Se cachea en el scope de la vista para que `pendientesEnElPeriodo()`
+      // pueda responder "¿queda alguien, en CUALQUIER rol?" sin repetir la
+      // peticion ni depender de que se haya elegido un rol.
+      misEvaluaciones = previousEvaluations;
 
       // Personas ya evaluadas en este periodo, para sacarlas del selector.
       //
@@ -269,7 +355,14 @@ export const setupEvaluate = async () => {
             ${dropdownComponent('evaluatee', [{ value: '', label: 'Ya has evaluado a todos para este rol' }], '')}
           </div>`;
         setupDropdown('evaluatee');
-        qContainer.innerHTML = '<div class="text-center py-4 text-[var(--brand-bg)] font-bold">¡Has completado todas las evaluaciones para este rol en el periodo actual!</div>';
+        // Si tampoco queda nadie en el OTRO rol, el mensaje correcto es el
+        // global: decir "completaste este rol" cuando ya terminaste todo deja
+        // al coder buscando en el otro filtro para nada.
+        if (pendientesEnElPeriodo().length === 0) {
+          mostrarEstadoCompletado();
+        } else {
+          qContainer.innerHTML = '<div class="text-center py-4 text-[var(--brand-bg)] font-bold">¡Has completado todas las evaluaciones para este rol en el periodo actual!</div>';
+        }
         return;
       }
 
@@ -300,8 +393,8 @@ export const setupEvaluate = async () => {
             <p class="text-sm text-[var(--text-muted)] max-w-sm mx-auto">No hay ningún formulario de evaluación activo en este momento para el rol seleccionado.</p>
           </div>
         `;
-        evaluatee.disabled = true;
-        evaluatee.innerHTML = '<option value="">Sin formulario disponible</option>';
+        getEvaluatee().disabled = true;
+        getEvaluatee().innerHTML = '<option value="">Sin formulario disponible</option>';
       } else {
         qContainer.innerHTML = '<div class="text-[var(--danger-text)] bg-[var(--danger-bg)] p-4 rounded-xl text-center">Error al cargar preguntas de la formulario.</div>';
         console.error(err);
@@ -312,23 +405,26 @@ export const setupEvaluate = async () => {
   
   targetRole.addEventListener("change", handleRoleChange);
 
-  evaluatee.addEventListener("change", () => {
-    if (evaluatee.value) {
+  // Delegado en `document` y NO sobre el nodo: #evaluatee se destruye y recrea
+  // en cada handleRoleChange(), asi que un listener puesto directamente sobre
+  // el se pierde con el primer cambio de rol. El evento 'change' que despacha
+  // setupDropdown burbujea (`bubbles: true`), asi que llega hasta aqui.
+  document.addEventListener("change", (e) => {
+    if (e.target?.id !== "evaluatee") return;
+    if (evaluateeValue()) {
       loadDraft(targetRole.value);
     }
   });
 
 
-  // 2.5 Preselección por parámetros de consulta (query params)
-  const params = new URLSearchParams(window.location.search);
-  const preselectedRole = params.get("role");
-  const preselectedId = params.get("evaluatee_id");
-
-  if (preselectedRole && preselectedId) {
-    targetRole.value = preselectedRole;
-    await handleRoleChange();
-    evaluatee.value = preselectedId;
-  }
+  // La preselección por query params NO va aquí: `handleRoleChange()` llama a
+  // `renderQuestions`, declarada mas abajo con `const`, y `const` no se
+  // hoistea. Invocarla en este punto entra en la zona muerta temporal y lanza
+  // "Cannot access 'renderQuestions' before initialization", que abortaba el
+  // bloque entero -- por eso NADA se preseleccionaba, ni siquiera el rol.
+  //
+  // Se ejecuta al FINAL de setupEvaluate, cuando todas las declaraciones ya
+  // corrieron. Ver `aplicarPreseleccion()` abajo.
 
   
   let currentStep = 0;
@@ -513,12 +609,12 @@ export const setupEvaluate = async () => {
 
   // Lógica de carga de borrador
   const loadDraft = (currentRole) => {
-    const savedDraft = localStorage.getItem(`evaluation_draft_${currentUser.id}_${evaluatee.value}`);
+    const savedDraft = localStorage.getItem(draftKey());
     if (savedDraft) {
       try {
         const draft = JSON.parse(savedDraft);
         if (draft.role === currentRole) {
-          if (draft.evaluatee) evaluatee.value = draft.evaluatee;
+          if (draft.evaluatee) setDropdownValue('evaluatee', draft.evaluatee);
           if (draft.anonymous !== undefined) anonCheck.checked = draft.anonymous;
 
           qContainer.querySelectorAll("[data-question-id]").forEach(el => {
@@ -582,7 +678,7 @@ export const setupEvaluate = async () => {
 
     const evaluationData = {
       evaluator_id: currentUser.id,
-      evaluatee_id: parseInt(evaluatee.value),
+      evaluatee_id: parseInt(evaluateeValue()),
       form_id: currentForm.id,
       period_id: activePeriod.id,
       is_anonymous: anonCheck.checked,
@@ -601,7 +697,7 @@ export const setupEvaluate = async () => {
       await evaluationService.create(evaluationData);
 
       showToast("¡Evaluación enviada!", "success", "Tu feedback ha sido registrado exitosamente.");
-      localStorage.removeItem(`evaluation_draft_${currentUser.id}_${evaluatee.value}`);
+      localStorage.removeItem(draftKey());
       window.history.pushState({}, "", "/evaluations");
       renderRoute();
     } catch (err) {
@@ -610,9 +706,9 @@ export const setupEvaluate = async () => {
 
       // El borrador nunca se borro, pero se reescribe con lo ultimo respondido
       // por si el usuario cambio algo despues de cargarlo.
-      localStorage.setItem(`evaluation_draft_${currentUser.id}_${evaluatee.value}`,  JSON.stringify({
+      localStorage.setItem(draftKey(),  JSON.stringify({
         role: targetRole.value,
-        evaluatee: evaluatee.value,
+        evaluatee: evaluateeValue(),
         anonymous: anonCheck.checked,
         answers: draftAnswers.reduce((acc, curr) => {
           acc[curr.question_id] = curr.score !== null ? curr.score.toString() : curr.comment;
@@ -635,4 +731,54 @@ export const setupEvaluate = async () => {
       console.error(err);
     }
   });
+
+  // --- PRESELECCIÓN POR QUERY PARAMS (va al final a proposito) ---
+  //
+  // Se llega a esta vista de dos formas y no deben tratarse igual:
+  //   a) desde una tarjeta de /evaluables -> rol y persona YA estan decididos;
+  //      volver a preguntarlos es pedir dos veces lo mismo.
+  //   b) entrando directo a /evaluations/new -> hay que elegir ambos.
+  //
+  // Corre aqui, no arriba, porque `handleRoleChange()` usa `renderQuestions`,
+  // que se declara con `const` mas arriba en el cuerpo pero DESPUES del punto
+  // donde antes se llamaba. `const` no se hoistea: aquello lanzaba un
+  // ReferenceError por zona muerta temporal y abortaba toda la preseleccion.
+  const aplicarPreseleccion = async () => {
+    const params = new URLSearchParams(window.location.search);
+    const preselectedRole = params.get("role");
+    const preselectedId = params.get("evaluatee_id");
+
+    // El rol se preselecciona aunque no venga la persona. El guard anterior
+    // exigia los dos, asi que un id ausente dejaba tambien el rol vacio.
+    if (preselectedRole) {
+      // setDropdownValue y no `.value = x`: este dropdown es un input oculto
+      // mas un boton; asignar `.value` deja la etiqueta visible en el
+      // placeholder y el usuario ve "Selecciona un rol" sobre un valor puesto.
+      setDropdownValue('target-role', preselectedRole);
+      await handleRoleChange();
+    } else if (pendientesEnElPeriodo().length === 0) {
+      // Sin rol en la URL, `handleRoleChange` no correria y la vista quedaria
+      // en "Primero selecciona un rol..." aunque ya no haya nada que evaluar.
+      // Se informa el estado global de entrada, con el filtro en su default.
+      mostrarEstadoCompletado();
+    }
+
+    // La persona va DESPUES de handleRoleChange, que es quien repuebla el
+    // dropdown con la gente de ese rol: antes, la opcion no existe en el DOM.
+    const personaLista = preselectedId
+      ? setDropdownValue('evaluatee', preselectedId)
+      : false;
+
+    // Con ambos resueltos se ocultan los selectores. No se eliminan del DOM:
+    // el resto del flujo (borrador, envio) sigue leyendo #evaluatee.
+    if (preselectedRole && personaLista) {
+      document.getElementById('target-role-container')?.classList.add('hidden');
+      document.getElementById('evaluatee-container')?.classList.add('hidden');
+      // El borrador se carga a mano: el listener de 'change' no dispara cuando
+      // la seleccion la hace el codigo, no el usuario.
+      loadDraft(preselectedRole);
+    }
+  };
+
+  await aplicarPreseleccion();
 };
