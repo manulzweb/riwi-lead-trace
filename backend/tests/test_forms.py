@@ -55,9 +55,16 @@ def _make_payload(**overrides):
     return payload
 
 
-def test_no_se_crea_plantilla_con_periodo_activo(client):
-    response = client.post("/forms", json=_make_payload())
-    assert response.status_code == 409
+def test_se_puede_crear_formulario_con_periodo_activo(client):
+    _reopen_seed_period()
+    new_id = None
+    try:
+        response = client.post("/forms", json=_make_payload())
+        assert response.status_code == 201
+        new_id = response.json()["id"]
+    finally:
+        if new_id is not None:
+            _delete_form_and_questions(new_id)
 
 
 def test_target_role_invalido_es_rechazado(client):
@@ -95,8 +102,10 @@ def test_categoria_inexistente_es_rechazada_al_crear_plantilla(client):
         _reopen_seed_period()
 
 
-def test_crear_plantilla_ok_y_desactiva_la_anterior_del_mismo_rol(client):
+def test_crear_formulario_no_desactiva_la_anterior_del_mismo_rol(client):
     _close_seed_period()
+    conn.execute(text("UPDATE forms SET is_active = TRUE WHERE id = 1"))
+    conn.commit()
     new_id = None
     try:
         response = client.post("/forms", json=_make_payload())
@@ -104,7 +113,7 @@ def test_crear_plantilla_ok_y_desactiva_la_anterior_del_mismo_rol(client):
         body = response.json()
         new_id = body["id"]
 
-        assert body["is_active"] is True
+        assert body["is_active"] is False
         assert body["target_role_id"] == 2  # team_leader
         assert len(body["questions"]) == 3
         assert body["questions"][0]["category"] == "General"  # nombre resuelto, no solo el id
@@ -113,9 +122,9 @@ def test_crear_plantilla_ok_y_desactiva_la_anterior_del_mismo_rol(client):
         texto = next(q for q in body["questions"] if q["input_type"] == "text")
         assert texto["sort_order"] == 2  # se preserva el orden enviado
 
-        # La plantilla vieja de team_leader (id=1, sembrada) queda desactivada.
+        # La plantilla vieja de team_leader (id=1, sembrada) no queda desactivada porque el nuevo es inactivo.
         vieja = conn.execute(text("SELECT is_active FROM forms WHERE id = 1")).scalar()
-        assert not vieja
+        assert vieja
     finally:
         if new_id is not None:
             _delete_form_and_questions(new_id)
@@ -505,3 +514,39 @@ def test_borrar_categoria_en_uso_da_409_restrict(client):
 def test_borrar_categoria_inexistente_da_404(client):
     response = client.delete("/categories/999999")
     assert response.status_code == 404
+
+
+def test_activar_formulario_exito_periodo_cerrado(client):
+    _close_seed_period()
+    # Crear un formulario vivo inactivo
+    payload = _make_payload(is_template=False)
+    response = client.post("/forms", json=payload)
+    assert response.status_code == 201
+    form_id = response.json()["id"]
+
+    # Debería estar inactivo de forma predeterminada al crearse
+    assert response.json()["is_active"] is False
+
+    # Activar explícitamente
+    response = client.post(f"/forms/{form_id}/activate")
+    assert response.status_code == 200
+    assert response.json()["is_active"] is True
+
+    _delete_form_and_questions(form_id)
+    _reopen_seed_period()
+
+
+def test_activar_formulario_falla_con_periodo_activo(client):
+    _reopen_seed_period()
+    # Usar el formulario sembrado
+    response = client.post(f"/forms/{TUTOR_FORM_ID}/activate")
+    assert response.status_code == 409
+    assert "No se puede editar/crear plantillas" in response.json()["detail"]
+
+
+def test_activar_formulario_no_encontrado_da_404(client):
+    _close_seed_period()
+    response = client.post("/forms/999999/activate")
+    assert response.status_code == 404
+    _reopen_seed_period()
+

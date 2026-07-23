@@ -1,26 +1,44 @@
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+import axios from 'axios';
 
-const jsonHeaders = {
-  "Content-Type": "application/json"
-}
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
-// Builds the fetch options for a POST/PUT/PATCH with a JSON body.
+const api = axios.create({
+  baseURL: BASE_URL,
+  headers: {
+    "Content-Type": "application/json"
+  }
+});
+
+// Builds options for POST/PUT/PATCH.
+// Kept for backward compatibility with existing code calling jsonOptions
 export const jsonOptions = (method, data) => ({
   method,
-  headers: jsonHeaders,
-  body: JSON.stringify(data)
-})
+  data
+});
 
 export const request = async (path, options = {}) => {
-  const fetchOptions = { ...options, cache: 'no-store' };
-  const response = await fetch(BASE_URL + path, fetchOptions)
-  if (!response.ok) {
-    // Keeps the existing message format (some callers check
-    // error.message.includes("404")) and also attaches the real backend
-    // payload as error.status / error.detail for whoever needs it.
-    let detail = null
-    try {
-      detail = (await response.json())?.detail ?? null
+  try {
+    const config = {
+      url: path,
+      method: options.method || 'GET',
+    };
+    
+    // Support both the old fetch 'body' string and the new axios 'data' object
+    if (options.data) {
+      config.data = options.data;
+    } else if (options.body) {
+      config.data = typeof options.body === 'string' ? JSON.parse(options.body) : options.body;
+    }
+
+    if (options.headers) {
+      config.headers = options.headers;
+    }
+
+    const response = await api(config);
+    return response.status === 204 ? null : response.data;
+  } catch (axiosError) {
+    if (axiosError.response) {
+      let detail = axiosError.response.data?.detail ?? null;
       if (Array.isArray(detail)) {
         detail = detail.map(err => {
           const field = err.loc ? err.loc[err.loc.length - 1] : "Campo";
@@ -29,16 +47,14 @@ export const request = async (path, options = {}) => {
       } else if (typeof detail === "object" && detail !== null) {
         detail = JSON.stringify(detail);
       }
-    } catch {
-      // Empty or non-JSON body: detail stays null.
+      
+      const error = new Error(`Error: ${axiosError.response.status} La peticion ha fallado en el endpoint ${BASE_URL}${path}`);
+      error.status = axiosError.response.status;
+      error.detail = detail;
+      throw error;
+    } else {
+      const error = new Error(`Error: La peticion ha fallado en el endpoint ${BASE_URL}${path} - ${axiosError.message}`);
+      throw error;
     }
-    const error = new Error(`Error: ${response.status} La peticion ha fallado en el endpoint ${BASE_URL}${path}`)
-    error.status = response.status
-    error.detail = detail
-    throw error
   }
-  if (response.status === 204) {
-    return null;
-  }
-  return await response.json()
 }

@@ -100,6 +100,15 @@ const renderEvaluablesList = () => {
     filtered = filtered.filter(u => u.roles?.includes(currentFilter));
   }
 
+  if (!activePeriod) {
+    container.className = "mt-8";
+    container.innerHTML = emptyStateComponent(
+      "No hay periodo activo",
+      "Actualmente no hay ningún periodo de evaluación activo. Vuelve más tarde."
+    );
+    return;
+  }
+
   if (filtered.length === 0) {
     container.className = "mt-8";
     container.innerHTML = emptyStateComponent(
@@ -186,7 +195,7 @@ export const setupEvaluables = async () => {
     try {
       const [evalsList, activePeriodData, allEvaluables] = await Promise.all([
         evaluationService.getByEvaluator(currentUser.id),
-        periodService.get().then(periods => periods.find(p => p.is_active) || periods[0]),
+        periodService.get().then(periods => periods.find(p => p.is_active) || null),
         evaluablesService.get(currentUser.id)
       ]);
 

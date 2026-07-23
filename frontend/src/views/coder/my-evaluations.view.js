@@ -87,7 +87,20 @@ export const setupMyEvaluations = async () => {
         return;
       }
 
-      container.innerHTML = evaluations.map(ev => {
+      const activePeriod = periods.find(p => p.is_active);
+      const activeEvaluations = activePeriod ? evaluations.filter(e => String(e.period_id) === String(activePeriod.id)) : [];
+
+      if (activeEvaluations.length === 0) {
+        container.innerHTML = emptyStateComponent(
+          "Aún no hay evaluaciones",
+          "Todavía no has evaluado a nadie en el periodo activo. Cuando lo hagas, tus envíos aparecerán aquí.",
+          "Nueva evaluación",
+          "/evaluables"
+        );
+        return;
+      }
+
+      container.innerHTML = activeEvaluations.map(ev => {
         const evaluatee = usersMap.get(Number(ev.evaluatee_id)) || usersMap.get(String(ev.evaluatee_id));
         const period = periodsMap.get(Number(ev.period_id)) || periodsMap.get(String(ev.period_id));
         const evaluateeName = evaluatee ? evaluatee.name : `Usuario #${ev.evaluatee_id}`;

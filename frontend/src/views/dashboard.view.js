@@ -789,13 +789,18 @@ const renderDashboardContent = async (content, user, name, role) => {
     // Filter out self-evaluation from evaluables
     const evaluables = allEvaluables ? allEvaluables.filter(u => u.id !== user.id) : [];
     const activePeriod = currentPeriods.find(p => p.is_active);
-    const completedEvals = myEvals.filter(e => !isPendingParticipation(e) && (activePeriod ? String(e.period_id) === String(activePeriod.id) : true));
+    
+    // Only show completed and pending evaluations if there is an active period,
+    // and strictly filter completed ones by that active period.
+    const completedEvals = activePeriod
+      ? myEvals.filter(e => !isPendingParticipation(e) && String(e.period_id) === String(activePeriod.id))
+      : [];
     const completed = completedEvals.length;
     const totalEvaluables = evaluables.length;
-    const pending = Math.max(0, totalEvaluables - completed);
+    const pending = activePeriod ? Math.max(0, totalEvaluables - completed) : 0;
     
     const evaluatedIds = completedEvals.map(e => String(e.evaluatee_id));
-    const pendingUsers = evaluables.filter(u => !evaluatedIds.includes(String(u.id)));
+    const pendingUsers = activePeriod ? evaluables.filter(u => !evaluatedIds.includes(String(u.id))) : [];
     
     let pendingRoles = new Set();
     pendingUsers.forEach(u => {
