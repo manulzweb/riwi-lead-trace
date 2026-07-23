@@ -26,13 +26,10 @@ export const dropdownComponent = (id, options, selectedValue, placeholder = "Sel
   `;
 };
 
-// El router hace `app.innerHTML = ...` en cada navegacion: el contenedor siempre
-// es un nodo nuevo, asi que el guard `dataset.initialized` no evita que se
-// registre otro listener sobre `document`. Antes se acumulaba uno por dropdown
-// por navegacion, para siempre, apuntando a contenedores ya muertos.
-// Solucion: UN solo listener a nivel de modulo que despacha a los dropdowns
-// vivos. El registro se purga solo — si el contenedor ya no esta en el
-// documento, la entrada se descarta en el siguiente click.
+// UN solo listener de modulo que despacha a los dropdowns vivos: el router
+// recrea el contenedor en cada navegacion, asi que `dataset.initialized` no
+// evitaba acumular un listener sobre `document` por dropdown y navegacion.
+// El registro se purga solo al detectar contenedores fuera del documento.
 const registeredDropdowns = new Set();
 let globalClickListenerAttached = false;
 
@@ -178,7 +175,7 @@ export const setupDropdown = (id, onChangeCallback = null) => {
         onChangeCallback(val);
       }
       
-      // Dispatch change event on input for other listeners
+      // Dispara 'change' en el input para notificar a otros listeners.
       if (input) {
         input.dispatchEvent(new Event('change', { bubbles: true }));
       }

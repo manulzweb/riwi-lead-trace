@@ -211,13 +211,9 @@ export const setupMyEvaluations = async () => {
         });
       };
 
-      // UN solo listener delegado en el contenedor, en vez de un `onclick` inline
-      // por tarjeta. `closest` es necesario porque el click puede caer en un nodo
-      // interno del boton, donde `e.target.dataset` vendria vacio. El contenedor
-      // lo destruye el router al navegar, asi que el listener no se acumula.
-      //
-      // Las tarjetas anonimas no llevan `data-eval-id`, asi que el `closest` no
-      // encuentra nada y el listener no dispara: no hay detalle que abrir.
+      // Un solo listener delegado (el router destruye el contenedor, no se
+      // acumula). `closest` porque el click puede caer dentro del boton; las
+      // tarjetas anonimas no llevan data-eval-id, asi que no disparan.
       container.addEventListener("click", (e) => {
         const trigger = e.target.closest("[data-eval-id]");
         if (!trigger) return;

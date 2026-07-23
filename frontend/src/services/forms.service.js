@@ -37,12 +37,8 @@ const withRoleName = (form) => ({
   targetRole: ROLE_ID_TO_NAME[form.target_role_id] || null,
 });
 
-// Grilla del admin: pide TODO (formularios vivos + plantillas), sin archivados.
-//
-// Antes esto hacia fan-out sobre ['team_leader','tutor'] en paralelo, lo que
-// con plantillas genericas (target_role_id NULL) NUNCA las habria encontrado:
-// no pertenecen a ningun rol. Una sola llamada sin target_role las incluye, y
-// de paso es una peticion en vez de dos.
+// Grilla del admin: TODO (vivos + plantillas), sin archivados. Una sola llamada
+// sin target_role, porque las plantillas genericas no pertenecen a ningun rol.
 const getForms = async () => {
   const forms = await request('/forms?kind=all');
   return forms.map(withRoleName);
@@ -93,10 +89,9 @@ const createForm = async (formData) => {
   return await request('/forms', jsonOptions('POST', payload));
 };
 
-// Formulario existente: no hay un "reemplazar todas las preguntas de una",
-// asi que se compara el estado actual del builder contra lo que estaba
-// cargado al abrirlo y se manda solo lo que cambio -- agregar, quitar,
-// reformular texto (versiona) y por ultimo reequilibrar los pesos.
+// Formulario existente: no existe "reemplazar todas las preguntas", asi que se
+// diffea contra originalQuestions y se manda solo lo que cambio (agregar,
+// quitar, reformular texto -- que versiona -- y reequilibrar pesos al final).
 const updateForm = async (id, formData, onCoherenceConfirm) => {
   await request(`/forms/${id}`, jsonOptions('PUT', {
     title: formData.title,

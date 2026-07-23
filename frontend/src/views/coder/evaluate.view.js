@@ -9,13 +9,11 @@ import { showToast } from "../../components/alerts";
 import { renderRoute } from "../../router/router";
 import { z } from "zod";
 
-// Unica fuente de verdad de "que tipo de pregunta es obligatorio". La consumen
-// tres sitios que antes lo decidian por separado y podian divergir: la barra de
-// progreso, la validacion de envio (answerSchema) y la insignia "Opcional".
-// Las de escala y si/no son obligatorias (alimentan el ICP); el texto abierto
-// ("Comentarios adicionales", weight_percent = 0) es opcional.
-const TIPOS_OBLIGATORIOS = new Set(["scale", "scale_1_5", "yes_no"]);
-const esObligatoria = (inputType) => TIPOS_OBLIGATORIOS.has(inputType);
+// Unica fuente de verdad de "pregunta obligatoria" (barra de progreso,
+// answerSchema e insignia "Opcional"): escala y si/no alimentan el ICP; el
+// texto abierto no.
+const REQUIRED_TYPES = new Set(["scale", "scale_1_5", "yes_no"]);
+const isRequired = (inputType) => REQUIRED_TYPES.has(inputType);
 
 // La validacion vive aca en vez de un if/else imperativo por cada pregunta --
 // mas facil de leer que "que hace falta para poder enviar" de un vistazo.
@@ -42,7 +40,7 @@ let currentForm = null;
 
 // Iniciales para el avatar (hasta dos palabras). Evita traer imagenes: el
 // backend no tiene fotos de perfil.
-const getIniciales = (name = "") =>
+const getInitials = (name = "") =>
   name.split(" ").filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase() || "?";
 
 const roleLabel = (role) => (role === "team_leader" ? "Team Leader" : "Tutor");
@@ -56,10 +54,10 @@ const roleBadge = (role) =>
 
 // Tarjeta compacta del modal de seleccion. Mas pequena que la de /evaluables
 // (sin insignia de estado ni boton propio): la tarjeta entera es el boton.
-const tarjetaCompacta = (user, role) => `
+const compactCard = (user, role) => `
   <button type="button" data-user-id="${user.id}" data-role="${role}"
     class="flex items-center gap-3 rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] p-3 text-left transition-all hover:border-[var(--brand-hover)] hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--brand-hover)]">
-    <span aria-hidden="true" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--brand-bg)]/10 text-sm font-bold text-[var(--brand-bg)]">${escapeHtml(getIniciales(user.name))}</span>
+    <span aria-hidden="true" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--brand-bg)]/10 text-sm font-bold text-[var(--brand-bg)]">${escapeHtml(getInitials(user.name))}</span>
     <span class="min-w-0 flex-1">
       <span class="block truncate text-sm font-bold text-[var(--text-main)]">${escapeHtml(user.name)}</span>
       <span class="mt-0.5 block">${roleBadge(role)}</span>
@@ -101,7 +99,10 @@ export const renderEvaluate = () => `
         <div id="questions-container" class="grid gap-8"></div>
       </section>
 
-      <section id="anonymous-section" class="flex flex-col sm:flex-row sm:items-center gap-4 rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm">
+      <!-- Ocultos hasta que haya evaluado elegido (los muestra loadForm):
+           visibles de arranque asomaban por detras del modal de seleccion.
+           OJO: sin backticks aqui, este comentario vive en un template literal. -->
+      <section id="anonymous-section" class="hidden flex flex-col sm:flex-row sm:items-center gap-4 rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm">
         <label class="relative inline-flex cursor-pointer items-center">
           <input type="checkbox" id="is-anonymous" name="anonymous" class="peer sr-only" aria-describedby="anon-help" />
           <span class="sr-only">Enviar esta evaluación de forma anónima</span>
@@ -116,7 +117,7 @@ export const renderEvaluate = () => `
       </section>
 
       
-      <div class="flex flex-col-reverse sm:flex-row justify-end gap-4" id="wizard-buttons">
+      <div class="hidden flex flex-col-reverse sm:flex-row justify-end gap-4" id="wizard-buttons">
         <button type="button" id="prev-btn" class="hidden cursor-pointer rounded-2xl border border-[var(--border-main)] bg-transparent px-6 py-3 text-sm font-bold text-[var(--text-main)] transition-all hover:bg-[var(--bg-base)] hover:shadow-sm">
           Anterior
         </button>
@@ -157,12 +158,10 @@ export const setupEvaluate = async () => {
   const submitBtn = document.getElementById("submit-btn");
   const draftBtn = document.getElementById("draft-btn");
 
-  // La seleccion ya no vive en el DOM (era un dropdown que se destruia y
-  // recreaba, y leerlo huerfano fallaba en silencio, colapsando todos los
-  // borradores en una sola clave de localStorage). Ahora es una variable de
-  // modulo: { id, name, email, role } o null mientras no se ha elegido.
-  let seleccion = null;
-  const draftKey = () => `evaluation_draft_${currentUser.id}_${seleccion?.id || ""}`;
+  // La seleccion NO vive en el DOM: un nodo recreado se leia huerfano y fallaba
+  // en silencio. Aqui es estado propio: { id, name, email, role } o null.
+  let selection = null;
+  const draftKey = () => `evaluation_draft_${currentUser.id}_${selection?.id || ""}`;
 
   const qContainer = document.getElementById("questions-container");
   const contextCard = document.getElementById("evaluatee-context");
@@ -176,12 +175,8 @@ export const setupEvaluate = async () => {
 
   const currentUser = authService.getSession();
 
-  // Purga del borrador corrupto que dejo el bug de la referencia huerfana:
-  // se guardaba bajo la clave con sufijo VACIO, mezclando en una sola entrada
-  // los borradores de todas las personas (gana el ultimo que escribio). No se
-  // migra a la clave nueva a proposito: ese contenido no se puede atribuir con
-  // certeza a nadie, y adjudicarselo a la persona equivocada seria peor que
-  // perderlo. Es lo que hacia aparecer "borrador cargado" sin haber guardado.
+  // Purga el borrador corrupto de clave con sufijo VACIO (mezclaba los de todas
+  // las personas). No se migra: no se puede atribuir a nadie con certeza.
   localStorage.removeItem(`evaluation_draft_${currentUser.id}_`);
 
   // Lógica centralizada para auto-guardado
@@ -195,8 +190,8 @@ export const setupEvaluate = async () => {
     });
 
     const draft = {
-      role: seleccion?.role,
-      evaluatee: seleccion?.id,
+      role: selection?.role,
+      evaluatee: selection?.id,
       anonymous: anonCheck.checked,
       answers: answers
     };
@@ -218,49 +213,46 @@ export const setupEvaluate = async () => {
     const questionElements = qContainer.querySelectorAll("[data-question-id]");
     if (questionElements.length === 0) return;
 
-    // La barra solo cuenta preguntas obligatorias: las de texto abierto son
-    // opcionales, y contarlas hacia que el 100% exigiera escribir un comentario
-    // que nadie pide. Ver `esObligatoria`.
-    const obligatorias = Array.from(questionElements).filter(el => esObligatoria(el.dataset.inputType));
+    // Solo cuenta obligatorias: incluir el texto abierto exigia un comentario
+    // que nadie pide para llegar al 100%.
+    const requiredQuestions = Array.from(questionElements).filter(el => isRequired(el.dataset.inputType));
 
-    if (obligatorias.length === 0) {
-      // Formulario solo de texto (caso de borde): no hay nada obligatorio que
-      // medir, se oculta la barra en vez de mostrar NaN%. El borrador igual se
-      // guarda abajo.
+    if (requiredQuestions.length === 0) {
+      // Formulario solo de texto: nada obligatorio que medir, se oculta la
+      // barra en vez de mostrar NaN%.
       progressContainer.classList.add("hidden");
       saveDraftLocally();
       return;
     }
 
     let answered = 0;
-    obligatorias.forEach(el => {
+    requiredQuestions.forEach(el => {
       if (el.dataset.selectedValue) answered++;
     });
 
-    const percentage = Math.round((answered / obligatorias.length) * 100);
+    const percentage = Math.round((answered / requiredQuestions.length) * 100);
     progressBarFill.style.width = `${percentage}%`;
-    progressText.textContent = `${answered} de ${obligatorias.length} respondidas`;
+    progressText.textContent = `${answered} de ${requiredQuestions.length} respondidas`;
     progressPercent.textContent = `${percentage}%`;
 
     // Disparar auto-guardado cada vez que cambia el progreso
     saveDraftLocally();
   };
 
-  // Evaluaciones que este coder ya envio. Se carga de entrada (no solo al
-  // elegir un rol) para poder decir "ya completaste todo" desde el primer
-  // render, sin obligar al coder a probar rol por rol.
-  let misEvaluaciones = [];
+  // Evaluaciones ya enviadas. Se cargan de entrada para poder decir "ya
+  // completaste todo" en el primer render, sin probar rol por rol.
+  let myEvaluations = [];
 
   try {
     // /evaluables (no /users): devuelve solo Tutores y Team Leaders que ESTE
     // coder puede evaluar, ya filtrados por clan en el servidor.
-    const [evaluables, periods, previas] = await Promise.all([
+    const [evaluatees, periods, previousEvaluations] = await Promise.all([
       evaluablesService.get(currentUser.id),
       periodService.get(),
       evaluationService.getByEvaluator(currentUser.id),
     ]);
-    allUsers = evaluables;
-    misEvaluaciones = previas;
+    allUsers = evaluatees;
+    myEvaluations = previousEvaluations;
     activePeriod = periods.find(p => p.is_active) || (periods.length ? periods[0] : null);
 
     if (!activePeriod) {
@@ -272,22 +264,19 @@ export const setupEvaluate = async () => {
     console.error(err);
   }
 
-  // Manejador de cambio de rol (funcion nombrada: se reutiliza para la preseleccion via query params)
-  // Personas que aun le faltan al coder en el periodo activo, SIN mirar el rol.
-  // Es lo que distingue "no queda nadie de este rol" de "ya terminaste todo",
-  // que es la diferencia entre un aviso parcial y el mensaje global.
-  const pendientesEnElPeriodo = () => {
+  // Personas que le faltan al coder en el periodo activo, SIN mirar el rol: es
+  // lo que distingue "ya terminaste todo" de un aviso parcial por rol.
+  const pendingInPeriod = () => {
     if (!activePeriod) return [];
-    const yaEvaluados = misEvaluaciones
+    const alreadyEvaluated = myEvaluations
       .filter(e => e.period_id === activePeriod.id)
       .map(e => String(e.evaluatee_id));
-    return allUsers.filter(u => u.id !== currentUser.id && !yaEvaluados.includes(String(u.id)));
+    return allUsers.filter(u => u.id !== currentUser.id && !alreadyEvaluated.includes(String(u.id)));
   };
 
-  // Con todo completado, el formulario no tiene nada que hacer: se ocultan el
-  // envio anonimo y los botones. Dejarlos visibles ofrece acciones que no
-  // aplican a nada -- no hay evaluacion que guardar ni enviar.
-  const mostrarEstadoCompletado = () => {
+  // Con todo completado se ocultan envio anonimo y botones: no hay evaluacion
+  // que guardar ni enviar.
+  const showAllDoneState = () => {
     document.getElementById('anonymous-section')?.classList.add('hidden');
     document.getElementById('wizard-buttons')?.classList.add('hidden');
     progressContainer.classList.add('hidden');
@@ -304,27 +293,24 @@ export const setupEvaluate = async () => {
       </div>`;
   };
 
-  // Un usuario puede tener ambos roles (team_leader y tutor). Se evalua una sola
-  // vez por periodo -- el constraint uq_submission_once es (evaluador, evaluado,
-  // periodo), sin el rol -- asi que basta UNA tarjeta por persona con un rol
-  // derivado. Mismo criterio (prioridad team_leader) que las tarjetas de
-  // /evaluables, para que ambas vistas coincidan.
-  const derivarRol = (user) => (user.roles?.includes("team_leader") ? "team_leader" : "tutor");
+  // uq_submission_once es (evaluador, evaluado, periodo) sin el rol, asi que
+  // basta UNA tarjeta por persona. Prioriza team_leader, igual que /evaluables.
+  const deriveRole = (user) => (user.roles?.includes("team_leader") ? "team_leader" : "tutor");
 
   // Tarjeta de contexto sobre el formulario: a quien se esta evaluando. El boton
   // "Cambiar" reabre el modal de seleccion.
   const renderContextCard = () => {
     if (!contextCard) return;
-    if (!seleccion) { contextCard.innerHTML = ""; return; }
+    if (!selection) { contextCard.innerHTML = ""; return; }
     contextCard.innerHTML = `
       <div class="flex items-center gap-4 rounded-3xl border border-[var(--border-main)] bg-[var(--bg-base)] p-5">
-        <span aria-hidden="true" class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--brand-bg)]/10 text-base font-bold text-[var(--brand-bg)]">${escapeHtml(getIniciales(seleccion.name))}</span>
+        <span aria-hidden="true" class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--brand-bg)]/10 text-base font-bold text-[var(--brand-bg)]">${escapeHtml(getInitials(selection.name))}</span>
         <div class="min-w-0 flex-1">
           <p class="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Evaluando a</p>
-          <p class="truncate text-lg font-bold text-[var(--text-main)]">${escapeHtml(seleccion.name)}</p>
+          <p class="truncate text-lg font-bold text-[var(--text-main)]">${escapeHtml(selection.name)}</p>
           <div class="mt-1 flex flex-wrap items-center gap-2">
-            ${roleBadge(seleccion.role)}
-            <span class="truncate text-xs text-[var(--text-muted)]">${escapeHtml(seleccion.email || "")}</span>
+            ${roleBadge(selection.role)}
+            <span class="truncate text-xs text-[var(--text-muted)]">${escapeHtml(selection.email || "")}</span>
           </div>
         </div>
         <button type="button" id="evaluatee-change"
@@ -332,12 +318,12 @@ export const setupEvaluate = async () => {
           Cambiar
         </button>
       </div>`;
-    document.getElementById("evaluatee-change")?.addEventListener("click", (e) => abrirModalSeleccion(e.currentTarget));
+    document.getElementById("evaluatee-change")?.addEventListener("click", (e) => openSelectionModal(e.currentTarget));
   };
 
   // Trae el formulario del rol y lo pinta. Aislado de la seleccion para que
   // tanto la eleccion en el modal como la preseleccion por URL lo reutilicen.
-  const cargarFormulario = async (role) => {
+  const loadForm = async (role) => {
     currentForm = null;
     document.getElementById("anonymous-section")?.classList.remove("hidden");
     document.getElementById("wizard-buttons")?.classList.remove("hidden");
@@ -373,65 +359,56 @@ export const setupEvaluate = async () => {
     }
   };
 
-  // Punto unico de seleccion: fija el estado, pinta la tarjeta de contexto,
-  // cierra el modal y carga el formulario. `seleccion` queda fijado ANTES de
-  // cerrar, para que el onClose del modal no lo confunda con un cierre sin
-  // eleccion (que navega a /evaluables).
-  const seleccionarEvaluado = async (user, role) => {
-    seleccion = { id: user.id, name: user.name, email: user.email, role };
+  // Punto unico de seleccion. `selection` se fija ANTES de cerrar el modal:
+  // si no, su onClose lo toma por un cierre sin eleccion y navega a /evaluables.
+  const selectEvaluatee = async (user, role) => {
+    selection = { id: user.id, name: user.name, email: user.email, role };
     renderContextCard();
-    modalSel.close();
-    await cargarFormulario(role);
+    selectionModal.close();
+    await loadForm(role);
   };
 
   const renderModalList = () => {
     const list = document.getElementById("evaluatee-modal-list");
     if (!list) return;
-    const pendientes = pendientesEnElPeriodo();
-    if (pendientes.length === 0) {
+    const pending = pendingInPeriod();
+    if (pending.length === 0) {
       list.innerHTML = `<p class="col-span-full py-6 text-center text-sm text-[var(--text-muted)]">No queda nadie por evaluar en este periodo.</p>`;
       return;
     }
-    list.innerHTML = pendientes.map(u => tarjetaCompacta(u, derivarRol(u))).join("");
+    list.innerHTML = pending.map(u => compactCard(u, deriveRole(u))).join("");
   };
 
-  const abrirModalSeleccion = (triggerEl) => {
+  const openSelectionModal = (triggerEl) => {
     renderModalList();
-    modalSel.open(triggerEl);
+    selectionModal.open(triggerEl);
   };
 
-  // El modal se cierra de tres formas (Esc, boton Cancelar, click en una
-  // tarjeta). Solo las dos primeras deben sacar al coder de la vista, y solo si
-  // NO hay nada elegido: cerrar sobre un formulario sin destinatario dejaria la
-  // pantalla muerta. Si ya hay seleccion (p.ej. abrio "Cambiar" y se arrepintio),
-  // cerrar sin elegir mantiene el formulario actual.
-  const modalSel = setupModal("evaluatee-modal", {
+  // Cerrar sin seleccion (Esc/Cancelar) saca al coder de la vista: un formulario
+  // sin destinatario deja la pantalla muerta. Con seleccion previa, no se toca.
+  const selectionModal = setupModal("evaluatee-modal", {
     onClose: () => {
-      if (!seleccion) {
+      if (!selection) {
         window.history.pushState({}, "", "/evaluables");
         renderRoute();
       }
     },
   });
 
-  // Delegacion en el contenedor de la lista (no en cada tarjeta): un solo
-  // listener sobrevive a los re-render de renderModalList. El click puede caer
-  // en el avatar o el nombre, por eso closest().
+  // Delegado en el contenedor: sobrevive a los re-render de renderModalList.
+  // closest() porque el click puede caer en el avatar o el nombre.
   document.getElementById("evaluatee-modal-list")?.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-user-id]");
     if (!btn) return;
     const user = allUsers.find(u => String(u.id) === btn.dataset.userId);
-    if (user) seleccionarEvaluado(user, btn.dataset.role);
+    if (user) selectEvaluatee(user, btn.dataset.role);
   });
 
-  document.getElementById("evaluatee-modal-cancel")?.addEventListener("click", () => modalSel.close());
+  document.getElementById("evaluatee-modal-cancel")?.addEventListener("click", () => selectionModal.close());
 
 
-  // La entrada a la vista NO va aquí: `cargarFormulario()` llama a
-  // `renderQuestions`, declarada mas abajo con `const`, y `const` no se
-  // hoistea. Invocarla en este punto entra en la zona muerta temporal y lanza
-  // "Cannot access 'renderQuestions' before initialization", que abortaria el
-  // bloque entero. Se ejecuta al FINAL de setupEvaluate. Ver `entrarALaVista()`.
+  // La entrada a la vista NO va aqui: dependeria de `renderQuestions`, un
+  // `const` declarado mas abajo (TDZ). Se ejecuta al final, ver enterView().
 
 
   let currentStep = 0;
@@ -516,14 +493,13 @@ export const setupEvaluate = async () => {
         qLabel.className = "mb-4 text-base font-medium text-[var(--text-main)]";
         qLabel.textContent = q.text;
 
-        // Insignia "Opcional" en las preguntas que no cuentan para la barra
-        // (texto abierto). Sin ella, la barra marca 100% con un textarea vacio y
-        // parece un bug: la insignia explica por que no es obligatorio.
-        if (!esObligatoria(q.input_type)) {
-          const opcional = document.createElement("span");
-          opcional.className = "ml-2 align-middle rounded-full bg-[var(--bg-base)] px-2 py-0.5 text-xs font-semibold text-[var(--text-muted)] border border-[var(--border-main)]";
-          opcional.textContent = "Opcional";
-          qLabel.appendChild(opcional);
+        // Insignia "Opcional": sin ella, la barra marca 100% con un textarea
+        // vacio y parece un bug.
+        if (!isRequired(q.input_type)) {
+          const optionalBadge = document.createElement("span");
+          optionalBadge.className = "ml-2 align-middle rounded-full bg-[var(--bg-base)] px-2 py-0.5 text-xs font-semibold text-[var(--text-muted)] border border-[var(--border-main)]";
+          optionalBadge.textContent = "Opcional";
+          qLabel.appendChild(optionalBadge);
         }
 
         qDiv.appendChild(qLabel);
@@ -632,9 +608,8 @@ export const setupEvaluate = async () => {
       try {
         const draft = JSON.parse(savedDraft);
         if (draft.role === currentRole) {
-          // La persona ya no se restaura del borrador: la clave del borrador ya
-          // esta namespaced por evaluado (draftKey), asi que este borrador ES el
-          // de `seleccion`. Solo quedan el toggle anonimo y las respuestas.
+          // La persona no se restaura: draftKey ya esta namespaced por evaluado,
+          // asi que este borrador ES el de `selection`.
           if (draft.anonymous !== undefined) anonCheck.checked = draft.anonymous;
 
           qContainer.querySelectorAll("[data-question-id]").forEach(el => {
@@ -664,7 +639,7 @@ export const setupEvaluate = async () => {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    if (!currentForm || !activePeriod || !seleccion) {
+    if (!currentForm || !activePeriod || !selection) {
       showToast("Error", "error", "No se ha cargado el formulario, el periodo activo o la persona a evaluar.");
       return;
     }
@@ -698,7 +673,7 @@ export const setupEvaluate = async () => {
 
     const evaluationData = {
       evaluator_id: currentUser.id,
-      evaluatee_id: parseInt(seleccion.id),
+      evaluatee_id: parseInt(selection.id),
       form_id: currentForm.id,
       period_id: activePeriod.id,
       is_anonymous: anonCheck.checked,
@@ -711,9 +686,8 @@ export const setupEvaluate = async () => {
     submitBtn.textContent = "Enviando...";
 
     try {
-      // Se espera al servidor antes de anunciar exito: el periodo puede haberse
-      // cerrado o la evaluacion estar duplicada, y ahi la SPA no es la autoridad
-      // (regla 5). Confirmar antes de tiempo dejaba al coder creyendo que evaluo.
+      // Se espera al servidor antes de anunciar exito: la SPA no es la autoridad
+      // sobre periodo cerrado ni duplicados (regla 5).
       await evaluationService.create(evaluationData);
 
       showToast("¡Evaluación enviada!", "success", "Tu feedback ha sido registrado exitosamente.");
@@ -727,8 +701,8 @@ export const setupEvaluate = async () => {
       // El borrador nunca se borro, pero se reescribe con lo ultimo respondido
       // por si el usuario cambio algo despues de cargarlo.
       localStorage.setItem(draftKey(),  JSON.stringify({
-        role: seleccion.role,
-        evaluatee: seleccion.id,
+        role: selection.role,
+        evaluatee: selection.id,
         anonymous: anonCheck.checked,
         answers: draftAnswers.reduce((acc, curr) => {
           acc[curr.question_id] = curr.score !== null ? curr.score.toString() : curr.comment;
@@ -737,10 +711,8 @@ export const setupEvaluate = async () => {
       }));
 
       if (err.status === 409) {
-        // El backend usa 409 para DOS conflictos distintos: ya evaluaste a esa
-        // persona en el periodo, o el periodo no esta activo. Lo unico que los
-        // distingue es `err.detail`, que puede venir vacio -- por eso siempre va
-        // acompanado de una frase propia y nunca se usa como texto unico.
+        // 409 cubre dos conflictos (duplicado o periodo inactivo) y solo los
+        // distingue `err.detail`, que puede venir vacio: siempre con fallback.
         const reason = err.detail
           ? err.detail
           : "Puede que ya hayas evaluado a esta persona en este periodo, o que el periodo de evaluación ya no esté activo.";
@@ -752,21 +724,12 @@ export const setupEvaluate = async () => {
     }
   });
 
-  // --- ENTRADA A LA VISTA (va al final a proposito) ---
-  //
-  // Tres caminos, ninguno queda sin salida:
-  //   a) tarjeta de /evaluables (?evaluatee_id=&role=) -> persona YA decidida:
-  //      sin modal, directo al formulario.
-  //   b) enlace del sidebar (/evaluations/new sin params) -> se abre el modal.
-  //   c) sin nadie pendiente en el periodo -> estado "completado", sin modal.
-  //
-  // Corre aqui, no arriba, porque toca `renderQuestions`, declarada con `const`
-  // mas abajo en el cuerpo. `const` no se hoistea: llamarla antes entra en la
-  // zona muerta temporal y lanza un ReferenceError que abortaba toda la entrada.
-  const entrarALaVista = async () => {
-    // Sin periodo activo no hay nada que evaluar. El toast de carga ya avisó;
-    // aquí se deja un estado claro en vez del modal o del "completado" (que
-    // mentiría: no es que terminó, es que no hay periodo). Ver regla 5.
+  // --- ENTRADA A LA VISTA ---
+  // Va al final a proposito: usa `renderQuestions`, un `const` que no se
+  // hoistea -- invocarla desde arriba entraria en la TDZ (ReferenceError).
+  const enterView = async () => {
+    // Sin periodo activo no hay nada que evaluar, y "completado" mentiria: no
+    // es que termino, es que no hay periodo (regla 5).
     if (!activePeriod) {
       document.getElementById("anonymous-section")?.classList.add("hidden");
       document.getElementById("wizard-buttons")?.classList.add("hidden");
@@ -790,19 +753,30 @@ export const setupEvaluate = async () => {
       : null;
 
     if (preUser) {
-      const role = preselectedRole || derivarRol(preUser);
-      await seleccionarEvaluado(preUser, role);
+      const role = preselectedRole || deriveRole(preUser);
+      await selectEvaluatee(preUser, role);
       return;
     }
 
-    if (pendientesEnElPeriodo().length === 0) {
-      mostrarEstadoCompletado();
+    const pending = pendingInPeriod();
+
+    if (pending.length === 0) {
+      showAllDoneState();
       return;
     }
 
-    // Sin preseleccion y con pendientes: el modal es la unica via de eleccion.
-    abrirModalSeleccion();
+    // Con un solo pendiente (lo habitual: un clan tiene un tutor y un TL) el
+    // modal pediria una decision que no existe. El boton "Cambiar" de la
+    // tarjeta de contexto lo reabre si el coder esperaba a otra persona.
+    if (pending.length === 1) {
+      const onlyCandidate = pending[0];
+      await selectEvaluatee(onlyCandidate, deriveRole(onlyCandidate));
+      return;
+    }
+
+    // Con dos o mas, la eleccion SI es real: el modal es la unica via.
+    openSelectionModal();
   };
 
-  await entrarALaVista();
+  await enterView();
 };
