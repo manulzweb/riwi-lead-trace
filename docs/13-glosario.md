@@ -42,6 +42,9 @@ trae una analogía o ejemplo.
 | **`fetch`** | La función del navegador para llamar a la API por internet. |
 | **Responsive / mobile-first** | Que se vea bien en celular y en PC. "Mobile-first" = se diseña primero para celular. |
 | **BEM** | Convención para nombrar clases CSS de forma ordenada: `bloque__elemento--modificador`. |
+| **History API** | Función de los navegadores que permite a la SPA cambiar la URL (ej. `/dashboard`) y guardar el historial sin tener que recargar toda la página web. |
+| **View Transitions API** | Tecnología moderna del navegador que permite crear animaciones fluidas al cambiar de una vista a otra, sin requerir librerías pesadas. |
+| **Graceful Degradation** | "Degradación elegante". Diseñar el sistema para que use tecnología avanzada si está disponible, pero si el usuario tiene un navegador viejo, siga funcionando con una experiencia más simple en lugar de romperse. |
 
 ---
 
@@ -65,8 +68,10 @@ el SQL contra MySQL.
 | **Service** | El **cerebro**: aquí viven las **reglas de negocio** (calcular métricas, revisar anonimato, evitar duplicados). Es la parte "que no es solo CRUD". Ya **no** ejecuta SQL: se lo pide al `repository` correspondiente. |
 | **Model** | No hay una capa `models/` en Python: la forma de cada tabla vive en `database/01_ddl.sql`. |
 | **Repository** | Sí existe: `backend/app/repositories/`, **un archivo por entidad** (10 en total). Guarda las consultas SQL (`text()`) para que los `services/` no las tengan mezcladas con las reglas de negocio. El flujo completo es `routes/ → services/ → repositories/ → MySQL`. |
-| **Schema (Pydantic)** | El "molde" que define **qué forma** deben tener los datos que entran y salen. Si no cumplen, se rechazan. |
+| **Schema (Pydantic)** | El "molde" que define **qué forma** deben tener los datos que entran y salen. Si no cumplen, se rechazan. **Pydantic** es la librería líder en Python para hacer esta validación ultra-rápida basada en tipos. |
 | **CRUD** | Create, Read, Update, Delete = crear, leer, actualizar, borrar. Lo básico de una BD. La rúbrica pide **más que CRUD** (por eso las métricas y la lógica de negocio). |
+| **DTO (Data Transfer Object)** | Objeto (como una caja) que se usa puramente para llevar datos de un lado a otro (ej. del backend al frontend) sin lógica. Los Schemas de Pydantic cumplen esta función. |
+| **Manejo Opaco de Errores** | Estrategia de seguridad donde, si el servidor falla, no le cuenta al usuario *por qué* falló (para no revelar código o SQL), sino que le da un código (UUID) y guarda el secreto en los logs internos para que los desarrolladores lo revisen. |
 
 > **¿Por qué separar en capas?** Para que cada archivo sea pequeño y fácil de entender, no repetir
 > código (**DRY**) y que cada persona pueda explicar "su" capa. Si mañana cambia una regla de
@@ -99,6 +104,8 @@ el SQL contra MySQL.
 | **ORM** | "Object-Relational Mapping": una traducción para manejar las tablas como **objetos de Python** en vez de escribir SQL a mano. |
 | **SQLAlchemy** | La libreria que usamos para hablarle a MySQL desde Python. Tiene una capa ORM completa, pero en este proyecto **solo usamos su motor de conexion y `text()`** (SQL plano) — no mapeamos tablas a clases ni usamos su ORM declarativo. |
 | **PyMySQL** | El "cable" que conecta SQLAlchemy con MySQL. |
+| **Connection Pooling** | "Piscina de conexiones". Mantener un grupo de conexiones a la base de datos abiertas y listas para usarse, en lugar de conectar y desconectar desde cero con cada petición (lo cual es muy lento). |
+| **CQRS (Ligero)** | "Command Query Responsibility Segregation". Patrón arquitectónico que separa la forma en que *escribes* datos (Commands, en repositorios) de la forma en que los *lees* (Queries, usando vistas SQL virtuales para métricas). |
 | **FK (Foreign Key / llave foránea)** | Una columna que **apunta** a otra tabla. Ej: una evaluación guarda el `id` del usuario evaluado. Mantiene los datos conectados y consistentes. |
 | **3FN (Tercera Forma Normal)** | Regla de diseño para **no repetir datos** y evitar inconsistencias. En resumen: cada dato vive en un solo lugar. |
 | **Índice único** | Regla en la BD que impide filas repetidas. Aquí es `uq_submission_once (evaluator_id, evaluatee_id, period_id)` sobre la tabla **`evaluation_submissions`**: evita que un coder evalúe dos veces a la misma persona en el mismo periodo, **incluidas las anónimas**, porque esas tres columnas nunca son NULL. El índice viejo `uq_eval_once` (sobre `evaluations`) **ya no existe**: indexaba `evaluator_id`, que era NULL en las anónimas, y MySQL permite **varios NULL** en un índice único — por eso dejaba pasar duplicados anónimos. Ver la regla 2 de `CLAUDE.md`. |

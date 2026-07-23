@@ -396,13 +396,7 @@ ai_feedback_cache(id, evaluatee_id->users, period_id->periods, summary, model,
 > La logica de negocio (anonimato, no-duplicado por periodo, **ICP**, resumen IA, RBAC)
 > se implementa en la capa `services` del backend sobre estas operaciones; **no es CRUD plano**.
 
-## Ampliacion futura (fuera del MVP)
 
-- **Areas / multi-area:** agregar tabla `areas` y `area_id` a users/evaluations/forms para segmentar el ICP por area (Desarrollo, Ingles, HSE, BLS).
-- **Bitacora TL->Tutor:** tabla `tutor_feedback_log` para notas continuas del TL sobre tutores.
-- **Pesos del ICP configurables:** tabla `icp_weights` para que el Admin edite los pesos por categoria.
-- **Analitica de talento:** Talent Score derivado para ranking de futuros TL.
-- **N—N Coder-Clanes:** si un Coder puede estar en varias cohortes a la vez, migrar a tabla intermedia `coder_clanes(user_id, clan_id)`.
 
 Los scripts ejecutables están divididos en cuatro archivos, en este orden:
 - DDL (Estructura): [`/database/01_ddl.sql`](../database/01_ddl.sql)

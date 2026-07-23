@@ -1,8 +1,6 @@
 # Documento Técnico — Riwi LeadTrace
 
-Este es el documento único que exige el enunciado del Proyecto Integrador (Ruta Básica). Reúne, en un
-solo lugar y en lenguaje simple, todo lo que está repartido en el resto de `/docs`. Si solo vas a leer
-un archivo de este repo, que sea este.
+Este documento proporciona la especificación técnica general de Riwi LeadTrace, consolidando los aspectos principales del sistema, arquitectura, decisiones de diseño y alcance del producto.
 
 ## 1. Nombre del proyecto
 
@@ -10,11 +8,7 @@ un archivo de este repo, que sea este.
 
 ## 2. Problema identificado
 
-Dentro del ecosistema Riwi no existe un canal formal para que los Coders evalúen la calidad del
-acompañamiento que reciben de sus Team Leaders y Tutores. Lo que hoy existe es informal y de una sola
-vía: los Coders no tienen forma estructurada, segura ni anónima de decir "esto funcionó" o "esto no",
-y el Admin (Jefe de TL/tutores) no tiene datos consolidados para saber quién está acompañando bien y
-quién necesita apoyo.
+Actualmente, el ecosistema carece de un mecanismo formal y estructurado para la evaluación de desempeño y seguimiento del acompañamiento proporcionado por los Team Leaders y Tutores. La ausencia de un canal estructurado, seguro y con soporte de anonimato dificulta la recolección de métricas fiables, limitando la capacidad de la administración para tomar decisiones basadas en datos consolidados.
 
 ## 3. Objetivo general
 
@@ -34,23 +28,9 @@ información accionable para tomar decisiones.
 
 ## 5. Alcance (MVP)
 
-La idea en una frase: los Coders evalúan —con formularios, y si quieren de forma anónima— a sus Team
-Leaders y Tutores. El sistema calcula una nota de 0 a 100 por persona (el ICP) y le arma al Admin un
-tablero más un resumen escrito por IA.
+Descripción de alto nivel: El sistema provee una plataforma para la evaluación ascendente mediante formularios estructurados, garantizando el anonimato opcional del evaluador. El núcleo analítico procesa estas interacciones para calcular el Índice de Calidad Percibida (ICP) por líder y genera un análisis cualitativo mediante integración con modelos de lenguaje grande (LLMs).
 
-**Dentro del MVP:** login (verificacion de contrasena con bcrypt, **sin JWT**, ver
-`06-arquitectura.md`), 4 roles (coder/tutor/team_leader/admin; un usuario puede tener **mas de
-uno a la vez**, ver sección 8), listar evaluables, evaluar
-Team Leader y Tutor con formulario estructurado e interactivo (una pregunta a la vez), feedback anónimo
-opcional, historial del Coder, **gestión del periodo de evaluación por el Admin** (activa/cierra la
-ventana; sin periodo activo los Coders ven "No hay formularios por realizar"), **edición mínima de
-preguntas por el Admin** (texto y activar/desactivar, con periodo cerrado), dashboard con ICP para el
-Admin, resumen de feedback con IA, despliegue accesible.
-
-**Fuera del MVP** (post-validación): segmentación multi-área, bitácora descendente TL→Tutor, analítica
-de talento, pesos del ICP configurables por el Admin, editor completo de formularios (crear plantillas
-y tipos de pregunta), notificaciones, i18n. Detalle completo y el porqué de cada recorte en
-[`09-mvp-alcance.md`](./09-mvp-alcance.md).
+**Alcance funcional (MVP):** Autenticación de usuarios (verificación de contraseñas mediante bcrypt), control de acceso basado en roles (RBAC, soportando la asignación de múltiples roles concurrentes), listado de entidades evaluables, captura de evaluaciones estructuradas con protección de identidad (anonimato), histórico de evaluaciones por usuario, gestión del ciclo de vida de los periodos de evaluación por parte del administrador, administración básica de plantillas de formularios (activación/desactivación y actualización de texto), visualización de métricas (dashboard administrativo con cálculo de ICP) e integración de resúmenes procesados por IA.
 
 ## 6. Historias de usuario
 
@@ -68,7 +48,7 @@ Monorepo full-stack: una SPA en HTML/CSS/JS Vanilla habla por REST con un backen
 habla con MySQL vía SQLAlchemy (SQL plano con `text()`, sin ORM declarativo).
 
 ```
-SPA (frontend/)  ──HTTP/REST (JSON, sin JWT)──>  API (backend/ FastAPI)  ──SQLAlchemy `text()`──>  MySQL
+SPA (Vite/Tailwind)  ──HTTP/REST (JSON)──>  API (backend/ FastAPI)  ──SQLAlchemy `text()`──>  MySQL
 ```
 
 El backend está organizado en tres capas — `routes` (validan entrada/salida con Pydantic),
@@ -77,21 +57,14 @@ El backend está organizado en tres capas — `routes` (validan entrada/salida c
 responsabilidad y nadie mezcle reglas de negocio con endpoints ni con SQL. El flujo es
 `routes/ → services/ → repositories/ → MySQL`. **No hay `models/`** (la forma de las tablas vive
 solo en `database/01_ddl.sql`; `repositories/` no reintroduce SQLAlchemy Core ni `Table`, solo
-agrupa las mismas queries `text()` por entidad). Tampoco hay JWT: el login solo verifica el hash con
-bcrypt, no emite token, y el rol/ID de quien llama se confía al valor que manda el propio front
-(tradeoff de seguridad para mantener el MVP simple, ver `06-arquitectura.md`).
+agrupa las mismas queries `text()` por entidad). El login solo verifica el hash con
+bcrypt, y el rol/ID de quien llama se confía al valor que manda el propio front.
 El detalle completo, con diagramas y el contrato REST, está en
 [`06-arquitectura.md`](./06-arquitectura.md).
 
 ## 8. Modelo de datos
 
-Base de datos relacional en MySQL, normalizada hasta 3FN, con las entidades principales: `users`,
-`roles`, `user_roles`, `team_leader_clans`, `periods`, `forms` + `categories` + `questions`,
-`evaluations` + `evaluation_submissions` + `evaluation_details`, y `ai_feedback_cache`. El
-contenido de una evaluación (`evaluations`) y quién la envió (`evaluation_submissions`) viven en
-tablas separadas — así el anonimato es una propiedad estructural del modelo (ver sección 5). El
-**ICP no se persiste**: se calcula al momento a partir de las evaluaciones, así siempre refleja los
-datos más recientes.
+Base de datos relacional (MySQL), normalizada hasta 3FN. Entidades principales: `users`, `roles`, `user_roles`, `team_leader_clans`, `periods`, `forms`, `categories`, `questions`, `evaluations`, `evaluation_submissions`, `evaluation_details`, y `ai_feedback_cache`. La persistencia de una evaluación (`evaluations`) y la de su autoría (`evaluation_submissions`) se manejan en tablas desacopladas, estableciendo el anonimato como una restricción estructural del modelo (la ausencia del vínculo garantiza imposibilidad de trazabilidad). El **ICP es un campo derivado**: su valor se calcula en tiempo de consulta (on-read) agregando los datos más recientes.
 
 **Roles múltiples por usuario:** un usuario puede tener más de un rol a la vez (relación N:M
 `users`↔`roles` vía `user_roles`, no un `role_id` único). Un Team Leader puede además tener **dos
@@ -106,10 +79,10 @@ script SQL ejecutable en [`07-base-de-datos.md`](./07-base-de-datos.md) y
 
 | Capa | Elección | Por qué |
 |---|---|---|
-| Frontend | HTML5 + CSS3 + JS Vanilla (SPA) | Requisito del proyecto (sin frameworks) |
+| Frontend | Vite + Vanilla JS + TailwindCSS | Empaquetado rapido y estilos modulares con utilidad |
 | Backend | Python + FastAPI | Alineado a lo aprendido en la Ruta Básica; validación y docs automáticas |
 | Base de datos | MySQL | Dominio naturalmente relacional; consultas agregadas para el dashboard |
-| Auth | Sin JWT | El rol/ID lo manda el propio front y el backend lo confía; simplifica el MVP a costa de no verificar identidad criptográficamente |
+| Auth | Login basico con bcrypt | El backend valida credenciales localmente sin emitir token. |
 | IA | Google Gemini | Resume el feedback en lenguaje natural para el Admin |
 
 Justificación ampliada, comparación contra alternativas y las decisiones que evitan sobreingeniería en
