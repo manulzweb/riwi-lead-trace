@@ -39,16 +39,18 @@ export const tableComponent = ({ title, columns, data, renderRow, emptyStateHtml
   return `
     <div class="bg-[var(--bg-panel)] rounded-3xl border border-[var(--border-main)] shadow-sm overflow-hidden flex-1">
       ${headerHtml}
-      <table class="w-full text-left border-collapse">
-        <thead>
-          <tr class="border-b border-[var(--border-main)] text-[var(--text-muted)] text-sm bg-[var(--bg-panel)]">
-            ${columnsHtml}
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-[var(--border-main)]">
-          ${bodyHtml}
-        </tbody>
-      </table>
+      <div class="overflow-x-auto w-full">
+        <table class="w-full text-left border-collapse whitespace-nowrap md:whitespace-normal">
+          <thead>
+            <tr class="border-b border-[var(--border-main)] text-[var(--text-muted)] text-sm bg-[var(--bg-panel)]">
+              ${columnsHtml}
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-[var(--border-main)]">
+            ${bodyHtml}
+          </tbody>
+        </table>
+      </div>
     </div>
   `;
 };
