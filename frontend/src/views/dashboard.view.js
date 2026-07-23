@@ -607,8 +607,10 @@ const renderDashboardContent = async (content, user, name, role) => {
               className: "p-6 shadow-sm border border-[var(--border-main)] h-full flex flex-col",
               children: `
                 <h3 class="text-lg font-bold text-[var(--text-main)] mb-4">Actividad Reciente y Evaluaciones</h3>
-                <div class="flex-1 w-full" id="tl-recent-activity">
-                  <div class="h-48 skeleton-shimmer rounded-xl"></div>
+                <div class="flex-1 w-full overflow-x-auto">
+                  <div class="min-w-[700px] flex flex-col h-full" id="tl-recent-activity">
+                    <div class="h-48 skeleton-shimmer rounded-xl"></div>
+                  </div>
                 </div>
               `
             })}
@@ -709,11 +711,21 @@ const renderDashboardContent = async (content, user, name, role) => {
         // Flatten every text answer into a single list.
         const allComments = [];
         tlReceivedEvals.forEach(ev => {
+           let evaluationIcp = null;
+           if (ev.answers) {
+              const scaleAnswers = ev.answers.filter(a => a.score !== null && a.score !== undefined);
+              if (scaleAnswers.length > 0) {
+                 const earned = scaleAnswers.reduce((sum, a) => sum + a.score, 0);
+                 const max = scaleAnswers.length * 5;
+                 evaluationIcp = Math.round((earned / max) * 100);
+              }
+           }
+           
            ev.answers?.forEach(ans => {
              if (ans.comment && ans.comment.toLowerCase() !== "sí" && ans.comment.toLowerCase() !== "no") {
                 allComments.push({
                    date: ev.created_at,
-                   score: ans.score,
+                   score: evaluationIcp,
                    comment: ans.comment,
                    status: ev.status,
                    id: ev.id
@@ -738,7 +750,7 @@ const renderDashboardContent = async (content, user, name, role) => {
                const badgeText = item.status === 'submitted' ? 'Enviado' : 'Pendiente';
                
                return `
-                 <div class="px-6 py-4 flex items-center justify-between border-b border-[var(--border-main)] last:border-0 hover:bg-[var(--bg-base)] transition group">
+                 <div class="px-6 py-4 flex items-center justify-between border-b border-[var(--border-main)] last:border-0 hover:bg-[var(--bg-base)] transition group min-w-[700px]">
                    <div class="flex-1 grid grid-cols-12 gap-4 items-center">
                      <div class="col-span-2 text-sm text-[var(--text-muted)] font-medium">${dayjs(item.date).format('D MMM')}</div>
                      <div class="col-span-2 text-sm font-bold text-[var(--text-main)]">Anónimo</div>
