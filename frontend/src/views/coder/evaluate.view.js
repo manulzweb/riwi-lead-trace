@@ -58,7 +58,7 @@ const roleBadge = (role) =>
 // (sin insignia de estado ni boton propio): la tarjeta entera es el boton.
 const tarjetaCompacta = (user, role) => `
   <button type="button" data-user-id="${user.id}" data-role="${role}"
-    class="flex items-center gap-3 rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] p-3 text-left transition-all hover:border-[var(--brand-hover)] hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-hover)]">
+    class="flex items-center gap-3 rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] p-3 text-left transition-all hover:border-[var(--brand-hover)] hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--brand-hover)]">
     <span aria-hidden="true" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--brand-bg)]/10 text-sm font-bold text-[var(--brand-bg)]">${escapeHtml(getIniciales(user.name))}</span>
     <span class="min-w-0 flex-1">
       <span class="block truncate text-sm font-bold text-[var(--text-main)]">${escapeHtml(user.name)}</span>
@@ -139,7 +139,7 @@ export const renderEvaluate = () => `
       size: "lg",
       children: `
         <p class="mb-5 -mt-4 text-sm text-[var(--text-muted)]">Selecciona a un Team Leader o Tutor pendiente en este periodo.</p>
-        <div id="evaluatee-modal-list" class="grid gap-3 sm:grid-cols-2 max-h-[55vh] overflow-y-auto pr-1" aria-live="polite"></div>
+        <div id="evaluatee-modal-list" class="grid gap-3 sm:grid-cols-2 max-h-[55vh] overflow-y-auto p-1" aria-live="polite"></div>
         <div class="mt-6 flex justify-end">
           <button type="button" id="evaluatee-modal-cancel"
             class="cursor-pointer rounded-2xl border border-[var(--border-main)] bg-transparent px-6 py-3 text-sm font-bold text-[var(--text-main)] transition-all hover:bg-[var(--bg-base)] hover:shadow-sm">
