@@ -2,15 +2,15 @@ import { navBarComponent } from "../../components/navbar";
 import { showToast, showConfirm } from "../../components/alerts";
 import { categoryService } from "../../services/categories.service.js";
 import { escapeHtml } from "../../utils/validators";
-import { setupModalA11y } from "../../utils/modalA11y";
+import { modalComponent, setupModal } from "../../components/modal";
 import { authService } from "../../services/auth.service";
 import { searchBoxComponent, setupSearch } from "../../components/searchBox";
 import { emptyStateComponent } from "../../components/emptyState.js";
 import { setupPagination } from "../../components/pagination";
 import { z } from "zod";
 
-// Estado de error del listado: ofrece reintentar en vez de pedir recargar la
-// pagina. El listener del boton se engancha en loadCategories().
+// List error state: offers a retry instead of a page reload. The button
+// listener is wired up in loadCategories().
 const renderCategoriesError = () => `
   <div class="text-center py-8">
     <p class="text-[var(--danger-text)] text-sm">No se pudieron cargar las categorías.</p>
@@ -36,9 +36,10 @@ export const renderAdminCategories = () => `
     </section>
 
     <!-- Modal Form -->
-    <div id="category-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300">
-      <div role="dialog" aria-modal="true" aria-labelledby="category-modal-title" class="w-full max-w-md scale-95 transform rounded-3xl bg-[var(--bg-panel)] p-8 shadow-2xl transition-transform duration-300 border border-[var(--border-main)]">
-        <h2 id="category-modal-title" class="mb-6 text-2xl font-bold font-heading text-[var(--text-main)]">Nueva Categoría</h2>
+    ${modalComponent({
+      id: "category-modal",
+      title: "Nueva Categoría",
+      children: `
         <form id="form-category">
           <div class="mb-6">
             <label for="category-name" class="mb-2 block text-sm font-semibold text-[var(--text-main)]">Nombre</label>
@@ -49,8 +50,8 @@ export const renderAdminCategories = () => `
             <button type="submit" class="w-full rounded-xl bg-[var(--brand-bg)] py-3 font-bold text-[var(--brand-text)] transition-all hover:bg-[var(--brand-hover)] cursor-pointer">Guardar</button>
           </div>
         </form>
-      </div>
-    </div>
+      `,
+    })}
 
     <div id="category-search-slot" class="mt-8 max-w-sm"></div>
 
@@ -71,7 +72,6 @@ export const renderAdminCategories = () => `
 `;
 
 export const setupAdminCategories = () => {
-  const modal = document.getElementById("category-modal");
   const modalTitle = document.getElementById("category-modal-title");
   const btnCreate = document.getElementById("btn-create-category");
   const btnCancel = document.getElementById("btn-cancel-category");
@@ -82,16 +82,13 @@ export const setupAdminCategories = () => {
 
   let editCategoryId = null;
 
-  const modalA11y = setupModalA11y(modal, () => closeModal());
-
-  const openModal = (triggerEl) => {
-    modal.classList.remove("hidden");
-    modalA11y.onOpen(triggerEl);
-    setTimeout(() => {
-      modal.classList.remove("opacity-0");
-      modal.firstElementChild.classList.remove("scale-95");
-    }, 10);
-  };
+  // Form and edit-id reset live in onClose, fired after the close animation.
+  const { open: openModal, close: closeModal } = setupModal("category-modal", {
+    onClose: () => {
+      form.reset();
+      editCategoryId = null;
+    },
+  });
 
   const openCreateModal = (e) => {
     editCategoryId = null;
@@ -107,17 +104,6 @@ export const setupAdminCategories = () => {
     submitBtn.textContent = "Guardar Cambios";
     nameInput.value = category.name;
     openModal(triggerEl);
-  };
-
-  const closeModal = () => {
-    modal.classList.add("opacity-0");
-    modal.firstElementChild.classList.add("scale-95");
-    setTimeout(() => {
-      modal.classList.add("hidden");
-      form.reset();
-      editCategoryId = null;
-    }, 300);
-    modalA11y.onClose();
   };
 
   btnCreate.addEventListener("click", openCreateModal);
@@ -198,8 +184,7 @@ export const setupAdminCategories = () => {
       allCategories = await categoryService.getCategories();
       renderCategoriesList(allCategories);
       if (searchSlot) {
-        // Se regenera para no acumular listeners de recargas anteriores
-        // (ver mismo comentario en periods.view.js).
+        // Regenerated so listeners from previous reloads do not pile up.
         searchSlot.innerHTML = searchBoxComponent('category-search', 'Buscar categoría...');
         setupSearch('category-search', allCategories, ['name'], renderCategoriesList);
       }
@@ -215,7 +200,7 @@ export const setupAdminCategories = () => {
     e.preventDefault();
     const name = nameInput.value.trim();
 
-    // Validacion Zod
+    // Zod validation
     const categorySchema = z.object({
       name: z.string().min(3, "El nombre debe tener al menos 3 caracteres").max(60, "El nombre es muy largo (máximo 60)")
     });
@@ -226,14 +211,14 @@ export const setupAdminCategories = () => {
       return;
     }
 
-    // Optimistic UI: Actualizar o agregar a la lista inmediatamente
+    // Optimistic UI: update or append to the list right away
     const originalCategories = [...allCategories];
     
     if (editCategoryId) {
       const idx = allCategories.findIndex(c => c.id === editCategoryId);
       if (idx !== -1) allCategories[idx] = { ...allCategories[idx], name };
     } else {
-      // Fake ID temporal para el renderizado optimista
+      // Temporary fake ID for the optimistic render
       allCategories.push({ id: Date.now(), name });
     }
     
@@ -248,10 +233,10 @@ export const setupAdminCategories = () => {
         await categoryService.create(name);
         showToast("Categoría Creada", "success");
       }
-      // Refrescar para obtener los IDs reales de la base de datos
+      // Refetch to get the real database IDs
       loadCategories();
     } catch (error) {
-      // Rollback en caso de error
+      // Rollback
       allCategories = originalCategories;
       renderCategoriesList(allCategories);
       

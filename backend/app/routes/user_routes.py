@@ -3,7 +3,8 @@ from typing import List, Optional
 import logging
 from app.schemas.user import UserCreate, UserUpdate, UserOut
 from app.services.user_service import user_service
-from app.exceptions.user_exceptions import UserNotFoundException, EmailAlreadyExistsException, UserInUseException
+
+from app.exceptions.base import ApplicationException
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -16,20 +17,12 @@ router = APIRouter()
 )
 def get_users(role: Optional[str] = Query(None, description="Filtrar por rol (ej. team_leader, tutor)")):
     """Consulta indexada sobre la tabla `users` mediante el campo `role_id`."""
-    try:
-        return user_service.get_users(role)
-    except Exception as e:
-        logger.error(f"Error fetching users: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al consultar usuarios")
+    return user_service.get_users(role)
 
 @router.get("/evaluables", response_model=List[UserOut])
 def get_evaluables(evaluator_id: Optional[int] = Query(None, description="Si se envía, excluye de la lista al propio usuario aunque tenga otro ID (por email)")):
     """Consulta filtrada con un array `IN` sobre `role_id` para resolver entidades evaluables (`team_leader`, `tutor`)."""
-    try:
-        return user_service.get_evaluables(evaluator_id)
-    except Exception as e:
-        logger.error(f"Error fetching evaluables: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+    return user_service.get_evaluables(evaluator_id)
 
 @router.get("/users/{user_id}", response_model=UserOut)
 def get_user(user_id: int):
@@ -41,9 +34,6 @@ def get_user(user_id: int):
         return user
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Error fetching user: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.post(
     "/users", 
@@ -57,11 +47,12 @@ def create_user(user: UserCreate):
     """Inserta un registro transaccional en `users` (aplica hash bcrypt sincrónico al password) y asocia FK en `user_roles`."""
     try:
         return user_service.create_user(user)
-    except EmailAlreadyExistsException as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error creating user: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+    except ApplicationException:
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
+        raise
 
 @router.put(
     "/users/{user_id}", 
@@ -74,26 +65,24 @@ def update_user(user_id: int, user: UserUpdate):
     """Operación PUT (Reemplazo total) sobre `users` y recálculo/reemplazo de entradas en `user_roles`."""
     try:
         return user_service.update_user(user_id, user)
-    except UserNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except EmailAlreadyExistsException as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error updating user: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+    except ApplicationException:
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
+        raise
 
 @router.patch("/users/{user_id}", response_model=UserOut)
 def patch_user(user_id: int, user: UserUpdate):
     """Operación PATCH (Reemplazo parcial) sobre `users`. Muta únicamente los campos proporcionados en el payload sin afectar la entidad completa."""
     try:
         return user_service.update_user(user_id, user)
-    except UserNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except EmailAlreadyExistsException as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error patching user: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+    except ApplicationException:
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
+        raise
 
 @router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_user(user_id: int):
@@ -106,10 +95,9 @@ def delete_user(user_id: int):
     try:
         user_service.delete_user(user_id)
         return None
-    except UserNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except UserInUseException as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error deleting user: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+    except ApplicationException:
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
+        raise

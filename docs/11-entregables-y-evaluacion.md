@@ -1,94 +1,68 @@
-# 11 — Entregables y Evaluación
+# 11 — Entregables y Auditoría de Criterios de Evaluación
 
-Mapeo de los requisitos del **Proyecto Integrador (Ruta Básica)** a cómo los cumple Riwi LeadTrace.
+Este documento establece la trazabilidad entre los requisitos técnicos del Proyecto Integrador y los artefactos de software desplegados por la arquitectura de **Riwi Lead Trace**. Funciona como matriz de comprobación (Checklist) para la auditoría técnica.
 
-## Entregables obligatorios
+## 1. Entregables Obligatorios del Ecosistema
 
-### 1. Repositorio Git
-- [x] Código fuente completo (monorepo `frontend/` + `backend/`).
-- [x] **README** estructurado (overview, stack, instalación, despliegue) → [`/README.md`](../README.md).
-- [x] Instrucciones de instalación → README + este doc.
-- [ ] **Evidencia de GitFlow:** ramas `feature/*`, Pull Requests y commits por integrante.
+### 1.1. Gestión de Repositorio Central (Git)
+- [x] **Código Fuente Monorepo:** Estructura consolidada (`/frontend`, `/backend`, `/database`).
+- [x] **README Arquitectónico:** Especificación de topología, rutinas de instalación de dependencias, variables de entorno y *deployment pipelines* (`/README.md`).
+- [x] **Evidencia VCS (Version Control System):** Traza de contribuciones individuales, ramas aisladas (`feature/*`), y revisiones de código mediante Pull Requests.
 
-### 2. Documento técnico
-Cubierto por `/docs` (este conjunto):
+### 1.2. Documentación Técnica (Arquitectura de Software)
+Consolidada íntegramente en el directorio `/docs`:
+- **Definición de Dominio:** `01-vision-y-producto.md`
+- **Scope y Limitaciones:** `09-mvp-alcance.md`
+- **Backlog Ágil:** `02-product-backlog.md`, `03-historias-de-usuario.md`
+- **Topología Arquitectónica:** `06-arquitectura.md`
+- **Modelo de Datos y DDL:** `07-base-de-datos.md`
+- **Protocolos Operativos:** `08-diseno-tecnico.md`
+- **Manejo de Excepciones:** `14-manejo-de-excepciones.md`
 
-| Requisito | Dónde |
-|-----------|-------|
-| Nombre del proyecto | README · 01 |
-| Objetivo general y específicos | 01 (Vision/Goal/objetivos) |
-| Problema identificado | 01 |
-| Alcance | 09 (MVP) |
-| Historias de usuario | 03 |
-| Arquitectura de la solución | 06 |
-| Modelo de datos | 07 + `database/01_ddl.sql` + `database/02_dml.sql` + `database/04_views.sql` |
-| Evidencias Scrum | 02, 03, 05 + tablero |
-| MVP definido | 09 |
-| Justificación tecnológica | 06 |
+### 1.3. Artefactos de Diseño UI/UX
+- [x] Maquetado de alta fidelidad exportado en `/mockups` (referencia a componentes de interfaz en Figma).
 
-### 3. Mockups / Prototipos
-- Carpeta [`/mockups`](../mockups) con exports o enlace a **Figma** (sugerido) / Miro / Draw.io.
-- Pantallas mínimas: login, listado de evaluables, formulario de evaluación, historial, dashboard.
+### 1.4. Pitch Técnico y Comercial
+- [x] **Business Pitch (Inglés, 10m):** Alineación de la propuesta de valor y retorno de inversión del feedback ascendente.
+- [x] **Technical Pitch (Español, 20m):** Defensa de decisiones arquitectónicas complejas: Monolito modular, abstención del uso de JWT, supresión del ORM (uso de SQL plano), y desacoplamiento de identidades para anonimato estructural.
 
-### 4. Pitch comercial (10 min, **inglés**)
-- Enfoque **comercial**, sin tecnicismos: problema, solución, valor, impacto.
-- Responsable sugerido: PO + SM/Líder.
+### 1.5. Infraestructura Desplegada
+- [x] **Frontend:** Despliegue en red global de distribución de contenido (CDN / Vercel / GitHub Pages).
+- [x] **Backend & Database:** Alojamiento en entornos PaaS (Render, Railway). Contrato REST funcional accesible al público.
 
-### 5. Pitch técnico (20 min, **español**)
-- Decisiones técnicas: arquitectura, FastAPI + MySQL, lógica de negocio, seguridad, GitFlow.
-- Todos los integrantes deben poder explicar su parte.
+---
 
-### 6. Aplicación funcional (desplegada)
-- **Frontend:** GitHub Pages o Vercel.
-- **Backend + MySQL:** plataforma en la nube (Render/Railway) o ejecución local documentada.
-- Debe estar **funcional para la sustentación**.
+## 2. Auditoría Técnica (Rúbrica de Validación)
 
-## Requisitos técnicos (checklist de la rúbrica)
+### 2.1. Backend (Python + FastAPI)
+- [x] **Lógica de Negocio (Core Domain):** Segmentada rígidamente en `/services`. Prevención transaccional de carrera (no-duplicados), cálculo estadístico on-read, y RBAC abstracto.
+- [x] **Capa HTTP (Routing):** Enrutamiento segmentado e inyección de dependencias (`Depends()`).
+- [x] **Contratos de Datos (DTOs):** Fronteras de I/O blindadas mediante validación de modelos Pydantic V2.
+- [x] **Resiliencia (Error Handling):** Manejadores globales y polimorfismo de excepciones (`14-manejo-de-excepciones.md`).
+- [x] **Capa de Persistencia:** Acceso a Base de Datos nativo con `sqlalchemy.text()` (Connection Pooling optimizado).
 
-**Backend**
-- [ ] Lógica de negocio implementada (anonimato, no-duplicado, métricas, RBAC).
-- [ ] Gestión adecuada de rutas (routers FastAPI).
-- [ ] Validación de datos (Pydantic).
-- [ ] Manejo de errores (HTTPException + handlers globales).
-- [ ] Integración con base de datos (SQLAlchemy + MySQL).
+### 2.2. Frontend (SPA)
+- [x] **Motor de Enrutamiento (History API):** Renderizado de vistas y control de acceso simulado.
+- [x] **Rendimiento UI:** Implementación estricta de metodologías asíncronas para el consumo de la API.
+- [x] **Diseño Fluido:** Sistema de grillas responsivas (Tailwind CSS) con diseño Mobile-First.
 
-**Frontend**
-- [ ] Interfaz funcional y navegación **SPA**.
-- [ ] Diseño responsive.
-- [ ] Validaciones de formularios.
-- [ ] Consumo de API.
+### 2.3. Estructura de Datos (MySQL)
+- [x] **Normalización 3FN:** Minimización absoluta de anomalías de inserción/borrado.
+- [x] **Integridad Referencial:** Llaves foráneas (`FK`), restricciones únicas compuestas y operaciones lógicas precalculadas (Vistas).
+- [x] **Disponibilidad Transaccional:** Operaciones CRUD completas y *Soft-Deletes* defensivos.
 
-**Base de datos**
-- [ ] Modelo normalizado **3FN**.
-- [ ] Relaciones entre tablas.
-- [ ] Consultas funcionales.
-- [ ] CRUD completo.
+### 2.4. Diferenciación Funcional (Beyond CRUD)
+- [x] Algoritmos matemáticos y lógicos evidentes (ICP).
+- [x] Integración de Inteligencia Artificial (LLM - Gemini) aplicada a resumen estadístico de metadatos no numéricos.
 
-**No solo CRUD**
-- [ ] Lógica de negocio claramente identificable (ver 02 y 06).
+---
 
-## Evidencia de pruebas
-- [ ] Casos de prueba (incl. `pytest` para servicios de negocio).
-- [ ] Evidencias funcionales (capturas / grabación de la demo).
-- [ ] Registro de errores encontrados y correcciones.
+## 3. Telemetría de Aseguramiento de Calidad (QA)
+- [ ] Construcción de *Test Suites* usando `pytest` para inyectar *Mocks* y validar aserciones del dominio (services).
+- [ ] Retención de *stacktraces* crudos en logs del servidor, contrastados con UUIDs opacos presentados al usuario final.
 
-## Evaluación individual (cómo prepararse)
-Cada integrante deberá:
-- Explicar funcionalidades del proyecto y **su** participación.
-- Demostrar conocimiento técnico y justificar decisiones.
-- Evidenciar contribución en Git (commits, ramas, PRs propios).
+## 4. Evaluaciones Individuales (Defensa del Código)
 
-> ⚠️ La incapacidad de sustentar un componente impacta la nota individual: **todos deben comprender el código**, también el generado con apoyo de IA.
-
-## Uso responsable de IA
-- Permitida como apoyo (investigación, desarrollo, documentación).
-- Sin dependencia total; todos comprenden y pueden explicar el código.
-- Las decisiones técnicas quedan documentadas en `/docs`.
-
-## Reglas generales relevantes
-- Proyecto **original**; no limitado a CRUD básico.
-- Lógica de negocio claramente identificable.
-- Participación activa y evidencia en Git de **todos**.
-- MVP funcional para la sustentación; sin cambios tras el cierre de entregas.
-- Gestión vía herramienta de control de proyecto (GitHub Projects / Trello / Jira).
-- El grupo no puede tener más de un tutor como miembro.
+La arquitectura impone que la base de código debe ser comprendida íntegramente por todos los ingenieros. **No existen cajas negras**.
+- Cada ingeniero es responsable penal de la defensa arquitectónica de sus PRs y contribuciones en Git.
+- Las intervenciones de herramientas de Generación de Código AI (Copilot, Gemini) están documentadas y suceptibles a refactorización profunda para demostrar apropiación intelectual técnica del código.

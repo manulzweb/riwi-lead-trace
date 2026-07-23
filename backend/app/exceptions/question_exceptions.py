@@ -1,27 +1,30 @@
-class QuestionException(Exception):
+from app.exceptions.base import ApplicationException
+
+
+class QuestionException(ApplicationException):
     """Base exception for question module"""
     pass
 
 class ActivePeriodExistsException(QuestionException):
-    pass
+    http_status = 409
 
 class QuestionNotFoundException(QuestionException):
-    pass
+    http_status = 404
 
 class QuestionAlreadyReplacedException(QuestionException):
-    pass
+    http_status = 409
 
 class InvalidQuestionTypeException(QuestionException):
-    pass
+    http_status = 400
 
 class SemanticsNotCoherentException(QuestionException):
-    pass
+    http_status = 409
 
 class FormNotFoundException(QuestionException):
-    pass
+    http_status = 404
 
 class CategoryNotFoundException(QuestionException):
-    pass
+    http_status = 404
 
 class InvalidWeightsException(QuestionException):
-    pass
+    http_status = 422

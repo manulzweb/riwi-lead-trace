@@ -1,10 +1,6 @@
 import { request, jsonOptions } from './api.service.js';
 
-// Unicos roles evaluables (ver CLAUDE.md / form_service.EVALUABLE_ROLES en el backend).
-const TARGET_ROLES = ['team_leader', 'tutor'];
-
-// Mapea entre los codigos de tipo que usa el constructor visual (Sebastian)
-// y el input_type real que espera el backend (questions.input_type).
+// Bridges the visual builder type codes <-> backend questions.input_type.
 const TYPE_TO_INPUT_TYPE = {
   scale_1_5: 'scale',
   open_text: 'text',
@@ -16,9 +12,8 @@ const INPUT_TYPE_TO_TYPE = {
   yes_no: 'yes_no',
 };
 
-// El constructor no tiene un campo de categoria en su UI todavia; las
-// preguntas que crea quedan agrupadas bajo esta categoria por defecto
-// (se resuelve su id real una sola vez, ver getDefaultCategoryId).
+// The builder has no category field yet, so new questions fall back to this
+// one. Its real id is resolved once (see getDefaultCategoryId).
 const DEFAULT_CATEGORY_NAME = 'General';
 let defaultCategoryIdPromise = null;
 const getDefaultCategoryId = () => {
@@ -31,31 +26,30 @@ const getDefaultCategoryId = () => {
   return defaultCategoryIdPromise;
 };
 
-// GET /forms?target_role= devuelve un arreglo (la formulario activa de ESE
-// rol, si existe). Como solo hay 2 roles evaluables, se piden ambas en
-// paralelo y se arma la lista a partir de eso.
+// target_role_id -> role name, so views do not resolve it. Ids come from the
+// seed (database/02_dml.sql).
+const ROLE_ID_TO_NAME = { 2: 'team_leader', 3: 'tutor' };
+const withRoleName = (form) => ({
+  ...form,
+  // null on generic templates; the view renders that case itself.
+  targetRole: ROLE_ID_TO_NAME[form.target_role_id] || null,
+});
+
+// Admin grid: everything (live + templates), no archived. No target_role,
+// because generic templates belong to no role.
 const getForms = async () => {
-  const results = await Promise.all(
-    TARGET_ROLES.map(async (targetRole) => {
-      try {
-        const forms = await request(`/forms?target_role=${targetRole}`);
-        // Mapeamos todas las formularios que devuelva el backend
-        return forms.map(t => ({ ...t, targetRole }));
-      } catch (error) {
-        // Si la API arroja 404 porque todavía no hay formularios creadas para este rol,
-        // devolvemos un array vacío para no romper nada. Se compara el status
-        // real que expone api.service.js, no el texto del mensaje.
-        if (error.status === 404) return [];
-        throw error; 
-      }
-    })
-  );
-  // results es un array de arrays (uno por rol), lo aplanamos a una sola lista
-  return results.flat();
+  const forms = await request('/forms?kind=all');
+  return forms.map(withRoleName);
 };
 
-// Para editar, ademas del texto (que ya viene en /forms) hace falta el peso
-// de cada pregunta, que /forms no expone -- se completa con /questions.
+// Coder history: the only consumer that needs titles of archived forms,
+// hence archived=include.
+const getFormsForHistory = async () => {
+  const forms = await request('/forms?kind=all&archived=include');
+  return forms.map(withRoleName);
+};
+
+// Editing also needs each question weight, which /forms does not expose.
 const getFormForEdit = async (form) => {
   const questions = await request(`/questions?form_id=${form.id}`);
   return {
@@ -77,23 +71,23 @@ const toQuestionPayload = async (q) => ({
   weight_percent: (TYPE_TO_INPUT_TYPE[q.type] || 'text') === 'scale' ? (q.weight || 0) : 0,
 });
 
-// Formulario nueva: POST /forms crea la formulario y todas sus preguntas
-// iniciales en un solo paso (no hay historial previo que versionar).
+// New form: POST /forms creates the form and all its initial questions in one
+// step (there is no previous history to version).
 const createForm = async (formData) => {
   const payload = {
     title: formData.title,
     description: formData.description || null,
-    target_role: formData.targetRole,
-    is_form: formData.isForm || false,
+    // null is valid only on templates; a live form gets 422 (and behind it,
+    // chk_form_role_required in MySQL).
+    target_role: formData.targetRole || null,
+    is_template: formData.isTemplate || false,
     questions: await Promise.all(formData.questions.map(toQuestionPayload)),
   };
   return await request('/forms', jsonOptions('POST', payload));
 };
 
-// Formulario existente: no hay un "reemplazar todas las preguntas de una",
-// asi que se compara el estado actual del builder contra lo que estaba
-// cargado al abrirlo y se manda solo lo que cambio -- agregar, quitar,
-// reformular texto (versiona) y por ultimo reequilibrar los pesos.
+// Existing form: there is no "replace all questions" endpoint, so we diff
+// against originalQuestions and send only what changed.
 const updateForm = async (id, formData, onCoherenceConfirm) => {
   await request(`/forms/${id}`, jsonOptions('PUT', {
     title: formData.title,
@@ -125,9 +119,9 @@ const updateForm = async (id, formData, onCoherenceConfirm) => {
   for (const q of kept) {
     const original = before.find((b) => b.id === q.id);
     if (original && original.text !== q.text) {
-      // Primer intento SIN forzar: si la IA ve coherente el nuevo texto con
-      // la categoria de la pregunta, el backend lo guarda directo. Si no,
-      // responde 409 con su razon puntual -- recien ahi se pide confirmar.
+      // First try without forcing: if the AI finds the new text incoherent
+      // with the question category the backend answers 409, and only then do
+      // we ask the admin to confirm.
       try {
         const updatedQ = await request(`/questions/${q.id}`, jsonOptions('PATCH', { text: q.text, confirm: false, admin_id: formData.adminId }));
         q.id = String(updatedQ.id);
@@ -135,9 +129,8 @@ const updateForm = async (id, formData, onCoherenceConfirm) => {
         if (err.status === 409 && onCoherenceConfirm) {
           const confirmed = await onCoherenceConfirm(q, err.detail);
           if (!confirmed) {
-            // Aborto interno del flujo (el admin dijo "no"), NO un error HTTP:
-            // por eso no tiene .status. Se marca con .cancelled para que la
-            // vista lo distinga sin leer el texto del mensaje.
+            // Internal abort (admin declined), NOT an HTTP error: no .status.
+            // Flagged with .cancelled so the view need not parse the message.
             const cancelled = new Error(`Guardado cancelado: no se confirmo el cambio de texto de "${original.text}".`);
             cancelled.cancelled = true;
             throw cancelled;
@@ -151,7 +144,7 @@ const updateForm = async (id, formData, onCoherenceConfirm) => {
     }
   }
 
-  // Reequilibrar pesos: todas las preguntas de escala que quedan activas
+  // Rebalance weights across every scale question left active.
   const scaleWeights = [
     ...kept.filter((q) => q.type === 'scale_1_5').map((q) => ({ question_id: Number(q.id), weight_percent: q.weight || 0 })),
     ...createdFromNew.filter((c) => c.type === 'scale_1_5').map((c) => ({ question_id: c.realId, weight_percent: c.weight || 0 })),
@@ -164,14 +157,19 @@ const updateForm = async (id, formData, onCoherenceConfirm) => {
     }));
   }
 
-  const forms = await request(`/forms?target_role=${formData.targetRole}`);
-  return forms[0];
+  // Re-read with kind=all on purpose: if a TEMPLATE was edited, the default
+  // kind=form would not return it (it is inert) and this would be undefined.
+  const forms = await request('/forms?kind=all');
+  return forms.map(withRoleName).find((f) => f.id === Number(id));
 };
 
+// Returns { action: 'deleted' | 'archived', evaluations_count }: a form with
+// history is archived, not deleted, and the view must report which happened.
 const deleteForm = async (id) => await request(`/forms/${id}`, { method: 'DELETE' });
 
 export const formsService = {
   getForms,
+  getFormsForHistory,
   getFormForEdit,
   createForm,
   updateForm,

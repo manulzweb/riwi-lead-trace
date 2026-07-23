@@ -24,7 +24,7 @@ export const renderEvaluables = () => {
           <p class="mt-2 text-sm text-[var(--text-muted)]">Selecciona a un Team Leader o Tutor para enviarle tu retroalimentación.</p>
         </div>
         
-        <!-- Filtros de rol -->
+        <!-- Role filters -->
         <div class="flex items-center gap-2 rounded-2xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-1.5 self-start md:self-auto">
           <button id="filter-all" class="rounded-xl px-4 py-2 text-xs font-bold transition-all cursor-pointer">
             Todos
@@ -60,8 +60,7 @@ export const renderEvaluables = () => {
   `;
 };
 
-// Estado de error del contenedor, con reintento (no basta el toast: dura 3s
-// y deja la pantalla rota).
+// Container error state with retry: a 3s toast alone left the screen broken.
 const renderLoadError = () => `
   <article class="rounded-3xl border border-[var(--danger-border)] bg-[var(--danger-bg)] p-10 text-center shadow-lg">
     <h3 class="text-xl font-bold text-[var(--danger-text)]">No se pudieron cargar los evaluables</h3>
@@ -93,7 +92,9 @@ const renderEvaluablesList = () => {
 
   const currentUser = authService.getSession();
 
-  // Filtrar según el rol seleccionado (Excluir al usuario logueado)
+  // Clan filtering is done by the SERVER (can_evaluate_by_clan), NEVER here: a
+  // Team Leader has clan_id = NULL (their clans live in team_leader_clans), so
+  // comparing clan_id on the client would drop every TL. Only self is excluded.
   let filtered = evaluables.filter(u => u.id !== currentUser?.id);
 
   if (currentFilter !== "all") {
@@ -101,8 +102,7 @@ const renderEvaluablesList = () => {
   }
 
   if (filtered.length === 0) {
-    // Se reutiliza el componente compartido en vez de mantener otra tarjeta
-    // de estado vacio propia de esta vista (DRY).
+    // Reuse the shared empty-state component instead of a view-specific one (DRY).
     container.className = "mt-8";
     container.innerHTML = emptyStateComponent(
       "Sin evaluables asignados",
@@ -119,9 +119,8 @@ const renderEvaluablesList = () => {
       ev.status === "submitted"
     );
 
-    // Un usuario puede tener ambos roles (team_leader y tutor) a la vez: si el
-    // filtro activo coincide con uno de sus roles se usa ese; si no, se prioriza
-    // team_leader (mismo criterio binario que ya tenía el badge).
+    // A user may hold both roles: the active filter wins if it matches one of
+    // them, otherwise team_leader takes priority.
     const evaluableRole = currentFilter !== "all" && user.roles?.includes(currentFilter)
       ? currentFilter
       : (user.roles?.includes("team_leader") ? "team_leader" : "tutor");
@@ -170,7 +169,6 @@ export const setupEvaluables = async () => {
 
   const currentUser = authService.getSession();
 
-  // Registrar listeners de filtros
   const filters = ["all", "team_leader", "tutor"];
   filters.forEach(f => {
     const btn = document.getElementById(`filter-${f}`);
@@ -183,8 +181,8 @@ export const setupEvaluables = async () => {
     }
   });
 
-  // Carga extraida para poder reintentarla: antes, si fallaba la red, los
-  // skeletons quedaban animandose para siempre y solo se veia un toast de 3s.
+  // Extracted so it can be retried: on a network failure the skeletons used to
+  // animate forever behind a 3s toast.
   const load = async () => {
     const container = document.getElementById("evaluables-list");
     container?.setAttribute("aria-busy", "true");
@@ -193,7 +191,7 @@ export const setupEvaluables = async () => {
       const [evalsList, activePeriodData, allEvaluables] = await Promise.all([
         evaluationService.getByEvaluator(currentUser.id),
         periodService.get().then(periods => periods.find(p => p.is_active) || periods[0]),
-        evaluablesService.get()
+        evaluablesService.get(currentUser.id)
       ]);
 
       evaluations = evalsList;

@@ -12,15 +12,15 @@ import { escapeHtml } from "../../utils/validators";
 import {
   Chart, LineController, LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Filler,
 } from "chart.js";
+import { settingsService } from "../../services/settings.service.js";
 
 Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Filler);
 
-// Canvas no resuelve variables CSS (var(--brand-bg)) como los elementos del
-// DOM -- hay que pedirle el valor calculado real al navegador.
+// Canvas does not resolve CSS variables like DOM elements do, so ask the
+// browser for the computed value.
 const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
-// Estado de error del grid: ofrece reintentar en vez de pedirle al usuario que
-// recargue la pagina entera.
+// Grid error state: offers a retry instead of a full page reload.
 const renderMetricsError = () => `
   <div class="col-span-full rounded-3xl border border-[var(--danger-border)] bg-[var(--danger-bg)] p-6 text-center">
     <p class="text-sm font-semibold text-[var(--danger-text)]">No se pudieron cargar las métricas.</p>
@@ -71,13 +71,13 @@ export const renderMetrics = () => `
       <div class="flex flex-col gap-1 w-48">
         <label class="text-sm font-semibold text-[var(--text-muted)]">Filtrar por cohorte:</label>
         <div id="real-cohort-dropdown-container">
-          <!-- Se llena con initMasterFilters -->
+          <!-- Filled by initMasterFilters -->
         </div>
       </div>
       <div class="flex flex-col gap-1 w-48">
         <label class="text-sm font-semibold text-[var(--text-muted)]">Filtrar por clan:</label>
         <div id="clan-dropdown-container">
-          <!-- Se llena con initMasterFilters -->
+          <!-- Filled by initMasterFilters -->
         </div>
       </div>
     </section>
@@ -104,7 +104,7 @@ export const renderMetrics = () => `
       <!-- ----- Highlights ----- -->
       <section id="highlights-section" class="mt-10 grid gap-4 sm:grid-cols-2" aria-live="polite"></section>
 
-      <!-- ----- Resultados detallados ----- -->
+      <!-- ----- Detailed results ----- -->
       <section class="mt-10">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 print:hidden">
           <h2 class="text-2xl font-bold text-[var(--text-main)]">Resultados Detallados</h2>
@@ -149,20 +149,20 @@ export const setupMetrics = async () => {
   const reportElement = document.getElementById("metrics-report");
   const periodContainer = document.getElementById("period-dropdown-container");
 
-  // Inicializar componente de roles (ya existe en el HTML estático)
+  // Role dropdown already exists in the static markup
   setupDropdown('filter-role');
   const roleSelector = document.getElementById("filter-role");
 
   if (!kpiEvals || !kpiIcp || !kpiPart || !gridContainer || !periodContainer) return;
 
   downloadBtn?.addEventListener("click", async () => {
-    // Para imprimir, mostramos todos los resultados temporalmente (sin paginación)
+    // Printing shows every result temporarily (no pagination)
     renderGrid(currentPeriodId, true);
-    
-    // Pequeña pausa para permitir que el DOM se actualice antes de abrir el diálogo de impresión
+
+    // Short delay so the DOM updates before the print dialog opens
     setTimeout(() => {
       window.print();
-      // Restauramos la vista paginada
+      // Restore the paginated view
       renderGrid(currentPeriodId, false);
     }, 500);
   });
@@ -175,16 +175,20 @@ export const setupMetrics = async () => {
   let currentCohortFilter = "all";
   let currentRealCohortFilter = "all";
   let currentClanFilter = "all";
+  const settings = await settingsService.getSettings();
+  const MIN_EVALUATIONS_FOR_ICP = settings.min_evaluations_for_icp;
+  const DEFAULT_ICP = settings.default_icp;
+  
   
   let currentSearchQuery = "";
   let currentFilteredList = [];
   let currentPage = 1;
   const itemsPerPage = 6;
   let currentSort = "score_desc";
-  const historyCharts = new Map(); // evaluateeId -> instancia de Chart.js activa, para destruirla antes de recrearla
+  const historyCharts = new Map(); // evaluateeId -> live Chart.js instance, destroyed before recreating
 
-  // Extraida a funcion para que el boton "Reintentar" del estado de error pueda
-  // reejecutar la carga completa sin recargar la pagina.
+  // Extracted so the error-state retry button can rerun the full load
+  // without reloading the page.
   async function initPeriods() {
     try {
       [periods, masterCohorts, masterClans] = await Promise.all([
@@ -193,7 +197,6 @@ export const setupMetrics = async () => {
         clansService.get()
       ]);
       
-      // Init static filters
       initMasterFilters();
       
 
@@ -211,11 +214,11 @@ export const setupMetrics = async () => {
         }))
       ];
 
-      currentPeriodId = 0; // Default a Todos
+      currentPeriodId = 0; // defaults to "all periods"
 
       periodContainer.innerHTML = dropdownComponent('filter-period', periodOptions, currentPeriodId);
 
-      // 3. Inicializar el componente dinámico
+      // Init the dynamic dropdown
       setupDropdown('filter-period');
       const periodSelector = document.getElementById("filter-period");
 
@@ -234,16 +237,15 @@ export const setupMetrics = async () => {
         searchInput.addEventListener("input", (e) => {
           currentSearchQuery = e.target.value.toLowerCase().trim();
           currentPage = 1;
-          // Volvemos a aplicar filtros a partir del listado base en loadMetrics
-          // Pero loadMetrics hace fetch, así que mejor extraemos el filtrado
+          // Refilter locally: loadMetrics would refetch on every keystroke.
           applyFilters();
         });
       }
 
       await loadMetrics(currentPeriodId, currentRoleFilter);
 
-      // Evento de filtrado por periodo. El selector se recrea en cada intento,
-      // asi que su listener se registra aqui (nodo nuevo = sin duplicados).
+      // The period selector is recreated on every attempt, so its listener is
+      // registered here (new node = no duplicates).
       if (periodSelector) {
         periodSelector.addEventListener("change", async (e) => {
           currentPeriodId = parseInt(e.target.value);
@@ -260,8 +262,8 @@ export const setupMetrics = async () => {
     }
   }
 
-  // El selector de rol vive en el markup estatico y sobrevive a los reintentos:
-  // su listener se registra una sola vez, fuera de initPeriods.
+  // The role selector lives in the static markup and survives retries, so its
+  // listener is registered once, outside initPeriods.
   if (roleSelector) {
     roleSelector.addEventListener("change", async (e) => {
       currentRoleFilter = e.target.value;
@@ -293,8 +295,8 @@ export const setupMetrics = async () => {
       </article>
     `;
 
-    // Tokens semanticos (global.css): ya cambian solos en dark mode, por eso
-    // desaparecen las variantes `dark:` que habia aqui.
+    // Semantic tokens (global.css) already flip in dark mode, so the old
+    // dark: variants are gone.
     const bestCard = highlightCard("Mejor evaluado", best, {
       border: "border-[var(--success-text)]/30",
       bg: "bg-[var(--success-bg)]",
@@ -362,8 +364,8 @@ export const setupMetrics = async () => {
 
   async function loadMetrics(periodId, roleFilter) {
     try {
-      // Los canvases de historial que hubiera abiertos se van a reemplazar;
-      // hay que destruir sus instancias de Chart.js o quedan huerfanas.
+      // Open history canvases are about to be replaced: destroy their Chart.js
+      // instances or they leak.
       historyCharts.forEach((chart) => chart.destroy());
       historyCharts.clear();
 
@@ -404,7 +406,7 @@ export const setupMetrics = async () => {
         reportPeriodLabel.textContent = `Periodo: ${periodName} - generado el ${formatDate(new Date())}`;
       }
 
-      // Almacenamos el original antes de aplicar los filtros locales
+      // Keep the unfiltered list before applying local filters
       window.currentMasterList = summary.evaluatees;
       applyFilters();
 
@@ -433,7 +435,7 @@ export const setupMetrics = async () => {
     renderHighlights(list);
     currentFilteredList = list;
     
-    // Actualizar etiqueta de impresion
+    // Update the print label
     const printLbl = document.getElementById("print-filters-label");
     if (printLbl) {
       let fText = [];
@@ -467,7 +469,7 @@ export const setupMetrics = async () => {
     if (!hasValidScores) {
       gridContainer.innerHTML = emptyStateComponent(
         "Esperando más evaluaciones",
-        "Aún no hay suficientes datos. Debemos recibir un mínimo de evaluaciones (al menos 3 por persona) para poder calcular y mostrar las métricas del ICP."
+        `Aún no hay suficientes datos. Debemos recibir un mínimo de evaluaciones (al menos ${MIN_EVALUATIONS_FOR_ICP} por persona) para poder calcular y mostrar las métricas del ICP.`
       );
       if (paginationContainer) paginationContainer.innerHTML = "";
       return;
@@ -505,8 +507,8 @@ export const setupMetrics = async () => {
     gridContainer.innerHTML = paginatedList.map(ev => {
       const scoreText = ev.average_score !== null ? `${ev.average_score}` : "--";
 
-      // Badge neutro por defecto: tokens, no grises literales de Tailwind
-      // (bg-gray-*/text-gray-* no reaccionan al tema y rompen el dark mode).
+      // Neutral badge uses tokens, not literal Tailwind grays: bg-gray-* does
+      // not react to the theme and breaks dark mode.
       let statusBadgeClass = "bg-[var(--bg-base)] text-[var(--text-muted)]";
       if (ev.status === "Sólido") statusBadgeClass = "bg-[var(--success-bg)] text-[var(--success-text)]";
       if (ev.status === "En riesgo") statusBadgeClass = "bg-[var(--danger-bg)] text-[var(--danger-text)]";
@@ -543,13 +545,11 @@ export const setupMetrics = async () => {
 
     document.querySelectorAll(".metrics-card").forEach(card => {
       card.addEventListener("click", () => toggleDetail(card));
-      // Un click dentro del panel de detalle no debe plegar la tarjeta.
-      // Antes era un `onclick="event.stopPropagation()"` inline en el markup.
+      // A click inside the detail panel must not collapse the card.
       card.querySelector("[data-detail-panel]")
         ?.addEventListener("click", (e) => e.stopPropagation());
     });
 
-    // Render pagination controls
     if (paginationContainer) {
       if (totalPages > 1) {
         let paginationHtml = '';
@@ -577,10 +577,8 @@ export const setupMetrics = async () => {
     }
   }
 
-  // Desglose por categoria (reusa el mismo calculo que el panel del dashboard,
-  // ver utils/categoryBreakdown.js) + historial de ICP en todos los periodos
-  // (nuevo GET /metrics/history) para la persona seleccionada. Se carga
-  // perezosamente al abrir el detalle, no en cada render de la grilla.
+  // Category breakdown (same calc as the dashboard panel) plus the ICP history
+  // across periods. Loaded lazily on open, not on every grid render.
   async function toggleDetail(card) {
     const evaluateeId = parseInt(card.dataset.id);
     const periodId = parseInt(card.dataset.period);
@@ -657,7 +655,7 @@ export const setupMetrics = async () => {
               pointRadius: 4,
               pointHoverRadius: 6,
               borderWidth: 3,
-              tension: 0.4, // Curvas más suaves (smooth curve)
+              tension: 0.4, // smooth curve
               fill: true,
             }],
           },

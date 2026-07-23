@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, status
 from typing import List
 import logging
 from app.schemas.category import CategoryCreate, CategoryOut, CategoryUpdate
 from app.services.category_service import category_service
-from app.exceptions.category_exceptions import CategoryAlreadyExistsException, CategoryNotFoundException, CategoryInUseException
+
+from app.exceptions.base import ApplicationException
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -16,11 +17,7 @@ router = APIRouter()
 )
 def get_categories():
     """Consulta de lectura total sobre la entidad `categories`."""
-    try:
-        return category_service.get_categories()
-    except Exception as e:
-        logger.error(f"Error fetching categories: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al listar categorías")
+    return category_service.get_categories()
 
 @router.post(
     "/categories", 
@@ -33,11 +30,12 @@ def create_category(payload: CategoryCreate):
     """Inserta una nueva categoría en la base de datos."""
     try:
         return category_service.create_category(payload.name)
-    except CategoryAlreadyExistsException as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error creating category: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al crear categoría")
+    except ApplicationException:
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
+        raise
 
 @router.put(
     "/categories/{category_id}", 
@@ -50,13 +48,12 @@ def put_category(category_id: int, payload: CategoryUpdate):
     """Actualiza el campo `name` de una categoría existente de manera total."""
     try:
         return category_service.update_category(category_id, payload.name)
-    except CategoryNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except CategoryAlreadyExistsException as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error updating category {category_id}: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al actualizar categoría")
+    except ApplicationException:
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
+        raise
 
 @router.patch(
     "/categories/{category_id}", 
@@ -69,13 +66,12 @@ def update_category(category_id: int, payload: CategoryUpdate):
     """Actualiza el campo `name` de una categoría existente de manera parcial."""
     try:
         return category_service.update_category(category_id, payload.name)
-    except CategoryNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except CategoryAlreadyExistsException as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error patching category {category_id}: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al parchear categoría")
+    except ApplicationException:
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
+        raise
 
 @router.delete("/categories/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_category(category_id: int, admin_id: int = None):
@@ -83,10 +79,9 @@ def delete_category(category_id: int, admin_id: int = None):
     try:
         category_service.delete_category(category_id, admin_id)
         return None
-    except CategoryNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except CategoryInUseException as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error deleting category {category_id}: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al eliminar categoría")
+    except ApplicationException:
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
+        raise

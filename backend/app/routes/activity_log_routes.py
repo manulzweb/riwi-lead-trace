@@ -32,7 +32,7 @@ def export_activity_log():
     filename = f"bitacora-auditoria-{date.today().isoformat()}.csv"
     # El BOM inicial hace que Excel abra el archivo como UTF-8 y no rompa los acentos.
     return Response(
-        content="﻿" + csv_content,
+        content=csv_content,
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )

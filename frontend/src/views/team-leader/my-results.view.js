@@ -52,8 +52,22 @@ export const renderMyResults = () => `
   </main>
 `;
 
-// Estado de error del contenedor de feedback, con reintento. `retryId` permite
-// distinguir el reintento de la carga inicial del de un periodo puntual.
+// SmartFeedback (AI summary) wrapper: same header and card for both states
+// (summary or insufficient-data notice), so the markup is not duplicated.
+const smartFeedbackSection = (innerHtml) => `
+  <section class="mb-10">
+    <h2 class="text-xl font-black text-[var(--text-main)] mb-4 flex items-center gap-2">
+      <svg class="h-6 w-6 text-[var(--brand-bg)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+      SmartFeedback
+    </h2>
+    <article class="rounded-2xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-8 shadow-sm">
+      ${innerHtml}
+    </article>
+  </section>
+`;
+
+// Feedback container error state with retry. retryId tells the initial-load
+// retry apart from a single-period one.
 const renderLoadError = (message, retryId) => `
   <article class="rounded-3xl border border-[var(--danger-border)] bg-[var(--danger-bg)] p-10 text-center">
     <p class="text-[var(--danger-text)] font-bold">${escapeHtml(message)}</p>
@@ -77,7 +91,7 @@ export const setupMyResults = async () => {
   const currentUser = authService.getSession();
   let periods = [];
 
-  // Carga inicial extraida para poder reintentarla desde el estado de error.
+  // Initial load extracted so it can be retried from the error state.
   const init = async () => {
     feedbackList.setAttribute("aria-busy", "true");
     try {
@@ -103,10 +117,9 @@ export const setupMyResults = async () => {
       </div>`;
       setupDropdown('period-selector');
 
-      // After re-rendering, get the new input
+      // After re-rendering, grab the new input node.
       const periodInput = document.getElementById("period-selector");
 
-      // Cargar datos del periodo inicial
       await loadResultsForPeriod(currentUser.id, activePeriod.id);
 
       if (periodInput) {
@@ -161,7 +174,6 @@ export const setupMyResults = async () => {
         evalStatus.innerHTML = `<span class="${statusColor}">${escapeHtml(myMetrics.status)}</span>`;
       }
 
-      // Filtrar evaluaciones pertenecientes al periodo seleccionado
       const periodEvaluations = evaluations.filter(e => e.period_id === periodId && e.status === "submitted");
 
       if (periodEvaluations.length === 0) {
@@ -172,7 +184,6 @@ export const setupMyResults = async () => {
         return;
       }
 
-      // Recopilar comentarios de texto y puntajes
       const allAnswers = [];
       periodEvaluations.forEach(ev => {
         ev.answers.forEach(ans => {
@@ -188,22 +199,28 @@ export const setupMyResults = async () => {
       try {
         const aiSummary = await metricsService.getAiSummary(userId, periodId);
         if (aiSummary && aiSummary.summary) {
-          aiSummaryHtml = `
-            <section class="mb-10">
-              <h2 class="text-xl font-black text-[var(--text-main)] mb-4 flex items-center gap-2">
-                <svg class="h-6 w-6 text-[var(--brand-bg)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                SmartFeedback
-              </h2>
-              <article class="rounded-2xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-8 shadow-sm">
-                <div class="markdown-body prose dark:prose-invert max-w-none text-[var(--text-main)]">
-                  ${DOMPurify.sanitize(marked.parse(aiSummary.summary))}
-                </div>
-              </article>
-            </section>
-          `;
+          aiSummaryHtml = smartFeedbackSection(`
+            <div class="markdown-body prose dark:prose-invert max-w-none text-[var(--text-main)]">
+              ${DOMPurify.sanitize(marked.parse(aiSummary.summary))}
+            </div>
+          `);
         }
       } catch (err) {
-        console.warn("No se pudo obtener el resumen IA", err);
+        // 400 = InsufficientDataException: not enough evaluations yet for the AI
+        // summary. Expected state, not a failure, so show a notice instead of
+        // hiding the section or logging an error.
+        if (err.status === 400) {
+          aiSummaryHtml = smartFeedbackSection(`
+            <p class="text-sm text-[var(--text-muted)]">
+              Aún no hay suficientes datos para generar el resumen con IA. Se necesitan más
+              evaluaciones en este periodo; vuelve a consultarlo cuando recibas más feedback.
+            </p>
+          `);
+        } else {
+          // Other failures (AI down, network) are real incidents: log them and
+          // drop the section silently so the rest of the view still works.
+          console.warn("No se pudo obtener el resumen IA", err);
+        }
       }
 
       feedbackList.innerHTML = `
@@ -218,6 +235,11 @@ export const setupMyResults = async () => {
       `;
 
       const commentsContainer = document.getElementById("comments-pagination-container");
+
+      // No container means the view was re-rendered (concurrent navigation) while
+      // waiting on the backend: feedbackList is detached and this load is stale.
+      // Abort instead of passing a null container to setupPagination.
+      if (!commentsContainer) return;
 
       setupPagination({
         data: textAnswers,

@@ -1,9 +1,12 @@
-class AIException(Exception):
+from app.exceptions.base import ApplicationException
+
+
+class AIException(ApplicationException):
     """Base exception for AI module"""
     pass
 
 class InsufficientDataException(AIException):
-    pass
+    http_status = 400
 
 class AIServiceUnavailableException(AIException):
-    pass
+    http_status = 503

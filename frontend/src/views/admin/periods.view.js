@@ -3,19 +3,19 @@ import { statusBadgeComponent } from "../../components/statusBadge.js";
 import { showToast, showConfirm } from "../../components/alerts";
 import { periodService } from "../../services/periods.service.js";
 import { escapeHtml } from "../../utils/validators";
-import { setupModalA11y } from "../../utils/modalA11y";
+import { modalComponent, setupModal } from "../../components/modal";
 import { authService } from "../../services/auth.service";
 import { searchBoxComponent, setupSearch } from "../../components/searchBox";
 import { emptyStateComponent } from "../../components/emptyState.js";
 import { setupPagination } from "../../components/pagination";
 import { z } from "zod";
 
-// Clases del input del modal, extraidas para no repetir la misma cadena en los
-// tres campos (DRY) y para que los tokens de color queden en un solo sitio.
+// Modal input classes extracted so the same string is not repeated across the
+// three fields (DRY) and the color tokens live in one place.
 const INPUT_CLASSES = "w-full rounded-xl border border-[var(--border-main)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text-main)] transition-all focus:border-[var(--brand-bg)] focus:bg-[var(--bg-panel)] focus:outline-none focus:ring-4 focus:ring-[var(--brand-bg)]/10";
 
-// Estado de error del listado: ofrece reintentar en vez de pedir recargar la
-// pagina. El listener del boton se engancha en loadPeriods().
+// List error state: offers a retry instead of a page reload. The button
+// listener is wired up in loadPeriods().
 const renderPeriodsError = () => `
   <div class="text-center py-8">
     <p class="text-[var(--danger-text)] text-sm">No se pudieron cargar los ciclos.</p>
@@ -40,10 +40,11 @@ export const renderAdminPeriods = () => `
       </button>
     </section>
 
-    <!-- Modal Form for New Period -->
-    <div id="period-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300">
-      <div role="dialog" aria-modal="true" aria-labelledby="period-modal-title" class="w-full max-w-md scale-95 transform rounded-3xl bg-[var(--bg-panel)] p-8 shadow-2xl transition-transform duration-300 border border-[var(--border-main)]">
-        <h2 id="period-modal-title" class="mb-6 text-2xl font-bold font-heading text-[var(--text-main)]">Abrir Nuevo Ciclo</h2>
+    <!-- New period modal -->
+    ${modalComponent({
+      id: "period-modal",
+      title: "Abrir Nuevo Ciclo",
+      children: `
         <form id="form-period">
           <div class="mb-4">
             <label for="period-name" class="mb-2 block text-sm font-semibold text-[var(--text-main)]">Nombre del Ciclo</label>
@@ -62,8 +63,8 @@ export const renderAdminPeriods = () => `
             <button type="submit" class="w-full rounded-xl bg-[var(--brand-bg)] py-3 font-bold text-[var(--brand-text)] transition-all hover:bg-[var(--brand-hover)] cursor-pointer">Guardar</button>
           </div>
         </form>
-      </div>
-    </div>
+      `,
+    })}
 
     <div id="period-search-slot" class="mt-8 max-w-sm"></div>
 
@@ -94,7 +95,6 @@ export const renderAdminPeriods = () => `
 `;
 
 export const setupAdminPeriods = () => {
-  const modal = document.getElementById("period-modal");
   const modalTitle = document.getElementById("period-modal-title");
   const btnCreate = document.getElementById("btn-create-form") || document.getElementById("btn-create-period");
   const btnCancel = document.getElementById("btn-cancel-period");
@@ -107,17 +107,13 @@ export const setupAdminPeriods = () => {
   let currentFilteredPeriods = [];
   let paginationInstance = null;
 
-  const modalA11y = setupModalA11y(modal, () => closeModal());
-
-  // Funciones del Modal
-  const openModal = (triggerEl) => {
-    modal.classList.remove("hidden");
-    modalA11y.onOpen(triggerEl);
-    setTimeout(() => {
-      modal.classList.remove("opacity-0");
-      modal.firstElementChild.classList.remove("scale-95");
-    }, 10);
-  };
+  // Form and edit-id reset live in onClose, fired after the close animation.
+  const { open: openModal, close: closeModal } = setupModal("period-modal", {
+    onClose: () => {
+      form.reset();
+      editPeriodId = null;
+    },
+  });
 
   const openCreateModal = (e) => {
     editPeriodId = null;
@@ -135,17 +131,6 @@ export const setupAdminPeriods = () => {
     document.getElementById("period-start").value = period.starts_at;
     document.getElementById("period-end").value = period.ends_at;
     openModal(triggerEl);
-  };
-
-  const closeModal = () => {
-    modal.classList.add("opacity-0");
-    modal.firstElementChild.classList.add("scale-95");
-    setTimeout(() => {
-      modal.classList.add("hidden");
-      form.reset();
-      editPeriodId = null;
-    }, 300);
-    modalA11y.onClose();
   };
 
   if (btnCreate) btnCreate.addEventListener("click", openCreateModal);
@@ -205,7 +190,7 @@ export const setupAdminPeriods = () => {
         `;
       },
       onRenderCompleted: () => {
-        // Lógica de los botones de Activar/Desactivar
+        // Open/close buttons
         document.querySelectorAll(".btn-toggle-period").forEach(btn => {
           btn.addEventListener("click", async (e) => {
             const id = parseInt(e.target.dataset.id);
@@ -236,7 +221,7 @@ export const setupAdminPeriods = () => {
           });
         });
 
-        // Lógica del botón Editar
+        // Edit button
         document.querySelectorAll(".btn-edit-period").forEach(btn => {
           btn.addEventListener("click", () => {
             const id = parseInt(btn.dataset.id);
@@ -245,7 +230,7 @@ export const setupAdminPeriods = () => {
           });
         });
 
-        // Lógica del botón Eliminar
+        // Delete button
         document.querySelectorAll(".btn-delete-period").forEach(btn => {
           btn.addEventListener("click", async (e) => {
             const id = e.currentTarget.dataset.id;
@@ -282,10 +267,8 @@ export const setupAdminPeriods = () => {
     try {
       allPeriods = await periodService.get();
       renderPeriodsList(allPeriods);
-      // Se regenera el input en cada carga para no acumular listeners de
-      // versiones anteriores (loadPeriods se vuelve a llamar tras crear/
-      // editar/borrar/activar un ciclo, pero el nodo del input persiste
-      // fuera de listContainer si no se reemplaza).
+      // Regenerated on each load so listeners from previous versions do not
+      // pile up: the input node lives outside listContainer.
       if (searchSlot) {
         searchSlot.innerHTML = searchBoxComponent('period-search', 'Buscar ciclo por nombre...');
         setupSearch('period-search', allPeriods, ['name'], renderPeriodsList);
@@ -298,7 +281,7 @@ export const setupAdminPeriods = () => {
     }
   };
 
-  // Crear o editar Periodo
+  // Create or edit a period
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -306,10 +289,10 @@ export const setupAdminPeriods = () => {
       name: document.getElementById("period-name").value.trim(),
       starts_at: document.getElementById("period-start").value,
       ends_at: document.getElementById("period-end").value,
-      is_active: true // Por defecto al crear es activo, al editar depende pero lo ignoramos optimista
+      is_active: true // active by default on create; ignored optimistically on edit
     };
 
-    // Validacion Zod
+    // Zod validation
     const periodSchema = z.object({
       name: z.string().min(3, "El nombre debe tener al menos 3 caracteres").max(100, "Nombre demasiado largo"),
       starts_at: z.string().min(1, "La fecha de inicio es requerida"),
@@ -336,7 +319,7 @@ export const setupAdminPeriods = () => {
         allPeriods[idx] = { ...allPeriods[idx], ...data, is_active: allPeriods[idx].is_active };
       }
     } else {
-      // Fake ID temporal para renderizado optimista
+      // Temporary fake ID for the optimistic render
       allPeriods.push({ id: Date.now(), ...data });
     }
 

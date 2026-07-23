@@ -11,6 +11,8 @@ import { dropdownComponent, setupDropdown } from "../components/dropdown";
 import { evaluablesService } from "../services/evaluables.service";
 import { getMedalIcon } from "../components/icons";
 import { tableComponent } from "../components/table";
+import { dayjs } from "../utils/date";
+import { setupPagination } from "../components/pagination";
 
 const icons = {
   check: `<svg aria-hidden="true" focusable="false" class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
@@ -20,13 +22,41 @@ const icons = {
   chartPie: `<svg aria-hidden="true" focusable="false" class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/></svg>`
 };
 
-// El historial del evaluador devuelve PARTICIPACIONES, y las anonimas llegan
-// con `status` en null: el vinculo con el contenido no existe, asi que no hay
-// estado que consultar. Una participacion anonima SI esta hecha -- contarla
-// como pendiente (que es lo que hacia `e.status !== "submitted"`) inflaba el
-// contador de pendientes y le decia al coder que le faltaba trabajo ya hecho.
 const isPendingParticipation = (entry) =>
   !evaluationService.isAnonymousParticipation(entry) && entry.status !== "submitted";
+
+const runDashboardAnimations = () => {
+  const dashboardCards = document.getElementById('dashboard-cards');
+  if (dashboardCards) {
+    void dashboardCards.offsetWidth;
+    dashboardCards.classList.remove('opacity-0');
+    dashboardCards.classList.add('opacity-100');
+  }
+
+  document.querySelectorAll('.animate-number').forEach(el => {
+    const text = el.innerText;
+    const target = parseFloat(el.getAttribute('data-value'));
+    if (isNaN(target) || target === 0) return;
+
+    const duration = 1200;
+    const startTime = performance.now();
+    const animate = (currentTime) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easeProgress = 1 - Math.pow(1 - progress, 3);
+      const current = (easeProgress * target);
+      
+      el.innerText = Number.isInteger(target) ? Math.round(current) : current.toFixed(1);
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        el.innerText = text;
+      }
+    };
+    requestAnimationFrame(animate);
+  });
+};
 
 const renderDoughnutContainer = (percentage) => {
   return `
@@ -65,10 +95,9 @@ let currentPeriods = [];
 let masterCohorts = [];
 let masterClans = [];
 let selectedPeriodId = null;
-// tenga que volver a pedir /metrics. Antes vivia en window.__dashboardEvaluatees:
-// un global sobrevive a la navegacion y podia servir datos rancios de una
-// sesion o un periodo anterior. Como variable de modulo se reasigna en cada
-// render y no se expone fuera del archivo.
+// Cached so the clan filter does not re-request /metrics. It used to be a global
+// (window.__dashboardEvaluatees) that outlived navigation and served stale data;
+// as a module variable it is reassigned on every render.
 let dashboardEvaluatees = [];
 
 export const setupDashboard = async () => {
@@ -79,8 +108,7 @@ export const setupDashboard = async () => {
   const name = user?.name ? escapeHtml(user.name) : "Usuario";
   const role = user?.roles ? user.roles[0] : "coder";
 
-  // Carga extraida para poder reintentarla sin recargar la pagina: el estado
-  // de error dejaba al usuario sin salida salvo F5.
+  // Extracted so it can be retried without reloading: the error state left no way out.
   const load = async () => {
     content.setAttribute("aria-busy", "true");
     try {
@@ -119,8 +147,7 @@ export const setupDashboard = async () => {
 };
 
 const renderDashboardContent = async (content, user, name, role) => {
-  // Se limpia en cada render para no arrastrar los evaluables del periodo o
-  // del usuario anterior.
+  // Cleared on every render so evaluatees from a previous period or user do not leak.
   dashboardEvaluatees = [];
 
   let html = `
@@ -133,10 +160,15 @@ const renderDashboardContent = async (content, user, name, role) => {
         <div class="flex flex-col md:flex-row gap-4 z-20 relative w-full md:w-auto flex-wrap justify-end">
           <div class="w-full sm:w-48">
             <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="dashboard-period-filter-btn">Periodo</label>
-            ${dropdownComponent('dashboard-period-filter', currentPeriods.map(p => ({
-    value: String(p.id),
-    label: p.name + (p.is_active ? ' (Activo)' : '')
-  })), selectedPeriodId)}
+            ${dropdownComponent('dashboard-period-filter', [
+    // "Todos" (value '0') as in Métricas: the backend aggregates over every period
+    // when period_id == 0 (see metrics_repository); the rest of the flow handles it.
+    { value: '0', label: 'Todos' },
+    ...currentPeriods.map(p => ({
+      value: String(p.id),
+      label: p.name + (p.is_active ? ' (Activo)' : '')
+    }))
+  ], selectedPeriodId)}
           </div>
           <div class="w-full sm:w-48" id="dashboard-cohort-filter-container">
             <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="dashboard-cohort-filter-btn">Cohorte</label>
@@ -148,6 +180,11 @@ const renderDashboardContent = async (content, user, name, role) => {
           </div>
         </div>
       ` : ''}
+      ${role !== 'admin' ? `
+        <span class="text-sm font-bold text-[var(--text-muted)] bg-[var(--bg-base)] border border-[var(--border-main)] px-4 py-2 rounded-full whitespace-nowrap">
+          Hoy, ${dayjs().format('D [de] MMMM')}
+        </span>
+      ` : ''}
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-0 transition-opacity duration-500 ease-out" id="dashboard-cards">
   `;
@@ -155,12 +192,10 @@ const renderDashboardContent = async (content, user, name, role) => {
   let currentKpis = null;
 
   if (role === "admin") {
-    // Admin View
     const summary = selectedPeriodId ? await metricsService.getSummary(selectedPeriodId) : { kpis: { total_evaluations: 0, average_score: 0, participation_rate: 0 }, evaluatees: [] };
     const kpis = summary.kpis || { total_evaluations: 0, average_score: 0, participation_rate: 0 };
     currentKpis = kpis;
 
-    // Alertas Activas logic
     let alertMsg = "Ninguna por el momento";
     let alertIconColor = "text-green-500";
     if (selectedPeriodId) {
@@ -209,7 +244,6 @@ const renderDashboardContent = async (content, user, name, role) => {
 
     content.innerHTML = html;
 
-    // Initialize participation doughnut chart
     const pChartCtx = document.getElementById('participation-chart');
     if (pChartCtx && currentKpis) {
       const rootStyle = getComputedStyle(document.documentElement);
@@ -222,6 +256,7 @@ const renderDashboardContent = async (content, user, name, role) => {
       const pending = Math.max(0, possible - total);
 
       import('chart.js/auto').then(({ default: Chart }) => {
+        Chart.defaults.font.family = rootStyle.getPropertyValue('--font-body').trim() || "'Open Sans', sans-serif";
         new Chart(pChartCtx, {
           type: 'doughnut',
           data: {
@@ -245,11 +280,10 @@ const renderDashboardContent = async (content, user, name, role) => {
       }).catch(e => console.error("Chart load error:", e));
     }
 
-    // Extract unique clans
     const validEvaluatees = summary.evaluatees?.filter(e => e.average_score !== null) || [];
     const clans = [...new Set(validEvaluatees.map(e => e.clan_name).filter(Boolean))].sort();
 
-    // Se guarda para que el filtro por clan no vuelva a pedir la API.
+    // Stored so the clan filter does not hit the API again.
     dashboardEvaluatees = validEvaluatees;
 
     const uniqueCohorts = [...new Set(validEvaluatees.map(e => e.cohort_name).filter(Boolean))].sort();
@@ -347,100 +381,525 @@ const renderDashboardContent = async (content, user, name, role) => {
     if (currentPeriods.length > 0) {
       setupDropdown('dashboard-period-filter', async (val) => {
         selectedPeriodId = val;
-        content.innerHTML = `
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          ${Array(4).fill(`
-            <div class="h-32 rounded-[2rem] bg-[var(--bg-panel)] p-6 shadow-sm border border-[var(--border-main)] flex flex-col justify-between">
-              <div class="h-4 w-24 skeleton-shimmer rounded-sm"></div>
-              <div class="h-8 w-16 skeleton-shimmer rounded-sm"></div>
+
+        const periodBtn = document.getElementById("dashboard-period-filter-btn");
+        if (periodBtn) {
+            periodBtn.disabled = true;
+            periodBtn.innerHTML = '<span class="flex items-center gap-2"><svg class="animate-spin h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Cargando...</span>';
+        }
+        
+        const dashboardCards = document.getElementById("dashboard-cards");
+        if (dashboardCards) {
+          dashboardCards.innerHTML = `
+            <div class="col-span-full">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                ${Array(4).fill(`
+                  <div class="h-32 rounded-[2rem] bg-[var(--bg-panel)] p-6 shadow-sm border border-[var(--border-main)] flex flex-col justify-between">
+                    <div class="h-4 w-24 skeleton-shimmer rounded-sm"></div>
+                    <div class="h-8 w-16 skeleton-shimmer rounded-sm"></div>
+                  </div>
+                `).join("")}
+              </div>
+              <div class="h-64 rounded-[2rem] bg-[var(--bg-panel)] p-6 shadow-sm border border-[var(--border-main)] flex flex-col mt-6">
+                <div class="h-6 w-48 skeleton-shimmer rounded-sm mb-6"></div>
+                <div class="flex-1 skeleton-shimmer rounded-xl"></div>
+              </div>
             </div>
-          `).join("")}
-        </div>
-        <div class="h-64 rounded-[2rem] bg-[var(--bg-panel)] p-6 shadow-sm border border-[var(--border-main)] flex flex-col mt-6">
-          <div class="h-6 w-48 skeleton-shimmer rounded-sm mb-6"></div>
-          <div class="flex-1 skeleton-shimmer rounded-xl"></div>
-        </div>
-        `;
+          `;
+        }
+        
         await renderDashboardContent(content, user, name, role);
       });
     }
-  } else if (role === "team_leader" || role === "tutor") {
-    // Leader / Tutor View
-    const summary = selectedPeriodId ? await metricsService.getSummary(selectedPeriodId) : { evaluatees: [] };
-    const myStats = summary.evaluatees?.find(e => e.id === user.id) || { n_evals: 0, average_score: 0, status: "Sin datos" };
+  } else {
+    let tlHistory = [];
+    let tlReceivedEvals = [];
 
-    html += `
-      ${StatsCard({ title: "Evaluaciones Recibidas", value: `<span class="animate-number" data-value="${myStats.n_evals}">${myStats.n_evals}</span>`, icon: icons.users, description: "En el periodo actual" })}
-      ${StatsCard({ title: "Puntaje Promedio ICP", value: `<span class="animate-number" data-value="${myStats.average_score ?? 0}">${myStats.average_score ?? 0}</span><span class="text-2xl text-[var(--text-muted)] ml-1">/100</span>`, icon: icons.star, description: "Estado: " + myStats.status })}
-    `;
+    if (role === "team_leader" || role === "tutor") {
+      const summaryPromise = selectedPeriodId ? metricsService.getSummary(selectedPeriodId) : Promise.resolve({ evaluatees: [] });
+      const [summary, history, receivedEvals] = await Promise.all([
+        summaryPromise,
+        metricsService.getHistory(user.id).catch(() => []),
+        evaluationService.getByEvaluatee(user.id).catch(() => [])
+      ]);
+      
+      tlHistory = history;
+      tlReceivedEvals = receivedEvals;
+
+      const myStats = summary.evaluatees?.find(e => String(e.id) === String(user.id)) || { n_evals: 0, average_score: 0, status: "Sin datos" };
+
+      const validEvaluatees = summary.evaluatees?.filter(e => e.average_score !== null) || [];
+      
+      let motivationalCard = '';
+      let comparisonHtml = "";
+
+      if (role === "team_leader" && validEvaluatees.length > 0) {
+        const tlList = validEvaluatees.filter(e => e.role === "team_leader").sort((a, b) => b.average_score - a.average_score);
+        const myIndex = tlList.findIndex(e => String(e.id) === String(user.id));
+
+        if (myIndex !== -1) {
+          const myRank = myIndex + 1;
+          const total = tlList.length;
+          const percentile = Math.round(((total - myRank) / total) * 100);
+          let msg = "";
+          let medalIcon = "";
+          
+          if (myRank === 1) {
+            msg = `¡Felicidades! Eres el Team Leader #1 de la plataforma en este periodo.`;
+            medalIcon = '<span title="1er Puesto - Oro" class="cursor-help inline-block"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"><title>1er Puesto - Oro</title><path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/><path d="M11 12 5.12 2.2"/><path d="m13 12 5.88-9.8"/><path d="M8 7h8"/><circle cx="12" cy="17" r="5"/><path d="M12 14.7v4.6"/></svg></span>';
+          } else if (myRank === 2) {
+            msg = `¡Excelente trabajo! Eres el Team Leader #2 de la plataforma en este periodo.`;
+            medalIcon = '<span title="2do Puesto - Plata" class="cursor-help inline-block"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B8B8B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"><title>2do Puesto - Plata</title><path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/> <path d="M11 12 5.12 2.2"/> <path d="m13 12 5.88-9.8"/> <path d="M8 7h8"/> <circle cx="12" cy="17" r="5"/> <path d="M10.4 15.6c.4-.6 1-.9 1.7-.9.8 0 1.4.4 1.4 1 0 .6-.3.9-1.1 1.5l-1.8 1.3H14"/> </svg></span>';
+          } else if (myRank === 3) {
+            msg = `¡Gran esfuerzo! Eres el Team Leader #3 de la plataforma en este periodo.`;
+            medalIcon = '<span title="3er Puesto - Bronce" class="cursor-help inline-block"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#B87333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"><title>3er Puesto - Bronce</title><path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/> <path d="M11 12 5.12 2.2"/> <path d="m13 12 5.88-9.8"/> <path d="M8 7h8"/> <circle cx="12" cy="17" r="5"/> <path d="M10.5 15h2c.6 0 1 .3 1 .8s-.4.8-1 .8"/> <path d="M12.5 16.6c.8 0 1.2.4 1.2 1s-.5 1-1.4 1c-.6 0-1.1-.2-1.5-.6"/> </svg></span>';
+          } else if (percentile >= 50) {
+            msg = `Estás superando al ${percentile}% de los líderes. ¡Continúa así!`;
+          } else {
+            msg = `¡Sigue esforzándote para subir en el ranking!`;
+          }
+
+          motivationalCard = `
+            <div class="col-span-1 md:col-span-2 lg:col-span-3 mb-2">
+              <div class="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-main)] shadow-sm px-6 py-4 flex items-center gap-4">
+                ${medalIcon ? `<div class="flex-shrink-0 p-2 bg-[var(--bg-base)] rounded-xl border border-[var(--border-main)]">${medalIcon}</div>` : ''}
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-lg font-black text-[var(--text-main)]">Puesto #${myRank}</span>
+                  </div>
+                  <p class="text-[var(--text-muted)] text-sm">${msg}</p>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      }
+
+      if (selectedPeriodId) {
+        const sortedPeriods = [...currentPeriods].sort((a, b) => new Date(b.starts_at) - new Date(a.starts_at));
+        const currIdx = sortedPeriods.findIndex(p => String(p.id) === String(selectedPeriodId));
+        if (currIdx !== -1 && currIdx + 1 < sortedPeriods.length) {
+          const prevPeriod = sortedPeriods[currIdx + 1];
+          try {
+            const prevSummary = await metricsService.getSummary(prevPeriod.id);
+            const prevMyStats = prevSummary.evaluatees?.find(e => String(e.id) === String(user.id));
+            
+            if (prevMyStats) {
+              const prevScore = prevMyStats.average_score ?? 0;
+              const currScore = myStats.average_score ?? 0;
+              let compMsg = "Te mantuviste igual respecto al periodo anterior.";
+              let compIconColor = "text-[var(--text-muted)]";
+              let compIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14" /></svg>`;
+              
+              if (currScore > prevScore) {
+                compMsg = `¡Mejoraste tu calificación en ${Math.round(currScore - prevScore)} puntos!`;
+                compIconColor = "text-green-500";
+                compIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>`;
+              } else if (currScore < prevScore) {
+                compMsg = `Tu calificación bajó ${Math.round(prevScore - currScore)} puntos. ¡No te desanimes!`;
+                compIconColor = "text-red-500";
+                compIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>`;
+              }
+
+              const valueHtml = `${currScore} <span class="text-sm text-[var(--text-muted)] font-bold">Actual</span> <span class="text-2xl text-[var(--brand-bg)] mx-1">VS</span> ${prevScore} <span class="text-sm text-[var(--text-muted)] font-bold">Anterior</span>`;
+              
+              comparisonHtml = Card({
+                className: "p-6 shadow-sm border border-[var(--border-main)] flex flex-col h-full",
+                children: `
+                  <div class="flex items-center gap-3 mb-4">
+                    <div class="p-2 rounded-xl bg-[var(--bg-base)] text-[var(--text-main)] border border-[var(--border-main)] shrink-0">
+                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    </div>
+                    <div>
+                      <h3 class="text-xs font-bold text-[var(--text-muted)] tracking-wider uppercase">Comparativa ICP</h3>
+                    </div>
+                  </div>
+                  <div class="mb-2">
+                    <span class="text-2xl font-black text-[var(--text-main)]">${valueHtml}</span>
+                  </div>
+                  <p class="text-sm ${compIconColor} font-medium mb-4">${compMsg}</p>
+                  <div class="flex-1 min-h-[100px] w-full relative">
+                    <canvas id="tl-comparison-chart" data-curr="${currScore}" data-prev="${prevScore}"></canvas>
+                  </div>
+                `
+              });
+            }
+          } catch (e) {
+            console.warn("Could not fetch previous period metrics", e);
+          }
+        }
+      }
+      
+      if (!comparisonHtml) {
+        comparisonHtml = StatsCard({
+          title: "Comparativa ICP",
+          value: "N/A",
+          icon: `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`,
+          description: "No hay periodo anterior para comparar"
+        });
+      }
+
+      html += motivationalCard;
+      html += `
+        ${StatsCard({ title: "Evaluaciones Recibidas", value: `<span class="animate-number" data-value="${myStats.n_evals}">${myStats.n_evals}</span>`, icon: icons.users, description: "En el periodo actual", extraValueHtml: `<div class="text-sm text-[var(--text-muted)] font-medium mt-1">Objetivo: 20 evaluaciones</div>` })}
+        ${StatsCard({ title: "Puntaje Promedio ICP", value: `<span class="animate-number" data-value="${myStats.average_score ?? 0}">${myStats.average_score ?? 0}</span><span class="text-2xl text-[var(--text-muted)] ml-1">/100</span>`, icon: icons.star, description: "Estado: " + myStats.status })}
+        ${comparisonHtml}
+      `;
+
+      if (role === "team_leader") {
+        html += `
+          <div class="col-span-1 md:col-span-2 lg:col-span-2 mt-2">
+            ${Card({
+              className: "p-6 shadow-sm border border-[var(--border-main)] h-full flex flex-col",
+              children: `
+                <h3 class="text-lg font-bold text-[var(--text-main)] mb-4">Actividad Reciente y Evaluaciones</h3>
+                <div class="flex-1 w-full" id="tl-recent-activity">
+                  <div class="h-48 skeleton-shimmer rounded-xl"></div>
+                </div>
+              `
+            })}
+          </div>
+          <div class="col-span-1 lg:col-span-1 mt-2">
+            ${Card({
+              className: "p-6 shadow-sm border border-[var(--border-main)] h-full flex flex-col",
+              children: `
+                <h3 class="text-lg font-bold text-[var(--text-main)] mb-4">Tendencia Mensual del Puntaje ICP</h3>
+                <div class="flex-1 w-full min-h-[250px] relative">
+                  <canvas id="tl-trend-chart"></canvas>
+                </div>
+              `
+            })}
+          </div>
+        `;
+      }
+    }
+
+    const initTLCharts = () => {
+      const compCtx = document.getElementById('tl-comparison-chart');
+      if (compCtx) {
+        const curr = parseFloat(compCtx.dataset.curr);
+        const prev = parseFloat(compCtx.dataset.prev);
+        import('chart.js/auto').then(({ default: Chart }) => {
+          new Chart(compCtx, {
+            type: 'bar',
+            data: {
+              labels: ['Actual', 'Anterior'],
+              datasets: [{
+                data: [curr, prev],
+                backgroundColor: [curr >= prev ? '#10b981' : '#ef4444', '#9ca3af'],
+                borderRadius: 4,
+                barPercentage: 0.6
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false }, tooltip: { enabled: true } },
+              scales: { 
+                y: { beginAtZero: true, max: 100, display: false },
+                x: { grid: { display: false } }
+              }
+            }
+          });
+        }).catch(err => console.error(err));
+      }
+
+      const trendCtx = document.getElementById('tl-trend-chart');
+      if (trendCtx && tlHistory.length > 0) {
+        import('chart.js/auto').then(({ default: Chart }) => {
+          const rootStyle = getComputedStyle(document.documentElement);
+          const brandColor = rootStyle.getPropertyValue('--brand-bg').trim() || '#4f46e5';
+          Chart.defaults.font.family = rootStyle.getPropertyValue('--font-body').trim() || "'Open Sans', sans-serif";
+          
+          const labels = tlHistory.map(h => dayjs(h.starts_at).format('MMM'));
+          const data = tlHistory.map(h => h.average_score);
+          
+          new Chart(trendCtx, {
+            type: 'line',
+            data: {
+              labels: labels,
+              datasets: [{
+                data: data,
+                borderColor: brandColor,
+                backgroundColor: brandColor + '20', // 20% opacity
+                fill: true,
+                tension: 0.4,
+                pointRadius: 4,
+                pointBackgroundColor: brandColor
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { 
+                legend: { display: false },
+                tooltip: {
+                  callbacks: {
+                    label: function(context) { return 'ICP: ' + context.parsed.y; }
+                  }
+                }
+              },
+              scales: { 
+                y: { beginAtZero: true, max: 100, ticks: { stepSize: 20 } },
+                x: { grid: { display: false } }
+              }
+            }
+          });
+        }).catch(err => console.error(err));
+      } else if (trendCtx) {
+        trendCtx.parentElement.innerHTML = '<div class="flex h-full items-center justify-center text-sm text-[var(--text-muted)]">No hay datos suficientes para la tendencia</div>';
+      }
+
+      const activityContainer = document.getElementById('tl-recent-activity');
+      if (activityContainer) {
+        // Flatten every text answer into a single list.
+        const allComments = [];
+        tlReceivedEvals.forEach(ev => {
+           ev.answers?.forEach(ans => {
+             if (ans.comment && ans.comment.toLowerCase() !== "sí" && ans.comment.toLowerCase() !== "no") {
+                allComments.push({
+                   date: ev.created_at,
+                   score: ans.score,
+                   comment: ans.comment,
+                   status: ev.status,
+                   id: ev.id
+                });
+             }
+           });
+        });
+
+        allComments.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        if (allComments.length === 0) {
+           activityContainer.innerHTML = '<div class="p-4 text-center text-[var(--text-muted)] italic">No hay comentarios recientes.</div>';
+        } else {
+           activityContainer.innerHTML = '';
+           setupPagination({
+             data: allComments,
+             itemsPerPage: 5,
+             container: activityContainer,
+             renderItem: (item) => {
+               const shortComment = item.comment.length > 50 ? item.comment.substring(0, 50) + '...' : item.comment;
+               const badgeClass = item.status === 'submitted' ? 'bg-[var(--success-bg)] text-[var(--success-text)]' : 'bg-[var(--warning-bg)] text-[var(--warning-text)]';
+               const badgeText = item.status === 'submitted' ? 'Enviado' : 'Pendiente';
+               
+               return `
+                 <div class="px-6 py-4 flex items-center justify-between border-b border-[var(--border-main)] last:border-0 hover:bg-[var(--bg-base)] transition group">
+                   <div class="flex-1 grid grid-cols-12 gap-4 items-center">
+                     <div class="col-span-2 text-sm text-[var(--text-muted)] font-medium">${dayjs(item.date).format('D MMM')}</div>
+                     <div class="col-span-2 text-sm font-bold text-[var(--text-main)]">Anónimo</div>
+                     <div class="col-span-2 text-sm font-bold text-[var(--brand-bg)]">${item.score || '-'} ICP</div>
+                     <div class="col-span-4 text-sm text-[var(--text-muted)] truncate">${escapeHtml(shortComment)}</div>
+                     <div class="col-span-2 text-right">
+                       <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${badgeClass}">
+                         ${badgeText}
+                       </span>
+                     </div>
+                   </div>
+                   <div class="ml-4 opacity-0 group-hover:opacity-100 transition">
+                     <a href="/my-results" data-navigo class="p-2 inline-flex rounded-lg bg-[var(--bg-panel)] border border-[var(--border-main)] text-[var(--text-muted)] hover:text-[var(--brand-bg)] shadow-sm">
+                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                     </a>
+                   </div>
+                 </div>
+               `;
+             }
+           });
+        }
+      }
+    };
+
+    if (role === "team_leader") {
+      html += `</div>`;
+      content.innerHTML = html;
+      initTLCharts();
+      runDashboardAnimations();
+      return;
+    }
 
     if (role === "tutor") {
-      const myEvals = await evaluationService.getByEvaluator(user.id, 100);
-      const pending = myEvals.filter(isPendingParticipation).length;
-      html += StatsCard({ title: "Evaluaciones por Hacer", value: `<span class="animate-number" data-value="${pending}">${pending}</span>`, icon: icons.clock, description: "Pendientes de enviar" });
+      html += `
+        <div class="col-span-1 md:col-span-2 lg:col-span-3 mt-2 mb-2 flex items-center gap-4">
+          <div class="h-px bg-[var(--border-main)] flex-1"></div>
+          <span class="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Tu progreso como coder</span>
+          <div class="h-px bg-[var(--border-main)] flex-1"></div>
+        </div>
+      `;
     }
-    
-    html += `</div>`;
-    content.innerHTML = html;
 
-  } else {
-    // Coder View
-    const [myEvals, evaluables] = await Promise.all([
+    const [myEvals, allEvaluables] = await Promise.all([
       evaluationService.getByEvaluator(user.id, 100),
-      evaluablesService.get()
+      evaluablesService.get(user.id)
     ]);
-    const completed = myEvals.filter(e => !isPendingParticipation(e)).length;
-    const drafts = myEvals.filter(isPendingParticipation).length;
-    const totalEvaluables = evaluables ? evaluables.length : 0;
+    
+    // Clan filtering is NOT done here: the SERVER is the authority
+    // (evaluation_service._validate_permissions). Filtering by clan_id on the
+    // client was EXCLUDING every Team Leader -- a TL has users.clan_id = NULL and
+    // their clans live in team_leader_clans (N:M). Only self is dropped here.
+    const evaluables = allEvaluables ? allEvaluables.filter(u => u.id !== user.id) : [];
+
+    const completedEvals = myEvals.filter(e => !isPendingParticipation(e));
+    const completed = completedEvals.length;
+    const totalEvaluables = evaluables.length;
     const pending = Math.max(0, totalEvaluables - completed);
+    
+    // Which roles are still pending, reusing evaluables to avoid two more requests.
+    const evaluatedIds = completedEvals.map(e => String(e.evaluatee_id));
+    const pendingUsers = evaluables.filter(u => !evaluatedIds.includes(String(u.id)));
+    
+    let pendingRoles = new Set();
+    pendingUsers.forEach(u => {
+        if (u.roles && u.roles.includes("team_leader")) pendingRoles.add("Team Leader");
+        if (u.roles && u.roles.includes("tutor")) pendingRoles.add("Tutor");
+    });
+
+    // evaluables already holds every evaluatee of the clan, so it works as an
+    // id -> name map without calling /users.
+    const evaluableNameById = new Map(evaluables.map(u => [String(u.id), u.name]));
+
+    const recentActivity = completedEvals
+      .map(ev => {
+        const isAnonymous = evaluationService.isAnonymousParticipation(ev);
+        // Anonymous participations have no submitted_at; created_at is the honest date.
+        const dateSource = isAnonymous ? ev.created_at : (ev.submitted_at || ev.created_at);
+        return { ev, isAnonymous, dateSource };
+      })
+      .filter(({ dateSource }) => !!dateSource)
+      .sort((a, b) => new Date(b.dateSource) - new Date(a.dateSource))
+      .slice(0, 4);
 
     html += `
       ${StatsCard({ title: "Completadas", value: `<span class="animate-number" data-value="${completed}">${completed}</span>`, icon: icons.check, description: "Evaluaciones enviadas" })}
-      ${StatsCard({ title: "Por Evaluar / Borradores", value: `<span class="animate-number" data-value="${pending}">${pending}</span>`, icon: icons.clock, description: "Pendientes o en curso" })}
-      
+      ${StatsCard({ title: "Personas por Evaluar", value: `<span class="animate-number" data-value="${pending}">${pending}</span>`, icon: icons.clock, description: "Pendientes de evaluar" })}
+
       ${Card({
       className: "h-full flex flex-col p-6 lg:row-span-2 shadow-sm border border-[var(--border-main)]",
       children: `
           <h3 class="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider text-left w-full mb-4">Progreso Actual</h3>
-          <div class="flex-1 flex flex-col items-center justify-center w-full min-h-[200px]">
+          <div class="flex-1 flex flex-col items-center justify-center w-full min-h-[160px]">
             ${completed + pending === 0
           ? `<div class="text-center text-[var(--text-muted)] italic my-auto">Aún no hay datos para graficar.</div>`
-          : `<div class="relative w-48 h-48 my-4"><canvas id="coder-participation-chart"></canvas></div>`
+          : `<div class="relative w-40 h-40 my-2"><canvas id="coder-participation-chart"></canvas></div>`
         }
+          </div>
+          <div class="w-full space-y-3 mt-2">
+            <div class="flex items-center justify-between p-3.5 bg-[var(--bg-base)] rounded-xl border border-[var(--border-main)]">
+              <div class="flex items-center gap-2.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-[var(--border-main)]"></span>
+                <span class="text-sm font-semibold text-[var(--text-main)]">Total evaluaciones</span>
+              </div>
+              <span class="text-sm font-bold text-[var(--text-main)]">${totalEvaluables}</span>
+            </div>
+            <div class="flex items-center justify-between p-3.5 bg-[var(--bg-base)] rounded-xl border border-[var(--border-main)]">
+              <div class="flex items-center gap-2.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-[var(--brand-bg)]"></span>
+                <span class="text-sm font-semibold text-[var(--text-main)]">Completadas</span>
+              </div>
+              <span class="text-sm font-bold text-[var(--text-main)]">${completed}</span>
+            </div>
           </div>
         `
     })}
-      
+
+      <!-- Standalone reminder banner. With nothing pending it shows an "up to date"
+           state so the 2-column cell is not left empty. -->
       <div class="col-span-1 md:col-span-2 lg:col-span-2 mt-4 lg:mt-0">
-        <div class="bg-[var(--bg-panel)] rounded-3xl border border-[var(--border-main)] p-8 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6 h-full">
-          <div>
-            <h2 class="text-2xl font-bold text-[var(--text-main)] mb-2">¡Hola, ${escapeHtml(user.name.split(' ')[0])}!</h2>
+        ${pendingRoles.size > 0 ? `
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6 rounded-3xl bg-[var(--brand-bg)] text-[var(--brand-text)] px-6 py-6 sm:px-8 sm:py-7 shadow-md h-full">
+            <div class="flex items-start gap-4">
+              <div class="shrink-0 rounded-full bg-white/15 p-3">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              </div>
+              <div>
+                <span class="inline-block text-[10px] font-bold uppercase tracking-widest bg-white/15 px-2.5 py-1 rounded-full mb-2">Recordatorio prioritario</span>
+                <h3 class="text-xl sm:text-2xl font-extrabold leading-tight">¡Es hora de evaluar!</h3>
+                <p class="text-sm mt-2 opacity-90 max-w-md">Aún te falta evaluar a <strong>${escapeHtml(Array.from(pendingRoles).join(" y "))}</strong>. Tu feedback es clave para el crecimiento del equipo.</p>
+              </div>
+            </div>
+            <a href="/evaluables" data-navigo class="shrink-0 whitespace-nowrap inline-flex items-center justify-center rounded-xl bg-white/80 hover:bg-white/25 px-6 py-3 text-sm font-bold text-[var(--text-main)] transition shadow-sm">
+              Ir a evaluar
+            </a>
           </div>
-        </div>
+        ` : `
+          <div class="flex flex-col items-center justify-center text-center gap-3 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-main)] px-6 py-10 shadow-sm h-full">
+            <div class="rounded-full bg-[var(--success-bg)] text-[var(--success-text)] p-3">
+              <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <h3 class="text-lg font-bold text-[var(--text-main)]">¡Estás al día!</h3>
+            <p class="text-sm text-[var(--text-muted)]">Has completado todas tus evaluaciones disponibles.</p>
+          </div>
+        `}
       </div>
+    </div>
+
+    <div class="mt-6">
+      <div class="flex items-center justify-between mb-4 gap-4">
+        <h2 class="text-xl font-bold text-[var(--text-main)]">Actividad reciente</h2>
+        <a href="/evaluations" data-navigo class="text-sm font-bold text-[var(--brand-bg)] hover:text-[var(--brand-hover)] transition whitespace-nowrap">
+          Ver historial completo
+        </a>
+      </div>
+      ${Card({
+      className: "overflow-hidden",
+      children: `
+          <div class="divide-y divide-[var(--border-main)]">
+            ${recentActivity.length === 0 ? `
+              <div class="px-6 py-8 text-center text-sm text-[var(--text-muted)]">
+                Aún no has enviado evaluaciones. Cuando envíes una, aparecerá aquí.
+              </div>
+            ` : recentActivity.map(({ ev, isAnonymous, dateSource }) => {
+        const evaluateeName = isAnonymous ? "Envío anónimo" : (evaluableNameById.get(String(ev.evaluatee_id)) || `Usuario #${ev.evaluatee_id}`);
+        const badge = isAnonymous
+          ? `<span class="px-3 py-1 rounded-full text-[11px] font-bold bg-[var(--info-bg)] text-[var(--info-text)] uppercase tracking-wide whitespace-nowrap">Anónima</span>`
+          : `<span class="px-3 py-1 rounded-full text-[11px] font-bold bg-[var(--success-bg)] text-[var(--success-text)] uppercase tracking-wide whitespace-nowrap">Enviada</span>`;
+        return `
+                <div class="px-6 py-4 flex items-center gap-4">
+                  <div class="w-10 h-10 rounded-lg bg-[var(--bg-base)] border border-[var(--border-main)] flex items-center justify-center text-[var(--brand-bg)] shrink-0">
+                    ${icons.check}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="font-bold text-[var(--text-main)] truncate">${escapeHtml(evaluateeName)}</p>
+                    <p class="text-xs text-[var(--text-muted)] font-medium mt-0.5">Enviada el ${escapeHtml(dayjs(dateSource).format('D [de] MMMM [de] YYYY'))}</p>
+                  </div>
+                  ${badge}
+                </div>
+              `;
+      }).join("")}
+          </div>
+        `
+    })}
     </div>
     `;
 
     content.innerHTML = html;
 
+    if (role === "tutor") {
+      initTLCharts();
+    }
+
     const ctx = document.getElementById('coder-participation-chart');
     if (ctx) {
       const rootStyle = getComputedStyle(document.documentElement);
       const brandColor = rootStyle.getPropertyValue('--brand-bg').trim() || '#4f46e5';
-      const draftColor = rootStyle.getPropertyValue('--accent-amber').trim() || '#f59e0b';
+      // Neutral color for the "not completed" segment, same as the admin doughnut.
+      // It used to read --accent-amber, a token missing from global.css:
+      // getPropertyValue returned "" and it fell back to the amber hardcode,
+      // painting the whole ring as "alert" instead of neutral when completed = 0.
+      const pendingColor = rootStyle.getPropertyValue('--border-main').trim() || '#e5e7eb';
 
       const chartCompleted = completed;
       const chartPending = pending;
       const total = chartCompleted + chartPending;
 
       import('chart.js/auto').then(({ default: Chart }) => {
+        Chart.defaults.font.family = rootStyle.getPropertyValue('--font-body').trim() || "'Open Sans', sans-serif";
         new Chart(ctx, {
           type: 'doughnut',
           data: {
             labels: ['Completadas', 'Pendientes'],
             datasets: [{
               data: [chartCompleted, chartPending],
-              backgroundColor: [brandColor, draftColor],
+              backgroundColor: [brandColor, pendingColor],
               borderWidth: 0,
               hoverOffset: 4
             }]
@@ -474,7 +933,8 @@ const renderDashboardContent = async (content, user, name, role) => {
 
               ctx.restore();
               const fontSize = (height / 110).toFixed(2);
-              ctx.font = "bold " + fontSize + "em sans-serif";
+              const fontFamily = rootStyle.getPropertyValue('--font-body').trim() || "'Open Sans', sans-serif";
+              ctx.font = `bold ${fontSize}em ${fontFamily}`;
               ctx.textBaseline = "middle";
               ctx.fillStyle = rootStyle.getPropertyValue('--text-main').trim() || "#000";
 
@@ -484,7 +944,7 @@ const renderDashboardContent = async (content, user, name, role) => {
 
               ctx.fillText(text, textX, textY);
 
-              ctx.font = "normal " + (fontSize * 0.4).toFixed(2) + "em sans-serif";
+              ctx.font = `normal ${(fontSize * 0.4).toFixed(2)}em ${fontFamily}`;
               ctx.fillStyle = rootStyle.getPropertyValue('--text-muted').trim() || "#666";
               const label = "Enviadas";
               const labelX = Math.round((width - ctx.measureText(label).width) / 2);
@@ -497,37 +957,6 @@ const renderDashboardContent = async (content, user, name, role) => {
       }).catch(err => console.error("Error loading Chart.js", err));
     }
   }
-  
-  // Trigger reflow to start fade-in animation for all roles
-  const dashboardCards = document.getElementById('dashboard-cards');
-  if (dashboardCards) {
-    void dashboardCards.offsetWidth;
-    dashboardCards.classList.remove('opacity-0');
-    dashboardCards.classList.add('opacity-100');
-  }
 
-  // Run counter animations for all roles
-  document.querySelectorAll('.animate-number').forEach(el => {
-    const text = el.innerText;
-    const target = parseFloat(el.getAttribute('data-value'));
-    if (isNaN(target) || target === 0) return; // Skip non-numeric or 0 values
-
-    const duration = 1200;
-    const startTime = performance.now();
-    const animate = (currentTime) => {
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const easeProgress = 1 - Math.pow(1 - progress, 3); // Cubic ease-out
-      const current = (easeProgress * target);
-      
-      el.innerText = Number.isInteger(target) ? Math.round(current) : current.toFixed(1);
-      
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      } else {
-        el.innerText = text;
-      }
-    };
-    requestAnimationFrame(animate);
-  });
+  runDashboardAnimations();
 };

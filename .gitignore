@@ -31,3 +31,7 @@ Thumbs.db
 
 # Entorno de pruebas (la plantilla .env.test.example SI se versiona)
 .env.test
+
+# Salida generada por herramientas de analisis (se regenera, no se versiona)
+graphify-out/
+help.txt

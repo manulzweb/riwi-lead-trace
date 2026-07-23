@@ -1,6 +1,8 @@
-from pydantic import BaseModel, Field
-from typing import List, Optional
+from pydantic import BaseModel, Field, model_validator
+from typing import List, Literal, Optional
 from datetime import datetime
+
+from app.constants.form_constants import EVALUABLE_ROLES
 
 class QuestionOut(BaseModel):
     id: int
@@ -18,9 +20,11 @@ class FormOut(BaseModel):
     id: int
     title: str
     description: Optional[str] = None
-    target_role_id: int
+    # None solo en plantillas genericas (ver chk_form_role_required en el DDL).
+    target_role_id: Optional[int] = None
     is_active: bool
-    is_form: bool = False
+    is_template: bool = False
+    archived_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
     questions: List[QuestionOut] = []
 
@@ -79,20 +83,56 @@ class FormCreate(BaseModel):
         description="Detalles o instrucciones sobre el formulario",
         examples=["Formulario para evaluar el desempeño en el mes de Julio"]
     )
-    target_role: str = Field(
+    target_role: Optional[str] = Field(
+        default=None,
         title="Rol Objetivo",
-        description="'team_leader' o 'tutor' -- los unicos roles evaluables",
+        description=(
+            "'team_leader' o 'tutor' -- los unicos roles evaluables. "
+            "Obligatorio en un formulario vivo; opcional en una plantilla "
+            "(una plantilla generica sirve para cualquier rol)."
+        ),
         examples=["team_leader"]
     )
-    is_form: bool = Field(
+    is_template: bool = Field(
         default=False,
         title="Es Plantilla Base",
-        description="Indica si este formulario es solo una base (true) o un formulario activo para recibir respuestas (false)"
+        description="TRUE = plantilla base reutilizable (inerte, nunca recibe respuestas). FALSE = formulario vivo."
     )
     questions: List[QuestionCreateItem] = Field(
         min_length=1,
         title="Preguntas",
         description="Lista de preguntas que componen el formulario"
+    )
+
+    @model_validator(mode="after")
+    def _validate_target_role(self):
+        """Espeja chk_form_role_required del DDL: un formulario vivo SIEMPRE
+        necesita rol; una plantilla puede no tenerlo.
+
+        Se valida aqui ademas de en la BD para devolver un 422 con mensaje util
+        en vez de dejar que MySQL responda con un IntegrityError opaco. La BD
+        sigue siendo la autoridad: esto es conveniencia, no la barrera.
+        """
+        if self.target_role is not None and self.target_role not in EVALUABLE_ROLES:
+            raise ValueError(f"target_role debe ser uno de {EVALUABLE_ROLES}.")
+        if not self.is_template and self.target_role is None:
+            raise ValueError("Un formulario vivo requiere target_role; solo una plantilla puede omitirlo.")
+        return self
+
+
+class FormDeleteResult(BaseModel):
+    """Respuesta de DELETE /forms/{id}. La UI la usa para decir con precision
+    que ocurrio: un formulario sin uso desaparece, uno con historial se archiva.
+    """
+    action: Literal["deleted", "archived"] = Field(
+        title="Qué ocurrió",
+        description="'deleted' = se borró de verdad (no tenía uso). 'archived' = se retiró de la grilla pero su historial sigue intacto.",
+        examples=["archived"]
+    )
+    evaluations_count: int = Field(
+        title="Evaluaciones asociadas",
+        description="Cuántas evaluaciones referencian este formulario. Si es > 0, el borrado real es imposible por FK.",
+        examples=[24]
     )
 
 

@@ -69,8 +69,26 @@ class ActivityLogService:
 
 activity_log_service = ActivityLogService()
 
+
+# --------------------------------------------------------------------------
+# Estas TRES funciones de modulo SI se usan y no son wrappers muertos.
+#
+# El resto de services se importa como singleton:
+#     from app.services.form_service import form_service      -> instancia
+#
+# pero este se importa como MODULO en sus 4 consumidores:
+#     from app.services import activity_log_service           -> modulo
+#
+# Con esa forma, `activity_log_service.log_action(...)` resuelve a la funcion
+# de modulo, NO al metodo del singleton (que se llama igual). Borrarlas rompe
+# category_service, period_service, question_service y activity_log_routes con
+# un AttributeError en tiempo de ejecucion, no de import.
+#
+# Se conservan tal cual para no tocar los imports de los consumidores.
+# --------------------------------------------------------------------------
+
 def log_action(conn: Connection, admin_id: Optional[int], action: str, target_type: str, target_id: Optional[int] = None, detail: Optional[str] = None):
-    activity_log_service.log_action(conn, admin_id, action, target_type, target_id, detail)
+    return activity_log_service.log_action(conn, admin_id, action, target_type, target_id, detail)
 
 def get_recent_activity(limit: int = 50):
     return activity_log_service.get_recent_activity(limit)

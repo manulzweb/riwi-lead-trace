@@ -2,7 +2,8 @@ from fastapi import APIRouter, Query, HTTPException, status
 import logging
 from app.services.metrics_service import metrics_service
 from app.services.ai_service import ai_service
-from app.exceptions.ai_exceptions import InsufficientDataException, AIServiceUnavailableException
+
+from app.exceptions.base import ApplicationException
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -14,11 +15,7 @@ router = APIRouter()
 )
 def get_metrics_summary(period_id: int = Query(..., description="ID del periodo a consultar")):
     """Agrega y normaliza las métricas de ICP on-read basándose en vistas pre-calculadas en BD."""
-    try:
-        return metrics_service.get_metrics_summary(period_id)
-    except Exception as e:
-        logger.error(f"Error fetching metrics summary for period {period_id}: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al generar métricas")
+    return metrics_service.get_metrics_summary(period_id)
 
 @router.get(
     "/metrics/history",
@@ -27,11 +24,7 @@ def get_metrics_summary(period_id: int = Query(..., description="ID del periodo 
 )
 def get_score_history(evaluatee_id: int = Query(..., description="ID de la persona evaluada")):
     """Consulta el historial de puntuaciones utilizando las vistas pre-calculadas de la BD."""
-    try:
-        return metrics_service.get_score_history(evaluatee_id)
-    except Exception as e:
-        logger.error(f"Error fetching score history for user {evaluatee_id}: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al obtener historial")
+    return metrics_service.get_score_history(evaluatee_id)
 
 @router.get(
     "/metrics/ai-summary",
@@ -46,10 +39,12 @@ def get_ai_summary(
     try:
         summary = ai_service.get_or_generate_ai_summary(evaluatee_id, period_id)
         return {"summary": summary}
-    except InsufficientDataException as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    except AIServiceUnavailableException as e:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error generating AI summary: {e}")
+    except ApplicationException:
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
+        raise
+    except Exception:
+        logger.exception("Error generating AI summary")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error generando resumen IA")

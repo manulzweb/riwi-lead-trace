@@ -1,52 +1,51 @@
-# 01 — Vision y Producto
+# 01 — Visión y Producto: Riwi Lead Trace
 
-## La idea, en simple
+## 1. Definición del Producto (Executive Summary)
 
-> **LeadTrace** es una app web donde los **Coders** evaluan —con formularios, y si quieren de forma **anonima**— a sus **Team Leaders** y **Tutores**. El sistema junta esas evaluaciones, calcula una **nota de 0 a 100 por persona (el ICP)** y le arma al **Admin** (jefe de TL/tutores) un **tablero + un resumen escrito por IA**, para que sepa quien acompana bien y quien necesita apoyo.
+**Riwi Lead Trace** es una plataforma web orientada al levantamiento asíncrono de feedback ascendente (Bottom-Up Feedback). Proporciona a los desarrolladores (Coders) un canal formal, estructurado y provisto de anonimato criptográfico para evaluar el desempeño de sus líderes (Team Leaders y Tutores). El núcleo del sistema procesa estas interacciones para calcular el **Índice de Calidad Percibida (ICP)** y delega la síntesis cualitativa a un modelo LLM (Inteligencia Artificial), suministrando a la administración telemetría accionable para la toma de decisiones.
 
-## Product Vision
+## 2. Visión del Producto (Product Vision)
 
-> **Para** el ecosistema Riwi **que** no cuenta con un canal formal para evaluar la calidad del acompanamiento, **Riwi LeadTrace es** una plataforma web de **feedback ascendente** **que** permite a los Coders evaluar —de forma estructurada y opcionalmente anonima— a Team Leaders y Tutores, **a diferencia de** los procesos informales o unidireccionales actuales, **nuestro producto** calcula un **Indice de Calidad Percibida (ICP)** y **resumenes con IA** que impulsan decisiones del Admin (Jefe de TL/tutores).
+- **Para** la administración del ecosistema Riwi.
+- **Que** carece de un mecanismo formal y estructurado para cuantificar la calidad del acompañamiento técnico y humano.
+- **Riwi Lead Trace es** una plataforma web transaccional y analítica.
+- **Que** permite habilitar evaluaciones ascendentes con protección de identidad y procesamiento algorítmico del feedback.
+- **A diferencia de** los canales informales y carentes de métricas agregadas actuales.
+- **Nuestro producto** entrega un panel de control basado en el Índice de Calidad Percibida (ICP) y resúmenes ejecutivos asistidos por IA, catalizando una gestión basada en datos (Data-Driven Management).
 
-## Product Goal
+## 3. Objetivo Estratégico (Product Goal)
 
-Validar, mediante un MVP funcional, que un proceso de **feedback ascendente estructurado** mejora la visibilidad sobre la calidad del acompanamiento de Team Leaders y Tutores, entregando a los responsables academicos informacion accionable para la toma de decisiones.
+Validar, mediante el despliegue de un Producto Mínimo Viable (MVP), la hipótesis de que un proceso formal de evaluación estructurada mejora sustancialmente la visibilidad del desempeño de los mentores, entregando artefactos de información accionable a los *stakeholders* correspondientes.
 
-## Objetivos de negocio
+## 4. Objetivos de Negocio
 
-1. **Dar voz a los Coders** con un canal formal, seguro y opcionalmente anonimo para evaluar a sus lideres y tutores.
-2. **Mejorar la calidad del acompanamiento** con el **ICP** (indice 0-100, accionable).
-3. **Crear trazabilidad y metricas** de seguimiento historico por lider, tutor y periodo.
-4. **Habilitar decisiones basadas en datos** para el Admin (Jefe de TL/tutores), apoyadas en **IA**.
-5. **Fomentar la mejora continua** dentro del ecosistema de aprendizaje de Riwi.
+1. **Canal Formal y Seguro:** Establecer una vía de comunicación asíncrona garantizando el anonimato estructural (desacoplamiento a nivel de base de datos).
+2. **Métrica Cuantitativa:** Implementar el cálculo del **ICP**, una métrica ponderada de 0 a 100 con mitigación de sesgos estadísticos.
+3. **Trazabilidad Histórica:** Preservar la inmutabilidad de los datos de evaluación a través de múltiples ciclos (periodos) operativos.
+4. **Data Analytics:** Facilitar la toma de decisiones de la gerencia mediante procesamiento analítico y de lenguaje natural (NLP).
+5. **Mejora Continua:** Institucionalizar ciclos iterativos de retroalimentación en la matriz de aprendizaje.
 
-## Metricas de exito del MVP
+## 5. Métricas de Éxito (KPIs del MVP)
 
-| Metrica | Indicador | Meta MVP |
-|--------|-----------|----------|
-| Adopcion | % de Coders que completan al menos una evaluacion | >= 60 % |
-| Cobertura | % de Team Leaders/Tutores con al menos 3 evaluaciones | >= 70 % |
-| Completitud | % de evaluaciones iniciadas que se envian | >= 80 % |
-| Calidad del dato | % de evaluaciones con comentario cualitativo | >= 40 % |
-| Calidad accionable | % de TL/Tutores con **ICP** calculado (datos suficientes) | >= 70 % |
-| Uso analitico | No de admins (Jefe de TL) que consultan el dashboard semanalmente | >= 1 |
-| Confianza | % de evaluaciones enviadas usando la opcion anonima (senal de seguridad percibida) | medicion base |
-| Satisfaccion | NPS interno del proceso de feedback | establecer linea base |
+| Métrica | Indicador Telemétrico | Meta MVP |
+|---------|-----------------------|----------|
+| **Adopción** | Porcentaje de Coders con participación activa registrada. | ≥ 60% |
+| **Cobertura** | Porcentaje de Team Leaders/Tutores evaluados exitosamente. | ≥ 70% |
+| **Completitud** | Tasa de conversión: Evaluaciones Iniciadas vs. Enviadas. | ≥ 80% |
+| **Calidad de Dato** | Proporción de evaluaciones con retroalimentación en texto libre. | ≥ 40% |
+| **Viabilidad Analítica**| Porcentaje de líderes superando el umbral de representatividad estadística para el ICP. | ≥ 70% |
+| **Retención Admin** | Frecuencia de acceso concurrente al Dashboard por los responsables. | ≥ 1 sesión/semana |
+| **Confianza** | Proporción de tráfico direccionado bajo modalidad anónima. | Línea base |
 
-> Las metricas se miden sobre los datos registrados por la propia plataforma (dashboard) mas una encuesta breve post-MVP.
+## 6. Propuesta de Valor Diferenciada
 
-## Propuesta de valor
+- **Coders:** Garantía de anonimato y voz formal sin repercusiones.
+- **Team Leaders & Tutores:** Retroalimentación empírica y accionable orientada al crecimiento técnico y humano.
+- **Administración:** Reducción del esfuerzo cognitivo mediante síntesis LLM (Google Gemini) e indicadores agregados (ICP).
+- **Stakeholders:** Visibilidad transparente y estandarizada sobre la calidad académica.
 
-- **Para el Coder:** voz formal y segura sobre su experiencia de acompanamiento.
-- **Para el Team Leader:** feedback concreto y accionable para crecer como lider.
-- **Para el Tutor:** feedback para mejorar su apoyo tecnico.
-- **Para el Admin (Jefe de TL/tutores):** panel con **ICP** y **resumenes IA** para decidir.
-- **Para Riwi:** mejora medible y continua de la calidad academica.
+## 7. Supuestos y Restricciones Técnicas
 
-## Supuestos y restricciones
-
-- Lo desarrolla un **equipo de 5 Coders** bajo Scrum (Proyecto Integrador, Ruta Basica) -> priorizar simplicidad, paralelizacion y evidencia de contribucion individual.
-- Aplicacion **full-stack**: SPA en **HTML5 + CSS3 + JS Vanilla** + backend **FastAPI** + **MySQL** (3FN).
-- Debe incluir **logica de negocio** identificable (no limitarse a CRUD basico).
-- Alcance **MVP**: validar la idea con una solucion funcional, estable y con valor para el usuario.
-- Cronograma del **20 de junio al 17 de julio de 2026** (~4 semanas), metodologia Scrum y **GitFlow** obligatorios.
+- **Alcance Operativo:** MVP desarrollado en un ciclo de 4 semanas bajo metodología Scrum estricta y control de versiones (GitFlow).
+- **Arquitectura de Software:** Solución Full-Stack. SPA en **Vanilla JS + Vite**, consumiendo una API RESTful construida en **FastAPI (Python)**, respaldada por un motor relacional **MySQL** (3FN).
+- **Core Lógico:** Exigencia de no ser un sistema transaccional básico (CRUD); se requiere inyección de lógica de dominio estricta (anonimato, concurrencia, métricas algebraicas derivadas).

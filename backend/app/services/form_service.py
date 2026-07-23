@@ -1,4 +1,6 @@
+import logging
 from typing import List, Dict, Any, Optional
+from sqlalchemy.exc import IntegrityError
 from app.config.database import engine
 from app.schemas.form import FormCreate, FormUpdate
 from app.repositories.form_repository import FormRepository
@@ -8,6 +10,9 @@ from app.exceptions.form_exceptions import (
     ActivePeriodExistsException, InvalidRoleException, InvalidWeightException, 
     CategoryNotFoundException, FormNotFoundException
 )
+
+logger = logging.getLogger(__name__)
+
 
 class FormService:
     def __init__(self, repository: FormRepository = None):
@@ -32,13 +37,22 @@ class FormService:
             
         return forms
 
-    def get_forms_by_role(self, role_name: str) -> List[Dict[str, Any]]:
+    def get_forms(
+        self,
+        role_name: Optional[str] = None,
+        kind: str = "form",
+        include_archived: bool = False,
+    ) -> List[Dict[str, Any]]:
+        """Lista formularios. Los defaults son los del Coder (solo el vivo y
+        activo, sin archivados); el Admin pide explicitamente kind='all'."""
         with engine.connect() as conn:
-            role_id = self.repo.get_role_id_by_name(conn, role_name)
-            if not role_id:
-                return []
-                
-            forms = self.repo.get_forms_by_role_id(conn, role_id)
+            role_id = None
+            if role_name:
+                role_id = self.repo.get_role_id_by_name(conn, role_name)
+                if not role_id:
+                    return []
+
+            forms = self.repo.get_forms(conn, role_id=role_id, kind=kind, include_archived=include_archived)
             return self._attach_questions(conn, forms)
 
     def get_form(self, form_id: int) -> Optional[Dict[str, Any]]:
@@ -49,9 +63,16 @@ class FormService:
             return self._attach_questions(conn, [form_dict])[0]
 
     def _validate_creation_payload(self, payload: FormCreate, tolerance: float):
-        if payload.target_role not in EVALUABLE_ROLES:
+        # target_role es opcional SOLO en plantillas. La combinacion invalida
+        # (formulario vivo sin rol) ya la rechaza FormCreate con un 422; aqui
+        # se valida el valor cuando viene, para no depender solo del schema.
+        if payload.target_role is not None and payload.target_role not in EVALUABLE_ROLES:
             raise InvalidRoleException(f"target_role debe ser uno de {EVALUABLE_ROLES}.")
+        if not payload.is_template and payload.target_role is None:
+            raise InvalidRoleException("Un formulario vivo requiere target_role; solo una plantilla puede omitirlo.")
 
+        # La suma 100 se exige igual en plantillas: asi instanciar una plantilla
+        # produce un formulario valido sin que el admin tenga que reponderar.
         scale_weights = [q.weight_percent for q in payload.questions if q.input_type == "scale"]
         if scale_weights:
             total = sum(scale_weights)
@@ -68,21 +89,28 @@ class FormService:
             # Crear tambien modifica el instrumento: deactivate_forms_for_role retira
             # la plantilla que los coders puedan estar respondiendo ahora mismo. Por eso
             # exige periodo cerrado igual que update_form y delete_form (regla 6).
-            if not payload.is_form:
+            # Crear un formulario vivo tambien modifica el instrumento:
+            # deactivate_forms_for_role retira el que los coders puedan estar
+            # respondiendo ahora. Por eso exige periodo cerrado (regla 6).
+            # Una plantilla es inerte, asi que se puede crear en cualquier momento.
+            if not payload.is_template:
                 self._assert_no_active_period(conn)
 
-            role_id = self.repo.get_role_id_by_name(conn, payload.target_role)
-            if not role_id:
-                raise InvalidRoleException(f"Rol '{payload.target_role}' no existe en BD.")
+            # Una plantilla generica no tiene rol (target_role_id NULL).
+            role_id = None
+            if payload.target_role is not None:
+                role_id = self.repo.get_role_id_by_name(conn, payload.target_role)
+                if not role_id:
+                    raise InvalidRoleException(f"Rol '{payload.target_role}' no existe en BD.")
 
-            if not payload.is_form:
+            if not payload.is_template:
                 self.repo.deactivate_forms_for_role(conn, role_id)
 
             form_data = {
                 "title": payload.title,
                 "description": payload.description,
                 "target_role_id": role_id,
-                "is_form": payload.is_form
+                "is_template": payload.is_template
             }
             form_id = self.repo.insert_form(conn, form_data)
 
@@ -114,7 +142,7 @@ class FormService:
             if not existing:
                 raise FormNotFoundException("Plantilla no encontrada.")
 
-            if not existing["is_form"]:
+            if not existing["is_template"]:
                 self._assert_no_active_period(conn)
 
             values = {}
@@ -127,35 +155,53 @@ class FormService:
 
             return self._attach_questions(conn, [existing])[0]
 
-    def delete_form(self, form_id: int) -> bool:
+    def delete_form(self, form_id: int) -> Dict[str, Any]:
+        """Elimina un formulario SIN perder su historial.
+
+        Dos caminos, y quien decide es la base de datos, no este conteo:
+        - sin evaluaciones -> borrado DURO (preguntas + formulario). Desaparece.
+        - con evaluaciones -> ARCHIVADO. Sale de la grilla del admin, pero las
+          evaluaciones y sus respuestas siguen intactas y consultables.
+
+        El conteo previo solo elige el camino esperado. Si el DELETE viola una
+        FK igual (una pregunta versionada con respuestas, o una carrera entre el
+        SELECT y el DELETE), se captura IntegrityError y se archiva. Mismo
+        criterio que la regla 2 con uq_submission_once: la BD es la autoridad
+        final. El peor caso posible es "se archivo cuando esperabas un borrado",
+        nunca "se perdio historial".
+
+        Devuelve que ocurrio, para que la UI pueda decirlo con precision en vez
+        de mostrar un generico que a veces seria falso.
+        """
         with engine.begin() as conn:
             existing = self.repo.get_form_by_id(conn, form_id)
             if not existing:
-                raise FormNotFoundException("Plantilla no encontrada.")
+                raise FormNotFoundException("Formulario no encontrado.")
 
-            if not existing["is_form"]:
+            # Retirar el formulario vivo con un periodo abierto dejaria a los
+            # coders sin instrumento a mitad de la ventana (regla 6).
+            if not existing["is_template"]:
                 self._assert_no_active_period(conn)
 
-            deleted = self.repo.delete_form(conn, form_id)
-                
-            if existing["is_active"]:
-                self.repo.deactivate_form(conn, form_id)
-                
-        return True
+            usage = self.repo.count_evaluations_for_form(conn, form_id)
+
+            if usage == 0:
+                try:
+                    # Savepoint anidado: si el DELETE viola una FK, revierte
+                    # SOLO este intento y deja la transaccion externa viva para
+                    # poder archivar. Sin esto la conexion quedaria inutilizable.
+                    with conn.begin_nested():
+                        self.repo.delete_questions_for_form(conn, form_id)
+                        self.repo.delete_form(conn, form_id)
+                    return {"action": "deleted", "evaluations_count": 0}
+                except IntegrityError:
+                    # Hay historial que el conteo no vio. Archivar es lo correcto.
+                    logger.warning(
+                        f"Borrado duro del formulario {form_id} rechazado por FK pese a "
+                        f"count_evaluations = 0; se archiva en su lugar."
+                    )
+
+            self.repo.archive_form(conn, form_id)
+            return {"action": "archived", "evaluations_count": usage}
 
 form_service = FormService()
-
-def get_forms_by_role(role_name: str):
-    return form_service.get_forms_by_role(role_name)
-
-def get_form(form_id: int):
-    return form_service.get_form(form_id)
-
-def create_form(payload: FormCreate):
-    return form_service.create_form(payload)
-
-def update_form(form_id: int, payload: FormUpdate):
-    return form_service.update_form(form_id, payload)
-
-def delete_form(form_id: int):
-    return form_service.delete_form(form_id)

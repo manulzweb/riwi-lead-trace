@@ -1,4 +1,9 @@
-EVALUABLE_ROLES = ("team_leader", "tutor")
+from app.constants.role_constants import EVALUABLE_ROLES  # noqa: F401
+
+# EVALUABLE_ROLES se reexporta desde `role_constants` (fuente unica). Antes se
+# redefinia aqui con los literales, que era una tercera copia de los nombres
+# de rol. Se mantiene el reexport para no tocar los imports que ya apuntaban
+# a este modulo (`app/schemas/form.py`, `form_service.py`).
 
 # Margen con el que se compara la suma de pesos contra 100 (regla ADMIN-02).
 # Es el valor de respaldo: el real vive en `system_settings.weight_tolerance`

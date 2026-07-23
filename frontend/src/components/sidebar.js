@@ -80,17 +80,24 @@ export const sidebarComponent = (isActive) => {
   } else if (role === "team_leader") {
     navConfig = [
       { href: "/dashboard", label: "Dashboard", icon: icons.home },
-      { label: "Evaluations", icon: icons.evaluations, submenu: [
-        { href: "/my-results", label: "My Results", icon: icons.chart }
+      { label: "Evaluaciones", icon: icons.evaluations, submenu: [
+        { href: "/my-results", label: "Mis Resultados", icon: icons.chart }
       ]}
     ];
   } else {
     // tutor or coder
     navConfig = [
       { href: "/dashboard", label: "Dashboard", icon: icons.home },
-      { label: "Evaluations", icon: icons.evaluations, submenu: [
-        { href: "/evaluations/new", label: "To-Do Evaluations", icon: icons.create },
-        { href: "/evaluations", label: "My Evaluations", icon: icons.list }
+      { label: "Evaluaciones", icon: icons.evaluations, submenu: [
+        // /evaluables is Coder-only (allowedRoles in routes.js) and this block
+        // is shared with tutor, so the link is hidden for tutors anyway.
+        // It is here because the dashboard banner was the only way in, and
+        // that banner disappears once every evaluation is done.
+        ...(role === "coder"
+          ? [{ href: "/evaluables", label: "Por Evaluar", icon: icons.list }]
+          : []),
+        { href: "/evaluations/new", label: "Nueva Evaluación", icon: icons.create },
+        { href: "/evaluations", label: "Mis Evaluaciones", icon: icons.list }
       ]}
     ];
   }

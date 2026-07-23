@@ -64,7 +64,6 @@ class PeriodService:
                     detail=period_name,
                 )
                 
-                # Check if period was closed, and if so trigger the background task
                 if values["is_active"] is False and background_tasks is not None:
                     from app.services.settings_service import settings_service
                     from app.services.ai_service import generate_missing_summaries_for_period
@@ -82,18 +81,3 @@ class PeriodService:
         return True
 
 period_service = PeriodService()
-
-def get_periods():
-    return period_service.get_periods()
-
-def get_period(period_id: int):
-    return period_service.get_period(period_id)
-
-def create_period(period: PeriodCreate):
-    return period_service.create_period(period)
-
-def update_period(period_id: int, period: PeriodUpdate, background_tasks: Optional['fastapi.BackgroundTasks'] = None):
-    return period_service.update_period(period_id, period, background_tasks)
-
-def delete_period(period_id: int):
-    return period_service.delete_period(period_id)

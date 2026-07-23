@@ -10,6 +10,11 @@ export const setupPagination = ({
   let currentData = data;
 
   const render = () => {
+    // The container may have been unmounted between the view capturing it and
+    // this call: an async view awaiting the backend can be re-rendered by the
+    // router. Without this guard container.innerHTML threw and aborted loading.
+    if (!container) return;
+
     const totalPages = Math.ceil(currentData.length / itemsPerPage) || 1;
     if (currentPage > totalPages) currentPage = totalPages;
     if (currentPage < 1) currentPage = 1;

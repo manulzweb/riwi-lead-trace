@@ -1,16 +1,20 @@
 import { navBarComponent } from "../../components/navbar";
-import { dropdownComponent, setupDropdown } from "../../components/dropdown";
-import { userService } from "../../services/users.service";
+import { modalComponent, setupModal } from "../../components/modal";
+import { evaluablesService } from "../../services/evaluables.service";
 import { evaluationService } from "../../services/evaluation.service";
 import { periodService } from "../../services/periods.service";
 import { authService } from "../../services/auth.service";
+import { escapeHtml } from "../../utils/validators";
 import { showToast } from "../../components/alerts";
 import { renderRoute } from "../../router/router";
 import { z } from "zod";
 
-// Preguntas de escala/si-no son obligatorias; texto abierto es opcional. La
-// validacion vive aca en vez de un if/else imperativo por cada pregunta --
-// mas facil de leer que "que hace falta para poder enviar" de un vistazo.
+// Single source of truth for "required question" (progress bar, answerSchema,
+// "Opcional" badge): scale and yes/no feed the ICP, open text does not.
+const REQUIRED_TYPES = new Set(["scale", "scale_1_5", "yes_no"]);
+const isRequired = (inputType) => REQUIRED_TYPES.has(inputType);
+
+// Schema instead of per-question if/else: what blocks submit is visible at a glance.
 const answerSchema = z.object({
   question_id: z.number(),
   type: z.enum(["scale", "scale_1_5", "yes_no", "open_text", "text"]),
@@ -31,6 +35,31 @@ const evaluationAnswersSchema = z.array(answerSchema).min(1, "La evaluación deb
 let allUsers = [];
 let activePeriod = null;
 let currentForm = null;
+
+// Avatar initials (up to two words). No images: the backend has no profile photos.
+const getInitials = (name = "") =>
+  name.split(" ").filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase() || "?";
+
+const roleLabel = (role) => (role === "team_leader" ? "Team Leader" : "Tutor");
+
+// Same role colors as the /evaluables cards (blue TL, purple tutor), so the role
+// reads the same across both views.
+const roleBadge = (role) =>
+  role === "team_leader"
+    ? `<span class="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-600 dark:bg-blue-950/20 dark:text-blue-400">Team Leader</span>`
+    : `<span class="rounded-full bg-purple-50 px-2.5 py-0.5 text-xs font-semibold text-purple-600 dark:bg-purple-950/20 dark:text-purple-400">Tutor</span>`;
+
+// Compact card for the selection modal: the whole card is the button.
+const compactCard = (user, role) => `
+  <button type="button" data-user-id="${user.id}" data-role="${role}"
+    class="flex items-center gap-3 rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] p-3 text-left transition-all hover:border-[var(--brand-hover)] hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--brand-hover)]">
+    <span aria-hidden="true" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--brand-bg)]/10 text-sm font-bold text-[var(--brand-bg)]">${escapeHtml(getInitials(user.name))}</span>
+    <span class="min-w-0 flex-1">
+      <span class="block truncate text-sm font-bold text-[var(--text-main)]">${escapeHtml(user.name)}</span>
+      <span class="mt-0.5 block">${roleBadge(role)}</span>
+    </span>
+  </button>
+`;
 
 export const renderEvaluate = () => `
   ${navBarComponent()}
@@ -58,29 +87,17 @@ export const renderEvaluate = () => `
 
     <form id="evaluate-form" class="mt-8 grid gap-6">
       <section class="rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-8 shadow-sm">
-        
-        <div class="grid gap-6 md:grid-cols-2 mb-8">
-          <div id="target-role-container">
-            <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="target-role">¿A quién evalúas?</label>
-            ${dropdownComponent('target-role', [
-  { value: '', label: 'Selecciona un rol...' },
-  { value: 'team_leader', label: 'Team Leader' },
-  { value: 'tutor', label: 'Tutor' }
-], '')}
-          </div>
 
-          <div id="evaluatee-container">
-            <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="evaluatee">Persona a evaluar</label>
-            ${dropdownComponent('evaluatee', [
-  { value: '', label: 'Primero selecciona un rol...' }
-], '')}
-          </div>
-        </div>
+        <!-- Context card: who is being evaluated. Filled by renderContextCard(). -->
+        <div id="evaluatee-context" class="mb-8 empty:mb-0"></div>
 
         <div id="questions-container" class="grid gap-8"></div>
       </section>
 
-      <section class="flex flex-col sm:flex-row sm:items-center gap-4 rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm">
+      <!-- Hidden until an evaluatee is chosen (loadForm reveals them); otherwise they
+           peek behind the selection modal.
+           WARNING: never use backticks here, this comment lives in a template literal. -->
+      <section id="anonymous-section" class="hidden flex flex-col sm:flex-row sm:items-center gap-4 rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm">
         <label class="relative inline-flex cursor-pointer items-center">
           <input type="checkbox" id="is-anonymous" name="anonymous" class="peer sr-only" aria-describedby="anon-help" />
           <span class="sr-only">Enviar esta evaluación de forma anónima</span>
@@ -95,7 +112,7 @@ export const renderEvaluate = () => `
       </section>
 
       
-      <div class="flex flex-col-reverse sm:flex-row justify-end gap-4" id="wizard-buttons">
+      <div class="hidden flex flex-col-reverse sm:flex-row justify-end gap-4" id="wizard-buttons">
         <button type="button" id="prev-btn" class="hidden cursor-pointer rounded-2xl border border-[var(--border-main)] bg-transparent px-6 py-3 text-sm font-bold text-[var(--text-main)] transition-all hover:bg-[var(--bg-base)] hover:shadow-sm">
           Anterior
         </button>
@@ -111,6 +128,22 @@ export const renderEvaluate = () => `
       </div>
 
     </form>
+
+    ${modalComponent({
+      id: "evaluatee-modal",
+      title: "¿A quién vas a evaluar?",
+      size: "lg",
+      children: `
+        <p class="mb-5 -mt-4 text-sm text-[var(--text-muted)]">Selecciona a un Team Leader o Tutor pendiente en este periodo.</p>
+        <div id="evaluatee-modal-list" class="grid gap-3 sm:grid-cols-2 max-h-[55vh] overflow-y-auto p-1" aria-live="polite"></div>
+        <div class="mt-6 flex justify-end">
+          <button type="button" id="evaluatee-modal-cancel"
+            class="cursor-pointer rounded-2xl border border-[var(--border-main)] bg-transparent px-6 py-3 text-sm font-bold text-[var(--text-main)] transition-all hover:bg-[var(--bg-base)] hover:shadow-sm">
+            Cancelar
+          </button>
+        </div>
+      `,
+    })}
     </div>
   </main>
 `;
@@ -119,23 +152,28 @@ export const setupEvaluate = async () => {
   const form = document.getElementById("evaluate-form");
   const submitBtn = document.getElementById("submit-btn");
   const draftBtn = document.getElementById("draft-btn");
-  const targetRole = document.getElementById("target-role");
-  const evaluatee = document.getElementById("evaluatee");
+
+  // Selection is local state, not the DOM: a re-created node read stale and failed
+  // silently. Shape: { id, name, email, role } or null.
+  let selection = null;
+  const draftKey = () => `evaluation_draft_${currentUser.id}_${selection?.id || ""}`;
+
   const qContainer = document.getElementById("questions-container");
+  const contextCard = document.getElementById("evaluatee-context");
   const anonCheck = document.getElementById("is-anonymous");
   const progressContainer = document.getElementById("progress-container");
   const progressBarFill = document.getElementById("progress-bar-fill");
   const progressText = document.getElementById("progress-text");
   const progressPercent = document.getElementById("progress-percentage");
 
-  if (!form || !submitBtn || !targetRole || !evaluatee || !qContainer) return;
-
-  setupDropdown('target-role');
-  setupDropdown('evaluatee');
+  if (!form || !submitBtn || !qContainer) return;
 
   const currentUser = authService.getSession();
 
-  // Lógica centralizada para auto-guardado
+  // Drop the corrupt draft keyed with an EMPTY suffix: it mixed every evaluatee
+  // and cannot be attributed to anyone, so it is not migrated.
+  localStorage.removeItem(`evaluation_draft_${currentUser.id}_`);
+
   let autosaveTimeout;
   const saveDraftLocally = () => {
     const answers = {};
@@ -146,14 +184,14 @@ export const setupEvaluate = async () => {
     });
 
     const draft = {
-      role: targetRole.value,
-      evaluatee: evaluatee.value,
+      role: selection?.role,
+      evaluatee: selection?.id,
       anonymous: anonCheck.checked,
       answers: answers
     };
-    localStorage.setItem(`evaluation_draft_${currentUser.id}_${evaluatee.value}`,  JSON.stringify(draft));
+    localStorage.setItem(draftKey(),  JSON.stringify(draft));
 
-    // Feedback visual
+    // Visual feedback
     const indicator = document.getElementById("autosave-indicator");
     if (indicator) {
       indicator.classList.remove("opacity-0");
@@ -164,28 +202,47 @@ export const setupEvaluate = async () => {
     }
   };
 
-  // Función para actualizar la barra de progreso
   const updateProgress = () => {
     const questionElements = qContainer.querySelectorAll("[data-question-id]");
     if (questionElements.length === 0) return;
 
+    // Required only: counting open text would demand a comment nobody asks for to hit 100%.
+    const requiredQuestions = Array.from(questionElements).filter(el => isRequired(el.dataset.inputType));
+
+    if (requiredQuestions.length === 0) {
+      // Text-only form: nothing required to measure, hide the bar instead of NaN%.
+      progressContainer.classList.add("hidden");
+      saveDraftLocally();
+      return;
+    }
+
     let answered = 0;
-    questionElements.forEach(el => {
+    requiredQuestions.forEach(el => {
       if (el.dataset.selectedValue) answered++;
     });
 
-    const percentage = Math.round((answered / questionElements.length) * 100);
+    const percentage = Math.round((answered / requiredQuestions.length) * 100);
     progressBarFill.style.width = `${percentage}%`;
-    progressText.textContent = `${answered} de ${questionElements.length} respondidas`;
+    progressText.textContent = `${answered} de ${requiredQuestions.length} respondidas`;
     progressPercent.textContent = `${percentage}%`;
 
-    // Disparar auto-guardado cada vez que cambia el progreso
     saveDraftLocally();
   };
 
+  // Already submitted evaluations, loaded upfront so the first render can say
+  // "all done" without probing role by role.
+  let myEvaluations = [];
+
   try {
-    allUsers = await userService.get();
-    const periods = await periodService.get();
+    // /evaluables (not /users): only who THIS coder may evaluate, clan-filtered
+    // on the server.
+    const [evaluatees, periods, previousEvaluations] = await Promise.all([
+      evaluablesService.get(currentUser.id),
+      periodService.get(),
+      evaluationService.getByEvaluator(currentUser.id),
+    ]);
+    allUsers = evaluatees;
+    myEvaluations = previousEvaluations;
     activePeriod = periods.find(p => p.is_active) || (periods.length ? periods[0] : null);
 
     if (!activePeriod) {
@@ -197,123 +254,150 @@ export const setupEvaluate = async () => {
     console.error(err);
   }
 
-  // Manejador de cambio de rol (funcion nombrada: se reutiliza para la preseleccion via query params)
-  const handleRoleChange = async () => {
-    const role = targetRole.value;
-    qContainer.innerHTML = "";
-    currentForm = null;
-    progressContainer.classList.add("hidden");
+  // People still pending in the active period, role-agnostic: that is what tells
+  // "all done" apart from a per-role notice.
+  const pendingInPeriod = () => {
+    if (!activePeriod) return [];
+    const alreadyEvaluated = myEvaluations
+      .filter(e => e.period_id === activePeriod.id)
+      .map(e => String(e.evaluatee_id));
+    return allUsers.filter(u => u.id !== currentUser.id && !alreadyEvaluated.includes(String(u.id)));
+  };
 
-    if (!role) {
-      document.getElementById('evaluatee-container').outerHTML = `
-        <div id="evaluatee-container">
-          <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="evaluatee">Persona a evaluar</label>
-          ${dropdownComponent('evaluatee', [{ value: '', label: 'Primero selecciona un rol...' }], '')}
-        </div>`;
-      setupDropdown('evaluatee');
-      return;
-    }
+  // Everything done: hide the anonymous toggle and the buttons, nothing to send.
+  const showAllDoneState = () => {
+    document.getElementById('anonymous-section')?.classList.add('hidden');
+    document.getElementById('wizard-buttons')?.classList.add('hidden');
+    progressContainer.classList.add('hidden');
+    qContainer.innerHTML = `
+      <div class="rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-10 text-center shadow-sm">
+        <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--brand-bg)]/10 text-[var(--brand-bg)]">
+          <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        </div>
+        <h3 class="text-xl font-bold text-[var(--text-main)]">Ya completaste todas tus evaluaciones</h3>
+        <p class="mt-2 text-sm text-[var(--text-muted)] max-w-md mx-auto">
+          No te queda nadie por evaluar en este periodo, ni Team Leaders ni Tutores.
+          Puedes revisar lo que enviaste en <a href="/evaluations" data-navigo class="font-bold text-[var(--brand-bg)] hover:underline">Mis evaluaciones</a>.
+        </p>
+      </div>`;
+  };
+
+  // uq_submission_once ignores role: one card per person. team_leader wins on
+  // dual-role users, same as /evaluables.
+  const deriveRole = (user) => (user.roles?.includes("team_leader") ? "team_leader" : "tutor");
+
+  // Context card above the form: who is being evaluated. "Cambiar" reopens the modal.
+  const renderContextCard = () => {
+    if (!contextCard) return;
+    if (!selection) { contextCard.innerHTML = ""; return; }
+    contextCard.innerHTML = `
+      <div class="flex items-center gap-4 rounded-3xl border border-[var(--border-main)] bg-[var(--bg-base)] p-5">
+        <span aria-hidden="true" class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--brand-bg)]/10 text-base font-bold text-[var(--brand-bg)]">${escapeHtml(getInitials(selection.name))}</span>
+        <div class="min-w-0 flex-1">
+          <p class="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Evaluando a</p>
+          <p class="truncate text-lg font-bold text-[var(--text-main)]">${escapeHtml(selection.name)}</p>
+          <div class="mt-1 flex flex-wrap items-center gap-2">
+            ${roleBadge(selection.role)}
+            <span class="truncate text-xs text-[var(--text-muted)]">${escapeHtml(selection.email || "")}</span>
+          </div>
+        </div>
+        <button type="button" id="evaluatee-change"
+          class="shrink-0 cursor-pointer rounded-2xl border border-[var(--border-main)] bg-transparent px-4 py-2 text-sm font-bold text-[var(--text-main)] transition-all hover:bg-[var(--bg-panel)] hover:shadow-sm">
+          Cambiar
+        </button>
+      </div>`;
+    document.getElementById("evaluatee-change")?.addEventListener("click", (e) => openSelectionModal(e.currentTarget));
+  };
+
+  // Loads and renders the role form; shared by the modal choice and the URL preselection.
+  const loadForm = async (role) => {
+    currentForm = null;
+    document.getElementById("anonymous-section")?.classList.remove("hidden");
+    document.getElementById("wizard-buttons")?.classList.remove("hidden");
+    qContainer.innerHTML = `
+      <div class="flex flex-col gap-6">
+        <div class="h-24 skeleton-shimmer rounded-3xl"></div>
+        <div class="h-24 skeleton-shimmer rounded-3xl"></div>
+        <div class="h-24 skeleton-shimmer rounded-3xl"></div>
+      </div>`;
 
     try {
-      qContainer.innerHTML = `
-        <div class="flex flex-col gap-6">
-          <div class="h-24 skeleton-shimmer rounded-3xl"></div>
-          <div class="h-24 skeleton-shimmer rounded-3xl"></div>
-          <div class="h-24 skeleton-shimmer rounded-3xl"></div>
-        </div>
-      `;
-
-      const [form, previousEvaluations] = await Promise.all([
-        evaluationService.getForm(role),
-        evaluationService.getByEvaluator(currentUser.id)
-      ]);
-      currentForm = form;
-
-      // Personas ya evaluadas en este periodo, para sacarlas del selector.
-      //
-      // El filtro es solo por periodo, sin `form_id`, por dos razones: (1) la
-      // regla real de no-duplicado es (evaluador, evaluado, periodo) --el
-      // constraint `uq_submission_once`--, el formulario no entra; (2) las
-      // participaciones anonimas llegan con `form_id` en null (no hay vinculo
-      // con el contenido), asi que compararlo las descartaba y el coder volvia
-      // a ver en la lista a alguien que ya evaluo anonimamente, para chocar
-      // luego contra un 409. La lista de candidatos ya viene filtrada por rol,
-      // asi que no hace falta desambiguar por formulario.
-      const evaluatedIds = previousEvaluations
-        .filter(e => e.period_id === activePeriod.id)
-        .map(e => String(e.evaluatee_id));
-
-      const filtered = allUsers.filter(u => u.roles?.includes(role) && u.id !== currentUser.id && !evaluatedIds.includes(String(u.id)));
-
-      if (filtered.length === 0) {
-        document.getElementById('evaluatee-container').outerHTML = `
-          <div id="evaluatee-container">
-            <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="evaluatee">Persona a evaluar</label>
-            ${dropdownComponent('evaluatee', [{ value: '', label: 'Ya has evaluado a todos para este rol' }], '')}
-          </div>`;
-        setupDropdown('evaluatee');
-        qContainer.innerHTML = '<div class="text-center py-4 text-[var(--brand-bg)] font-bold">¡Has completado todas las evaluaciones para este rol en el periodo actual!</div>';
-        return;
-      }
-
-      const evaluateeOptions = [
-        { value: '', label: 'Selecciona una persona...' },
-        ...filtered.map(u => ({ value: u.id, label: `${u.name} (${u.email})` }))
-      ];
-
-      document.getElementById('evaluatee-container').outerHTML = `
-        <div id="evaluatee-container">
-          <label class="mb-2 block text-sm font-medium text-[var(--text-main)]" for="evaluatee">Persona a evaluar</label>
-          ${dropdownComponent('evaluatee', evaluateeOptions, '')}
-        </div>`;
-      setupDropdown('evaluatee');
-
+      currentForm = await evaluationService.getForm(role);
       renderQuestions(currentForm.questions);
-
       progressContainer.classList.remove("hidden");
       updateProgress();
       loadDraft(role);
     } catch (err) {
-      // 404 = no hay formulario activo para ese rol (ver contrato de /forms).
+      // 404 = no active form for that role (see the /forms contract).
       if (err.status === 404) {
+        document.getElementById("anonymous-section")?.classList.add("hidden");
+        document.getElementById("wizard-buttons")?.classList.add("hidden");
+        progressContainer.classList.add("hidden");
         qContainer.innerHTML = `
           <div class="text-center py-10 bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-main)] shadow-sm">
             <svg class="w-12 h-12 text-[var(--text-muted)] mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             <h3 class="text-lg font-bold text-[var(--text-main)] mb-1">Sin evaluaciones disponibles</h3>
             <p class="text-sm text-[var(--text-muted)] max-w-sm mx-auto">No hay ningún formulario de evaluación activo en este momento para el rol seleccionado.</p>
-          </div>
-        `;
-        evaluatee.disabled = true;
-        evaluatee.innerHTML = '<option value="">Sin formulario disponible</option>';
+          </div>`;
       } else {
-        qContainer.innerHTML = '<div class="text-[var(--danger-text)] bg-[var(--danger-bg)] p-4 rounded-xl text-center">Error al cargar preguntas de la formulario.</div>';
+        qContainer.innerHTML = '<div class="text-[var(--danger-text)] bg-[var(--danger-bg)] p-4 rounded-xl text-center">Error al cargar las preguntas del formulario.</div>';
         console.error(err);
       }
     }
   };
 
-  
-  targetRole.addEventListener("change", handleRoleChange);
+  // Single selection point. selection is set BEFORE closing the modal, or onClose
+  // reads it as a cancel and navigates to /evaluables.
+  const selectEvaluatee = async (user, role) => {
+    selection = { id: user.id, name: user.name, email: user.email, role };
+    renderContextCard();
+    selectionModal.close();
+    await loadForm(role);
+  };
 
-  evaluatee.addEventListener("change", () => {
-    if (evaluatee.value) {
-      loadDraft(targetRole.value);
+  const renderModalList = () => {
+    const list = document.getElementById("evaluatee-modal-list");
+    if (!list) return;
+    const pending = pendingInPeriod();
+    if (pending.length === 0) {
+      list.innerHTML = `<p class="col-span-full py-6 text-center text-sm text-[var(--text-muted)]">No queda nadie por evaluar en este periodo.</p>`;
+      return;
     }
+    list.innerHTML = pending.map(u => compactCard(u, deriveRole(u))).join("");
+  };
+
+  const openSelectionModal = (triggerEl) => {
+    renderModalList();
+    selectionModal.open(triggerEl);
+  };
+
+  // Closing with no selection (Esc/Cancel) leaves the view: a targetless form is
+  // a dead screen. With a previous selection, nothing happens.
+  const selectionModal = setupModal("evaluatee-modal", {
+    onClose: () => {
+      if (!selection) {
+        window.history.pushState({}, "", "/evaluables");
+        renderRoute();
+      }
+    },
   });
 
+  // Delegated on the container: survives renderModalList re-renders. closest()
+  // because the click may land on the avatar or the name.
+  document.getElementById("evaluatee-modal-list")?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-user-id]");
+    if (!btn) return;
+    const user = allUsers.find(u => String(u.id) === btn.dataset.userId);
+    if (user) selectEvaluatee(user, btn.dataset.role);
+  });
 
-  // 2.5 Preselección por parámetros de consulta (query params)
-  const params = new URLSearchParams(window.location.search);
-  const preselectedRole = params.get("role");
-  const preselectedId = params.get("evaluatee_id");
+  document.getElementById("evaluatee-modal-cancel")?.addEventListener("click", () => selectionModal.close());
 
-  if (preselectedRole && preselectedId) {
-    targetRole.value = preselectedRole;
-    await handleRoleChange();
-    evaluatee.value = preselectedId;
-  }
 
-  
+  // View entry does NOT go here: it needs renderQuestions, a const declared below
+  // and therefore not hoisted (TDZ). It runs at the end, see enterView().
+
+
   let currentStep = 0;
   let wizardPages = [];
   const QUESTIONS_PER_STEP = 3;
@@ -375,7 +459,6 @@ export const setupEvaluate = async () => {
       const pageDiv = document.createElement("div");
       pageDiv.className = "wizard-page hidden";
 
-      // Para mostrar la categoria
       let currentCategory = null;
 
       pageQuestions.forEach(q => {
@@ -395,6 +478,16 @@ export const setupEvaluate = async () => {
         const qLabel = document.createElement("p");
         qLabel.className = "mb-4 text-base font-medium text-[var(--text-main)]";
         qLabel.textContent = q.text;
+
+        // "Opcional" badge: without it the bar reads 100% with an empty textarea
+        // and looks like a bug.
+        if (!isRequired(q.input_type)) {
+          const optionalBadge = document.createElement("span");
+          optionalBadge.className = "ml-2 align-middle rounded-full bg-[var(--bg-base)] px-2 py-0.5 text-xs font-semibold text-[var(--text-muted)] border border-[var(--border-main)]";
+          optionalBadge.textContent = "Opcional";
+          qLabel.appendChild(optionalBadge);
+        }
+
         qDiv.appendChild(qLabel);
 
         if (q.input_type === "scale" || q.input_type === "scale_1_5") {
@@ -486,7 +579,6 @@ export const setupEvaluate = async () => {
     updateWizardUI();
   };
 
-  // Lógica de guardado manual del borrador (mantiene el toast original)
   if (draftBtn) {
     draftBtn.addEventListener("click", () => {
       saveDraftLocally();
@@ -494,16 +586,18 @@ export const setupEvaluate = async () => {
     });
   }
 
-  // Lógica de carga de borrador
   const loadDraft = (currentRole) => {
-    const savedDraft = localStorage.getItem(`evaluation_draft_${currentUser.id}_${evaluatee.value}`);
+    const savedDraft = localStorage.getItem(draftKey());
     if (savedDraft) {
       try {
         const draft = JSON.parse(savedDraft);
         if (draft.role === currentRole) {
-          if (draft.evaluatee) evaluatee.value = draft.evaluatee;
+          // The evaluatee is not restored: draftKey is already namespaced per
+          // evaluatee, so this draft belongs to the current selection.
           if (draft.anonymous !== undefined) anonCheck.checked = draft.anonymous;
 
+          // Selecting from code fires no 'change'/click event (only a real user
+          // click does), so dataset and styles are restored by hand here.
           qContainer.querySelectorAll("[data-question-id]").forEach(el => {
             const qId = el.dataset.questionId;
             const savedVal = draft.answers[qId];
@@ -531,8 +625,8 @@ export const setupEvaluate = async () => {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    if (!currentForm || !activePeriod) {
-      showToast("Error", "error", "No se ha cargado la formulario o periodo activo.");
+    if (!currentForm || !activePeriod || !selection) {
+      showToast("Error", "error", "No se ha cargado el formulario, el periodo activo o la persona a evaluar.");
       return;
     }
 
@@ -560,12 +654,12 @@ export const setupEvaluate = async () => {
       return;
     }
 
-    // El backend no espera el campo "type" (solo se usaba para validar aca).
+    // The backend does not expect "type": it was only used to validate here.
     const answers = draftAnswers.map(({ type, ...rest }) => rest);
 
     const evaluationData = {
       evaluator_id: currentUser.id,
-      evaluatee_id: parseInt(evaluatee.value),
+      evaluatee_id: parseInt(selection.id),
       form_id: currentForm.id,
       period_id: activePeriod.id,
       is_anonymous: anonCheck.checked,
@@ -578,24 +672,22 @@ export const setupEvaluate = async () => {
     submitBtn.textContent = "Enviando...";
 
     try {
-      // Se espera al servidor antes de anunciar exito: el periodo puede haberse
-      // cerrado o la evaluacion estar duplicada, y ahi la SPA no es la autoridad
-      // (regla 5). Confirmar antes de tiempo dejaba al coder creyendo que evaluo.
+      // Wait for the server before claiming success: the SPA is not the authority
+      // on closed periods or duplicates (rule 5).
       await evaluationService.create(evaluationData);
 
       showToast("¡Evaluación enviada!", "success", "Tu feedback ha sido registrado exitosamente.");
-      localStorage.removeItem(`evaluation_draft_${currentUser.id}_${evaluatee.value}`);
+      localStorage.removeItem(draftKey());
       window.history.pushState({}, "", "/evaluations");
       renderRoute();
     } catch (err) {
       submitBtn.disabled = false;
       submitBtn.textContent = "Enviar evaluación";
 
-      // El borrador nunca se borro, pero se reescribe con lo ultimo respondido
-      // por si el usuario cambio algo despues de cargarlo.
-      localStorage.setItem(`evaluation_draft_${currentUser.id}_${evaluatee.value}`,  JSON.stringify({
-        role: targetRole.value,
-        evaluatee: evaluatee.value,
+      // The draft was never deleted, but rewrite it with the latest answers.
+      localStorage.setItem(draftKey(),  JSON.stringify({
+        role: selection.role,
+        evaluatee: selection.id,
         anonymous: anonCheck.checked,
         answers: draftAnswers.reduce((acc, curr) => {
           acc[curr.question_id] = curr.score !== null ? curr.score.toString() : curr.comment;
@@ -604,10 +696,8 @@ export const setupEvaluate = async () => {
       }));
 
       if (err.status === 409) {
-        // El backend usa 409 para DOS conflictos distintos: ya evaluaste a esa
-        // persona en el periodo, o el periodo no esta activo. Lo unico que los
-        // distingue es `err.detail`, que puede venir vacio -- por eso siempre va
-        // acompanado de una frase propia y nunca se usa como texto unico.
+        // 409 covers duplicate and inactive period; only err.detail tells them
+        // apart and it may be empty, so always keep a fallback.
         const reason = err.detail
           ? err.detail
           : "Puede que ya hayas evaluado a esta persona en este periodo, o que el periodo de evaluación ya no esté activo.";
@@ -618,4 +708,56 @@ export const setupEvaluate = async () => {
       console.error(err);
     }
   });
+
+  // --- VIEW ENTRY --- Last on purpose: it uses renderQuestions, a const that is
+  // not hoisted, so calling it earlier would throw a TDZ ReferenceError.
+  const enterView = async () => {
+    // No active period: nothing to evaluate, and "all done" would lie (rule 5).
+    if (!activePeriod) {
+      document.getElementById("anonymous-section")?.classList.add("hidden");
+      document.getElementById("wizard-buttons")?.classList.add("hidden");
+      progressContainer.classList.add("hidden");
+      qContainer.innerHTML = `
+        <div class="rounded-[2rem] border border-dashed border-[var(--border-main)] bg-[var(--bg-panel)] p-10 text-center">
+          <p class="text-sm text-[var(--text-muted)]">No hay un periodo de evaluación activo en este momento.</p>
+        </div>`;
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const preselectedRole = params.get("role");
+    const preselectedId = params.get("evaluatee_id");
+
+    // Preselection is valid only if the person is evaluable. Role comes from the
+    // URL, else it is derived (the URL may carry an inconsistent one).
+    const preUser = preselectedId
+      ? allUsers.find(u => String(u.id) === String(preselectedId))
+      : null;
+
+    if (preUser) {
+      const role = preselectedRole || deriveRole(preUser);
+      await selectEvaluatee(preUser, role);
+      return;
+    }
+
+    const pending = pendingInPeriod();
+
+    if (pending.length === 0) {
+      showAllDoneState();
+      return;
+    }
+
+    // A single pending person: the modal would ask for a choice that does not
+    // exist. "Cambiar" on the context card reopens it if needed.
+    if (pending.length === 1) {
+      const onlyCandidate = pending[0];
+      await selectEvaluatee(onlyCandidate, deriveRole(onlyCandidate));
+      return;
+    }
+
+    // Two or more: the choice is real, the modal is the only way.
+    openSelectionModal();
+  };
+
+  await enterView();
 };

@@ -26,7 +26,7 @@ export const StatsCard = ({ title, value, icon, description = "", trend = null }
     className: "p-6 sm:p-8 flex flex-col justify-between hover:-translate-y-1",
     children: `
       <div class="flex items-start justify-between">
-        <div class="p-3 bg-[var(--bg-base)] rounded-2xl border border-[var(--border-main)] text-[var(--brand-bg)] shadow-sm group-hover:bg-[var(--brand-bg)] group-hover:bg-opacity-10 group-hover:text-[var(--brand-hover)] group-hover:border-[var(--brand-bg)] group-hover:border-opacity-30 transition-all duration-300">
+        <div class="p-3 bg-[var(--bg-base)] rounded-2xl border border-[var(--border-main)] text-[var(--brand-bg)] shadow-sm">
           ${icon}
         </div>
         ${trendHtml}

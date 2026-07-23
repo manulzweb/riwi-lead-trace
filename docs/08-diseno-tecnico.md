@@ -1,136 +1,73 @@
-# 08 — Diseño Técnico
+# 08 — Especificación de Diseño Técnico y Metodología
 
-## Convenciones de nombres
+Este documento codifica las convenciones sintácticas, el flujo de ciclo de vida del código (VCS) y las directrices de aseguramiento de calidad (QA) exigidas para el mantenimiento y evolución del sistema Riwi Lead Trace.
 
-### Frontend — archivos y carpetas
-- Carpetas y archivos en **kebab-case**: `my-evaluations.view.js`, `auth.service.js`.
-- Sufijos por tipo: `*.view.js` (vistas), `*.service.js` (servicios). **No hay `*.store.js`**: el
-  proyecto no tiene una capa de store centralizado (ver `06-arquitectura.md`, "Gestion de estado").
-- Componentes reutilizables sin sufijo en `components/`: `navbar.js`, `sidebar.js`, `badge.js`.
+## 1. Convenciones Lexicográficas y Nombrado
 
-### Frontend — código JavaScript
-- **Variables y funciones:** `camelCase` (`getEvaluables`, `currentUser`).
-- **Constantes globales:** `UPPER_SNAKE_CASE` (`API_BASE_URL`).
-- **Clases/constructores:** `PascalCase` (raro en este MVP; preferir funciones).
-- **Privado por convención:** prefijo `_` (`_render`).
-- **Booleanos:** prefijo `is/has/can` (`isAnonymous`, `hasSession`).
-- Módulos ES (`import`/`export`); evitar variables globales.
+Para mitigar la carga cognitiva y mantener la uniformidad en el monorepo, se imponen las siguientes reglas de nombrado, separadas por dominio:
 
-### Backend — código Python (PEP 8)
-- **Módulos y paquetes:** `snake_case` (`evaluation_service.py`, `metrics.py`).
-- **Funciones y variables:** `snake_case` (`build_summary`, `current_user`).
-- **Clases** (modelos SQLAlchemy, schemas Pydantic): `PascalCase` (`Evaluation`, `EvaluationCreate`).
-- **Constantes:** `UPPER_SNAKE_CASE` (`WEIGHT_SUM_TOLERANCE`, `COHERENCE_TEMPERATURE`, `GEMINI_API_KEY`).
-- Schemas Pydantic con sufijo de intención: `EvaluationCreate`, `EvaluationOut`.
-- Type hints obligatorios; formateo con **Black** + lint con **Ruff/Flake8**.
+### 1.1. Frontend (Ecosistema JavaScript)
+- **Topología de Archivos:** `kebab-case` estricto (ej. `my-evaluations.view.js`). Adopción de sufijos funcionales (`*.view.js`, `*.service.js`) para inferencia rápida de responsabilidad. Ausencia de `*.store.js` confirmando la carencia de estado global centralizado.
+- **Variables y Métodos:** `camelCase` (ej. `fetchEvaluables()`). Funciones de visibilidad interna o privada precedidas por un guion bajo (`_renderFallback()`).
+- **Estados Lógicos:** Booleanos prefijados semánticamente (`isAuth`, `hasPermission`, `canEvaluate`).
+- **Módulos:** Restricción a ES Modules (`import`/`export`). Prohibición absoluta de mutación del espacio global (`window`).
 
-### CSS
-- Metodología **BEM**: `.card`, `.card__title`, `.card--highlight`.
-- Variables de diseño en `:root` (`--color-primary`, `--space-md`).
-- **Mobile-first**: estilos base para móvil, `@media (min-width: ...)` para ampliar.
+### 1.2. Backend (Ecosistema Python - PEP 8)
+- **Módulos y Paquetes:** `snake_case` (ej. `evaluation_repository.py`).
+- **Métodos y Variables:** `snake_case`.
+- **Clases (DTOs, Excepciones, Servicios):** `PascalCase` (ej. `ApplicationException`, `EvaluationCreate`).
+- **Constantes:** `UPPER_SNAKE_CASE` (ej. `MAX_RETRIES`).
+- **Tipado (Type Hinting):** Obligatorio en firmas de funciones. Las herramientas de análisis estático (MyPy/Ruff) lo exigen para comprobación *ahead-of-time*.
 
-### Base de datos / API
-- Tablas y columnas en **snake_case** (`forms`, `created_at`).
-- Endpoints REST en **plural** (`/evaluations`, `/periods`); recursos compuestos por más de una
-  palabra en **kebab-case** (`/activity-log`).
+### 1.3. Base de Datos (DDL) y Red (REST)
+- **Esquema Relacional:** Tablas y atributos en `snake_case` pluri-nominal (`evaluation_details`).
+- **Rutas de API:** Estándar RESTful. Colecciones en plural (`/evaluations`). Identificadores compuestos en `kebab-case` (`/activity-log`).
 
-## Estrategia de ramas Git (GitFlow) — equipo de 5
+## 2. Metodología de Integración y VCS (GitFlow)
 
-GitFlow es **obligatorio** y cada integrante debe evidenciar commits, ramas y Pull Requests propios (impacta la evaluación individual). Se usa un GitFlow de 3 tipos de rama:
+La orquestación del código fuente opera bajo un modelo **GitFlow** restringido para asegurar la trazabilidad de contribuciones individuales y proteger las ramas de producción.
 
+### 2.1. Topología de Ramas
+- `main`: Refleja el artefacto de producción (Release Candidate). Inmutable salvo por *Merges* controlados y etiquetados (`v1.0.0`).
+- `develop`: Rama de integración principal. Contiene la línea base del sprint en curso.
+- `feature/<id-historia>-<slug>`: Ramas efímeras asignadas a desarrolladores específicos (ej. `feature/EVAL-05-anonimato`).
+- `hotfix/<slug>`: Correcciones críticas emergentes despachadas directamente hacia `main`.
+
+### 2.2. Flujo Operativo y Pipeline de Integración
+1. Todo desarrollo inicia bifurcando desde `develop`.
+2. Consolidación de *commits* atómicos y frecuentes localmente.
+3. Apertura de un **Pull Request (PR)** hacia `develop`. 
+4. **Code Review Obligatorio:** Requiere aprobación por pares (Peer Review) para mitigar silos de conocimiento y detectar vectores de falla de manera temprana.
+5. Fusión (Merge) hacia `develop` únicamente cuando se cumple la *Definition of Done (DoD)*.
+
+### 2.3. Semántica de Commits (Conventional Commits)
+Se requiere el estándar *Conventional Commits* para facilitar la auto-generación de *Changelogs* y la auditoría forense:
+```text
+<tipo>(<dominio>): <código_jira/trello> <descripción corta en imperativo>
 ```
-main        ← código estable / entregable (releases del MVP)
- └─ develop ← integración continua del trabajo del equipo
-     ├─ feature/CORE-02-backend-base         (Backend Dev)
-     ├─ feature/EVAL-02-evaluar-team-leader  (Frontend Dev)
-     └─ feature/DASH-02-metricas             (Backend Dev)
-```
+Tipos admitidos: `feat` (característica), `fix` (parche), `docs` (documentación), `refactor` (reestructuración sin alteración de comportamiento), `chore` (tareas de infraestructura).
+*Ejemplo: `feat(evaluations): EVAL-05 implementar desacoplamiento para anonimato`*
 
-- `main`: siempre desplegable. Recibe merges desde `develop` al cerrar un sprint/release.
-- `develop`: rama de integración; refleja el estado actual del MVP.
-- `feature/*`: **una por historia**, nombrada con el ID; trabajada por su responsable:
-  - `feature/CORE-01-setup-spa`
-  - `feature/AUTH-02-sesion-rutas-protegidas`
-  - `feature/EVAL-05-registrar-evaluacion`
-- Correcciones urgentes sobre `main`: `hotfix/<slug>`.
+## 3. Aseguramiento de Calidad (Quality Assurance) y Herramientas
 
-### Flujo de trabajo del equipo
-1. `git checkout develop && git pull`
-2. `git checkout -b feature/EVAL-02-evaluar-team-leader`
-3. Commits pequeños y frecuentes durante la historia.
-4. **Pull Request** `feature/* → develop` revisado por **al menos otro integrante** (code review cruzado).
-5. Merge a `develop` al cumplir la Definition of Done.
-6. Al cerrar el sprint: PR `develop → main` + tag de versión (`v0.1.0`, `v0.2.0`, ...).
+Se prioriza un conjunto de herramientas de bajo *overhead* para no ralentizar el ciclo iterativo del MVP.
 
-### Buenas prácticas para trabajo en paralelo (5 personas)
-- Acordar el **contrato REST** en Sprint 0 para que backend y frontend avancen sin bloquearse.
-- Ramas cortas y PRs pequeños → menos conflictos de merge.
-- `develop` siempre integrable; no romper la build de los demás.
-- Repartir historias por responsable para asegurar **contribución individual evidenciable**.
+- **Frontend:** 
+  - Formateo estricto delegado a **Prettier**.
+  - Análisis estático AST mediante **ESLint** configurado para ECMAScript moderno (`eslint:recommended`).
+  - Metodología de CSS: **BEM (Block Element Modifier)** para aislamiento de especificidad y prevención de colisiones.
+- **Backend:**
+  - Formateo determinista delegado a **Black** (longitud de línea, *quotes*).
+  - Linter ultra-rápido: **Ruff** (reemplazo en Rust para Flake8).
+  - Testing Automatizado: **Pytest**, con foco de cobertura concentrado en la capa de `services/` (reglas de negocio complejas).
 
-> En este repositorio, el trabajo asistido se realiza en la rama indicada por la tarea
-> (`claude/claude-md-docs-8814n5`); al integrarse seguirá el flujo anterior hacia `develop`.
+## 4. Gestión Estructural del Repositorio (Monorepo)
 
-### Convención de commits (Conventional Commits)
+La arquitectura de repositorio único consolida todos los artefactos de software:
 
-```
-<tipo>(<alcance>): <descripción breve en imperativo>
-```
+- `/frontend`: SPA instanciada con Vite.
+- `/backend`: Servidor ASGI y servicios en Python.
+- `/database`: Artefactos DDL, DML y Scripts analíticos.
+- `/docs`: Registro histórico, especificaciones Scrum (Backlog) y arquitectura.
 
-Tipos: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`.
-
-Ejemplos:
-```
-feat(eval): agregar formulario de evaluación de Team Leader
-fix(auth): redirigir a login cuando el token expira
-docs(backlog): actualizar story points del sprint 2
-```
-
-Referenciar el ID de la historia cuando aplique: `feat(eval): EVAL-02 formulario Team Leader`.
-
-## Estructura del repositorio GitHub (monorepo)
-
-```
-riwi-lead-trace/
-├── README.md                 # overview + cómo correr
-├── CLAUDE.md                 # guía para asistentes de IA
-├── .gitignore
-├── frontend/                 # SPA Vanilla JS (ver 06-arquitectura)
-│   ├── index.html
-│   ├── package.json
-│   ├── vite.config.js
-│   └── src/
-├── backend/                  # API FastAPI (ver 06-arquitectura)
-│   ├── app/
-│   ├── tests/
-│   ├── requirements.txt
-│   └── .env.example
-├── database/
-│   ├── 01_ddl.sql             # estructura (DDL)
-│   ├── 02_dml.sql             # datos semilla (DML)
-│   ├── 03_mock_history.sql   # historico simulado (opcional)
-│   └── 04_views.sql           # vistas SQL (requerido: /metrics depende de ellas)
-├── docs/                     # documentación Scrum + técnica (00..13, ver índice en README.md)
-└── mockups/                  # exports/enlaces Figma
-```
-
-### Configuración recomendada del repo
-- **Branch protection** en `main` y `develop` (no push directo; PR + 1 review requeridos).
-- **PR form** con checklist de Definition of Done.
-- **Issues** vinculados a las historias del backlog (un issue por ID).
-- **Milestones** = Sprints (Sprint 0, 1, 2).
-- **GitHub Projects** (tablero Kanban) como herramienta de seguimiento Scrum.
-- **Labels:** por épica (`core`, `auth`, `eval`, `hist`, `dash`), prioridad (`must`, `should`, `could`) y capa (`frontend`, `backend`).
-
-## Calidad y herramientas (livianas, sin sobreingeniería)
-
-**Frontend**
-- **Formato:** Prettier por defecto. **Lint:** ESLint base (`eslint:recommended`) para JS Vanilla/ESM.
-
-**Backend**
-- **Formato:** Black. **Lint:** Ruff (o Flake8). **Tipos:** type hints + (opcional) mypy.
-- **Tests:** `pytest` para servicios con lógica de negocio (anonimato, no-duplicado, métricas).
-
-**General**
-- `.editorconfig` para indentación consistente (JS: 2 espacios; Python: 4 espacios).
-- **Casos de prueba y evidencias** documentados (requisito de la rúbrica): ver [`11-entregables-y-evaluacion.md`](./11-entregables-y-evaluacion.md).
+Las configuraciones críticas (Secrets, URIs de conexión) se abstraen estrictamente del control de versiones mediante variables de entorno (archivos `.env.example` en repositorios).

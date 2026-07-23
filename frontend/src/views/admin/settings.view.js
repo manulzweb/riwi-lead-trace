@@ -11,12 +11,12 @@ const EXPORT_LABEL = "Exportar Registro de Auditoría (.csv)";
 const NUMBER_INPUT_CLASSES =
   "w-full rounded-xl border border-[var(--border-main)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text-main)] focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors outline-none";
 
-// Pista del switch: --border-main es el neutro del sistema y ya cambia en dark.
+// Switch track: --border-main is the system neutral and already flips in dark.
 const TOGGLE_TRACK_CLASSES =
   "h-6 w-11 rounded-full bg-[var(--border-main)] after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-white after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4";
 
-// El tooltip necesita una superficie invertida respecto al fondo. No hay token
-// "inverse", pero --text-main y --bg-panel ya son opuestos en ambos temas.
+// The tooltip needs an inverted surface. There is no "inverse" token, but
+// --text-main and --bg-panel are already opposites in both themes.
 const tooltipIcon = (text) => `
     <span class="group relative inline-flex items-center justify-center ml-1 cursor-help align-middle">
         <svg class="w-4 h-4 text-[var(--text-muted)] hover:text-[var(--brand-bg)] transition-colors" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -31,16 +31,12 @@ const tooltipIcon = (text) => `
     </span>
 `;
 
-// Marca para los 3 ajustes que se persisten pero NO tienen consumidor en el
-// backend (ai_auto_summary, strict_entity_lock, log_retention_days).
-// El equipo decidio MOSTRARLOS deshabilitados en vez de ocultarlos, para que la
-// UI no prometa un comportamiento que el sistema no hace.
+// Badge for the 3 settings that persist but have NO backend consumer
+// (ai_auto_summary, strict_entity_lock, log_retention_days). Shown disabled
+// rather than hidden, so the UI does not promise behavior that does not exist.
 //
-// No reutilizo statusBadgeComponent a proposito: su catalogo de estados no
-// incluye "Proximamente", asi que caeria al fallback NEUTRAL (gris), que se lee
-// como "estado apagado" y no como "todavia no existe". Anadir el estado
-// obligaria a editar components/statusBadge.js, compartido con otras vistas.
-// Es un uso local de una sola vista -> constante de modulo, como dice el skill.
+// Not statusBadgeComponent on purpose: it has no "coming soon" state and would
+// fall back to NEUTRAL gray, which reads as "off" instead of "not built yet".
 const comingSoonBadge = () => `
     <span class="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-[var(--warning-bg)] px-2 py-1 text-xs font-medium text-[var(--warning-text)]">
         <span class="h-1.5 w-1.5 rounded-full bg-[var(--warning-dot)]" aria-hidden="true"></span>
@@ -48,8 +44,8 @@ const comingSoonBadge = () => `
     </span>
 `;
 
-// Explicacion textual del deshabilitado: el color solo no es accesible. El id
-// se liga al control con aria-describedby.
+// Text explanation of the disabled state: color alone is not accessible.
+// The id is tied to the control via aria-describedby.
 const comingSoonNote = (id, text) => `
     <p id="${id}" class="mt-2 text-xs leading-relaxed text-[var(--text-muted)]">
         <span class="font-bold text-[var(--warning-text)]">Sin funcionalidad todavía:</span>
@@ -57,7 +53,7 @@ const comingSoonNote = (id, text) => `
     </p>
 `;
 
-// Un input/checkbox deshabilitado no debe parecer pulsable.
+// A disabled control must not look clickable.
 const DISABLED_CONTROL_CLASSES = "opacity-60 cursor-not-allowed";
 
 const renderLoadingState = () => `
@@ -87,7 +83,7 @@ const renderErrorState = () => `
 `;
 
 const renderForm = (s) => `
-  <!-- IA & Coherencia -->
+  <!-- AI engine -->
   <section class="rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm hover:border-[var(--brand-bg)]/50 transition-colors duration-300">
     <div class="flex items-center gap-3 mb-6">
       <div class="p-2.5 bg-gradient-to-br from-purple-500/20 to-purple-600/10 rounded-xl text-purple-500 border border-purple-500/20">
@@ -130,7 +126,7 @@ const renderForm = (s) => `
     </div>
   </section>
 
-  <!-- Políticas de Evaluación -->
+  <!-- Evaluation policies -->
   <section class="rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm hover:border-blue-500/50 transition-colors duration-300">
     <div class="flex items-center gap-3 mb-6">
       <div class="p-2.5 bg-gradient-to-br from-blue-500/20 to-cyan-500/10 rounded-xl text-blue-500 border border-blue-500/20">
@@ -196,7 +192,7 @@ const renderForm = (s) => `
     </div>
   </section>
 
-  <!-- Auditoría y Mantenimiento -->
+  <!-- Maintenance and audit -->
   <section class="rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm lg:col-span-2 hover:border-emerald-500/50 transition-colors duration-300">
     <div class="flex items-center gap-3 mb-6">
       <div class="p-2.5 bg-gradient-to-br from-emerald-500/20 to-teal-500/10 rounded-xl text-emerald-500 border border-emerald-500/20">
@@ -279,9 +275,8 @@ export const setupAdminSettings = () => {
     }
   };
 
-  // Un solo listener delegado: el contenido de #settings-container se reemplaza
-  // en cada carga, asi que enganchar los botones uno por uno obligaria a
-  // re-registrarlos en cada render.
+  // Single delegated listener: the container content is replaced on every load,
+  // so per-button listeners would need re-registering on each render.
   container.addEventListener("input", (e) => {
     if (e.target.id !== "s_ai_temperature") return;
     const output = document.getElementById("temp_val");
@@ -330,9 +325,8 @@ export const setupAdminSettings = () => {
 
     setButtonLoadingState(btnReset, true, "Cargando...", RESET_LABEL);
     try {
-      // Los valores de fabrica los define el backend (GET /settings/defaults),
-      // no una copia en el front. Solo se pintan: persistirlos es una accion
-      // aparte y explicita del admin (boton Guardar Cambios).
+      // Factory values come from the backend (GET /settings/defaults), not a
+      // front-end copy. They are only painted; saving is a separate action.
       const defaults = await settingsService.getDefaults();
       currentSettings = defaults;
       container.innerHTML = renderForm(defaults);
@@ -357,12 +351,9 @@ export const setupAdminSettings = () => {
 
     setButtonLoadingState(btnSave, true, "Guardando...", SAVE_LABEL);
 
-    // Los 3 ajustes marcados "Próximamente" van `disabled`, pero el payload
-    // sigue mandando los 8 campos: `disabled` solo bloquea la interaccion y el
-    // envio nativo de un <form>, no la lectura por JS. Un checkbox deshabilitado
-    // conserva `.checked` y un input deshabilitado conserva `.value`, asi que
-    // aqui no aparece ningun `undefined` ni `NaN` — se persiste el mismo valor
-    // que se leyo del backend, sin que el admin pueda cambiarlo.
+    // The 3 coming-soon settings are disabled, but the payload still sends all
+    // 8 fields: disabled blocks interaction, not JS reads, so .checked/.value
+    // survive and the backend value is re-persisted unchanged.
     const payload = {
       ai_temperature: parseFloat(document.getElementById("s_ai_temperature").value),
       ai_auto_summary: document.getElementById("s_ai_auto_summary").checked,
@@ -379,7 +370,7 @@ export const setupAdminSettings = () => {
       showToast("Configuración Guardada", "success");
       await loadData();
     } catch (err) {
-      // El backend valida con Pydantic; el 422 trae el detalle del campo.
+      // The backend validates with Pydantic; a 422 carries the field detail.
       showToast(
         "Error",
         "error",

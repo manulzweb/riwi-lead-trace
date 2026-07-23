@@ -4,7 +4,7 @@ import { escapeHtml } from "../utils/validators.js";
 import Swal from 'sweetalert2';
 
 export const periodManagementComponent = () => `
-  <!-- SECCIÓN DE GESTIÓN DE PERIODOS -->
+  <!-- Period management section -->
   <section class="mt-16 mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border-t border-[var(--border-main)] pt-12">
     <div>
       <h2 class="text-3xl font-black font-heading tracking-tight text-[var(--text-main)]">Gestión de Periodos</h2>
@@ -17,7 +17,7 @@ export const periodManagementComponent = () => `
   </section>
 
   <div id="periods-container" aria-live="polite" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    <!-- Generado dinámicamente -->
+    <!-- Rendered dynamically -->
   </div>
 `;
 
@@ -28,7 +28,7 @@ export const setupPeriodManagement = (onPeriodStateChanged) => {
     
     try {
       const periods = await periodService.get();
-      // Ordenar por fecha de inicio (más recientes primero)
+      // Sort by start date, newest first.
       periods.sort((a, b) => new Date(b.starts_at) - new Date(a.starts_at));
       
       if (periods.length === 0) {
@@ -38,8 +38,7 @@ export const setupPeriodManagement = (onPeriodStateChanged) => {
       
       pContainer.innerHTML = periods.map(p => {
         const isActive = p.is_active;
-        // Tokens semanticos de global.css: sin variantes `dark:`, el token ya
-        // cambia solo con el tema.
+        // Semantic global.css tokens: no dark: variants, they switch by theme.
         const statusBadge = isActive
           ? `<span class="bg-[var(--success-bg)] text-[var(--success-text)] px-3 py-1 rounded-full text-xs font-bold border border-[var(--success-text)]/30">Activo</span>`
           : `<span class="bg-[var(--bg-base)] text-[var(--text-muted)] px-3 py-1 rounded-full text-xs font-bold border border-[var(--border-main)]">Inactivo</span>`;
@@ -65,7 +64,7 @@ export const setupPeriodManagement = (onPeriodStateChanged) => {
         `;
       }).join('');
       
-      // Listeners para botones de toggle
+      // Toggle button listeners
       document.querySelectorAll('.btn-toggle-period').forEach(btn => {
         btn.addEventListener('click', async (e) => {
           const id = e.target.getAttribute('data-id');
@@ -99,7 +98,7 @@ export const setupPeriodManagement = (onPeriodStateChanged) => {
   };
 
   const btnCreatePeriod = document.getElementById("btn-create-period");
-  // Prevenir duplicidad de listeners si setup se llama de nuevo
+  // Prevent duplicate listeners if setup runs again.
   if (btnCreatePeriod && !btnCreatePeriod.dataset.initialized) {
     btnCreatePeriod.dataset.initialized = "true";
     btnCreatePeriod.addEventListener("click", async () => {
@@ -153,6 +152,5 @@ export const setupPeriodManagement = (onPeriodStateChanged) => {
     });
   }
   
-  // Render inicial al instanciar el componente
   return renderPeriodsList();
 };

@@ -1,10 +1,18 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-import traceback
+import logging
 import uuid
 
 from app.config.config import settings
+from app.config.logging_config import setup_logging
+from app.exceptions.base import ApplicationException
+
+# Lo primero: instala handlers y formato antes de que cualquier modulo emita
+# su primer log. Sin esto, Python cae al handler `lastResort` y los mensajes
+# salen sin timestamp, sin nivel y sin nombre del logger.
+setup_logging()
+logger = logging.getLogger(__name__)
 from app.routes import auth_routes, category_routes, check, period_routes, user_routes, form_routes, evaluation_routes, metrics_routes, question_routes, activity_log_routes, settings_routes, cohort_routes, clan_routes
 
 tags_metadata = [
@@ -42,7 +50,8 @@ app = FastAPI(
     license_info={
         "name": "MIT",
     },
-    openapi_tags=tags_metadata
+    openapi_tags=tags_metadata,
+    redoc_url="/dev/docs",
 )
 
 # Middleware de sesión eliminado porque la auto-sanación se hace ahora a nivel de SQLAlchemy en database.py.
@@ -74,11 +83,52 @@ app.add_middleware(
 # que no dice nada por si mismo, se imprime en el log del servidor junto al
 # traceback y permite localizar el error exacto a partir de lo que reporte el
 # usuario. El detalle tecnico se queda del lado del servidor.
+@app.exception_handler(ApplicationException)
+async def application_exception_handler(request: Request, exc: ApplicationException):
+    """Traduce TODA excepcion de dominio a su respuesta HTTP.
+
+    El handler NO decide el codigo: lo lee de la excepcion. Sin `isinstance`,
+    sin `if` por tipo. El codigo pertenece a la clase (ver
+    `app/exceptions/base.py`), que es lo que permite que las DOS clases
+    llamadas `InvalidRoleException` -- 422 en `form_exceptions`, 403 en
+    `evaluation_exceptions` -- convivan sin que este handler tenga que
+    distinguirlas.
+
+    La respuesta es identica a la que producia `HTTPException` en cada route:
+    `{"detail": "<mensaje>"}` con `application/json`. Sin ese formato exacto
+    el contrato de la API cambiaria y el front dejaria de leer `err.detail`.
+
+    Starlette resuelve el handler recorriendo el MRO de la excepcion, asi que
+    este gana sobre el de `Exception` para cualquier subclase de
+    `ApplicationException`.
+    """
+    return JSONResponse(
+        status_code=exc.http_status,
+        content={"detail": str(exc)},
+    )
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     error_id = str(uuid.uuid4())
-    print(f"ERROR NO CONTROLADO [{error_id}]: {exc}")
-    traceback.print_exc()
+    # logger.exception (no print + traceback.print_exc): adjunta el traceback
+    # completo y lo emite por el MISMO canal y formato que el resto de la app.
+    # Antes iba a stdout mientras los logger.* iban a stderr -- dos streams sin
+    # sincronizar que en el visor de Render se intercalaban en desorden.
+    # El error_id es el mismo que recibe el cliente: es lo que permite
+    # correlacionar el reporte de un usuario con la linea exacta del log.
+    # `path_params` conserva el contexto que antes ponia cada router a mano
+    # (`logger.exception("Error updating category %s", category_id)`). Al
+    # centralizar, ese id se perderia; FastAPI ya lo tiene resuelto aqui como
+    # {"category_id": 7}, asi que se recupera sin devolver logica a los routers.
+    #
+    # Solo path params: NO query string ni body. El body puede traer
+    # contrasenas y el query string ids de sesion; el log no es sitio para eso.
+    contexto = request.path_params or {}
+    logger.exception(
+        "Error no controlado [%s] en %s %s %s",
+        error_id, request.method, request.url.path, contexto or "",
+    )
     return JSONResponse(
         status_code=500,
         content={

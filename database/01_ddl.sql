@@ -157,17 +157,36 @@ CREATE TABLE forms (
     id             INT AUTO_INCREMENT PRIMARY KEY,
     title          VARCHAR(120) NOT NULL,
     description    VARCHAR(255) NULL,
-    target_role_id INT NOT NULL,
+    -- NULL solo es valido en plantillas (ver chk_form_role_required). Una
+    -- plantilla puede ser generica y no pertenecer a ningun rol evaluable;
+    -- el rol se elige al instanciarla como formulario vivo.
+    target_role_id INT NULL,
     is_active      BOOLEAN NOT NULL DEFAULT TRUE,
-    -- TRUE = plantilla base reutilizable; FALSE = formulario activo para
-    -- recibir respuestas (ver form_service.create_form / is_form).
-    is_form    BOOLEAN NOT NULL DEFAULT FALSE,
+    -- TRUE = plantilla base reutilizable (inerte: nunca recibe respuestas);
+    -- FALSE = formulario vivo para recibir respuestas.
+    -- Ver form_service.create_form y el filtro `kind` de GET /forms.
+    is_template    BOOLEAN NOT NULL DEFAULT FALSE,
+    -- Retirado de la grilla del admin sin perder el historial. Es distinto de
+    -- is_active: is_active = FALSE lo recibe TODO formulario superado cuando se
+    -- activa uno nuevo, asi que reusarlo esconderia cada formulario reemplazado.
+    -- Solo lo escribe form_service.delete_form cuando el formulario ya tiene
+    -- evaluaciones y por tanto no se puede borrar de verdad.
+    archived_at    TIMESTAMP NULL,
     created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    -- SIN `ON UPDATE CASCADE` a proposito, a diferencia del resto de FKs del
+    -- esquema: MySQL prohibe que una columna con accion referencial participe
+    -- en un CHECK (ERROR 3823), y aqui el CHECK vale mas. `roles` es un
+    -- catalogo sembrado cuyos ids no cambian nunca, asi que el CASCADE no
+    -- protegia de nada real; el CHECK si evita formularios vivos sin rol.
     CONSTRAINT fk_form_role
         FOREIGN KEY (target_role_id)
         REFERENCES roles(id)
-        ON UPDATE CASCADE
-        ON DELETE RESTRICT
+        ON DELETE RESTRICT,
+    -- El invariante NO vive solo en el servicio: una plantilla puede no tener
+    -- rol, pero un formulario vivo SIEMPRE debe tenerlo. MySQL 8.0.16+ lo
+    -- aplica de verdad, asi que ningun endpoint nuevo puede saltarselo.
+    CONSTRAINT chk_form_role_required
+        CHECK (is_template = TRUE OR target_role_id IS NOT NULL)
 );
 
 -- ---------------------------------------------------------------------
@@ -234,7 +253,7 @@ CREATE TABLE evaluations (
         FOREIGN KEY (evaluatee_id)
         REFERENCES users(id)
         ON UPDATE CASCADE
-        ON DELETE RESTRICT,
+        ON DELETE CASCADE,
     CONSTRAINT fk_eval_form
         FOREIGN KEY (form_id)
         REFERENCES forms(id)
@@ -285,7 +304,7 @@ CREATE TABLE evaluations (
 -- ---------------------------------------------------------------------
 CREATE TABLE evaluation_submissions (
     id            INT AUTO_INCREMENT PRIMARY KEY,
-    evaluator_id  INT NOT NULL,
+    evaluator_id  INT NULL,
     evaluatee_id  INT NOT NULL,
     period_id     INT NOT NULL,
     -- NULL solo cuando la evaluacion es eliminada (ON DELETE SET NULL)
@@ -295,12 +314,12 @@ CREATE TABLE evaluation_submissions (
         FOREIGN KEY (evaluator_id)
         REFERENCES users(id)
         ON UPDATE CASCADE
-        ON DELETE RESTRICT,
+        ON DELETE SET NULL,
     CONSTRAINT fk_submission_evaluatee
         FOREIGN KEY (evaluatee_id)
         REFERENCES users(id)
         ON UPDATE CASCADE
-        ON DELETE RESTRICT,
+        ON DELETE CASCADE,
     CONSTRAINT fk_submission_period
         FOREIGN KEY (period_id)
         REFERENCES periods(id)

@@ -11,6 +11,7 @@ import { formatDate } from "../../utils/date";
 import { searchBoxComponent, setupSearch } from "../../components/searchBox";
 import { activePeriodBannerComponent } from "../../components/active_period_banner.js";
 import { emptyStateComponent } from "../../components/emptyState.js";
+import { modalComponent, setupModal } from "../../components/modal";
 
 export const renderAdminEvaluations = () => `
   ${navBarComponent()}
@@ -39,8 +40,20 @@ export const renderAdminEvaluations = () => `
     </div>
     <div id="active-period-banner-container"></div>
     
-    <!-- 1. VISTA LISTA DE PLANTILLAS -->
+    <!-- 1. LIST VIEW -->
     <div id="list-view" class="block transition-all duration-300">
+      <!-- Tabs split the LIVE instrument from the inert base templates.
+           ARIA roles so tab changes are announced by screen readers. -->
+      <div role="tablist" aria-label="Tipo de formulario" class="mb-6 flex items-center gap-1 border-b border-[var(--border-main)]">
+        <button role="tab" id="tab-forms" aria-controls="forms-container" aria-selected="true" data-tab="forms"
+          class="tab-btn -mb-px border-b-2 px-4 py-3 text-sm font-bold transition-colors border-[var(--brand-bg)] text-[var(--brand-bg)]">
+          Formularios
+        </button>
+        <button role="tab" id="tab-templates" aria-controls="forms-container" aria-selected="false" data-tab="templates"
+          class="tab-btn -mb-px border-b-2 px-4 py-3 text-sm font-bold transition-colors border-transparent text-[var(--text-muted)] hover:text-[var(--text-main)]">
+          Plantillas
+        </button>
+      </div>
       <div id="form-search-slot" class="mb-6 max-w-sm"></div>
       <div id="forms-container" class="mt-8" aria-live="polite" aria-busy="true">
         <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -70,7 +83,7 @@ export const renderAdminEvaluations = () => `
       </div>
     </div>
 
-    <!-- 2. VISTA CONSTRUCTOR DE PLANTILLAS -->
+    <!-- 2. BUILDER VIEW -->
     <div id="builder-view" class="hidden transition-all duration-300">
       <section class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
@@ -91,7 +104,7 @@ export const renderAdminEvaluations = () => `
         </div>
       </section>
 
-      <!-- Configuracion Principal -->
+      <!-- Main settings -->
       <section class="rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-8 shadow-sm mb-6">
         <div class="grid gap-6">
           <div>
@@ -114,31 +127,40 @@ export const renderAdminEvaluations = () => `
               </div>
             </div>
             <div>
-              <label class="mb-2 block text-sm font-bold text-[var(--text-main)]">Rol a Evaluar (A quién se evalúa)</label>
+              <label class="mb-2 block text-sm font-bold text-[var(--text-main)]" for="form-role">Rol a Evaluar (A quién se evalúa)</label>
               <div>
                 ${dropdownComponent('form-role', [
+  { value: '', label: 'Cualquier rol (solo plantillas)' },
   { value: 'tutor', label: 'Tutores' },
   { value: 'team_leader', label: 'Team Leaders' }
 ], 'tutor')}
               </div>
+              <!-- Any role is only valid on a template: a live form without a
+                   role is rejected by the backend (422) and by MySQL
+                   (chk_form_role_required). Warned here early for UX. -->
+              <p id="form-role-hint" class="mt-2 text-xs text-[var(--text-muted)]">
+                Una plantilla puede no tener rol; un formulario activo siempre lo necesita.
+              </p>
             </div>
             <div>
               <label class="mb-2 block text-sm font-bold text-[var(--text-main)]">Tipo de Formulario</label>
               <div class="flex items-center gap-3 mt-4">
-                <input type="checkbox" id="is-form-checkbox" class="w-5 h-5 rounded border-[var(--border-main)] text-[var(--brand-bg)] focus:ring-[var(--brand-bg)]">
-                <label for="is-form-checkbox" class="text-sm font-bold text-[var(--text-main)] cursor-pointer">Guardar como Plantilla Base</label>
+                <input type="checkbox" id="is-template-checkbox" class="w-5 h-5 rounded border-[var(--border-main)] text-[var(--brand-bg)] focus:ring-[var(--brand-bg)]">
+                <label for="is-template-checkbox" class="text-sm font-bold text-[var(--text-main)] cursor-pointer">Guardar como Plantilla Base</label>
               </div>
+              <p class="mt-2 text-xs text-[var(--text-muted)]">
+                Una plantilla es inerte: nunca la responde un Coder hasta que la uses para crear un formulario.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Contenedor de Preguntas -->
+      <!-- Questions are rendered here -->
       <div id="questions-container" class="space-y-6">
-        <!-- Las preguntas se renderizan aquí -->
       </div>
 
-      <!-- Botón Agregar Pregunta -->
+      <!-- Add question button -->
       <button id="btn-add-question" class="mt-6 flex w-full items-center justify-center gap-2 rounded-[2rem] border-2 border-dashed border-[var(--border-main)] bg-transparent py-6 text-[var(--text-muted)] hover:border-[var(--brand-bg)] hover:text-[var(--brand-bg)] hover:bg-[var(--brand-bg)]/5 transition-all duration-300 cursor-pointer font-bold">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
         Añadir Pregunta
@@ -146,10 +168,11 @@ export const renderAdminEvaluations = () => `
 
     </div>
 
-    <!-- Modal Form for New Period (Quick Create) -->
-    <div id="quick-period-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300">
-      <div role="dialog" aria-modal="true" aria-labelledby="quick-period-modal-title" class="w-full max-w-md scale-95 transform rounded-3xl bg-[var(--bg-panel)] p-8 shadow-2xl transition-transform duration-300 border border-[var(--border-main)]">
-        <h2 id="quick-period-modal-title" class="mb-6 text-2xl font-bold font-heading text-[var(--text-main)]">Abrir Nuevo Ciclo Rápidamente</h2>
+    <!-- Quick-create modal for a new period -->
+    ${modalComponent({
+      id: "quick-period-modal",
+      title: "Abrir Nuevo Ciclo Rápidamente",
+      children: `
         <form id="form-quick-period">
           <div class="mb-4">
             <label for="quick-period-name" class="mb-2 block text-sm font-semibold text-[var(--text-main)]">Nombre del Ciclo</label>
@@ -168,14 +191,14 @@ export const renderAdminEvaluations = () => `
             <button type="submit" class="w-full rounded-xl bg-[var(--brand-bg)] py-3 font-bold text-[var(--brand-text)] transition-all hover:bg-[var(--brand-hover)] cursor-pointer">Guardar e Iniciar</button>
           </div>
         </form>
-      </div>
-    </div>
+      `,
+    })}
     </div>
   </main>
 `;
 
 export const setupAdminEvaluations = () => {
-  // --- ELEMENTOS DOM ---
+  // --- DOM ELEMENTS ---
   const viewList = document.getElementById("list-view");
   const viewBuilder = document.getElementById("builder-view");
   const btnCreate = document.getElementById("btn-new-form");
@@ -185,27 +208,25 @@ export const setupAdminEvaluations = () => {
   const questionsContainer = document.getElementById("questions-container");
   const formsContainer = document.getElementById("forms-container");
 
-  // Inputs principales
+  // Main inputs
   const inputTitle = document.getElementById("form-title");
   const inputDesc = document.getElementById("form-desc");
   const selectRole = document.getElementById("form-role");
 
-  // Modal rápido de periodos
+  // Quick period modal
   const btnQuickPeriod = document.getElementById("btn-quick-period");
-  const quickPeriodModal = document.getElementById("quick-period-modal");
   const formQuickPeriod = document.getElementById("form-quick-period");
   const btnCancelQuickPeriod = document.getElementById("btn-cancel-quick-period");
 
-  // --- ESTADO (Memoria) ---
+  // --- STATE ---
   let questions = [];
   let editId = null;
   let originalQuestions = [];
   let categoriesData = [];
   let hasActivePeriod = false;
 
-  // El backend rechaza crear/editar/borrar formularios y preguntas mientras
-  // haya un periodo activo (ver question_service._assert_no_active_period).
-  // Se consulta acá para avisar antes de que el admin llegue al error.
+  // The backend rejects form/question writes while a period is active
+  // (question_service._assert_no_active_period). Checked here to warn first.
   const refreshPeriodGate = async () => {
     const bannerContainer = document.getElementById("active-period-banner-container");
     let activePeriod = null;
@@ -254,25 +275,14 @@ export const setupAdminEvaluations = () => {
     }
   };
 
-  // --- Lógica del modal rápido de periodos ---
-  if (btnQuickPeriod && quickPeriodModal) {
-    const closeQuickModal = () => {
-      quickPeriodModal.classList.add("opacity-0");
-      quickPeriodModal.firstElementChild.classList.add("scale-95");
-      setTimeout(() => {
-        quickPeriodModal.classList.add("hidden");
-        formQuickPeriod.reset();
-      }, 300);
-    };
-
-    btnQuickPeriod.addEventListener("click", () => {
-      quickPeriodModal.classList.remove("hidden");
-      setTimeout(() => {
-        quickPeriodModal.classList.remove("opacity-0");
-        quickPeriodModal.firstElementChild.classList.remove("scale-95");
-      }, 10);
+  // --- Quick period modal logic ---
+  if (btnQuickPeriod && formQuickPeriod) {
+    // Shared component gives Esc + focus trap, which this modal lacked.
+    const { open: openQuickModal, close: closeQuickModal } = setupModal("quick-period-modal", {
+      onClose: () => formQuickPeriod.reset(),
     });
 
+    btnQuickPeriod.addEventListener("click", (e) => openQuickModal(e.currentTarget));
     btnCancelQuickPeriod.addEventListener("click", closeQuickModal);
 
     formQuickPeriod.addEventListener("submit", async (e) => {
@@ -281,7 +291,7 @@ export const setupAdminEvaluations = () => {
         name: document.getElementById("quick-period-name").value.trim(),
         starts_at: document.getElementById("quick-period-start").value,
         ends_at: document.getElementById("quick-period-end").value,
-        is_active: true // Auto activar el periodo
+        is_active: true // auto-activate the period
       };
 
       const btnSubmit = formQuickPeriod.querySelector("button[type='submit']");
@@ -292,7 +302,7 @@ export const setupAdminEvaluations = () => {
         await periodService.create(payload);
         showToast("¡Periodo abierto con éxito!", "success");
         closeQuickModal();
-        await refreshPeriodGate(); // Refrescar el estado de la vista
+        await refreshPeriodGate(); // refresh the view state
       } catch (err) {
         showToast("Error", "error", err.message || "Error al crear el periodo");
       } finally {
@@ -302,7 +312,7 @@ export const setupAdminEvaluations = () => {
     });
   }
 
-  // --- LÓGICA DE VISTAS ---
+  // --- VIEW SWITCHING ---
   const showBuilder = async () => {
     viewList.classList.add("hidden");
     viewBuilder.classList.remove("hidden");
@@ -318,7 +328,7 @@ export const setupAdminEvaluations = () => {
         console.error("Error cargando categorías", err);
       }
     }
-    renderQuestions(); // Re-render to populate category dropdowns
+    renderQuestions(); // re-render to populate category dropdowns
   };
 
   const showList = async () => {
@@ -328,18 +338,23 @@ export const setupAdminEvaluations = () => {
   };
 
   btnCreate.addEventListener("click", async () => {
-    if (hasActivePeriod) {
-      showToast("Periodo activo", "warning", "Cierra el periodo activo para poder crear formularios.");
+    // A template is inert, so it needs no closed period. Only a live form
+    // does (rule 6), because creating one deactivates the previous.
+    const creatingTemplate = activeTab === "templates";
+    if (hasActivePeriod && !creatingTemplate) {
+      showToast("Periodo activo", "warning", "Cierra el periodo activo para poder crear formularios. Las plantillas sí se pueden crear ahora.");
       return;
     }
-    // Resetear constructor para nueva formulario
+    // Reset the builder for a new form
     editId = null;
     originalQuestions = [];
     inputTitle.value = "";
     inputDesc.value = "";
-    selectRole.value = "tutor";
+    // A template starts generic (no role); a live form always needs one.
+    selectRole.value = creatingTemplate ? "" : "tutor";
     document.getElementById("evaluator-role").value = "coder";
-    document.getElementById("is-form-checkbox").checked = false;
+    // Preset from the active tab so the admin need not remember the checkbox.
+    document.getElementById("is-template-checkbox").checked = creatingTemplate;
     questions = [{ id: Date.now().toString(), text: "", type: "scale_1_5", categoryId: 1, weight: 100 }];
     await showBuilder();
   });
@@ -361,7 +376,7 @@ export const setupAdminEvaluations = () => {
     }
   };
 
-  // --- LÓGICA DEL CONSTRUCTOR (Preguntas) ---
+  // --- BUILDER LOGIC (questions) ---
   const getQuestionIcon = (type) => {
     if (type === 'scale_1_5') return `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>`;
     if (type === 'yes_no') return `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
@@ -433,7 +448,7 @@ export const setupAdminEvaluations = () => {
               </div>
             </div>
             
-            <!-- Vista Previa Visual -->
+            <!-- Visual preview -->
             <div class="cursor-default">
               ${getQuestionPreview(q.type)}
             </div>
@@ -445,7 +460,7 @@ export const setupAdminEvaluations = () => {
         </div>
       `;
 
-      // Eventos Drag and Drop
+      // Drag and drop events
       card.addEventListener("dragstart", (e) => {
         draggedIndex = index;
         e.dataTransfer.effectAllowed = "move";
@@ -480,7 +495,7 @@ export const setupAdminEvaluations = () => {
       questionsContainer.appendChild(card);
     });
 
-    // Eventos dentro de las tarjetas
+    // In-card events
     document.querySelectorAll(".q-text-input").forEach(input => {
       input.addEventListener("input", (e) => {
         const id = e.target.dataset.id;
@@ -506,7 +521,6 @@ export const setupAdminEvaluations = () => {
       });
     });
 
-    // Re-initialize dropdown logic for newly rendered components
     questions.forEach(q => {
       setupDropdown(`q-type-${q.id}`, (val) => {
         q.type = val;
@@ -544,7 +558,7 @@ export const setupAdminEvaluations = () => {
     updateWeightCounter();
   });
 
-  // --- GUARDADO ---
+  // --- SAVE ---
   btnSave.addEventListener("click", async () => {
 
     const title = inputTitle.value.trim();
@@ -558,14 +572,14 @@ export const setupAdminEvaluations = () => {
       return;
     }
 
-    // Validar que las preguntas tengan texto
+    // Every question needs text
     const emptyQ = questions.find(q => !q.text.trim());
     if (emptyQ) {
       showToast("Pregunta vacía", "error", "Hay preguntas sin texto. Por favor completa todas.");
       return;
     }
 
-    // Validar suma de puntos (100)
+    // Weights must add up to 100
     const totalWeight = questions.reduce((sum, q) => sum + (parseFloat(q.weight) || 0), 0);
     const hasScale = questions.some(q => q.type === 'scale_1_5');
 
@@ -578,7 +592,7 @@ export const setupAdminEvaluations = () => {
       return;
     }
 
-    // Preparar objeto para enviar a la BD (pasando por forms.service.js)
+    // Payload shape expected by forms.service.js
     const formattedQuestions = questions.map(q => ({
       id: q.id,
       text: q.text,
@@ -587,21 +601,33 @@ export const setupAdminEvaluations = () => {
       weight: parseFloat(q.weight) || 0
     }));
 
+    const isTemplate = document.getElementById("is-template-checkbox").checked;
+    const targetRole = document.getElementById("form-role").value;
+
+    // A live form ALWAYS needs a role. Early UX warning; the authority is
+    // still the backend (422) and chk_form_role_required in MySQL.
+    if (!isTemplate && !targetRole) {
+      showToast(
+        "Falta el rol a evaluar", "error",
+        "Un formulario activo debe apuntar a Tutores o Team Leaders. 'Cualquier rol' solo es válido en una plantilla."
+      );
+      return;
+    }
+
     const formData = {
       title,
       description: inputDesc.value.trim(),
-      targetRole: document.getElementById("form-role").value,
+      targetRole,
       questions: formattedQuestions,
       adminId: authService.getSession()?.id,
-      isForm: document.getElementById("is-form-checkbox").checked,
+      isTemplate,
     };
     if (editId) {
       formData.id = editId;
       formData.originalQuestions = originalQuestions;
 
-      // El texto de una pregunta ya usada no se sobreescribe: se versiona
-      // (fila nueva, la vieja queda is_active=FALSE) -- es irreversible desde
-      // la UI. Avisamos antes de mandarlo, en vez de que sea automático.
+      // Editing the text of a used question versions it (new row, old one
+      // is_active=FALSE) and is irreversible from the UI, so confirm first.
       const changedTexts = formattedQuestions.filter(q => {
         const original = originalQuestions.find(o => o.id === q.id);
         return original && original.text !== q.text;
@@ -615,12 +641,10 @@ export const setupAdminEvaluations = () => {
       }
     }
 
-    // Se llama solo si la IA objeta la coherencia texto<->categoria de
-    // una pregunta puntual (ver forms.service.js.updateForm) --
-    // muestra su razon real, no un aviso generico.
-    // Se declara FUERA del try a proposito: el catch del 409 reintenta el
-    // guardado tras cerrar el periodo y necesita pasar este mismo callback.
-    // Declarada dentro del try quedaba fuera de alcance ahi (ReferenceError).
+    // Called only when the AI objects to a question text<->category match,
+    // so it shows the real reason instead of a generic warning.
+    // Declared OUTSIDE the try on purpose: the 409 catch retries the save
+    // and needs this same callback (inside the try it was out of scope).
     const onCoherenceConfirm = async (question, aiMessage) => await showConfirm(
       `${escapeHtml(aiMessage || "La IA no está segura de que el nuevo texto siga encajando en su categoría.")}\n\n` +
       `¿Guardar de todas formas?`
@@ -639,9 +663,8 @@ export const setupAdminEvaluations = () => {
       showToast("Formulario Guardada", "success");
       await showList();
     } catch (error) {
-      // No es un error HTTP: es el aborto interno que lanza forms.service.js
-      // cuando el admin no confirma el versionado del texto (por eso se mira
-      // .cancelled y no .status/.detail).
+      // Not an HTTP error: forms.service.js aborts internally when the admin
+      // declines the text versioning, hence .cancelled instead of .status.
       if (error.cancelled) {
         showToast("Guardado cancelado", "warning", "No se confirmó el cambio de texto; no se guardó nada.");
       } else if (error.status === 409) {
@@ -655,9 +678,8 @@ export const setupAdminEvaluations = () => {
               await periodService.update(activePeriod.id, { is_active: false });
               await formsService.updateForm(editId, formData, onCoherenceConfirm);
               showToast("Periodo cerrado y formulario guardado", "success");
-              // Antes llamaba a closeBuilder(), que no existe en este archivo
-              // (ReferenceError). showList() ya oculta el constructor y
-              // recarga la lista, que era la intencion.
+              // Was closeBuilder(), which does not exist here (ReferenceError).
+              // showList() already hides the builder and reloads the list.
               await showList();
             }
           } catch (err) {
@@ -676,15 +698,25 @@ export const setupAdminEvaluations = () => {
   });
 
 
-  // --- RENDERIZADO DE LA LISTA ---
+  // --- LIST RENDERING ---
   let allForms = [];
+  // Active tab: 'forms' (live instrument) | 'templates' (base templates).
+  let activeTab = "forms";
   const formSearchSlot = document.getElementById("form-search-slot");
+
+  // allForms holds both kinds from one request (?kind=all); the tab only
+  // decides which subset is shown.
+  const formsForActiveTab = () => allForms.filter((f) => !!f.is_template === (activeTab === "templates"));
 
   const renderFormCards = (forms) => {
     if (forms.length === 0) {
+      const isEmpty = formsForActiveTab().length === 0;
+      const emptyCopy = activeTab === "templates"
+        ? ["No hay plantillas", "Crea una plantilla base para reutilizarla al armar formularios."]
+        : ["No hay formularios", "Comienza creando un nuevo formulario de evaluación."];
       formsContainer.innerHTML = emptyStateComponent(
-        allForms.length === 0 ? "No hay formularios" : "Sin resultados",
-        allForms.length === 0 ? "Comienza creando un nuevo formulario de evaluación." : "Ningún formulario coincide con la búsqueda."
+        isEmpty ? emptyCopy[0] : "Sin resultados",
+        isEmpty ? emptyCopy[1] : "Ningún formulario coincide con la búsqueda."
       );
       return;
     }
@@ -700,15 +732,15 @@ export const setupAdminEvaluations = () => {
             <div>
               <div class="flex items-center justify-between mb-4">
                 <span class="inline-flex items-center rounded-full bg-[var(--brand-bg)]/10 px-3 py-1 text-xs font-bold text-[var(--brand-bg)] capitalize">
-                  🎯 Para: ${escapeHtml((t.targetRole || t.target_role || '').replace('_', ' '))}
+                  🎯 Para: ${escapeHtml((t.targetRole || t.target_role || '').replace('_', ' ') || 'Cualquier rol')}
                 </span>
                 <span class="text-xs text-[var(--text-muted)] font-medium shrink-0 ml-2">
                   ${t.questions ? t.questions.length : 0} preg.
                 </span>
               </div>
-              ${t.is_form ? `
-                <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-950/20 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400 mb-2" title="Es una formulario base: no recibe respuestas hasta que se use para crear un formulario activo.">
-                  📋 Formulario base
+              ${t.is_template ? `
+                <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-950/20 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400 mb-2" title="Plantilla base: es inerte, ningún Coder la responde hasta que la uses para crear un formulario activo.">
+                  📋 Plantilla
                 </span>
               ` : ''}
               <h3 class="text-xl font-bold text-[var(--text-main)] font-heading leading-tight">${escapeHtml(t.title)}</h3>
@@ -721,7 +753,7 @@ export const setupAdminEvaluations = () => {
                 ${dateStr ? `<span class="text-xs font-medium text-[var(--text-muted)]">${dateStr}</span>` : ''}
               </div>
               <div class="flex items-center">
-                ${t.is_form ? `
+                ${t.is_template ? `
                 <button class="btn-use-template text-[var(--brand-bg)] hover:text-[var(--brand-hover)] transition-colors p-2 font-bold text-xs flex items-center gap-1" data-id="${t.id}" title="Usar esta plantilla como formulario activo">
                   <svg class="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                   Usar Plantilla
@@ -741,10 +773,10 @@ export const setupAdminEvaluations = () => {
       </div>
     `;
 
-    // Eventos para editar
+    // Edit events
     document.querySelectorAll(".btn-edit-form").forEach(card => {
       card.addEventListener("click", async (e) => {
-        // Evitar que el click en el botón de borrar o duplicar active la edición normal
+        // Clicking delete or clone must not open edit mode
         if (e.target.closest('.btn-delete-form') || e.target.closest('.btn-clone-form')) return;
 
         const id = card.dataset.id;
@@ -757,15 +789,16 @@ export const setupAdminEvaluations = () => {
             inputTitle.value = form.title;
             inputDesc.value = form.description || "";
 
-            // dropdownComponent update requires us to use the specific DOM ID and maybe dispatch change
             const evaluatorRoleEl = document.getElementById("evaluator-role");
             if (evaluatorRoleEl) { evaluatorRoleEl.value = form.evaluatorRole || "coder"; }
-            if (selectRole) { selectRole.value = form.targetRole || form.target_role || "tutor"; }
-            const isFormCheckbox = document.getElementById("is-form-checkbox");
-            if (isFormCheckbox) { isFormCheckbox.checked = !!form.is_form; }
+            // Empty role is legitimate on a generic template, so do not
+            // fall back to tutor when it comes back blank.
+            if (selectRole) { selectRole.value = form.targetRole || ""; }
+            const isTemplateCheckbox = document.getElementById("is-template-checkbox");
+            if (isTemplateCheckbox) { isTemplateCheckbox.checked = !!form.is_template; }
 
-            // getFormForEdit trae el weight_percent real (GET /forms no lo expone) y
-            // convierte input_type/category_id al formato que usa el constructor visual.
+            // getFormForEdit brings the real weight_percent (GET /forms hides it)
+            // and maps input_type/category_id to the builder format.
             const editData = await formsService.getFormForEdit(form);
             questions = editData.questions.map(q => ({
               id: q.id,
@@ -774,8 +807,7 @@ export const setupAdminEvaluations = () => {
               categoryId: q.categoryId,
               weight: q.weight,
             }));
-            // Snapshot para que updateForm() pueda diferenciar qué preguntas
-            // se agregaron/quitaron/reformularon al guardar.
+            // Snapshot so updateForm() can tell added/removed/reworded questions.
             originalQuestions = editData.questions.map(q => ({ id: q.id, text: q.text }));
 
             renderQuestions();
@@ -787,10 +819,10 @@ export const setupAdminEvaluations = () => {
       });
     });
 
-    // Eventos para duplicar y usar plantilla
+    // Clone and use-template events
     document.querySelectorAll(".btn-clone-form, .btn-use-template").forEach(btn => {
       btn.addEventListener("click", async (e) => {
-        e.stopPropagation(); // Prevenir que abra modo edición
+        e.stopPropagation(); // do not open edit mode
         const id = btn.dataset.id;
         const isUsingTemplate = btn.classList.contains("btn-use-template");
         try {
@@ -798,19 +830,22 @@ export const setupAdminEvaluations = () => {
           const form = forms.find(t => t.id === id || t.id === parseInt(id));
 
           if (form) {
-            editId = null; // Important: this makes it a new form!
+            editId = null; // important: this makes it a new form
             originalQuestions = [];
             inputTitle.value = isUsingTemplate ? form.title : ("Copia de " + form.title);
             inputDesc.value = form.description || "";
 
             const evaluatorRoleEl = document.getElementById("evaluator-role");
             if (evaluatorRoleEl) { evaluatorRoleEl.value = form.evaluatorRole || "coder"; }
-            if (selectRole) { selectRole.value = form.targetRole || form.target_role || "tutor"; }
-            const isFormCheckbox = document.getElementById("is-form-checkbox");
-            if (isFormCheckbox) { isFormCheckbox.checked = false; } // Por defecto no es plantilla al duplicar
+            // Instantiating a GENERIC template leaves the role blank on purpose:
+            // the admin must pick one, validated on save.
+            if (selectRole) { selectRole.value = form.targetRole || ""; }
+            const isTemplateCheckbox = document.getElementById("is-template-checkbox");
+            // Using a template yields a LIVE form; cloning keeps the original kind.
+            if (isTemplateCheckbox) { isTemplateCheckbox.checked = isUsingTemplate ? false : !!form.is_template; }
 
-            // Reset IDs for the cloned questions (mismo mapeo que el modo edición,
-            // ver getFormForEdit, pero con IDs nuevos para que se creen como preguntas nuevas)
+            // Same mapping as edit mode, but fresh IDs so the cloned questions
+            // are created as new ones.
             const editData = await formsService.getFormForEdit(form);
             questions = editData.questions.map(q => ({
               id: (Date.now() + Math.random()).toString(),
@@ -822,7 +857,15 @@ export const setupAdminEvaluations = () => {
 
             renderQuestions();
             showBuilder();
-            showToast(isUsingTemplate ? "Plantilla lista para activar" : "Formulario duplicado", "success", isUsingTemplate ? "Guarda el formulario para activarlo en las evaluaciones." : "Ahora estás creando un nuevo formulario basado en el anterior.");
+            showToast(
+              isUsingTemplate ? "Plantilla lista para activar" : "Formulario duplicado",
+              "success",
+              isUsingTemplate
+                ? (form.targetRole
+                    ? "Guarda el formulario para activarlo en las evaluaciones."
+                    : "Elige el rol a evaluar antes de guardar: esta plantilla es genérica.")
+                : "Ahora estás creando un nuevo formulario basado en el anterior."
+            );
           }
         } catch (error) {
           showToast("Error", "error", "Error al procesar el formulario.");
@@ -830,15 +873,25 @@ export const setupAdminEvaluations = () => {
       });
     });
 
-    // Eventos para borrar
+    // Delete events
     document.querySelectorAll(".btn-delete-form").forEach(btn => {
       btn.addEventListener("click", async (e) => {
         e.stopPropagation();
         const id = e.target.dataset.id || e.target.closest('.btn-delete-form').dataset.id;
-        if (await showConfirm("¿Estás seguro de que deseas eliminar este formulario?")) {
+        if (await showConfirm(
+          "¿Eliminar este formulario?",
+          "Si nunca se respondió, se borra por completo. Si ya tiene evaluaciones, se archiva: sale de esta lista pero su historial se conserva intacto.",
+          "warning"
+        )) {
           try {
-            await formsService.deleteForm(id);
-            showToast("Formulario eliminado", "success");
+            const result = await formsService.deleteForm(id);
+            // The backend reports which path ran; always saying "deleted"
+            // would be false for a form with history.
+            if (result?.action === "archived") {
+              showToast("Formulario archivado", "success", `Tiene ${result.evaluations_count} evaluación(es), así que su historial se conservó.`);
+            } else {
+              showToast("Formulario eliminado", "success", "No tenía evaluaciones, así que se borró por completo.");
+            }
             renderFormsList();
           } catch (error) {
             if (error.status === 409) {
@@ -889,16 +942,42 @@ export const setupAdminEvaluations = () => {
       return;
     }
 
-    renderFormCards(allForms);
+    const visible = formsForActiveTab();
+    renderFormCards(visible);
 
     if (formSearchSlot) {
-      // Se regenera para no acumular listeners de recargas anteriores.
-      formSearchSlot.innerHTML = searchBoxComponent('form-search', 'Buscar formulario por título...');
-      setupSearch('form-search', allForms, ['title', 'description'], renderFormCards);
+      // Regenerated so listeners from previous reloads do not pile up.
+      // Search runs over the active tab only, not allForms.
+      formSearchSlot.innerHTML = searchBoxComponent(
+        'form-search',
+        activeTab === "templates" ? 'Buscar plantilla por título...' : 'Buscar formulario por título...'
+      );
+      setupSearch('form-search', visible, ['title', 'description'], renderFormCards);
     }
   };
 
-  // Inicializar mostrando la lista
+  // --- TABS ---
+  document.querySelectorAll(".tab-btn").forEach((tab) => {
+    tab.addEventListener("click", async () => {
+      if (activeTab === tab.dataset.tab) return;
+      activeTab = tab.dataset.tab;
+
+      document.querySelectorAll(".tab-btn").forEach((other) => {
+        const selected = other === tab;
+        other.setAttribute("aria-selected", String(selected));
+        other.classList.toggle("border-[var(--brand-bg)]", selected);
+        other.classList.toggle("text-[var(--brand-bg)]", selected);
+        other.classList.toggle("border-transparent", !selected);
+        other.classList.toggle("text-[var(--text-muted)]", !selected);
+      });
+
+      // The primary button changes meaning with the tab.
+      btnCreate.lastChild.textContent = activeTab === "templates" ? " Nueva Plantilla" : " Nuevo Formulario";
+      await renderFormsList();
+    });
+  });
+
+  // Start on the list view
   refreshPeriodGate();
 
   const urlParams = new URLSearchParams(window.location.search);

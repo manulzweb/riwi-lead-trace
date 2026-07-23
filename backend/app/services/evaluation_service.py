@@ -5,6 +5,7 @@ from app.config.database import engine
 from app.schemas.evaluation_details import EvaluationCreate
 from app.repositories.evaluation_repository import EvaluationRepository
 from app.constants.evaluation_constants import EVALUATION_STATUS_SUBMITTED, ROLE_TEAM_LEADER, ROLE_TUTOR
+from app.constants.evaluation_rules import can_evaluate_by_clan
 from app.exceptions.evaluation_exceptions import (
     PeriodNotFoundException, PeriodNotActiveException, EvaluationAlreadyExistsException,
     EvaluateeNotFoundException, InvalidRoleException, InvalidClanException
@@ -12,7 +13,6 @@ from app.exceptions.evaluation_exceptions import (
 
 class EvaluationService:
     def __init__(self, repository: EvaluationRepository = None):
-        # Allow dependency injection, default to a new instance if not provided
         self.repo = repository or EvaluationRepository()
 
     def _validate_period(self, conn, period_id: int):
@@ -39,13 +39,19 @@ class EvaluationService:
             
         evaluator_clan = evaluator_info["clan_id"] if evaluator_info else None
 
-        if ROLE_TEAM_LEADER in evaluatee_roles:
-            tl_clans = self.repo.get_team_leader_clans(conn, evaluatee_id)
-            if evaluator_clan not in tl_clans:
+        # La condicion vive en can_evaluate_by_clan (constants/evaluation_rules.py),
+        # compartida con user_service.get_evaluables para que el listado que ve el
+        # Coder y lo que este endpoint acepta no puedan divergir. Aqui solo se
+        # traduce el "no" a la excepcion con el mensaje que corresponde.
+        tl_clans = (
+            self.repo.get_team_leader_clans(conn, evaluatee_id)
+            if ROLE_TEAM_LEADER in evaluatee_roles
+            else []
+        )
+        if not can_evaluate_by_clan(evaluator_clan, evaluatee_roles, evaluatee_info["clan_id"], tl_clans):
+            if ROLE_TEAM_LEADER in evaluatee_roles:
                 raise InvalidClanException("No puedes evaluar a un Team Leader que no tiene a cargo tu clan.")
-        else:
-            if evaluator_clan != evaluatee_info["clan_id"]:
-                raise InvalidClanException("Solo puedes evaluar a usuarios de tu mismo clan.")
+            raise InvalidClanException("Solo puedes evaluar a usuarios de tu mismo clan.")
 
     def create_evaluation(self, eval_data: EvaluationCreate) -> Optional[Dict[str, Any]]:
         with engine.begin() as conn:
@@ -189,16 +195,4 @@ class EvaluationService:
 
             return self._attach_answers(conn, evaluations)
 
-# We export a singleton instance for backward compatibility with other routes
-# that might import the module directly, but it can be replaced by DI.
 evaluation_service = EvaluationService()
-
-# Facade methods to preserve exact backward compatibility for old imports
-def create_evaluation(eval_data: EvaluationCreate):
-    return evaluation_service.create_evaluation(eval_data)
-
-def get_evaluations_by_evaluator(evaluator_id: int, skip: int = 0, limit: int = 100):
-    return evaluation_service.get_evaluations_by_evaluator(evaluator_id, skip, limit)
-
-def get_evaluations_by_evaluatee(evaluatee_id: int, period_id: Optional[int] = None, hide_evaluator: bool = False, skip: int = 0, limit: int = 100):
-    return evaluation_service.get_evaluations_by_evaluatee(evaluatee_id, period_id, hide_evaluator, skip, limit)

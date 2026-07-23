@@ -1,14 +1,13 @@
 import { evaluationService } from "../services/evaluation.service";
 import { request } from "../services/api.service";
 
-// Promedio (1-5) -> escala 0-100, igual formula que metrics_service.calculate_average_score
-// en el backend (ver docs/06-arquitectura.md), pero sin ponderar por weight_percent: el
-// desglose por categoria es informativo, no reemplaza el ICP global ponderado.
+// Average (1-5) -> 0-100 scale, same formula as the backend but WITHOUT
+// weight_percent: this breakdown is informative, it does not replace the ICP.
 const to100Scale = (avg1to5) => Math.round(((avg1to5 - 1) / 4) * 100);
 
-// Desglose de puntaje promedio por categoria para una persona en un periodo.
-// No hay endpoint dedicado en el backend para esto -- se arma en el cliente
-// cruzando las respuestas de evaluations con las preguntas de sus forms.
+// Average score per category for one person in one period. There is no
+// dedicated endpoint, so it is built client-side by crossing evaluation
+// answers with the questions of their forms.
 export const getCategoryBreakdown = async (evaluateeId, periodId) => {
   try {
     const evaluations = await evaluationService.getByEvaluatee(evaluateeId);

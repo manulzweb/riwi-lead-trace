@@ -272,6 +272,41 @@ mecanismo de sesion verificable en servidor (JWT u otro), no maquillar el front.
      aplicacion**; si ambas se olvidan en un endpoint nuevo, el evaluador anonimo queda expuesto.
 9. **Seguridad:** contrasenas siempre hasheadas (passlib/bcrypt), nunca en texto plano ni devueltas en responses.
 10. **Respeta el alcance MVP** (`docs/09-mvp-alcance.md`): no implementes lo marcado "fuera del MVP" sin que el usuario lo pida. El formulario de evaluacion es **interactivo "una pregunta a la vez" en JS Vanilla + CSS** — sin paquetes de formularios (SurveyJS y similares cuentan como framework de UI prohibido).
+11. **Plantillas inertes y borrado que no pierde historial (ADMIN-03):** la tabla `forms` distingue
+    dos cosas con `is_template` (**ojo: la columna se llamaba `is_form` y significaba lo contrario
+    de lo que decia su nombre — ya no existe, no la reintroduzcas**):
+
+    - `is_template = TRUE` → **plantilla base**, reutilizable e **inerte**: ningun Coder la
+      responde jamas. Puede tener `target_role_id = NULL` (plantilla generica): el rol se elige al
+      instanciarla. Como no toca el instrumento vivo, **se crea y edita con periodo activo**.
+    - `is_template = FALSE` → **formulario vivo**. Siempre necesita rol, y crearlo desactiva el
+      anterior de ese rol, asi que **exige periodo cerrado** (regla 6).
+
+    El invariante **no vive solo en el servicio**: `chk_form_role_required` en `database/01_ddl.sql`
+    lo aplica en MySQL, asi que ningun endpoint nuevo puede saltarselo.
+
+    **Lo inerte depende de un filtro que es tuyo mantener.** `GET /forms` es **seguro por defecto**
+    (`kind=form`, `archived=exclude`): quien olvide los parametros recibe solo el formulario vivo y
+    activo. Ese default es lo unico que evita el bug que ya ocurrio — el repositorio no filtraba
+    `is_template` ni `is_active`, ordenaba por `id DESC` y el front tomaba `forms[0]`, asi que
+    **crear una plantilla la convertia en el formulario que respondian los coders**. Si escribes
+    una query nueva sobre `forms`, el filtro es responsabilidad tuya.
+
+    **Borrar preserva el historial, y lo garantiza la BD, no el codigo.** `DELETE /forms/:id`
+    devuelve **`200`** con `{action: "deleted"|"archived", evaluations_count}`:
+    - sin evaluaciones → borrado **duro** (preguntas + formulario);
+    - con evaluaciones → **archivado** (`archived_at = NOW()`), sale de la grilla del Admin pero las
+      respuestas siguen intactas.
+
+    `form_service.delete_form` cuenta evaluaciones solo para **elegir el camino**; si el `DELETE`
+    viola una FK igual, captura `IntegrityError` (dentro de un `begin_nested()`) y archiva. Mismo
+    criterio que la regla 2: la BD es la autoridad final. El peor caso es "se archivo cuando
+    esperabas un borrado", **nunca** "se perdio historial". No quites esa captura ni el savepoint.
+
+    `archived_at` **no es lo mismo que `is_active`**: `is_active = FALSE` lo recibe *todo* formulario
+    superado al activar uno nuevo, asi que reusarlo esconderia cada formulario reemplazado. El
+    historial del Coder (`my-evaluations.view.js`) resuelve titulos con `?kind=all&archived=include`
+    — si lo cambias a `getForms()`, los formularios archivados pierden el nombre.
 
 ## Convenciones de codigo
 
@@ -294,7 +329,7 @@ mecanismo de sesion verificable en servidor (JWT u otro), no maquillar el front.
 ```bash
 # Base de datos (CUATRO archivos, en este orden exacto)
 mysql -u root -p < database/01_ddl.sql                              # DDL: crea la BD y todas las tablas
-mysql -u root -p riwi_lead_trace < database/02_dml.sql              # seed minimo: roles, cohortes, clanes, usuarios demo, periodo activo, forms/questions, fila de system_settings
+mysql -u root -p riwi_lead_trace < database/02_dml.sql              # seed minimo: roles, cohortes, clanes, usuarios demo, periodo activo, forms/questions (2 formularios vivos + 2 PLANTILLAS de fabrica sin rol, ya balanceadas a 100), fila de system_settings
 mysql -u root -p riwi_lead_trace < database/03_mock_history.sql     # OPCIONAL: periodos cerrados + evaluaciones simuladas (normales, anonimas, borrador, casos de borde) para poblar historial/dashboard/IA con datos de prueba
 mysql -u root -p riwi_lead_trace < database/04_views.sql            # REQUERIDO: crea vw_period_metrics, vw_evaluatees_summary, vw_users_with_roles, vw_evaluations_summary. Sin este archivo, /metrics y el resumen IA fallan (dependen de estas vistas)
 
@@ -357,7 +392,9 @@ npm run build                            # bundle de produccion
 |--------|----------|-----|-------------------|
 | POST | `/auth/login` | login -> `{ user }` (sin token) | hash bcrypt en servidor |
 | GET | `/users?role=team_leader` | evaluables por rol | filtro por rol |
-| GET | `/forms?target_role=team_leader` | plantilla de formulario | — |
+| GET | `/forms?target_role=team_leader` | formulario vivo del rol | **filtros seguros por defecto**: `kind=form` (default) devuelve solo `is_template = FALSE AND is_active = TRUE`. `kind=template` \| `kind=all` para el Admin; `archived=include` para el historial del Coder. Ver bloque de plantillas abajo |
+| POST | `/forms` | crear formulario o plantilla | `is_template` decide: una **plantilla** no exige periodo cerrado (es inerte) y puede omitir `target_role`; un **formulario vivo** exige ambos y desactiva el anterior del rol |
+| DELETE | `/forms/:id` | eliminar sin perder historial | **`200`** con `{action, evaluations_count}`: sin evaluaciones borra de verdad, con evaluaciones **archiva**. No es `204` |
 | POST | `/evaluations` | registrar evaluacion | escribe **dos** filas: contenido en `evaluations` + participacion en `evaluation_submissions` (con `evaluation_id` poblado **siempre**, tambien en anonimas — regla 1). No-duplicado garantizado por `uq_submission_once` → `409`; + **periodo activo** + validacion |
 | GET | `/evaluations?evaluator_id=:id` | historial del Coder | lee `evaluation_submissions` (LEFT JOIN a `evaluations`): incluye las participaciones anonimas **con su contenido**, porque el Coder puede releer lo que escribio (regla 1) |
 | GET | `/evaluations?evaluatee_id=:id` | historico por evaluado | `viewer_role` del front; el admin ve el evaluador de las **no anonimas**; las anonimas se enmascaran con `is_anonymous = FALSE` en la query + en el servicio (regla 8). **Nota:** el front nunca manda `viewer_role`, asi que esa rama admin hoy es inalcanzable desde la SPA |

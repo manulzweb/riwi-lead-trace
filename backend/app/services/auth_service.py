@@ -22,6 +22,3 @@ class AuthService:
         return LoginResponse(user=UserOut(**user))
 
 auth_service = AuthService()
-
-def login(email: str, password: str) -> LoginResponse:
-    return auth_service.login(email, password)

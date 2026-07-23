@@ -3,10 +3,8 @@ from typing import List, Optional, Union
 import logging
 from app.schemas.evaluation_details import EvaluationCreate, EvaluationDetailOut, EvaluationHistoryOut
 from app.services.evaluation_service import evaluation_service
-from app.exceptions.evaluation_exceptions import (
-    PeriodNotFoundException, PeriodNotActiveException, EvaluationAlreadyExistsException,
-    EvaluateeNotFoundException, InvalidRoleException, InvalidClanException
-)
+
+from app.exceptions.base import ApplicationException
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -29,19 +27,12 @@ def create_evaluation(evaluation: EvaluationCreate):
     no está activo."""
     try:
         return evaluation_service.create_evaluation(evaluation)
-    except PeriodNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except PeriodNotActiveException as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except EvaluationAlreadyExistsException as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except EvaluateeNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except (InvalidRoleException, InvalidClanException) as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
-    except Exception as e:
-        logger.error(f"Internal error creating evaluation: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al guardar la evaluación.")
+    except ApplicationException:
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
+        raise
 
 @router.get(
     "/evaluations",
@@ -80,6 +71,3 @@ def get_evaluations(
             )
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Internal error fetching evaluations: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno al consultar las evaluaciones.")

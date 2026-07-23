@@ -46,8 +46,7 @@ export const renderMyEvaluations = () => `
     </main>
 `;
 
-// Estado de error con reintento. Antes solo salia un toast: duraba 3s y dejaba
-// los skeletons pulsando para siempre, sin salida salvo F5.
+// Error state with retry: a 3s toast alone left the skeletons pulsing forever.
 const renderLoadError = () => `
   <div class="rounded-3xl border border-[var(--danger-border)] bg-[var(--danger-bg)] p-6 text-center text-[var(--danger-text)]">
     <p class="font-semibold">No se pudieron cargar tus evaluaciones.</p>
@@ -71,7 +70,9 @@ export const setupMyEvaluations = async () => {
         evaluationService.getByEvaluator(currentUser.id),
         userService.get(),
         periodService.get(),
-        formsService.getForms()
+        // getFormsForHistory (not getForms): includes archived ones, otherwise
+        // retired forms lose their title in the history.
+        formsService.getFormsForHistory()
       ]);
 
       const usersMap = new Map(users.map(u => [u.id, u]));
@@ -97,13 +98,13 @@ export const setupMyEvaluations = async () => {
           : 'Colaborador';
         const periodName = period ? period.name : `Periodo #${ev.period_id}`;
 
-        // Cada entrada es una PARTICIPACION, no una evaluacion completa directamente,
-        // pero incluimos evaluation_id y answers desde el backend.
+        // Each entry is a PARTICIPATION, not a full evaluation, but the backend
+        // also sends evaluation_id and answers.
         const isAnonymous = evaluationService.isAnonymousParticipation(ev);
         const hasDetail = evaluationService.hasVisibleDetail(ev);
 
-        // Tokens semanticos de global.css: cambian solos en dark mode, asi que
-        // ya no hacen falta las variantes `dark:`.
+        // Semantic tokens from global.css switch themselves in dark mode, so no
+        // dark: variants are needed.
         let headerBadge;
         if (isAnonymous) {
           headerBadge = `
@@ -117,8 +118,8 @@ export const setupMyEvaluations = async () => {
           headerBadge = `<span class="rounded-full bg-[var(--warning-bg)] px-3 py-1 text-xs font-semibold text-[var(--warning-text)]">Borrador</span>`;
         }
 
-        // En una anonima `submitted_at` no existe; `created_at` (cuando se
-        // registro la participacion) si, y es la fecha honesta que mostrar.
+        // Anonymous entries have no submitted_at; created_at (when the
+        // participation was recorded) is the honest date to show.
         const dateSource = isAnonymous ? ev.created_at : ev.submitted_at;
         const formattedDate = dateSource ? formatDateLong(dateSource) : "No enviada";
         const dateLabel = isAnonymous ? "Enviada el" : "Fecha";
@@ -150,14 +151,14 @@ export const setupMyEvaluations = async () => {
       `;
       }).join("");
 
-      // Detalle de una evaluación. Es una función local de la vista: colgarla de
-      // `window` rompía la capa de vistas y el global sobrevivía a la navegación.
+      // View-local on purpose: hanging it off window broke the view layer and the
+      // global outlived navigation.
       const showEvaluationDetail = (evalId) => {
-        // Se busca por `evaluation_id`: el historial ya no trae `id` (son filas de
-        // participacion, ver evaluation.service.js).
+        // Looked up by evaluation_id: the history no longer carries id (these are
+        // participation rows, see evaluation.service.js).
         const evaluation = evaluations.find(e => e.evaluation_id === evalId);
-        // Doble candado: aunque una tarjeta anonima nunca pinta el boton, si por
-        // lo que sea llegara aqui, no hay contenido que abrir.
+        // Second lock: anonymous cards never render the button, but if one got
+        // here there is no content to open.
         if (!evaluation || !evaluationService.hasVisibleDetail(evaluation)) return;
 
         const evaluatee = usersMap.get(Number(evaluation.evaluatee_id)) || usersMap.get(String(evaluation.evaluatee_id));
@@ -209,13 +210,9 @@ export const setupMyEvaluations = async () => {
         });
       };
 
-      // UN solo listener delegado en el contenedor, en vez de un `onclick` inline
-      // por tarjeta. `closest` es necesario porque el click puede caer en un nodo
-      // interno del boton, donde `e.target.dataset` vendria vacio. El contenedor
-      // lo destruye el router al navegar, asi que el listener no se acumula.
-      //
-      // Las tarjetas anonimas no llevan `data-eval-id`, asi que el `closest` no
-      // encuentra nada y el listener no dispara: no hay detalle que abrir.
+      // One delegated listener (the router destroys the container, so it does not
+      // stack). closest() because the click may land inside the button; anonymous
+      // cards carry no data-eval-id, so they never fire.
       container.addEventListener("click", (e) => {
         const trigger = e.target.closest("[data-eval-id]");
         if (!trigger) return;

@@ -62,7 +62,6 @@ class AIService:
                 return cached
 
             score_info = metrics_service.get_score_history(evaluatee_id)
-            # Find the specific period in the precalculated view history
             period_data = next((p for p in score_info if p["period_id"] == period_id), None)
             
             if not period_data:
@@ -71,8 +70,8 @@ class AIService:
                 )
                 
             average_score = period_data["average_score"]
-            # get_score_history output doesn't include n_evals natively, so we pass a generic message
-            n_evals = "Múltiples" 
+            # get_score_history no expone n_evals, asi que se manda un texto generico.
+            n_evals = "Múltiples"
 
             comments = self.repo.get_anonymized_comments(conn, evaluatee_id, period_id)
             name, role = self.repo.get_evaluatee_info(conn, evaluatee_id)
@@ -174,36 +173,32 @@ Por favor, proporciona un resumen estructurado con un tono constructivo y profes
         from app.services.metrics_service import metrics_service
         import logging
         logger = logging.getLogger(__name__)
-        logger.info(f"Background task starting: generating missing AI summaries for period {period_id}")
+        logger.info("Background task starting: generating missing AI summaries for period %s", period_id)
 
         try:
-            # Get all evaluatees for the period
-            ranking = metrics_service.get_overall_ranking(period_id)
-            # Only those with a valid average_score have enough evaluations to generate a summary
-            valid_evaluatees = [e for e in ranking if e.get("average_score") is not None]
+            summary_data = metrics_service.get_metrics_summary(period_id)
+            # Solo los que tienen average_score valido llegan al minimo de evaluaciones para resumir.
+            valid_evaluatees = [e for e in summary_data["evaluatees"] if e.get("average_score") is not None]
 
             generated_count = 0
             with engine.connect() as conn:
                 for evaluatee in valid_evaluatees:
                     evaluatee_id = evaluatee["id"]
-                    # Check if cache already exists. If yes, skip to respect user's condition.
                     cached = self.repo.get_cached_summary(conn, evaluatee_id, period_id)
                     if not cached:
                         try:
-                            logger.info(f"Generating AI summary for evaluatee {evaluatee_id} in period {period_id}")
+                            logger.info("Generating AI summary for evaluatee %s in period %s", evaluatee_id, period_id)
                             self.get_or_generate_ai_summary(evaluatee_id, period_id)
                             generated_count += 1
                         except Exception as e:
-                            logger.error(f"Error generating summary for evaluatee {evaluatee_id}: {e}")
+                            logger.exception("Error generating summary for evaluatee %s", evaluatee_id)
             
-            logger.info(f"Background task finished: generated {generated_count} missing summaries.")
+            logger.info("Background task finished: generated %s missing summaries.", generated_count)
         except Exception as e:
-            logger.error(f"Error in background task generate_missing_summaries_for_period: {e}")
+            logger.exception("Error in background task generate_missing_summaries_for_period")
 
 ai_service = AIService()
 
-def get_or_generate_ai_summary(evaluatee_id: int, period_id: int):
-    return ai_service.get_or_generate_ai_summary(evaluatee_id, period_id)
 
 def check_question_category_coherence(question_text: str, category: str):
     return ai_service.check_question_category_coherence(question_text, category)

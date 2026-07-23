@@ -17,14 +17,17 @@ class QuestionService:
         self.repo = repository or QuestionRepository()
 
     def _assert_no_active_period(self, conn, form_id: int):
-        from sqlalchemy import text
-        query = text("SELECT is_form FROM forms WHERE id = :form_id")
-        result = conn.execute(query, {"form_id": form_id}).fetchone()
-        
-        # Si es un form activo (no es plantilla), validamos
-        if result and not result[0]:
-            if self.repo.has_active_period(conn):
-                raise ActivePeriodExistsException("No se pueden editar preguntas mientras haya un periodo activo. Cierra el periodo primero.")
+        # Solo el instrumento VIVO esta protegido (regla 6): editarlo con un
+        # periodo abierto dejaria respuestas ya enviadas atadas a preguntas o
+        # pesos distintos. Una plantilla es inerte, asi que se edita cuando sea.
+        #
+        # `is_template_form` devuelve None si el formulario no existe; en ese
+        # caso NO se bloquea, para que responda el 404 de la validacion
+        # siguiente y no un 409 que confundiria al cliente. Es el mismo
+        # comportamiento que tenia el `if result and ...` original.
+        es_plantilla = self.repo.is_template_form(conn, form_id)
+        if es_plantilla is False and self.repo.has_active_period(conn):
+            raise ActivePeriodExistsException("No se pueden editar preguntas mientras haya un periodo activo. Cierra el periodo primero.")
 
     def get_question(self, question_id: int) -> Optional[Dict[str, Any]]:
         with engine.connect() as conn:
@@ -179,6 +182,18 @@ class QuestionService:
 
 question_service = QuestionService()
 
+
+# --------------------------------------------------------------------------
+# Estas SEIS funciones de modulo SI se usan: `tests/test_questions.py` hace
+#     from app.services import question_service      -> importa el MODULO
+# y llama `question_service.get_questions_by_form(...)`, que resuelve a la
+# funcion de modulo y NO al metodo del singleton (que se llama igual).
+#
+# Ese mismo import es el que permite el monkeypatch de
+# `check_question_category_coherence` en test_questions.py: parchea el nombre
+# dentro de ESTE namespace. Cambiar la forma del import romperia el test.
+# --------------------------------------------------------------------------
+
 def get_question(question_id: int):
     return question_service.get_question(question_id)
 
@@ -197,6 +212,9 @@ def delete_question(question_id: int):
 def update_weights(payload: WeightsUpdate):
     return question_service.update_weights(payload)
 
-# This was used in form_service. We provide a bridge for backwards compat if needed,
-# though form_service now has its own logic or can be updated.
-# However, form_service is already updated and doesn't import _assert_no_active_period from here.
+
+
+
+
+
+

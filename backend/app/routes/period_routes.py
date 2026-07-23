@@ -3,7 +3,8 @@ from typing import List
 import logging
 from app.schemas.period import PeriodCreate, PeriodUpdate, PeriodOut
 from app.services.period_service import period_service
-from app.exceptions.period_exceptions import PeriodNotFoundException, PeriodHasEvaluationsException
+
+from app.exceptions.base import ApplicationException
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -16,11 +17,7 @@ router = APIRouter()
 )
 def get_periods():
     """Consulta de la tabla `periods`. Retorna el historial completo de ciclos."""
-    try:
-        return period_service.get_periods()
-    except Exception as e:
-        logger.error(f"Error fetching periods: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+    return period_service.get_periods()
 
 @router.get("/periods/{period_id}", response_model=PeriodOut)
 def get_period(period_id: int):
@@ -32,9 +29,6 @@ def get_period(period_id: int):
         return period
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Error fetching period {period_id}: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
 
 @router.post(
     "/periods", 
@@ -45,11 +39,7 @@ def get_period(period_id: int):
 )
 def create_period(period: PeriodCreate):
     """Inserta un nuevo ciclo. Implementa un trigger lógico en el servicio para hacer toggle (desactivar) los periodos previos si `is_active` es verdadero."""
-    try:
-        return period_service.create_period(period)
-    except Exception as e:
-        logger.error(f"Error creating period: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+    return period_service.create_period(period)
 
 @router.put(
     "/periods/{period_id}", 
@@ -62,11 +52,12 @@ def update_period(period_id: int, period: PeriodUpdate, background_tasks: Backgr
     """Mutación completa de la entidad `periods`. Dispara reconciliación de la bandera `is_active` si se establece en true."""
     try:
         return period_service.update_period(period_id, period, background_tasks)
-    except PeriodNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error updating period {period_id}: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+    except ApplicationException:
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
+        raise
 
 @router.patch(
     "/periods/{period_id}", 
@@ -79,11 +70,12 @@ def patch_period(period_id: int, period: PeriodUpdate, background_tasks: Backgro
     """Mutación parcial de la entidad `periods`."""
     try:
         return period_service.update_period(period_id, period, background_tasks)
-    except PeriodNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error patching period {period_id}: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+    except ApplicationException:
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
+        raise
 
 @router.delete("/periods/{period_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_period(period_id: int):
@@ -91,10 +83,9 @@ def delete_period(period_id: int):
     try:
         period_service.delete_period(period_id)
         return None
-    except PeriodNotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except PeriodHasEvaluationsException as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error deleting period {period_id}: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno")
+    except ApplicationException:
+        # Se re-lanza para que la traduzca el handler global leyendo su
+        # http_status. Este `except` existe solo porque el bloque `try` tiene
+        # otro proposito; si algun dia se anade aqui un `except Exception`,
+        # este DEBE seguir yendo antes o capturaria el dominio como 500.
+        raise
