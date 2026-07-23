@@ -11,6 +11,7 @@ import { dropdownComponent, setupDropdown } from "../components/dropdown";
 import { evaluablesService } from "../services/evaluables.service";
 import { getMedalIcon } from "../components/icons";
 import { tableComponent } from "../components/table";
+import { dayjs } from "../utils/date";
 
 const icons = {
   check: `<svg aria-hidden="true" focusable="false" class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
@@ -154,6 +155,11 @@ const renderDashboardContent = async (content, user, name, role) => {
           </div>
         </div>
       ` : ''}
+      ${role !== 'admin' ? `
+        <span class="text-sm font-bold text-[var(--text-muted)] bg-[var(--bg-base)] border border-[var(--border-main)] px-4 py-2 rounded-full whitespace-nowrap">
+          Hoy, ${dayjs().format('D [de] MMMM')}
+        </span>
+      ` : ''}
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-0 transition-opacity duration-500 ease-out" id="dashboard-cards">
   `;
@@ -228,6 +234,7 @@ const renderDashboardContent = async (content, user, name, role) => {
       const pending = Math.max(0, possible - total);
 
       import('chart.js/auto').then(({ default: Chart }) => {
+        Chart.defaults.font.family = rootStyle.getPropertyValue('--font-body').trim() || "'Open Sans', sans-serif";
         new Chart(pChartCtx, {
           type: 'doughnut',
           data: {
@@ -384,27 +391,35 @@ const renderDashboardContent = async (content, user, name, role) => {
         await renderDashboardContent(content, user, name, role);
       });
     }
-  } else if (role === "team_leader" || role === "tutor") {
-    // Leader / Tutor View
-    const summary = selectedPeriodId ? await metricsService.getSummary(selectedPeriodId) : { evaluatees: [] };
-    const myStats = summary.evaluatees?.find(e => e.id === user.id) || { n_evals: 0, average_score: 0, status: "Sin datos" };
+  } else {
+    // Leader, Tutor and Coder combined view
+    if (role === "team_leader" || role === "tutor") {
+      const summary = selectedPeriodId ? await metricsService.getSummary(selectedPeriodId) : { evaluatees: [] };
+      const myStats = summary.evaluatees?.find(e => e.id === user.id) || { n_evals: 0, average_score: 0, status: "Sin datos" };
 
-    html += `
-      ${StatsCard({ title: "Evaluaciones Recibidas", value: `<span class="animate-number" data-value="${myStats.n_evals}">${myStats.n_evals}</span>`, icon: icons.users, description: "En el periodo actual" })}
-      ${StatsCard({ title: "Puntaje Promedio ICP", value: `<span class="animate-number" data-value="${myStats.average_score ?? 0}">${myStats.average_score ?? 0}</span><span class="text-2xl text-[var(--text-muted)] ml-1">/100</span>`, icon: icons.star, description: "Estado: " + myStats.status })}
-    `;
+      html += `
+        ${StatsCard({ title: "Evaluaciones Recibidas", value: `<span class="animate-number" data-value="${myStats.n_evals}">${myStats.n_evals}</span>`, icon: icons.users, description: "En el periodo actual" })}
+        ${StatsCard({ title: "Puntaje Promedio ICP", value: `<span class="animate-number" data-value="${myStats.average_score ?? 0}">${myStats.average_score ?? 0}</span><span class="text-2xl text-[var(--text-muted)] ml-1">/100</span>`, icon: icons.star, description: "Estado: " + myStats.status })}
+      `;
+    }
+
+    if (role === "team_leader") {
+      html += `</div>`;
+      content.innerHTML = html;
+      return;
+    }
 
     if (role === "tutor") {
-      const myEvals = await evaluationService.getByEvaluator(user.id, 100);
-      const pending = myEvals.filter(isPendingParticipation).length;
-      html += StatsCard({ title: "Evaluaciones por Hacer", value: `<span class="animate-number" data-value="${pending}">${pending}</span>`, icon: icons.clock, description: "Pendientes de enviar" });
+      html += `
+        <div class="col-span-1 md:col-span-2 lg:col-span-3 mt-2 mb-2 flex items-center gap-4">
+          <div class="h-px bg-[var(--border-main)] flex-1"></div>
+          <span class="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Tu progreso como coder</span>
+          <div class="h-px bg-[var(--border-main)] flex-1"></div>
+        </div>
+      `;
     }
-    
-    html += `</div>`;
-    content.innerHTML = html;
 
-  } else {
-    // Coder View
+    // Tutor or Coder View
     const [myEvals, allEvaluables] = await Promise.all([
       evaluationService.getByEvaluator(user.id, 100),
       evaluablesService.get(user.id)
@@ -434,46 +449,124 @@ const renderDashboardContent = async (content, user, name, role) => {
         if (u.roles && u.roles.includes("tutor")) pendingRoles.add("Tutor");
     });
 
+    // Nombres para "Actividad reciente": `evaluables` ya trae a todo evaluable
+    // del clan (evaluado o no), asi que sirve como diccionario id -> nombre sin
+    // pedir /users aparte.
+    const evaluableNameById = new Map(evaluables.map(u => [String(u.id), u.name]));
+
+    const recentActivity = completedEvals
+      .map(ev => {
+        const isAnonymous = evaluationService.isAnonymousParticipation(ev);
+        // En una participacion anonima no hay `submitted_at`; `created_at`
+        // (cuando se registro la participacion) si existe y es la fecha honesta.
+        const dateSource = isAnonymous ? ev.created_at : (ev.submitted_at || ev.created_at);
+        return { ev, isAnonymous, dateSource };
+      })
+      .filter(({ dateSource }) => !!dateSource)
+      .sort((a, b) => new Date(b.dateSource) - new Date(a.dateSource))
+      .slice(0, 4);
+
     html += `
       ${StatsCard({ title: "Completadas", value: `<span class="animate-number" data-value="${completed}">${completed}</span>`, icon: icons.check, description: "Evaluaciones enviadas" })}
       ${StatsCard({ title: "Personas por Evaluar", value: `<span class="animate-number" data-value="${pending}">${pending}</span>`, icon: icons.clock, description: "Pendientes de evaluar" })}
-      
+
       ${Card({
       className: "h-full flex flex-col p-6 lg:row-span-2 shadow-sm border border-[var(--border-main)]",
       children: `
           <h3 class="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider text-left w-full mb-4">Progreso Actual</h3>
-          <div class="flex-1 flex flex-col items-center justify-center w-full min-h-[200px]">
+          <div class="flex-1 flex flex-col items-center justify-center w-full min-h-[160px]">
             ${completed + pending === 0
           ? `<div class="text-center text-[var(--text-muted)] italic my-auto">Aún no hay datos para graficar.</div>`
-          : `<div class="relative w-48 h-48 my-4"><canvas id="coder-participation-chart"></canvas></div>`
+          : `<div class="relative w-40 h-40 my-2"><canvas id="coder-participation-chart"></canvas></div>`
         }
+          </div>
+          <div class="w-full space-y-3 mt-2">
+            <div class="flex items-center justify-between p-3.5 bg-[var(--bg-base)] rounded-xl border border-[var(--border-main)]">
+              <div class="flex items-center gap-2.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-[var(--border-main)]"></span>
+                <span class="text-sm font-semibold text-[var(--text-main)]">Total evaluaciones</span>
+              </div>
+              <span class="text-sm font-bold text-[var(--text-main)]">${totalEvaluables}</span>
+            </div>
+            <div class="flex items-center justify-between p-3.5 bg-[var(--bg-base)] rounded-xl border border-[var(--border-main)]">
+              <div class="flex items-center gap-2.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-[var(--brand-bg)]"></span>
+                <span class="text-sm font-semibold text-[var(--text-main)]">Completadas</span>
+              </div>
+              <span class="text-sm font-bold text-[var(--text-main)]">${completed}</span>
+            </div>
           </div>
         `
     })}
 
-      <!-- Saludo + aviso de pendientes en UNA sola tarjeta. Antes eran dos
-           excluyentes: el aviso reemplazaba al saludo, asi que al no haber
-           pendientes la rejilla quedaba con un hueco vacio. El saludo se
-           muestra siempre; el aviso se suma solo cuando hay algo que evaluar. -->
+      <!-- Banner de recordatorio, independiente (ya no envuelto en la tarjeta
+           de saludo). Cuando no hay pendientes se muestra un estado "al dia"
+           para que la celda de 2 columnas no quede vacia. -->
       <div class="col-span-1 md:col-span-2 lg:col-span-2 mt-4 lg:mt-0">
-        <div class="bg-[var(--bg-panel)] rounded-3xl border border-[var(--border-main)] p-8 shadow-sm flex flex-col justify-center gap-4 h-full">
-          <h2 class="text-2xl font-bold text-[var(--text-main)]">¡Hola, ${escapeHtml(user.name.split(' ')[0])}!</h2>
-          ${pendingRoles.size > 0 ? `
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl bg-[var(--info-bg)] border border-[var(--info-border)] text-[var(--info-text)] px-5 py-4">
-              <div class="flex items-center gap-3">
-                <svg class="h-6 w-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                <div>
-                  <p class="font-bold text-sm">¡Tienes encuestas disponibles!</p>
-                  <p class="text-xs mt-1">Aún te falta evaluar a: <strong>${escapeHtml(Array.from(pendingRoles).join(" y "))}</strong>.</p>
-                </div>
+        ${pendingRoles.size > 0 ? `
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6 rounded-3xl bg-[var(--brand-bg)] text-[var(--brand-text)] px-6 py-6 sm:px-8 sm:py-7 shadow-md h-full">
+            <div class="flex items-start gap-4">
+              <div class="shrink-0 rounded-full bg-white/15 p-3">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
               </div>
-              <a href="/evaluables" data-navigo class="whitespace-nowrap inline-flex items-center justify-center rounded-xl bg-[var(--brand-bg)] px-4 py-2 text-sm font-bold text-[var(--brand-text)] hover:bg-[var(--brand-hover)] transition shadow-sm">
-                Ir a evaluar
-              </a>
+              <div>
+                <span class="inline-block text-[10px] font-bold uppercase tracking-widest bg-white/15 px-2.5 py-1 rounded-full mb-2">Recordatorio prioritario</span>
+                <h3 class="text-xl sm:text-2xl font-extrabold leading-tight">¡Es hora de evaluar!</h3>
+                <p class="text-sm mt-2 opacity-90 max-w-md">Aún te falta evaluar a <strong>${escapeHtml(Array.from(pendingRoles).join(" y "))}</strong>. Tu feedback es clave para el crecimiento del equipo.</p>
+              </div>
             </div>
-          ` : ''}
-        </div>
+            <a href="/evaluables" data-navigo class="shrink-0 whitespace-nowrap inline-flex items-center justify-center rounded-xl bg-white/80 hover:bg-white/25 px-6 py-3 text-sm font-bold text-[var(--text-main)] transition shadow-sm">
+              Ir a evaluar
+            </a>
+          </div>
+        ` : `
+          <div class="flex flex-col items-center justify-center text-center gap-3 rounded-3xl bg-[var(--bg-panel)] border border-[var(--border-main)] px-6 py-10 shadow-sm h-full">
+            <div class="rounded-full bg-[var(--success-bg)] text-[var(--success-text)] p-3">
+              <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <h3 class="text-lg font-bold text-[var(--text-main)]">¡Estás al día!</h3>
+            <p class="text-sm text-[var(--text-muted)]">Has completado todas tus evaluaciones disponibles.</p>
+          </div>
+        `}
       </div>
+    </div>
+
+    <div class="mt-6">
+      <div class="flex items-center justify-between mb-4 gap-4">
+        <h2 class="text-xl font-bold text-[var(--text-main)]">Actividad reciente</h2>
+        <a href="/evaluations" data-navigo class="text-sm font-bold text-[var(--brand-bg)] hover:text-[var(--brand-hover)] transition whitespace-nowrap">
+          Ver historial completo
+        </a>
+      </div>
+      ${Card({
+      className: "overflow-hidden",
+      children: `
+          <div class="divide-y divide-[var(--border-main)]">
+            ${recentActivity.length === 0 ? `
+              <div class="px-6 py-8 text-center text-sm text-[var(--text-muted)]">
+                Aún no has enviado evaluaciones. Cuando envíes una, aparecerá aquí.
+              </div>
+            ` : recentActivity.map(({ ev, isAnonymous, dateSource }) => {
+        const evaluateeName = isAnonymous ? "Envío anónimo" : (evaluableNameById.get(String(ev.evaluatee_id)) || `Usuario #${ev.evaluatee_id}`);
+        const badge = isAnonymous
+          ? `<span class="px-3 py-1 rounded-full text-[11px] font-bold bg-[var(--info-bg)] text-[var(--info-text)] uppercase tracking-wide whitespace-nowrap">Anónima</span>`
+          : `<span class="px-3 py-1 rounded-full text-[11px] font-bold bg-[var(--success-bg)] text-[var(--success-text)] uppercase tracking-wide whitespace-nowrap">Enviada</span>`;
+        return `
+                <div class="px-6 py-4 flex items-center gap-4">
+                  <div class="w-10 h-10 rounded-lg bg-[var(--bg-base)] border border-[var(--border-main)] flex items-center justify-center text-[var(--brand-bg)] shrink-0">
+                    ${icons.check}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="font-bold text-[var(--text-main)] truncate">${escapeHtml(evaluateeName)}</p>
+                    <p class="text-xs text-[var(--text-muted)] font-medium mt-0.5">Enviada el ${escapeHtml(dayjs(dateSource).format('D [de] MMMM [de] YYYY'))}</p>
+                  </div>
+                  ${badge}
+                </div>
+              `;
+      }).join("")}
+          </div>
+        `
+    })}
     </div>
     `;
 
@@ -483,20 +576,27 @@ const renderDashboardContent = async (content, user, name, role) => {
     if (ctx) {
       const rootStyle = getComputedStyle(document.documentElement);
       const brandColor = rootStyle.getPropertyValue('--brand-bg').trim() || '#4f46e5';
-      const draftColor = rootStyle.getPropertyValue('--accent-amber').trim() || '#f59e0b';
+      // Color neutro para el segmento "sin completar" -- el mismo criterio que
+      // el donut del admin (ver mas arriba en este archivo). Antes usaba
+      // `--accent-amber`, un token que no existe en global.css: getPropertyValue
+      // devolvia "" y caia siempre al hardcode '#f59e0b' (ambar), pintando el
+      // anillo entero de "alerta" en vez de "pendiente neutral" cuando
+      // completadas = 0.
+      const pendingColor = rootStyle.getPropertyValue('--border-main').trim() || '#e5e7eb';
 
       const chartCompleted = completed;
       const chartPending = pending;
       const total = chartCompleted + chartPending;
 
       import('chart.js/auto').then(({ default: Chart }) => {
+        Chart.defaults.font.family = rootStyle.getPropertyValue('--font-body').trim() || "'Open Sans', sans-serif";
         new Chart(ctx, {
           type: 'doughnut',
           data: {
             labels: ['Completadas', 'Pendientes'],
             datasets: [{
               data: [chartCompleted, chartPending],
-              backgroundColor: [brandColor, draftColor],
+              backgroundColor: [brandColor, pendingColor],
               borderWidth: 0,
               hoverOffset: 4
             }]
@@ -530,7 +630,8 @@ const renderDashboardContent = async (content, user, name, role) => {
 
               ctx.restore();
               const fontSize = (height / 110).toFixed(2);
-              ctx.font = "bold " + fontSize + "em sans-serif";
+              const fontFamily = rootStyle.getPropertyValue('--font-body').trim() || "'Open Sans', sans-serif";
+              ctx.font = `bold ${fontSize}em ${fontFamily}`;
               ctx.textBaseline = "middle";
               ctx.fillStyle = rootStyle.getPropertyValue('--text-main').trim() || "#000";
 
@@ -540,7 +641,7 @@ const renderDashboardContent = async (content, user, name, role) => {
 
               ctx.fillText(text, textX, textY);
 
-              ctx.font = "normal " + (fontSize * 0.4).toFixed(2) + "em sans-serif";
+              ctx.font = `normal ${(fontSize * 0.4).toFixed(2)}em ${fontFamily}`;
               ctx.fillStyle = rootStyle.getPropertyValue('--text-muted').trim() || "#666";
               const label = "Enviadas";
               const labelX = Math.round((width - ctx.measureText(label).width) / 2);
