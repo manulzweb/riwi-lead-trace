@@ -110,8 +110,38 @@ def delete_form(form_id: int):
     try:
         return form_service.delete_form(form_id)
     except ApplicationException:
-        # Se re-lanza para que la traduzca el handler global leyendo su
-        # http_status. Este `except` existe solo porque el bloque `try` tiene
-        # otro proposito; si algun dia se anade aqui un `except Exception`,
-        # este DEBE seguir yendo antes o capturaria el dominio como 500.
+        raise
+
+@router.post(
+    "/forms/{form_id}/activate",
+    response_model=FormOut,
+    summary="Activar un formulario vivo",
+    description="Activa este formulario para su rol correspondiente y desactiva los demás. Precondición: periodo cerrado.",
+    responses={
+        200: {"description": "Formulario activado exitosamente"},
+        409: {"description": "No se puede cambiar el formulario activo mientras haya un período abierto"},
+        404: {"description": "Formulario no encontrado"}
+    }
+)
+def activate_form(form_id: int):
+    try:
+        return form_service.activate_form(form_id)
+    except ApplicationException:
+        raise
+
+@router.post(
+    "/forms/{form_id}/deactivate",
+    response_model=FormOut,
+    summary="Desactivar un formulario vivo",
+    description="Desactiva este formulario. Precondición: periodo cerrado.",
+    responses={
+        200: {"description": "Formulario desactivado exitosamente"},
+        409: {"description": "No se puede cambiar el formulario activo mientras haya un período abierto"},
+        404: {"description": "Formulario no encontrado"}
+    }
+)
+def deactivate_form(form_id: int):
+    try:
+        return form_service.deactivate_form(form_id)
+    except ApplicationException:
         raise

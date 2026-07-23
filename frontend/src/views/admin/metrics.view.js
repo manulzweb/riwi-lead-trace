@@ -171,9 +171,9 @@ export const setupMetrics = async () => {
   let currentCohortFilter = "all";
   let currentRealCohortFilter = "all";
   let currentClanFilter = "all";
+  let currentSummaryKpis = null;
   const settings = await settingsService.getSettings();
-  const MIN_EVALUATIONS_FOR_ICP = settings.min_evaluations_for_icp;
-  const DEFAULT_ICP = settings.default_icp;
+  const MIN_EVALUATIONS_FOR_ICP = settings?.required_evaluations || 3;
   
   let currentSearchQuery = "";
   let currentFilteredList = [];
@@ -181,6 +181,27 @@ export const setupMetrics = async () => {
   const itemsPerPage = 6;
   let currentSort = "score_desc";
   const historyCharts = new Map();
+
+  function runCounter(el, target, suffix = '') {
+    if (!el) return;
+    const duration = 1200;
+    const startTime = performance.now();
+    const numTarget = parseFloat(target);
+    if (isNaN(numTarget) || numTarget === 0) {
+      el.textContent = target + suffix;
+      return;
+    }
+    const animate = (currentTime) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easeProgress = 1 - Math.pow(1 - progress, 3);
+      const current = easeProgress * numTarget;
+      el.textContent = (Number.isInteger(numTarget) ? Math.round(current) : current.toFixed(1)) + suffix;
+      if (progress < 1) requestAnimationFrame(animate);
+      else el.textContent = target + suffix;
+    };
+    requestAnimationFrame(animate);
+  }
 
   async function initPeriods() {
     try {
@@ -321,29 +342,6 @@ export const setupMetrics = async () => {
       applyFilters();
     });
   }
-
-  let currentSummaryKpis = null;
-
-  const runCounter = (el, target, suffix = '') => {
-    if (!el) return;
-    const duration = 1200;
-    const startTime = performance.now();
-    const numTarget = parseFloat(target);
-    if (isNaN(numTarget) || numTarget === 0) {
-      el.textContent = target + suffix;
-      return;
-    }
-    const animate = (currentTime) => {
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const easeProgress = 1 - Math.pow(1 - progress, 3);
-      const current = easeProgress * numTarget;
-      el.textContent = (Number.isInteger(numTarget) ? Math.round(current) : current.toFixed(1)) + suffix;
-      if (progress < 1) requestAnimationFrame(animate);
-      else el.textContent = target + suffix;
-    };
-    requestAnimationFrame(animate);
-  };
 
   async function loadMetrics(periodId, roleFilter) {
     try {

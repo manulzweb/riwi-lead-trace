@@ -9,7 +9,7 @@ import { periodService } from "../../services/periods.service.js";
 import { authService } from "../../services/auth.service";
 import { formatDate } from "../../utils/date";
 import { searchBoxComponent, setupSearch } from "../../components/searchBox";
-import { activePeriodBannerComponent } from "../../components/active_period_banner.js";
+
 import { emptyStateComponent } from "../../components/emptyState.js";
 import { modalComponent, setupModal } from "../../components/modal";
 
@@ -22,7 +22,7 @@ export const renderAdminEvaluations = () => `
         <p class="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--brand-bg)]">Admin · Formularios</p>
         <h1 class="mt-1 text-4xl font-black tracking-tight text-[var(--text-main)] font-heading">Gestión de Formularios</h1>
         <p class="mt-4 text-[var(--text-muted)] max-w-2xl text-sm leading-relaxed">
-          Crea, edita y duplica los formularios de evaluación. Los formularios se pueden reutilizar en múltiples ciclos de evaluación.
+          Crea, edita y duplica los formularios de evaluación. Los formularios se pueden reutilizar en múltiples periodos de evaluación.
         </p>
       </div>
       <div class="flex items-center gap-3">
@@ -38,7 +38,7 @@ export const renderAdminEvaluations = () => `
         </button>
       </div>
     </div>
-    <div id="active-period-banner-container"></div>
+    <div id="period-controller-container"></div>
     
     <!-- 1. LIST VIEW -->
     <div id="list-view" class="block transition-all duration-300">
@@ -171,11 +171,11 @@ export const renderAdminEvaluations = () => `
     <!-- Quick-create modal for a new period -->
     ${modalComponent({
       id: "quick-period-modal",
-      title: "Abrir Nuevo Ciclo Rápidamente",
+      title: "Abrir Nuevo Periodo Rápidamente",
       children: `
         <form id="form-quick-period">
           <div class="mb-4">
-            <label for="quick-period-name" class="mb-2 block text-sm font-semibold text-[var(--text-main)]">Nombre del Ciclo</label>
+            <label for="quick-period-name" class="mb-2 block text-sm font-semibold text-[var(--text-main)]">Nombre del Periodo</label>
             <input required id="quick-period-name" type="text" placeholder="Ej. Q3 2026" class="w-full rounded-xl border border-[var(--border-main)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text-main)] transition-all focus:border-[var(--brand-bg)] focus:bg-[var(--bg-panel)] focus:outline-none focus:ring-4 focus:ring-[var(--brand-bg)]/10" />
           </div>
           <div class="mb-4">
@@ -225,53 +225,217 @@ export const setupAdminEvaluations = () => {
   let categoriesData = [];
   let hasActivePeriod = false;
 
-  // The backend rejects form/question writes while a period is active
-  // (question_service._assert_no_active_period). Checked here to warn first.
-  const refreshPeriodGate = async () => {
-    const bannerContainer = document.getElementById("active-period-banner-container");
-    let activePeriod = null;
+  // State variables for Period Management
+  let selectedPeriodId = null;
+  let allPeriods = [];
+
+  const refreshPeriodController = async () => {
+    const container = document.getElementById("period-controller-container");
+    if (!container) return;
 
     try {
-      const periods = await periodService.get();
-      activePeriod = periods.find(p => p.is_active);
-      hasActivePeriod = !!activePeriod;
+      allPeriods = await periodService.get();
     } catch (err) {
+      console.error(err);
+      container.innerHTML = `<div class="text-[var(--danger-text)] text-sm bg-[var(--danger-bg)] p-4 rounded-xl text-center">Error al cargar periodos.</div>`;
+      return;
+    }
+
+    if (allPeriods.length === 0) {
       hasActivePeriod = false;
-    }
-
-    if (bannerContainer) {
-      if (activePeriod) {
-        bannerContainer.innerHTML = activePeriodBannerComponent(activePeriod);
-
-        const closeBtn = document.getElementById("btn-close-period");
-        if (closeBtn) {
-          closeBtn.addEventListener("click", async () => {
-            if (await showConfirm("¿Estás seguro de que deseas cerrar este periodo? Las evaluaciones pendientes ya no se podrán responder.")) {
-              try {
-                await periodService.update(activePeriod.id, { is_active: false });
-                import("../../components/alerts.js").then(({ showToast }) => {
-                  showToast("Periodo cerrado", "success", "Ya puedes gestionar las formularios libremente.");
-                });
-                refreshPeriodGate();
-              } catch (e) {
-                import("../../components/alerts.js").then(({ showToast }) => {
-                  showToast("Error", "error", "No se pudo cerrar el periodo.");
-                });
-                console.error(e);
-              }
-            }
-          });
-        }
-      } else {
-        bannerContainer.innerHTML = "";
+      container.innerHTML = `
+        <div class="text-center py-8 px-6 bg-[var(--bg-panel)] rounded-3xl border border-[var(--border-main)] shadow-sm">
+          <p class="text-[var(--text-muted)] text-sm italic">No hay periodos de evaluación creados.</p>
+          <p class="text-xs text-[var(--text-muted)] mt-1">Usa el botón "Abrir Nuevo Periodo" para comenzar.</p>
+        </div>
+      `;
+      if (btnQuickPeriod) {
+        btnQuickPeriod.disabled = false;
+        btnQuickPeriod.classList.remove("opacity-50", "cursor-not-allowed");
       }
+      return;
     }
+
+    // Default to active period or first one
+    const activePeriod = allPeriods.find(p => p.is_active);
+    hasActivePeriod = !!activePeriod;
 
     if (btnQuickPeriod) {
       btnQuickPeriod.disabled = hasActivePeriod;
       btnQuickPeriod.classList.toggle("opacity-50", hasActivePeriod);
       btnQuickPeriod.classList.toggle("cursor-not-allowed", hasActivePeriod);
       btnQuickPeriod.title = hasActivePeriod ? "Ya hay un periodo activo. Ciérralo primero." : "";
+    }
+
+    if (!selectedPeriodId) {
+      selectedPeriodId = activePeriod ? String(activePeriod.id) : String(allPeriods[0].id);
+    }
+
+    const currentPeriod = allPeriods.find(p => String(p.id) === String(selectedPeriodId)) || allPeriods[0];
+    selectedPeriodId = String(currentPeriod.id);
+
+    // Load live forms
+    let tutorForms = [];
+    let leaderForms = [];
+    try {
+      const forms = await formsService.getForms(null, 'all');
+      const liveForms = forms.filter(f => !f.is_template && !f.archived_at);
+      tutorForms = liveForms.filter(f => f.targetRole === "tutor");
+      leaderForms = liveForms.filter(f => f.targetRole === "team_leader");
+    } catch (err) {
+      console.error(err);
+    }
+
+    const periodOptions = allPeriods.map(p => ({
+      value: String(p.id),
+      label: p.name + (p.is_active ? ' (Activo)' : '')
+    }));
+
+    const dropdownHtml = dropdownComponent('evaluations-period-select', periodOptions, selectedPeriodId);
+
+    const statusBadge = currentPeriod.is_active 
+      ? statusBadgeComponent({ variant: "dot", status: "Activa" }) 
+      : statusBadgeComponent({ variant: "dot", status: "Cerrado" });
+
+    const getFormOptions = (forms, emptyText) => {
+      if (forms.length === 0) return [{ value: "", label: emptyText }];
+      return forms.map(f => ({
+        value: String(f.id),
+        label: `${f.title} ${f.is_active ? '(Activo)' : ''}`
+      }));
+    };
+
+    const tutorOptions = getFormOptions(tutorForms, "No hay formularios de Tutor creados");
+    const activeTutorForm = tutorForms.find(f => f.is_active)?.id || "";
+    const tutorSelectHtml = dropdownComponent('period-tutor-form-select', tutorOptions, String(activeTutorForm));
+
+    const leaderOptions = getFormOptions(leaderForms, "No hay formularios de Team Leader creados");
+    const activeLeaderForm = leaderForms.find(f => f.is_active)?.id || "";
+    const leaderSelectHtml = dropdownComponent('period-leader-form-select', leaderOptions, String(activeLeaderForm));
+
+    container.innerHTML = `
+      <div class="rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm mb-6 flex flex-col gap-6">
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full lg:w-auto">
+            <div class="w-full sm:w-64 z-20">
+              <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider">Periodo Seleccionado</label>
+              ${dropdownHtml}
+            </div>
+            <div class="flex items-center gap-2 mt-4 sm:mt-0">
+              <span class="text-sm font-bold text-[var(--text-muted)]">Estado:</span>
+              <div id="selected-period-status-badge">${statusBadge}</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-6">
+            <div class="flex items-center gap-3">
+              <span class="text-sm font-bold text-[var(--text-main)]">Activar Periodo:</span>
+              <label class="relative inline-flex cursor-pointer items-center">
+                <input type="checkbox" id="selected-period-toggle" class="peer sr-only" ${currentPeriod.is_active ? 'checked' : ''} />
+                <div class="h-6 w-11 rounded-full bg-[var(--border-main)] after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-white after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-checked:bg-[var(--brand-bg)]"></div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div id="period-forms-config-section" class="border-t border-[var(--border-main)] pt-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider">Formularios Asignados al Periodo</h3>
+            ${currentPeriod.is_active ? `
+              <span class="text-xs font-bold text-[var(--warning-text)] bg-[var(--warning-bg)] px-3 py-1 rounded-full">
+                ⚠️ Periodo Activo: Modificaciones Deshabilitadas
+              </span>
+            ` : ''}
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+            <div>
+              <label class="block text-sm font-semibold text-[var(--text-main)] mb-2">Formulario para Tutores</label>
+              ${tutorSelectHtml}
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-[var(--text-main)] mb-2">Formulario para Team Leaders</label>
+              ${leaderSelectHtml}
+            </div>
+          </div>
+          <div class="flex justify-end">
+            <button id="btn-save-period-forms" class="rounded-xl bg-[var(--brand-bg)] px-5 py-2.5 text-sm font-bold text-[var(--brand-text)] hover:bg-[var(--brand-hover)] transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed" ${currentPeriod.is_active ? 'disabled' : ''}>
+              Guardar formularios del periodo
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Setup period dropdown
+    setupDropdown('evaluations-period-select', async (val) => {
+      selectedPeriodId = val;
+      await refreshPeriodController();
+    });
+
+    setupDropdown('period-tutor-form-select');
+    setupDropdown('period-leader-form-select');
+
+    if (currentPeriod.is_active) {
+      const btnTutor = document.getElementById('period-tutor-form-select-btn');
+      const btnLeader = document.getElementById('period-leader-form-select-btn');
+      if (btnTutor) {
+        btnTutor.disabled = true;
+        btnTutor.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+      if (btnLeader) {
+        btnLeader.disabled = true;
+        btnLeader.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+    }
+
+    // Toggle switch listener
+    const toggle = document.getElementById("selected-period-toggle");
+    if (toggle) {
+      toggle.addEventListener("change", async (e) => {
+        const newStatus = e.target.checked;
+        const warningMsg = newStatus 
+          ? "¿Estás seguro de que deseas activar este periodo? Esto desactivará cualquier otro periodo de evaluación que esté actualmente activo."
+          : "¿Estás seguro de que deseas desactivar este periodo? Las evaluaciones pendientes de los coders se pausarán/bloquearán.";
+
+        if (!(await showConfirm("Confirmación", warningMsg, "warning"))) {
+          e.target.checked = !newStatus;
+          return;
+        }
+
+        try {
+          await periodService.update(parseInt(selectedPeriodId), { is_active: newStatus });
+          showToast(newStatus ? "Periodo Abierto Exitosamente" : "Periodo Cerrado", "success");
+          await refreshPeriodController();
+        } catch (err) {
+          e.target.checked = !newStatus;
+          showToast("Error", "error", err.detail || "Error al cambiar estado");
+        }
+      });
+    }
+
+    // Save button listener
+    const btnSaveForms = document.getElementById("btn-save-period-forms");
+    if (btnSaveForms) {
+      btnSaveForms.addEventListener("click", async () => {
+        const tId = document.getElementById("period-tutor-form-select")?.value;
+        const lId = document.getElementById("period-leader-form-select")?.value;
+
+        try {
+          btnSaveForms.disabled = true;
+          btnSaveForms.textContent = "Guardando...";
+
+          if (tId) await formsService.activateForm(tId);
+          if (lId) await formsService.activateForm(lId);
+
+          showToast("Formularios asignados con éxito", "success");
+          await refreshPeriodController();
+          await renderFormsList(); // reload forms list to update statuses
+        } catch (err) {
+          showToast("Error", "error", err.detail || "Error al asignar formularios");
+        } finally {
+          btnSaveForms.disabled = false;
+          btnSaveForms.textContent = "Guardar formularios del periodo";
+        }
+      });
     }
   };
 
@@ -302,7 +466,7 @@ export const setupAdminEvaluations = () => {
         await periodService.create(payload);
         showToast("¡Periodo abierto con éxito!", "success");
         closeQuickModal();
-        await refreshPeriodGate(); // refresh the view state
+        await refreshPeriodController(); // refresh the view state
       } catch (err) {
         showToast("Error", "error", err.message || "Error al crear el periodo");
       } finally {
@@ -319,7 +483,7 @@ export const setupAdminEvaluations = () => {
     setupDropdown('form-role');
     setupDropdown('evaluator-role');
     updateWeightCounter();
-    await refreshPeriodGate();
+    await refreshPeriodController();
 
     if (categoriesData.length === 0) {
       try {
@@ -749,19 +913,22 @@ export const setupAdminEvaluations = () => {
             
             <div class="mt-6 pt-4 border-t border-[var(--border-main)] flex items-center justify-between">
               <div class="flex items-center gap-3">
+                ${!t.is_template ? `
+                <label class="relative inline-flex cursor-pointer items-center mr-1" title="${t.is_active ? 'Desactivar formulario' : 'Activar formulario'}">
+                  <input type="checkbox" class="peer sr-only btn-toggle-form" data-id="${t.id}" ${t.is_active ? 'checked' : ''} />
+                  <div class="h-5 w-9 rounded-full bg-[var(--border-main)] after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:border after:border-white after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-2 peer-checked:bg-[var(--brand-bg)] pointer-events-none"></div>
+                </label>
+                ` : ''}
                 ${statusBadgeComponent({ status: statusText, variant: 'dot' })}
                 ${dateStr ? `<span class="text-xs font-medium text-[var(--text-muted)]">${dateStr}</span>` : ''}
               </div>
               <div class="flex items-center">
                 ${t.is_template ? `
-                <button class="btn-use-template text-[var(--brand-bg)] hover:text-[var(--brand-hover)] transition-colors p-2 font-bold text-xs flex items-center gap-1" data-id="${t.id}" title="Usar esta plantilla como formulario activo">
+                <button class="btn-use-template text-[var(--brand-bg)] hover:text-[var(--brand-hover)] transition-colors p-2 font-bold text-xs flex items-center gap-1" data-id="${t.id}" title="Usar esta plantilla como formulario vivo">
                   <svg class="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                   Usar Plantilla
                 </button>
                 ` : ''}
-                <button class="btn-clone-form text-[var(--text-muted)] hover:text-[var(--brand-bg)] transition-colors p-2" data-id="${t.id}" title="Duplicar Formulario">
-                  <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                </button>
                 <button class="btn-delete-form text-[var(--text-muted)] hover:text-[var(--danger-text)] transition-colors p-2 -mr-2" data-id="${t.id}" title="Eliminar">
                   <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                 </button>
@@ -776,8 +943,8 @@ export const setupAdminEvaluations = () => {
     // Edit events
     document.querySelectorAll(".btn-edit-form").forEach(card => {
       card.addEventListener("click", async (e) => {
-        // Clicking delete or clone must not open edit mode
-        if (e.target.closest('.btn-delete-form') || e.target.closest('.btn-clone-form')) return;
+        // Clicking delete must not open edit mode
+        if (e.target.closest('.btn-delete-form')) return;
 
         const id = card.dataset.id;
         try {
@@ -819,12 +986,11 @@ export const setupAdminEvaluations = () => {
       });
     });
 
-    // Clone and use-template events
-    document.querySelectorAll(".btn-clone-form, .btn-use-template").forEach(btn => {
+    // Use-template events
+    document.querySelectorAll(".btn-use-template").forEach(btn => {
       btn.addEventListener("click", async (e) => {
         e.stopPropagation(); // do not open edit mode
         const id = btn.dataset.id;
-        const isUsingTemplate = btn.classList.contains("btn-use-template");
         try {
           const forms = await formsService.getForms();
           const form = forms.find(t => t.id === id || t.id === parseInt(id));
@@ -832,7 +998,7 @@ export const setupAdminEvaluations = () => {
           if (form) {
             editId = null; // important: this makes it a new form
             originalQuestions = [];
-            inputTitle.value = isUsingTemplate ? form.title : ("Copia de " + form.title);
+            inputTitle.value = form.title;
             inputDesc.value = form.description || "";
 
             const evaluatorRoleEl = document.getElementById("evaluator-role");
@@ -841,10 +1007,10 @@ export const setupAdminEvaluations = () => {
             // the admin must pick one, validated on save.
             if (selectRole) { selectRole.value = form.targetRole || ""; }
             const isTemplateCheckbox = document.getElementById("is-template-checkbox");
-            // Using a template yields a LIVE form; cloning keeps the original kind.
-            if (isTemplateCheckbox) { isTemplateCheckbox.checked = isUsingTemplate ? false : !!form.is_template; }
+            // Using a template yields a LIVE form
+            if (isTemplateCheckbox) { isTemplateCheckbox.checked = false; }
 
-            // Same mapping as edit mode, but fresh IDs so the cloned questions
+            // Same mapping as edit mode, but fresh IDs so the new questions
             // are created as new ones.
             const editData = await formsService.getFormForEdit(form);
             questions = editData.questions.map(q => ({
@@ -858,17 +1024,15 @@ export const setupAdminEvaluations = () => {
             renderQuestions();
             showBuilder();
             showToast(
-              isUsingTemplate ? "Plantilla lista para activar" : "Formulario duplicado",
+              "Plantilla lista para configurar",
               "success",
-              isUsingTemplate
-                ? (form.targetRole
-                    ? "Guarda el formulario para activarlo en las evaluaciones."
-                    : "Elige el rol a evaluar antes de guardar: esta plantilla es genérica.")
-                : "Ahora estás creando un nuevo formulario basado en el anterior."
+              form.targetRole
+                ? "Guarda el formulario para crearlo como un nuevo formulario vivo."
+                : "Elige el rol a evaluar antes de guardar: esta plantilla es genérica."
             );
           }
         } catch (error) {
-          showToast("Error", "error", "Error al procesar el formulario.");
+          showToast("Error", "error", "Error al instanciar la plantilla.");
         }
       });
     });
@@ -914,6 +1078,54 @@ export const setupAdminEvaluations = () => {
             } else {
               showToast("Error", "error", "No se pudo eliminar el formulario.");
             }
+          }
+        }
+      });
+    });
+
+    // Toggle events
+    document.querySelectorAll(".btn-toggle-form").forEach(toggle => {
+      // Prevent opening the form editor when clicking the toggle label
+      const label = toggle.closest("label");
+      if (label) {
+        label.addEventListener("click", e => e.stopPropagation());
+      }
+      
+      toggle.addEventListener("change", async (e) => {
+        e.stopPropagation();
+        const id = toggle.dataset.id;
+        const newStatus = toggle.checked;
+
+        if (!newStatus) {
+          // Desactivar
+          const confirmed = await showConfirm(
+            "Cuidado: vas a desactivar un formulario y los coders ya no van a poder hacer evaluaciones.",
+            "¿Estás seguro de que quieres deshabilitar este formulario? Los coders ya no van a poder hacer más evaluaciones en este periodo.",
+            "warning"
+          );
+          if (!confirmed) {
+            toggle.checked = true; // revert
+            return;
+          }
+          try {
+            await formsService.deactivateForm(id);
+            showToast("Formulario desactivado exitosamente", "success");
+            await renderFormsList();
+            await refreshPeriodController();
+          } catch (err) {
+            toggle.checked = true;
+            showToast("Error", "error", "No se pudo desactivar el formulario");
+          }
+        } else {
+          // Activar
+          try {
+            await formsService.activateForm(id);
+            showToast("Formulario activado exitosamente", "success");
+            await renderFormsList();
+            await refreshPeriodController();
+          } catch (err) {
+            toggle.checked = false;
+            showToast("Error", "error", "No se pudo activar el formulario");
           }
         }
       });
@@ -978,7 +1190,7 @@ export const setupAdminEvaluations = () => {
   });
 
   // Start on the list view
-  refreshPeriodGate();
+  refreshPeriodController();
 
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get('action') === 'create') {

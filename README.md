@@ -60,6 +60,15 @@ npm install
 npm run dev                                         # http://localhost:5173
 ```
 
+### Credenciales de prueba
+
+| Rol | Email | Contraseña |
+|---|---|---|
+| Admin | `admin@riwi.io` | `Riwi2026!` |
+| Team Leader | `jcombita@riwi.io` | `Riwi2026!` |
+| Tutor | `avilla@riwi.io` | `Riwi2026!` |
+| Coder | `mvasquez@riwi.io` | `Riwi2026!` |
+
 ## Despliegue
 
 - **Frontend:** GitHub Pages o Vercel (`npm run build` genera el estatico).
@@ -121,5 +130,3 @@ Punto de partida: [`docs/00-documento-tecnico.md`](./docs/00-documento-tecnico.m
 GitFlow + Conventional Commits. Cada historia en su rama `feature/<ID>-<slug>` desde `develop`.
 
 ---
-
-Usamos IA como apoyo para parte del codigo y de esta documentacion. Todo paso por revision del equipo antes de integrarse.

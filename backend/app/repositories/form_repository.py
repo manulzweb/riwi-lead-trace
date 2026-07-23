@@ -80,7 +80,7 @@ class FormRepository(BaseRepository):
     def insert_form(self, conn: Connection, form_data: Dict[str, Any]) -> int:
         query = text("""
             INSERT INTO forms (title, description, target_role_id, is_active, is_template)
-            VALUES (:title, :description, :target_role_id, TRUE, :is_template)
+            VALUES (:title, :description, :target_role_id, FALSE, :is_template)
         """)
         return self.execute(conn, query, form_data).lastrowid
 

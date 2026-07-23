@@ -79,7 +79,7 @@ export const ROUTES = {
     allowedRoles: ["admin"],
   },
   "/admin/periods": {
-    title: "Gestión de Ciclos | LeadTrace",
+    title: "Gestión de Periodos | LeadTrace",
     renderView: renderAdminPeriods,
     initSetup: setupAdminPeriods,
     requireAuth: true,

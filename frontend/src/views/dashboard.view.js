@@ -69,23 +69,80 @@ const renderDoughnutContainer = (percentage) => {
   `;
 };
 
+const ROLE_FILTER_OPTIONS = [
+  { value: "all", label: "Todos los roles" },
+  { value: "team_leader", label: "Team Leaders" },
+  { value: "tutor", label: "Tutores" },
+];
+
+const segmentValues = (raw) =>
+  String(raw ?? "").split(",").map((v) => v.trim()).filter(Boolean);
+
+const matchesSegment = (raw, selected) =>
+  selected === "all" || segmentValues(raw).includes(selected);
+
+export const filterEvaluatees = (list, { role, cohort, clan }) =>
+  list.filter(
+    (e) =>
+      (role === "all" || e.role === role) &&
+      matchesSegment(e.cohort_name, cohort) &&
+      matchesSegment(e.clan_name, clan)
+  );
+
+export const computeAdminKpis = (masterList, filteredList, baseKpis, isFiltered) => {
+  if (!isFiltered) return { ...baseKpis, isProrated: false };
+
+  const totalEvaluations = filteredList.reduce((acc, e) => acc + (e.n_evals || 0), 0);
+  const scores = filteredList
+    .map((e) => e.average_score)
+    .filter((s) => s !== null && s !== undefined);
+  const averageScore = scores.length
+    ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+    : 0;
+
+  const masterTotal = masterList.reduce((acc, e) => acc + (e.n_evals || 0), 0);
+  const participationRate = masterTotal > 0
+    ? Math.min(100, Math.round((totalEvaluations / masterTotal) * (baseKpis.participation_rate || 0)))
+    : 0;
+
+  return {
+    total_evaluations: totalEvaluations,
+    average_score: averageScore,
+    participation_rate: participationRate,
+    isProrated: true,
+  };
+};
+
+const renderCardsSkeleton = () => `
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    ${Array(4).fill(`
+      <div class="h-32 rounded-[2rem] bg-[var(--bg-panel)] p-6 shadow-sm border border-[var(--border-main)] flex flex-col justify-between">
+        <div class="h-4 w-24 skeleton-shimmer rounded-sm"></div>
+        <div class="h-8 w-16 skeleton-shimmer rounded-sm"></div>
+      </div>
+    `).join("")}
+  </div>
+  <div class="h-64 rounded-[2rem] bg-[var(--bg-panel)] p-6 shadow-sm border border-[var(--border-main)] flex flex-col mt-6">
+    <div class="h-6 w-48 skeleton-shimmer rounded-sm mb-6"></div>
+    <div class="flex-1 skeleton-shimmer rounded-xl"></div>
+  </div>
+`;
+
+const renderAdminCardsSkeleton = () => `<div class="col-span-full">${renderCardsSkeleton()}</div>`;
+
+const filterField = (id, label, options, selected) => `
+  <div class="w-full sm:w-44">
+    <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="${id}-btn">${label}</label>
+    ${dropdownComponent(id, options, selected)}
+  </div>
+`;
+
 export const renderDashboard = () => {
   return `
     ${navBarComponent()}
     <main class="min-h-screen bg-[var(--bg-base)] p-6 transition-all duration-300 ease-in-out">
       <div id="dashboard-content" class="max-w-7xl mx-auto space-y-6" aria-live="polite" aria-busy="true">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          ${Array(4).fill(`
-            <div class="h-32 rounded-[2rem] bg-[var(--bg-panel)] p-6 shadow-sm border border-[var(--border-main)] flex flex-col justify-between">
-              <div class="h-4 w-24 skeleton-shimmer rounded-sm"></div>
-              <div class="h-8 w-16 skeleton-shimmer rounded-sm"></div>
-            </div>
-          `).join("")}
-        </div>
-        <div class="h-64 rounded-[2rem] bg-[var(--bg-panel)] p-6 shadow-sm border border-[var(--border-main)] flex flex-col">
-          <div class="h-6 w-48 skeleton-shimmer rounded-sm mb-6"></div>
-          <div class="flex-1 skeleton-shimmer rounded-xl"></div>
-        </div>
+        ${renderCardsSkeleton()}
       </div>
     </main>
   `;
@@ -95,7 +152,11 @@ let currentPeriods = [];
 let masterCohorts = [];
 let masterClans = [];
 let selectedPeriodId = null;
-let dashboardEvaluatees = [];
+let selectedRole = "all";
+let selectedCohort = "all";
+let selectedClan = "all";
+let adminSummary = null;
+let adminSummaryPeriodId = null;
 
 export const setupDashboard = async () => {
   const content = document.getElementById("dashboard-content");
@@ -107,6 +168,11 @@ export const setupDashboard = async () => {
 
   const load = async () => {
     content.setAttribute("aria-busy", "true");
+    selectedRole = "all";
+    selectedCohort = "all";
+    selectedClan = "all";
+    adminSummary = null;
+    adminSummaryPeriodId = null;
     try {
       const results = await Promise.all([
         periodService.get(),
@@ -143,8 +209,6 @@ export const setupDashboard = async () => {
 };
 
 const renderDashboardContent = async (content, user, name, role) => {
-  dashboardEvaluatees = [];
-
   let html = `
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
       <div>
@@ -152,25 +216,25 @@ const renderDashboardContent = async (content, user, name, role) => {
         <p class="text-[var(--text-muted)] mt-1">Aquí tienes un resumen de tu actividad en LeadTrace.</p>
       </div>
       ${role === 'admin' && currentPeriods.length > 0 ? `
-        <div class="flex flex-col md:flex-row gap-4 z-20 relative w-full md:w-auto flex-wrap justify-end">
-          <div class="w-full sm:w-48">
-            <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="dashboard-period-filter-btn">Periodo</label>
-            ${dropdownComponent('dashboard-period-filter', [
-    { value: '0', label: 'Todos' },
-    ...currentPeriods.map(p => ({
-      value: String(p.id),
-      label: p.name + (p.is_active ? ' (Activo)' : '')
-    }))
-  ], selectedPeriodId)}
-          </div>
-          <div class="w-full sm:w-48" id="dashboard-cohort-filter-container">
-            <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="dashboard-cohort-filter-btn">Cohorte</label>
-            ${dropdownComponent('dashboard-cohort-filter', [{ value: 'all', label: 'Todas' }], 'all')}
-          </div>
-          <div class="w-full sm:w-48" id="clan-filter-container">
-            <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="dashboard-clan-filter-btn">Clan</label>
-            ${dropdownComponent('dashboard-clan-filter', [{ value: 'all', label: 'Todos' }], 'all')}
-          </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-row gap-4 z-20 relative w-full lg:w-auto flex-wrap justify-end">
+          ${filterField('dashboard-period-filter', 'Periodo', [
+            { value: '0', label: 'Todos' },
+            ...currentPeriods.map(p => ({
+              value: String(p.id),
+              label: p.name + (p.is_active ? ' (Activo)' : '')
+            }))
+          ], selectedPeriodId)}
+          ${filterField('dashboard-role-filter', 'Rol', ROLE_FILTER_OPTIONS, selectedRole)}
+          ${filterField('dashboard-cohort-filter', 'Cohorte', [
+            { value: 'all', label: 'Todas' },
+            ...masterCohorts.map(c => ({ value: c.name, label: c.name }))
+          ], selectedCohort)}
+          ${filterField('dashboard-clan-filter', 'Clan', [
+            { value: 'all', label: 'Todos' },
+            ...masterClans
+              .filter(c => selectedCohort === 'all' || c.cohort_name === selectedCohort)
+              .map(c => ({ value: c.name, label: c.name }))
+          ], selectedClan)}
         </div>
       ` : ''}
       ${role !== 'admin' ? `
@@ -185,8 +249,29 @@ const renderDashboardContent = async (content, user, name, role) => {
   let currentKpis = null;
 
   if (role === "admin") {
-    const summary = selectedPeriodId ? await metricsService.getSummary(selectedPeriodId) : { kpis: { total_evaluations: 0, average_score: 0, participation_rate: 0 }, evaluatees: [] };
-    const kpis = summary.kpis || { total_evaluations: 0, average_score: 0, participation_rate: 0 };
+    if (!adminSummary || String(adminSummaryPeriodId) !== String(selectedPeriodId)) {
+      adminSummary = selectedPeriodId
+        ? await metricsService.getSummary(selectedPeriodId)
+        : { kpis: { total_evaluations: 0, average_score: 0, participation_rate: 0 }, evaluatees: [] };
+      adminSummaryPeriodId = selectedPeriodId;
+    }
+    const summary = adminSummary;
+    const baseKpis = summary.kpis || { total_evaluations: 0, average_score: 0, participation_rate: 0 };
+
+    const activeFilters = { role: selectedRole, cohort: selectedCohort, clan: selectedClan };
+    const isFiltered = selectedRole !== "all" || selectedCohort !== "all" || selectedClan !== "all";
+
+    const activeFilterLabels = [];
+    if (selectedRole !== "all") {
+      activeFilterLabels.push(ROLE_FILTER_OPTIONS.find(o => o.value === selectedRole)?.label ?? selectedRole);
+    }
+    if (selectedCohort !== "all") activeFilterLabels.push(selectedCohort);
+    if (selectedClan !== "all") activeFilterLabels.push(selectedClan);
+
+    const allEvaluatees = summary.evaluatees || [];
+    const filteredEvaluatees = filterEvaluatees(allEvaluatees, activeFilters);
+
+    const kpis = computeAdminKpis(allEvaluatees, filteredEvaluatees, baseKpis, isFiltered);
     currentKpis = kpis;
 
     let alertMsg = "Ninguna por el momento";
@@ -212,8 +297,15 @@ const renderDashboardContent = async (content, user, name, role) => {
       icon: `<svg aria-hidden="true" focusable="false" class="w-6 h-6 ${alertIconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
       description: alertMsg
     })}
-      ${StatsCard({ title: "ICP Global Promedio", value: `<span class="animate-number" data-value="${kpis.average_score}">${kpis.average_score}</span><span class="text-2xl text-[var(--text-muted)] ml-1">/100</span>`, icon: icons.star, description: "Desempeño de la plataforma" })}
-      
+      ${StatsCard({
+      title: isFiltered ? "ICP Promedio del segmento" : "ICP Global Promedio",
+      value: `<span class="animate-number" data-value="${kpis.average_score}">${kpis.average_score}</span><span class="text-2xl text-[var(--text-muted)] ml-1">/100</span>`,
+      icon: icons.star,
+      description: isFiltered
+        ? `Promedio de ${filteredEvaluatees.filter(e => e.average_score !== null).length} evaluado(s) del filtro`
+        : "Desempeño de la plataforma"
+    })}
+
       <div class="col-span-1 md:col-span-2 lg:col-span-1">
         ${Card({
       className: "h-full flex flex-col p-6",
@@ -228,6 +320,11 @@ const renderDashboardContent = async (content, user, name, role) => {
       <div class="col-span-1 md:col-span-2 lg:col-span-3 mt-4">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
           <h2 class="text-xl font-bold text-[var(--text-main)]">Top Rendimiento (ICP)</h2>
+          ${isFiltered ? `
+            <span class="text-xs font-bold text-[var(--brand-bg)] bg-[var(--bg-panel)] border border-[var(--border-main)] px-3 py-1.5 rounded-full">
+              ${escapeHtml(activeFilterLabels.join(" · "))}
+            </span>
+          ` : ''}
         </div>
         <div class="flex flex-col md:flex-row gap-6" id="dashboard-top-tables">
         </div>
@@ -273,29 +370,11 @@ const renderDashboardContent = async (content, user, name, role) => {
       }).catch(e => console.error("Chart load error:", e));
     }
 
-    const validEvaluatees = summary.evaluatees?.filter(e => e.average_score !== null) || [];
-    const clans = [...new Set(validEvaluatees.map(e => e.clan_name).filter(Boolean))].sort();
+    const rankable = filteredEvaluatees.filter(e => e.average_score !== null);
+    const topTutors = rankable.filter(e => e.role === "tutor").sort((a, b) => b.average_score - a.average_score).slice(0, 3);
+    const topLeaders = rankable.filter(e => e.role === "team_leader").sort((a, b) => b.average_score - a.average_score).slice(0, 3);
 
-    dashboardEvaluatees = validEvaluatees;
-
-    const uniqueCohorts = [...new Set(validEvaluatees.map(e => e.cohort_name).filter(Boolean))].sort();
-    const cohortContainer = document.getElementById('dashboard-cohort-filter-container');
-    const clanContainer = document.getElementById('clan-filter-container');
-
-    const updateDashboardTables = () => {
-      const clanSelector = document.getElementById('dashboard-clan-filter');
-      const currentClan = clanSelector ? clanSelector.dataset.value || 'all' : 'all';
-      const cohortSelector = document.getElementById('dashboard-cohort-filter');
-      const currentCohort = cohortSelector ? cohortSelector.dataset.value || 'all' : 'all';
-
-      let filtered = dashboardEvaluatees;
-      if (currentClan !== 'all') filtered = filtered.filter(e => e.clan_name === currentClan);
-      if (currentCohort !== 'all') filtered = filtered.filter(e => e.cohort_name === currentCohort);
-
-      const topTutors = filtered.filter(e => e.role === "tutor").sort((a, b) => b.average_score - a.average_score).slice(0, 3);
-      const topLeaders = filtered.filter(e => e.role === "team_leader").sort((a, b) => b.average_score - a.average_score).slice(0, 3);
-
-      const buildTable = (title, data) => tableComponent({
+    const buildTable = (title, data) => tableComponent({
         title,
         columns: [
           { label: "#", align: "center", width: "16" },
@@ -333,76 +412,59 @@ const renderDashboardContent = async (content, user, name, role) => {
           `;
         }
       });
-      document.getElementById('dashboard-top-tables').innerHTML = buildTable("Top Team Leaders", topLeaders) + buildTable("Top Tutores", topTutors);
-    };
 
-    const updateClanDropdown = (selectedCohort) => {
-      let filteredClans = masterClans;
-      if (selectedCohort && selectedCohort !== 'all') {
-        filteredClans = filteredClans.filter(c => c.cohort_name === selectedCohort);
+    const tables = [];
+    if (selectedRole !== "tutor") tables.push(buildTable("Top Team Leaders", topLeaders));
+    if (selectedRole !== "team_leader") tables.push(buildTable("Top Tutores", topTutors));
+    document.getElementById('dashboard-top-tables').innerHTML = tables.join("");
+
+    const reloadAdmin = async () => {
+      const dashboardCards = document.getElementById("dashboard-cards");
+      if (dashboardCards) dashboardCards.innerHTML = renderAdminCardsSkeleton();
+      try {
+        await renderDashboardContent(content, user, name, role);
+      } catch (err) {
+        console.error(err);
+        adminSummary = null;
+        adminSummaryPeriodId = null;
+        if (dashboardCards) {
+          dashboardCards.innerHTML = `
+            <div class="col-span-full rounded-3xl border border-[var(--danger-border)] bg-[var(--danger-bg)] p-6 text-center">
+              <p class="text-sm font-semibold text-[var(--danger-text)]">No se pudieron actualizar los datos con este filtro.</p>
+              <button type="button" id="dashboard-filter-retry"
+                class="mt-4 rounded-2xl bg-[var(--brand-bg)] px-5 py-2.5 text-sm font-bold text-[var(--brand-text)] transition hover:bg-[var(--brand-hover)]">
+                Reintentar
+              </button>
+            </div>
+          `;
+          document.getElementById("dashboard-filter-retry")
+            ?.addEventListener("click", reloadAdmin);
+        }
       }
-      const opts = [{ value: 'all', label: 'Todos' }, ...filteredClans.map(c => ({ value: c.name, label: c.name }))];
-      clanContainer.innerHTML = `
-        <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="dashboard-clan-filter-btn">Clan</label>
-        ${dropdownComponent('dashboard-clan-filter', opts, 'all')}
-      `;
-      setupDropdown('dashboard-clan-filter', updateDashboardTables);
     };
-
-    if (cohortContainer) {
-      const opts = [{ value: 'all', label: 'Todas' }, ...masterCohorts.map(c => ({ value: c.name, label: c.name }))];
-      cohortContainer.innerHTML = `
-        <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="dashboard-cohort-filter-btn">Cohorte</label>
-        ${dropdownComponent('dashboard-cohort-filter', opts, 'all')}
-      `;
-      setupDropdown('dashboard-cohort-filter', (val) => {
-        updateClanDropdown(val);
-        updateDashboardTables();
-      });
-    }
-
-    if (clanContainer) {
-      updateClanDropdown('all');
-    }
-
-    setupDropdown('dashboard-clan-filter', updateDashboardTables);
-    setupDropdown('dashboard-cohort-filter', updateDashboardTables);
-
-    updateDashboardTables();
 
     if (currentPeriods.length > 0) {
       setupDropdown('dashboard-period-filter', async (val) => {
         selectedPeriodId = val;
-
-        const periodBtn = document.getElementById("dashboard-period-filter-btn");
-        if (periodBtn) {
-            periodBtn.disabled = true;
-            periodBtn.innerHTML = '<span class="flex items-center gap-2"><svg class="animate-spin h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Cargando...</span>';
-        }
-        
-        const dashboardCards = document.getElementById("dashboard-cards");
-        if (dashboardCards) {
-          dashboardCards.innerHTML = `
-            <div class="col-span-full">
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                ${Array(4).fill(`
-                  <div class="h-32 rounded-[2rem] bg-[var(--bg-panel)] p-6 shadow-sm border border-[var(--border-main)] flex flex-col justify-between">
-                    <div class="h-4 w-24 skeleton-shimmer rounded-sm"></div>
-                    <div class="h-8 w-16 skeleton-shimmer rounded-sm"></div>
-                  </div>
-                `).join("")}
-              </div>
-              <div class="h-64 rounded-[2rem] bg-[var(--bg-panel)] p-6 shadow-sm border border-[var(--border-main)] flex flex-col mt-6">
-                <div class="h-6 w-48 skeleton-shimmer rounded-sm mb-6"></div>
-                <div class="flex-1 skeleton-shimmer rounded-xl"></div>
-              </div>
-            </div>
-          `;
-        }
-        
-        await renderDashboardContent(content, user, name, role);
+        await reloadAdmin();
       });
     }
+
+    setupDropdown('dashboard-role-filter', async (val) => {
+      selectedRole = val;
+      await reloadAdmin();
+    });
+
+    setupDropdown('dashboard-cohort-filter', async (val) => {
+      selectedCohort = val;
+      selectedClan = "all";
+      await reloadAdmin();
+    });
+
+    setupDropdown('dashboard-clan-filter', async (val) => {
+      selectedClan = val;
+      await reloadAdmin();
+    });
   } else {
     let tlHistory = [];
     let tlReceivedEvals = [];
@@ -726,13 +788,12 @@ const renderDashboardContent = async (content, user, name, role) => {
     
     // Filter out self-evaluation from evaluables
     const evaluables = allEvaluables ? allEvaluables.filter(u => u.id !== user.id) : [];
-
-    const completedEvals = myEvals.filter(e => !isPendingParticipation(e));
+    const activePeriod = currentPeriods.find(p => p.is_active);
+    const completedEvals = myEvals.filter(e => !isPendingParticipation(e) && (activePeriod ? String(e.period_id) === String(activePeriod.id) : true));
     const completed = completedEvals.length;
     const totalEvaluables = evaluables.length;
     const pending = Math.max(0, totalEvaluables - completed);
     
-    // Which roles are still pending, reusing evaluables to avoid two more requests.
     const evaluatedIds = completedEvals.map(e => String(e.evaluatee_id));
     const pendingUsers = evaluables.filter(u => !evaluatedIds.includes(String(u.id)));
     

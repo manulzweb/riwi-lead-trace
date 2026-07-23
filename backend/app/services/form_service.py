@@ -93,8 +93,8 @@ class FormService:
             # deactivate_forms_for_role retira el que los coders puedan estar
             # respondiendo ahora. Por eso exige periodo cerrado (regla 6).
             # Una plantilla es inerte, asi que se puede crear en cualquier momento.
-            if not payload.is_template:
-                self._assert_no_active_period(conn)
+            # Los formularios vivos ahora se crean como inactivos por defecto,
+            # por lo que no compiten con el periodo actual y se pueden crear libremente.
 
             # Una plantilla generica no tiene rol (target_role_id NULL).
             role_id = None
@@ -102,9 +102,6 @@ class FormService:
                 role_id = self.repo.get_role_id_by_name(conn, payload.target_role)
                 if not role_id:
                     raise InvalidRoleException(f"Rol '{payload.target_role}' no existe en BD.")
-
-            if not payload.is_template:
-                self.repo.deactivate_forms_for_role(conn, role_id)
 
             form_data = {
                 "title": payload.title,
@@ -142,7 +139,7 @@ class FormService:
             if not existing:
                 raise FormNotFoundException("Plantilla no encontrada.")
 
-            if not existing["is_template"]:
+            if not existing["is_template"] and existing["is_active"]:
                 self._assert_no_active_period(conn)
 
             values = {}
@@ -203,5 +200,34 @@ class FormService:
 
             self.repo.archive_form(conn, form_id)
             return {"action": "archived", "evaluations_count": usage}
+
+    def activate_form(self, form_id: int) -> Dict[str, Any]:
+        with engine.begin() as conn:
+            existing = self.repo.get_form_by_id(conn, form_id)
+            if not existing:
+                raise FormNotFoundException("Formulario no encontrado.")
+            if existing["is_template"]:
+                raise InvalidRoleException("No se puede activar una plantilla inerte. Debe ser un formulario vivo.")
+            
+            self._assert_no_active_period(conn)
+            
+            self.repo.deactivate_forms_for_role(conn, existing["target_role_id"])
+            self.repo.update_form(conn, form_id, {"is_active": True})
+            
+            updated = self.repo.get_form_by_id(conn, form_id)
+            return self._attach_questions(conn, [updated])[0]
+
+    def deactivate_form(self, form_id: int) -> Dict[str, Any]:
+        with engine.begin() as conn:
+            existing = self.repo.get_form_by_id(conn, form_id)
+            if not existing:
+                raise FormNotFoundException("Formulario no encontrado.")
+            
+            self._assert_no_active_period(conn)
+            
+            self.repo.deactivate_form(conn, form_id)
+            
+            updated = self.repo.get_form_by_id(conn, form_id)
+            return self._attach_questions(conn, [updated])[0]
 
 form_service = FormService()

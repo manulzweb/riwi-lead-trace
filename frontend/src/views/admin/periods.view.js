@@ -2,6 +2,7 @@ import { navBarComponent } from "../../components/navbar";
 import { statusBadgeComponent } from "../../components/statusBadge.js";
 import { showToast, showConfirm } from "../../components/alerts";
 import { periodService } from "../../services/periods.service.js";
+import { formsService } from "../../services/forms.service.js";
 import { escapeHtml } from "../../utils/validators";
 import { modalComponent, setupModal } from "../../components/modal";
 import { authService } from "../../services/auth.service";
@@ -18,7 +19,7 @@ const INPUT_CLASSES = "w-full rounded-xl border border-[var(--border-main)] bg-[
 // listener is wired up in loadPeriods().
 const renderPeriodsError = () => `
   <div class="text-center py-8">
-    <p class="text-[var(--danger-text)] text-sm">No se pudieron cargar los ciclos.</p>
+    <p class="text-[var(--danger-text)] text-sm">No se pudieron cargar los periodos.</p>
     <button id="btn-retry-periods" class="mt-4 rounded-xl bg-[var(--brand-bg)] px-5 py-2.5 text-sm font-bold text-[var(--brand-text)] transition-all hover:bg-[var(--brand-hover)] cursor-pointer">Reintentar</button>
   </div>
 `;
@@ -31,32 +32,40 @@ export const renderAdminPeriods = () => `
     <section class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
       <div>
         <p class="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--brand-bg)]">Admin</p>
-        <h1 class="mt-1 text-4xl font-black font-heading tracking-tight text-[var(--text-main)]">Ciclos de Evaluación</h1>
+        <h1 class="mt-1 text-4xl font-black font-heading tracking-tight text-[var(--text-main)]">Periodos de Evaluación</h1>
         <p class="mt-4 text-[var(--text-muted)]">Abre o cierra ventanas de tiempo para que el equipo comience a evaluar.</p>
       </div>
       <button id="btn-create-period" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--brand-bg)] px-6 py-3 text-sm font-bold text-[var(--brand-text)] transition-all duration-300 ease-in-out hover:bg-[var(--brand-hover)] hover:shadow-md hover:-translate-y-0.5 cursor-pointer">
         <svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-        Nuevo Ciclo
+        Nuevo Periodo
       </button>
     </section>
 
     <!-- New period modal -->
     ${modalComponent({
       id: "period-modal",
-      title: "Abrir Nuevo Ciclo",
+      title: "Abrir Nuevo Periodo",
       children: `
         <form id="form-period">
           <div class="mb-4">
-            <label for="period-name" class="mb-2 block text-sm font-semibold text-[var(--text-main)]">Nombre del Ciclo</label>
+            <label for="period-name" class="mb-2 block text-sm font-semibold text-[var(--text-main)]">Nombre del Periodo</label>
             <input required id="period-name" type="text" placeholder="Ej. Q3 2026 o Julio 2026" class="${INPUT_CLASSES}" />
           </div>
           <div class="mb-4">
             <label for="period-start" class="mb-2 block text-sm font-semibold text-[var(--text-main)]">Fecha de Inicio</label>
             <input required id="period-start" type="date" class="${INPUT_CLASSES}" />
           </div>
-          <div class="mb-6">
+          <div class="mb-4">
             <label for="period-end" class="mb-2 block text-sm font-semibold text-[var(--text-main)]">Fecha de Fin</label>
             <input required id="period-end" type="date" class="${INPUT_CLASSES}" />
+          </div>
+          <div class="mb-4">
+            <label for="active-tutor-form" class="mb-2 block text-sm font-semibold text-[var(--text-main)]">Formulario Activo para Tutores</label>
+            <select id="active-tutor-form" class="${INPUT_CLASSES}"></select>
+          </div>
+          <div class="mb-6">
+            <label for="active-leader-form" class="mb-2 block text-sm font-semibold text-[var(--text-main)]">Formulario Activo para Team Leaders</label>
+            <select id="active-leader-form" class="${INPUT_CLASSES}"></select>
           </div>
           <div class="flex items-center gap-3">
             <button type="button" id="btn-cancel-period" class="w-full rounded-xl border border-[var(--border-main)] bg-[var(--bg-panel)] py-3 font-semibold text-[var(--text-muted)] transition-all hover:bg-[var(--bg-base)] hover:text-[var(--text-main)] cursor-pointer">Cancelar</button>
@@ -107,7 +116,6 @@ export const setupAdminPeriods = () => {
   let currentFilteredPeriods = [];
   let paginationInstance = null;
 
-  // Form and edit-id reset live in onClose, fired after the close animation.
   const { open: openModal, close: closeModal } = setupModal("period-modal", {
     onClose: () => {
       form.reset();
@@ -115,22 +123,78 @@ export const setupAdminPeriods = () => {
     },
   });
 
-  const openCreateModal = (e) => {
-    editPeriodId = null;
-    modalTitle.textContent = "Abrir Nuevo Ciclo";
-    submitBtn.textContent = "Guardar";
-    form.reset();
-    openModal(e?.currentTarget);
+  const populateFormSelectors = async () => {
+    const tutorSelect = document.getElementById("active-tutor-form");
+    const leaderSelect = document.getElementById("active-leader-form");
+    if (!tutorSelect || !leaderSelect) return;
+
+    try {
+      tutorSelect.innerHTML = '<option value="">Cargando formularios...</option>';
+      leaderSelect.innerHTML = '<option value="">Cargando formularios...</option>';
+
+      const forms = await formsService.getForms(null, 'all');
+      const liveForms = forms.filter(f => !f.is_template && !f.archived_at);
+
+      const tutorForms = liveForms.filter(f => f.targetRole === "tutor");
+      const leaderForms = liveForms.filter(f => f.targetRole === "team_leader");
+
+      if (tutorForms.length === 0) {
+        tutorSelect.innerHTML = '<option value="">No hay formularios vivos de Tutor</option>';
+      } else {
+        tutorSelect.innerHTML = tutorForms.map(f => `
+          <option value="${f.id}" ${f.is_active ? 'selected' : ''}>
+            ${escapeHtml(f.title)} ${f.is_active ? '(Activo actualmente)' : ''}
+          </option>
+        `).join('');
+      }
+
+      if (leaderForms.length === 0) {
+        leaderSelect.innerHTML = '<option value="">No hay formularios vivos de Team Leader</option>';
+      } else {
+        leaderSelect.innerHTML = leaderForms.map(f => `
+          <option value="${f.id}" ${f.is_active ? 'selected' : ''}>
+            ${escapeHtml(f.title)} ${f.is_active ? '(Activo actualmente)' : ''}
+          </option>
+        `).join('');
+      }
+
+    } catch (err) {
+      console.error(err);
+      tutorSelect.innerHTML = '<option value="">Error al cargar formularios</option>';
+      leaderSelect.innerHTML = '<option value="">Error al cargar formularios</option>';
+    }
   };
 
-  const openEditModal = (period, triggerEl) => {
+  const openCreateModal = async (e) => {
+    editPeriodId = null;
+    modalTitle.textContent = "Abrir Nuevo Periodo";
+    submitBtn.textContent = "Guardar";
+    form.reset();
+
+    const tutorSelect = document.getElementById("active-tutor-form");
+    const leaderSelect = document.getElementById("active-leader-form");
+    if (tutorSelect) tutorSelect.disabled = false;
+    if (leaderSelect) leaderSelect.disabled = false;
+
+    openModal(e?.currentTarget);
+    await populateFormSelectors();
+  };
+
+  const openEditModal = async (period, triggerEl) => {
     editPeriodId = period.id;
-    modalTitle.textContent = "Editar Ciclo";
+    modalTitle.textContent = "Editar Periodo";
     submitBtn.textContent = "Guardar Cambios";
     document.getElementById("period-name").value = period.name;
     document.getElementById("period-start").value = period.starts_at;
     document.getElementById("period-end").value = period.ends_at;
+
+    const tutorSelect = document.getElementById("active-tutor-form");
+    const leaderSelect = document.getElementById("active-leader-form");
+    if (tutorSelect) tutorSelect.disabled = !!period.is_active;
+    if (leaderSelect) leaderSelect.disabled = !!period.is_active;
+
     openModal(triggerEl);
+    await populateFormSelectors();
   };
 
   if (btnCreate) btnCreate.addEventListener("click", openCreateModal);
@@ -161,9 +225,15 @@ export const setupAdminPeriods = () => {
           ? statusBadgeComponent({ variant: "dot", status: "Activa" }) 
           : statusBadgeComponent({ variant: "dot", status: "Cerrado" });
           
-        const actionBtn = p.is_active
-          ? `<button class="btn-toggle-period rounded-lg px-4 py-2 text-xs font-bold text-[var(--danger-text)] bg-[var(--danger-bg)] hover:opacity-80 transition-opacity cursor-pointer" data-id="${p.id}" data-action="close">Cerrar Ciclo</button>`
-          : `<button class="btn-toggle-period rounded-lg px-4 py-2 text-xs font-bold text-[var(--success-text)] bg-[var(--success-bg)] hover:opacity-80 transition-opacity cursor-pointer" data-id="${p.id}" data-action="open">Reabrir Ciclo</button>`;
+        const actionBtn = `
+          <div class="flex items-center gap-2 mr-2">
+            <span class="text-xs font-bold text-[var(--text-muted)] select-none">Activo:</span>
+            <label class="relative inline-flex cursor-pointer items-center">
+              <input type="checkbox" class="input-toggle-period peer sr-only" data-id="${p.id}" ${p.is_active ? 'checked' : ''} />
+              <div class="h-6 w-11 rounded-full bg-[var(--border-main)] after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-white after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-checked:bg-[var(--brand-bg)]"></div>
+            </label>
+          </div>
+        `;
 
         return `
           <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-2xl bg-[var(--bg-panel)] p-5 shadow-sm border border-[var(--border-main)] transition-all hover:shadow-md">
@@ -178,11 +248,11 @@ export const setupAdminPeriods = () => {
               </p>
             </div>
             <div class="flex items-center gap-2">
-              <button class="btn-edit-period rounded-lg px-4 py-2 text-xs font-bold text-[var(--text-muted)] bg-[var(--bg-base)] hover:bg-[var(--border-main)] transition-colors cursor-pointer" data-id="${p.id}" title="Editar ciclo">
+              <button class="btn-edit-period rounded-lg px-4 py-2 text-xs font-bold text-[var(--text-muted)] bg-[var(--bg-base)] hover:bg-[var(--border-main)] transition-colors cursor-pointer" data-id="${p.id}" title="Editar periodo">
                 Editar
               </button>
               ${actionBtn}
-              <button class="btn-delete-period p-2 text-[var(--text-muted)] hover:bg-[var(--danger-bg)] hover:text-[var(--danger-text)] rounded-lg transition-colors cursor-pointer" data-id="${p.id}" title="Eliminar ciclo">
+              <button class="btn-delete-period p-2 text-[var(--text-muted)] hover:bg-[var(--danger-bg)] hover:text-[var(--danger-text)] rounded-lg transition-colors cursor-pointer" data-id="${p.id}" title="Eliminar periodo">
                 <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
               </button>
             </div>
@@ -190,13 +260,21 @@ export const setupAdminPeriods = () => {
         `;
       },
       onRenderCompleted: () => {
-        // Open/close buttons
-        document.querySelectorAll(".btn-toggle-period").forEach(btn => {
-          btn.addEventListener("click", async (e) => {
+        // Open/close switches
+        document.querySelectorAll(".input-toggle-period").forEach(toggle => {
+          toggle.addEventListener("change", async (e) => {
             const id = parseInt(e.target.dataset.id);
-            const action = e.target.dataset.action;
-            const newStatus = action === "open" ? true : false;
+            const newStatus = e.target.checked;
             
+            const warningMsg = newStatus 
+              ? "¿Estás seguro de que deseas activar este periodo? Esto desactivará cualquier otro periodo de evaluación que esté actualmente activo."
+              : "¿Estás seguro de que deseas desactivar este periodo? Las evaluaciones pendientes de los coders se pausarán/bloquearán.";
+
+            if (!(await showConfirm("Confirmación", warningMsg, "warning"))) {
+              e.target.checked = !newStatus;
+              return;
+            }
+
             // Optimistic UI
             const originalPeriods = [...allPeriods];
             const periodIndex = allPeriods.findIndex(p => p.id === id);
@@ -210,7 +288,7 @@ export const setupAdminPeriods = () => {
 
             try {
               await periodService.update(id, { is_active: newStatus, admin_id: authService.getSession()?.id });
-              showToast(newStatus ? "Ciclo Abierto Exitosamente" : "Ciclo Cerrado", "success");
+              showToast(newStatus ? "Periodo Abierto Exitosamente" : "Periodo Cerrado", "success");
               loadPeriods(); 
             } catch (error) {
               // Rollback
@@ -234,7 +312,7 @@ export const setupAdminPeriods = () => {
         document.querySelectorAll(".btn-delete-period").forEach(btn => {
           btn.addEventListener("click", async (e) => {
             const id = e.currentTarget.dataset.id;
-            if (!(await showConfirm("¿Estás seguro de que deseas eliminar este ciclo? Esta acción no se puede deshacer."))) return;
+            if (!(await showConfirm("¿Estás seguro de que deseas eliminar este periodo? Esta acción no se puede deshacer."))) return;
 
             // Optimistic UI
             const originalPeriods = [...allPeriods];
@@ -243,7 +321,7 @@ export const setupAdminPeriods = () => {
 
             try {
               await periodService.remove(id);
-              showToast("Ciclo eliminado", "success");
+              showToast("Periodo eliminado", "success");
               loadPeriods();
             } catch (error) {
               // Rollback
@@ -251,8 +329,8 @@ export const setupAdminPeriods = () => {
               renderPeriodsList(allPeriods);
 
               const msg = error?.status === 409
-                ? "No se puede eliminar: ya hay evaluaciones registradas en este ciclo."
-                : "Error al eliminar el ciclo.";
+                ? "No se puede eliminar: ya hay evaluaciones registradas en este periodo."
+                : "Error al eliminar el periodo.";
               showToast(msg, "error");
             }
           });
@@ -270,12 +348,12 @@ export const setupAdminPeriods = () => {
       // Regenerated on each load so listeners from previous versions do not
       // pile up: the input node lives outside listContainer.
       if (searchSlot) {
-        searchSlot.innerHTML = searchBoxComponent('period-search', 'Buscar ciclo por nombre...');
+        searchSlot.innerHTML = searchBoxComponent('period-search', 'Buscar periodo por nombre...');
         setupSearch('period-search', allPeriods, ['name'], renderPeriodsList);
       }
     } catch (error) {
       console.error(error);
-      showToast("No se pudieron cargar los ciclos", "error");
+      showToast("No se pudieron cargar los periodos", "error");
       listContainer.innerHTML = renderPeriodsError();
       document.getElementById("btn-retry-periods")?.addEventListener("click", loadPeriods);
     }
@@ -311,35 +389,39 @@ export const setupAdminPeriods = () => {
       return;
     }
 
+    const tutorFormId = document.getElementById("active-tutor-form")?.value;
+    const leaderFormId = document.getElementById("active-leader-form")?.value;
+
     const originalPeriods = [...allPeriods];
 
-    if (editPeriodId) {
-      const idx = allPeriods.findIndex(p => p.id === editPeriodId);
-      if (idx !== -1) {
-        allPeriods[idx] = { ...allPeriods[idx], ...data, is_active: allPeriods[idx].is_active };
-      }
-    } else {
-      // Temporary fake ID for the optimistic render
-      allPeriods.push({ id: Date.now(), ...data });
-    }
-
-    renderPeriodsList(allPeriods);
-    closeModal();
-
     try {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Guardando...";
+
+      // Pre-requisito: Activar los cuestionarios seleccionados en el backend
+      if (tutorFormId) {
+        await formsService.activateForm(tutorFormId);
+      }
+      if (leaderFormId) {
+        await formsService.activateForm(leaderFormId);
+      }
+
       if (editPeriodId) {
         await periodService.update(editPeriodId, data);
-        showToast("Ciclo Actualizado Exitosamente", "success");
+        showToast("Periodo Actualizado Exitosamente", "success");
       } else {
         await periodService.create(data);
-        showToast("Ciclo Creado Exitosamente", "success");
+        showToast("Periodo Creado Exitosamente", "success");
       }
+      closeModal();
       loadPeriods();
     } catch (error) {
-      // Rollback
-      allPeriods = originalPeriods;
-      renderPeriodsList(allPeriods);
-      showToast(editPeriodId ? "Error al actualizar ciclo" : "Error al crear ciclo", "error");
+      console.error(error);
+      const msg = error?.detail || (editPeriodId ? "Error al actualizar periodo" : "Error al crear periodo");
+      showToast(msg, "error");
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = editPeriodId ? "Guardar Cambios" : "Guardar";
     }
   });
 

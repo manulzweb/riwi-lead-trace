@@ -8,8 +8,8 @@ import { dropdownComponent, setupDropdown } from "../../components/dropdown.js";
 import { setupPagination } from "../../components/pagination.js";
 
 const ACTION_LABELS = {
-  period_opened: "Abrió un ciclo",
-  period_closed: "Cerró un ciclo",
+  period_opened: "Abrió un periodo",
+  period_closed: "Cerró un periodo",
   question_text_edited: "Editó el texto de una pregunta",
   question_weights_updated: "Reponderó preguntas",
   category_deleted: "Eliminó una categoría",

@@ -167,6 +167,9 @@ const updateForm = async (id, formData, onCoherenceConfirm) => {
 // history is archived, not deleted, and the view must report which happened.
 const deleteForm = async (id) => await request(`/forms/${id}`, { method: 'DELETE' });
 
+const activateForm = async (id) => await request(`/forms/${id}/activate`, { method: 'POST' });
+const deactivateForm = async (id) => await request(`/forms/${id}/deactivate`, { method: 'POST' });
+
 export const formsService = {
   getForms,
   getFormsForHistory,
@@ -174,4 +177,6 @@ export const formsService = {
   createForm,
   updateForm,
   deleteForm,
+  activateForm,
+  deactivateForm,
 };

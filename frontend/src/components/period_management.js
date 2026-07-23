@@ -8,7 +8,7 @@ export const periodManagementComponent = () => `
   <section class="mt-16 mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border-t border-[var(--border-main)] pt-12">
     <div>
       <h2 class="text-3xl font-black font-heading tracking-tight text-[var(--text-main)]">Gestión de Periodos</h2>
-      <p class="mt-2 text-[var(--text-muted)]">Crea nuevos ciclos de evaluación y controla cuál está activo.</p>
+      <p class="mt-2 text-[var(--text-muted)]">Crea nuevos periodos de evaluación y controla cuál está activo.</p>
     </div>
     <button id="btn-create-period" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--text-main)] px-6 py-3 text-sm font-bold text-[var(--bg-base)] transition-all duration-300 ease-in-out hover:bg-[var(--text-muted)] hover:shadow-md hover:-translate-y-0.5 cursor-pointer">
       <svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
