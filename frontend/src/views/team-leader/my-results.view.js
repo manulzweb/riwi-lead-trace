@@ -52,6 +52,21 @@ export const renderMyResults = () => `
   </main>
 `;
 
+// Sección "SmartFeedback" (resumen IA). Envuelve el contenido variable (el
+// resumen, o el aviso de datos insuficientes) en la misma cabecera y tarjeta,
+// para no duplicar el markup entre ambos estados.
+const smartFeedbackSection = (innerHtml) => `
+  <section class="mb-10">
+    <h2 class="text-xl font-black text-[var(--text-main)] mb-4 flex items-center gap-2">
+      <svg class="h-6 w-6 text-[var(--brand-bg)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+      SmartFeedback
+    </h2>
+    <article class="rounded-2xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-8 shadow-sm">
+      ${innerHtml}
+    </article>
+  </section>
+`;
+
 // Estado de error del contenedor de feedback, con reintento. `retryId` permite
 // distinguir el reintento de la carga inicial del de un periodo puntual.
 const renderLoadError = (message, retryId) => `
@@ -188,22 +203,29 @@ export const setupMyResults = async () => {
       try {
         const aiSummary = await metricsService.getAiSummary(userId, periodId);
         if (aiSummary && aiSummary.summary) {
-          aiSummaryHtml = `
-            <section class="mb-10">
-              <h2 class="text-xl font-black text-[var(--text-main)] mb-4 flex items-center gap-2">
-                <svg class="h-6 w-6 text-[var(--brand-bg)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                SmartFeedback
-              </h2>
-              <article class="rounded-2xl border border-[var(--border-main)] bg-[var(--bg-panel)] p-8 shadow-sm">
-                <div class="markdown-body prose dark:prose-invert max-w-none text-[var(--text-main)]">
-                  ${DOMPurify.sanitize(marked.parse(aiSummary.summary))}
-                </div>
-              </article>
-            </section>
-          `;
+          aiSummaryHtml = smartFeedbackSection(`
+            <div class="markdown-body prose dark:prose-invert max-w-none text-[var(--text-main)]">
+              ${DOMPurify.sanitize(marked.parse(aiSummary.summary))}
+            </div>
+          `);
         }
       } catch (err) {
-        console.warn("No se pudo obtener el resumen IA", err);
+        // 400 = InsufficientDataException: aún no hay suficientes evaluaciones en
+        // el periodo para que la IA genere el resumen. Es un estado esperado, no
+        // un fallo, así que en lugar de omitir la sección (o loguear un error) se
+        // muestra un aviso claro en el lugar del resumen.
+        if (err.status === 400) {
+          aiSummaryHtml = smartFeedbackSection(`
+            <p class="text-sm text-[var(--text-muted)]">
+              Aún no hay suficientes datos para generar el resumen con IA. Se necesitan más
+              evaluaciones en este periodo; vuelve a consultarlo cuando recibas más feedback.
+            </p>
+          `);
+        } else {
+          // Otros fallos (IA no disponible, red) sí son incidencias: se registran
+          // y la sección se omite en silencio para no romper el resto de la vista.
+          console.warn("No se pudo obtener el resumen IA", err);
+        }
       }
 
       feedbackList.innerHTML = `
