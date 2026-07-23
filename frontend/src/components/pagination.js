@@ -10,6 +10,12 @@ export const setupPagination = ({
   let currentData = data;
 
   const render = () => {
+    // El contenedor pudo desmontarse entre que la vista lo capturo y esta
+    // llamada: una vista async que espera al backend puede ser re-renderizada
+    // por el router (navegacion concurrente), dejando su contenedor detached.
+    // Sin esta guarda, `container.innerHTML` lanzaba y abortaba la carga.
+    if (!container) return;
+
     const totalPages = Math.ceil(currentData.length / itemsPerPage) || 1;
     if (currentPage > totalPages) currentPage = totalPages;
     if (currentPage < 1) currentPage = 1;

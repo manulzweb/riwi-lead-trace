@@ -219,6 +219,12 @@ export const setupMyResults = async () => {
 
       const commentsContainer = document.getElementById("comments-pagination-container");
 
+      // Si el contenedor no esta en el DOM vivo, la vista se re-renderizo
+      // (navegacion concurrente) mientras se esperaba al backend --lento en el
+      // deploy--: `feedbackList` quedo detached y esta carga es obsoleta. Se
+      // aborta en vez de pasar un contenedor null a setupPagination.
+      if (!commentsContainer) return;
+
       setupPagination({
         data: textAnswers,
         itemsPerPage: 5,
