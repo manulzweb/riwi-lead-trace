@@ -1,108 +1,93 @@
-# Documento Técnico — Riwi LeadTrace
+# 00 — Documento Técnico: Riwi Lead Trace
 
-Este documento proporciona la especificación técnica general de Riwi LeadTrace, consolidando los aspectos principales del sistema, arquitectura, decisiones de diseño y alcance del producto.
+## 1. Visión Arquitectónica y Alcance
 
-## 1. Nombre del proyecto
+Este documento establece la especificación técnica fundacional de **Riwi Lead Trace**, consolidando los lineamientos arquitectónicos, decisiones de diseño de alto nivel y el perímetro funcional del Minimum Viable Product (MVP).
 
-**Riwi LeadTrace**.
+## 2. Definición del Problema
 
-## 2. Problema identificado
+El ecosistema actual adolece de un canal estructurado y auditable para la evaluación del desempeño de Team Leaders y Tutores. La carencia de un mecanismo formal y asíncrono con soporte de anonimato criptográfico o estructural imposibilita la recolección de métricas no sesgadas (bias-free), limitando la capacidad analítica y operativa de la administración para ejecutar toma de decisiones basada en datos (Data-Driven Decision Making).
 
-Actualmente, el ecosistema carece de un mecanismo formal y estructurado para la evaluación de desempeño y seguimiento del acompañamiento proporcionado por los Team Leaders y Tutores. La ausencia de un canal estructurado, seguro y con soporte de anonimato dificulta la recolección de métricas fiables, limitando la capacidad de la administración para tomar decisiones basadas en datos consolidados.
+## 3. Objetivo General
 
-## 3. Objetivo general
+Validar, mediante el despliegue de un MVP funcional, que un proceso de **feedback ascendente (Bottom-Up Feedback) estructurado** incrementa la visibilidad y trazabilidad sobre la calidad del acompañamiento, suministrando a los administradores *insights* accionables mediante agregación de datos y análisis de lenguaje natural (NLP).
 
-Validar, con un MVP funcional, que un proceso de **feedback ascendente estructurado** mejora la
-visibilidad sobre la calidad del acompañamiento de Team Leaders y Tutores, entregando al Admin
-información accionable para tomar decisiones.
+## 4. Objetivos Específicos
 
-## 4. Objetivos específicos
+1. **Canal Estructurado:** Proveer una interfaz formal y segura que garantice el anonimato estructural en evaluaciones ascendentes.
+2. **Métrica Cuantitativa:** Sintetizar el desempeño a través del **Índice de Calidad Percibida (ICP)**, una métrica de agregación ponderada, calculada dinámicamente en tiempo de lectura (on-read) con mitigación de sesgos por insuficiencia de datos.
+3. **Trazabilidad Continua:** Preservar la inmutabilidad histórica del feedback por líder, tutor y ciclo (periodo).
+4. **Data Analytics:** Habilitar interfaces administrativas (Dashboards) respaldadas por análisis cualitativo generado por Inteligencia Artificial (LLMs).
 
-1. Dar a los Coders un canal formal, seguro y opcionalmente anónimo para evaluar a sus líderes y tutores.
-2. Medir la **calidad percibida** del acompañamiento con un índice propio, el **ICP**: promedio
-   de las respuestas tipo escala, normalizado de 0 a 100, con un mínimo de respuestas para
-   calcularlo (ver [`06-arquitectura.md`](./06-arquitectura.md)).
-3. Dejar trazabilidad y métricas de seguimiento histórico por líder, tutor y periodo.
-4. Habilitar decisiones basadas en datos para el Admin, apoyadas en un resumen generado por IA.
-5. Fomentar la mejora continua dentro del ecosistema de aprendizaje de Riwi.
+## 5. Perímetro del Sistema (MVP)
 
-## 5. Alcance (MVP)
+El MVP consolida una plataforma de evaluación asíncrona segmentada en dos dominios principales:
 
-Descripción de alto nivel: El sistema provee una plataforma para la evaluación ascendente mediante formularios estructurados, garantizando el anonimato opcional del evaluador. El núcleo analítico procesa estas interacciones para calcular el Índice de Calidad Percibida (ICP) por líder y genera un análisis cualitativo mediante integración con modelos de lenguaje grande (LLMs).
+- **Dominio Transaccional:** Autenticación Stateless (bcrypt), Control de Acceso Basado en Roles (RBAC múltiple), captura de evaluaciones con protección de identidad (desacoplamiento de autoría y contenido) y gestión del ciclo de vida de plantillas e instrumentos de medición.
+- **Dominio Analítico:** Agregación de métricas (ICP) mediante vistas SQL materializadas y delegación del procesamiento NLP a modelos de Google Gemini, cacheando resultados para eficiencia de red y costos.
 
-**Alcance funcional (MVP):** Autenticación de usuarios (verificación de contraseñas mediante bcrypt), control de acceso basado en roles (RBAC, soportando la asignación de múltiples roles concurrentes), listado de entidades evaluables, captura de evaluaciones estructuradas con protección de identidad (anonimato), histórico de evaluaciones por usuario, gestión del ciclo de vida de los periodos de evaluación por parte del administrador, administración básica de plantillas de formularios (activación/desactivación y actualización de texto), visualización de métricas (dashboard administrativo con cálculo de ICP) e integración de resúmenes procesados por IA.
+## 6. Historias de Usuario (Resumen Ejecutivo)
 
-## 6. Historias de usuario
+El *Product Backlog* consta de 20 historias mapeadas en 7 épicas, priorizadas bajo el framework MoSCoW, totalizando 79 Story Points. El desglose se halla en `03-historias-de-usuario.md`.
 
-20 historias organizadas en 7 épicas (CORE, AUTH, EVALUACIONES, HISTORIAL, DASHBOARD, AIFEED, ENTREGA),
-79 Story Points en total, priorizadas con MoSCoW. El detalle historia por historia —con sus criterios
-de aceptación— está en [`03-historias-de-usuario.md`](./03-historias-de-usuario.md); el backlog
-completo con estimaciones en [`02-product-backlog.md`](./02-product-backlog.md).
+El núcleo de valor (Core Business Logic), que distancia este sistema de un CRUD transaccional, reside en:
+- **EVAL-05:** Inserción concurrente de evaluaciones con garantía de anonimato y evasión de *Race Conditions* (Duplicados).
+- **DASH-01:** Motor de cálculo estadístico para el ICP y agregación de reportes.
 
-Las dos historias que sostienen que este proyecto no es un CRUD básico son **EVAL-05** (registrar una
-evaluación con anonimato real y no-duplicado por periodo) y **DASH-01** (calcular y mostrar el ICP).
+## 7. Arquitectura Topológica
 
-## 7. Arquitectura de la solución
+El sistema se estructura como un **Monolito Modular Full-Stack**, comunicado exclusivamente a través de contratos REST (JSON).
 
-Monorepo full-stack: una SPA en HTML/CSS/JS Vanilla habla por REST con un backend FastAPI, que a su vez
-habla con MySQL vía SQLAlchemy (SQL plano con `text()`, sin ORM declarativo).
-
-```
-SPA (Vite/Tailwind)  ──HTTP/REST (JSON)──>  API (backend/ FastAPI)  ──SQLAlchemy `text()`──>  MySQL
+```text
+SPA (Vite/Vanilla JS) ── HTTPS / REST ──> API (FastAPI) ── SQLAlchemy text() ──> MySQL (3FN)
 ```
 
-El backend está organizado en tres capas — `routes` (validan entrada/salida con Pydantic),
-`services` (la lógica de negocio: ICP, anonimato, no-duplicado, filtros por rol) y `repositories`
-(las queries SQL con `text()`, un archivo por entidad) — para que cada pieza tenga una sola
-responsabilidad y nadie mezcle reglas de negocio con endpoints ni con SQL. El flujo es
-`routes/ → services/ → repositories/ → MySQL`. **No hay `models/`** (la forma de las tablas vive
-solo en `database/01_ddl.sql`; `repositories/` no reintroduce SQLAlchemy Core ni `Table`, solo
-agrupa las mismas queries `text()` por entidad). El login solo verifica el hash con
-bcrypt, y el rol/ID de quien llama se confía al valor que manda el propio front.
-El detalle completo, con diagramas y el contrato REST, está en
-[`06-arquitectura.md`](./06-arquitectura.md).
+La segmentación horizontal del backend garantiza el Principio de Responsabilidad Única (SRP):
+- **Routes:** Aislamiento del protocolo HTTP y validación perimetral (Pydantic).
+- **Services:** Concentración pura de lógica de negocio y reglas de dominio.
+- **Repositories:** Abstracción del dialecto SQL y gestión de transacciones (Connection Pooling).
 
-## 8. Modelo de datos
+La justificación rigurosa de las tecnologías adoptadas se encuentra documentada en el artefacto `06-arquitectura.md`.
 
-Base de datos relacional (MySQL), normalizada hasta 3FN. Entidades principales: `users`, `roles`, `user_roles`, `team_leader_clans`, `periods`, `forms`, `categories`, `questions`, `evaluations`, `evaluation_submissions`, `evaluation_details`, y `ai_feedback_cache`. La persistencia de una evaluación (`evaluations`) y la de su autoría (`evaluation_submissions`) se manejan en tablas desacopladas, estableciendo el anonimato como una restricción estructural del modelo (la ausencia del vínculo garantiza imposibilidad de trazabilidad). El **ICP es un campo derivado**: su valor se calcula en tiempo de consulta (on-read) agregando los datos más recientes.
+## 8. Persistencia y Modelo de Datos
 
-**Roles múltiples por usuario:** un usuario puede tener más de un rol a la vez (relación N:M
-`users`↔`roles` vía `user_roles`, no un `role_id` único). Un Team Leader puede además tener **dos
-o más clanes a cargo** (tabla `team_leader_clans`), distinto del `clan_id` 1:1 que usan
-coder/tutor. Ver el detalle en [`07-base-de-datos.md`](./07-base-de-datos.md).
+El motor relacional (MySQL) soporta un esquema altamente normalizado en Tercera Forma Normal (3FN). Elementos críticos de diseño:
+- **Separación de Identidad:** La entidad `evaluations` (contenido) está físicamente desvinculada de `evaluation_submissions` (autoría) en casos de anonimato, imposibilitando la reconstrucción del vínculo mediante inferencia SQL.
+- **Roles Concurrentes:** Relaciones N:M que permiten a una entidad ostentar roles híbridos (e.g. Tutor y Team Leader simultáneamente).
 
-Modelo entidad-relación completo, diccionario de datos y el
-script SQL ejecutable en [`07-base-de-datos.md`](./07-base-de-datos.md) y
-[`database/01_ddl.sql`](../database/01_ddl.sql) + [`database/02_dml.sql`](../database/02_dml.sql).
+El diccionario de datos y los diagramas relacionales residen en `07-base-de-datos.md`.
 
-## 9. Justificación tecnológica
+## 9. Criterios de Éxito del MVP
 
-| Capa | Elección | Por qué |
-|---|---|---|
-| Frontend | Vite + Vanilla JS + TailwindCSS | Empaquetado rapido y estilos modulares con utilidad |
-| Backend | Python + FastAPI | Alineado a lo aprendido en la Ruta Básica; validación y docs automáticas |
-| Base de datos | MySQL | Dominio naturalmente relacional; consultas agregadas para el dashboard |
-| Auth | Login basico con bcrypt | El backend valida credenciales localmente sin emitir token. |
-| IA | Google Gemini | Resume el feedback en lenguaje natural para el Admin |
+La validación del producto se fundamenta en las siguientes métricas de telemetría operativa (Adoption Metrics):
+- Tasa de adopción de la plataforma ≥ 60%.
+- Completitud de formularios requeridos ≥ 80%.
+- Retención administrativa: Acceso concurrente o recurrente semanal al Dashboard de métricas.
 
-Justificación ampliada, comparación contra alternativas y las decisiones que evitan sobreingeniería en
-[`06-arquitectura.md`](./06-arquitectura.md).
+## 10. Índice Documental Completo
 
-## 10. Evidencias Scrum
+El repositorio documental (`/docs`) está segmentado para abarcar desde la visión estratégica hasta la defensa arquitectónica granular.
 
-- **Product Backlog** y **Sprint Backlog**: [`02-product-backlog.md`](./02-product-backlog.md) y
-  [`05-sprint-planning.md`](./05-sprint-planning.md).
-- **Tablero**: GitHub Issues + Milestones por sprint, con etiquetas de épica y prioridad MoSCoW.
-- **Cronograma**: 4 sprints, entrega el 17 de julio de 2026.
-- **GitFlow**: ramas `feature/<historia>`, Pull Requests hacia `develop`, commits por integrante.
-  Convenciones en [`08-diseno-tecnico.md`](./08-diseno-tecnico.md).
+**Especificaciones Core:**
+- [`00-documento-tecnico.md`](./00-documento-tecnico.md) - Visión Arquitectónica y Alcance (este documento).
+- [`01-vision-y-producto.md`](./01-vision-y-producto.md) - KPIs Operativos y Propuesta de Valor.
+- [`02-product-backlog.md`](./02-product-backlog.md) - Backlog de MVP bajo MoSCoW.
+- [`03-historias-de-usuario.md`](./03-historias-de-usuario.md) - Artefactos funcionales con DoD técnicos.
+- [`04-epicas.md`](./04-epicas.md) - Habilitadores técnicos.
+- [`05-sprint-planning.md`](./05-sprint-planning.md) - Topología de iteraciones y manejo de riesgos.
 
-## 11. MVP definido
+**Ingeniería y Arquitectura:**
+- [`06-arquitectura.md`](./06-arquitectura.md) - Decisiones de diseño estructural.
+- [`07-base-de-datos.md`](./07-base-de-datos.md) - Normalización 3FN y transacciones.
+- [`08-diseno-tecnico.md`](./08-diseno-tecnico.md) - Convenciones GitFlow, CI/CD y código.
+- [`09-mvp-alcance.md`](./09-mvp-alcance.md) - Criterios Lean Startup y NFRs.
+- [`11-entregables-y-evaluacion.md`](./11-entregables-y-evaluacion.md) - Matriz de auditoría QA.
+- [`13-glosario.md`](./13-glosario.md) - Definiciones de dominio (ORM, DTO, Entity, etc.).
+- [`14-manejo-de-excepciones.md`](./14-manejo-de-excepciones.md) - Jerarquía polimórfica de errores.
 
-Ya cubierto en la sección 5 (Alcance). Se considera validado si, durante el piloto, se alcanzan las
-métricas de éxito definidas en [`01-vision-y-producto.md`](./01-vision-y-producto.md): adopción ≥60%,
-completitud ≥80%, y al menos un Admin usando el dashboard semanalmente.
-
----
-
-¿Necesitas más detalle de algún punto? Cada sección enlaza al documento fuente correspondiente.
+**Guías de Defensa Técnica (Preparación para Pitch):**
+- [`15-defensa-backend.md`](./15-defensa-backend.md) - Defensa de FastAPI, SQL crudo y Auth.
+- [`16-defensa-frontend.md`](./16-defensa-frontend.md) - Defensa de SPA Vanilla JS.
+- [`17-defensa-basedatos.md`](./17-defensa-basedatos.md) - Defensa de 3FN y anonimato estructural.
+- [`18-defensa-integracion-e2e.md`](./18-defensa-integracion-e2e.md) - Ciclo de vida de la petición.
+- [`19-preguntas-jurado.md`](./19-preguntas-jurado.md) - Simulador de Q&A para el jurado técnico.

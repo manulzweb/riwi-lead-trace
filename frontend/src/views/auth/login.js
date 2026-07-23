@@ -7,7 +7,7 @@ import { backgroundComponent } from "../../components/background.js";
 
 const loginSchema = {
   email: z.string().min(1, "El correo es obligatorio").email("Formato de correo inválido"),
-  password: z.string().min(1, "La contraseña es obligatoria").min(8, "Mínimo 8 caracteres")
+  password: z.string().min(1, "La contraseña es obligatoria").min(6, "Mínimo 6 caracteres")
 };
 
 export const renderLogin = () => `

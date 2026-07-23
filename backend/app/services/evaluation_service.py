@@ -13,7 +13,6 @@ from app.exceptions.evaluation_exceptions import (
 
 class EvaluationService:
     def __init__(self, repository: EvaluationRepository = None):
-        # Allow dependency injection, default to a new instance if not provided
         self.repo = repository or EvaluationRepository()
 
     def _validate_period(self, conn, period_id: int):
@@ -196,8 +195,4 @@ class EvaluationService:
 
             return self._attach_answers(conn, evaluations)
 
-# We export a singleton instance for backward compatibility with other routes
-# that might import the module directly, but it can be replaced by DI.
 evaluation_service = EvaluationService()
-
-# Facade methods to preserve exact backward compatibility for old imports

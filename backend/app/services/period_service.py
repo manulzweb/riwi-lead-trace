@@ -64,7 +64,6 @@ class PeriodService:
                     detail=period_name,
                 )
                 
-                # Check if period was closed, and if so trigger the background task
                 if values["is_active"] is False and background_tasks is not None:
                     from app.services.settings_service import settings_service
                     from app.services.ai_service import generate_missing_summaries_for_period

@@ -218,6 +218,3 @@ def update_weights(payload: WeightsUpdate):
 
 
 
-# This was used in form_service. We provide a bridge for backwards compat if needed,
-# though form_service now has its own logic or can be updated.
-# However, form_service is already updated and doesn't import _assert_no_active_period from here.

@@ -253,7 +253,7 @@ CREATE TABLE evaluations (
         FOREIGN KEY (evaluatee_id)
         REFERENCES users(id)
         ON UPDATE CASCADE
-        ON DELETE RESTRICT,
+        ON DELETE CASCADE,
     CONSTRAINT fk_eval_form
         FOREIGN KEY (form_id)
         REFERENCES forms(id)
@@ -304,7 +304,7 @@ CREATE TABLE evaluations (
 -- ---------------------------------------------------------------------
 CREATE TABLE evaluation_submissions (
     id            INT AUTO_INCREMENT PRIMARY KEY,
-    evaluator_id  INT NOT NULL,
+    evaluator_id  INT NULL,
     evaluatee_id  INT NOT NULL,
     period_id     INT NOT NULL,
     -- NULL solo cuando la evaluacion es eliminada (ON DELETE SET NULL)
@@ -314,12 +314,12 @@ CREATE TABLE evaluation_submissions (
         FOREIGN KEY (evaluator_id)
         REFERENCES users(id)
         ON UPDATE CASCADE
-        ON DELETE RESTRICT,
+        ON DELETE SET NULL,
     CONSTRAINT fk_submission_evaluatee
         FOREIGN KEY (evaluatee_id)
         REFERENCES users(id)
         ON UPDATE CASCADE
-        ON DELETE RESTRICT,
+        ON DELETE CASCADE,
     CONSTRAINT fk_submission_period
         FOREIGN KEY (period_id)
         REFERENCES periods(id)

@@ -1,157 +1,108 @@
-# 13 — Glosario de términos (en palabras simples)
+# 13 — Glosario Arquitectónico y Técnico
 
-Este documento explica, en lenguaje sencillo, los términos que aparecen en el proyecto. La idea es
-que **cualquier integrante pueda sustentar su parte** sin miedo al vocabulario técnico. Cada término
-trae una analogía o ejemplo.
-
-> Regla mental: casi todo el proyecto es **"el frontend pide, el backend responde, la base de datos
-> guarda"**. El resto son detalles de cómo se organiza cada parte.
+Este documento centraliza y define la terminología técnica empleada en el diseño, desarrollo y arquitectura del proyecto Riwi Lead Trace. Está estructurado en categorías y subconjuntos lógicos para facilitar la comprensión de las interacciones entre los distintos componentes del sistema.
 
 ---
 
-## 1. Conceptos generales
+## 1. Patrones de Diseño y Arquitectura
 
-| Término | En simple |
-|---------|-----------|
-| **Frontend** | Lo que el usuario ve y toca en el navegador (pantallas, botones, formularios). Vive en `frontend/`. |
-| **Backend** | El "cerebro" que corre en un servidor: recibe peticiones, aplica reglas y habla con la base de datos. Vive en `backend/`. |
-| **Base de datos (BD)** | Donde se guarda la información de forma permanente (usuarios, evaluaciones). Aquí usamos **MySQL**. |
-| **API REST** | El "menú" de acciones que el backend ofrece al frontend, por internet. Cada acción es una **URL** (ej. `/auth/login`). REST es solo un estilo ordenado de nombrar esas URLs. |
-| **Endpoint** | Una dirección concreta de la API. Ej: `POST /evaluations` = "crear una evaluación". |
-| **JSON** | El formato de texto en que frontend y backend se mandan datos. Parecen objetos: `{ "nombre": "Ana" }`. |
-| **HTTP / HTTPS** | El idioma en que viajan las peticiones por internet. HTTPS es lo mismo pero cifrado (seguro). |
-| **Petición / Respuesta** | El frontend **pide** (request) y el backend **responde** (response). Como pedir en un restaurante y recibir el plato. |
-| **Código HTTP** | Un número que resume cómo salió la petición: `200` ok, `400` pediste mal, `401` no autenticado, `403` sin permiso, `404` no existe, `409` conflicto (ej. duplicado), `500` error del servidor. |
+Esta categoría agrupa los enfoques estructurales utilizados para organizar el código y mantener la escalabilidad.
 
----
+### 1.1. Patrones Estructurales
+| Término | Definición Técnica y Contexto |
+|---------|-------------------------------|
+| **Monolito Modular** | Arquitectura donde todo el código (ej. el backend) se despliega como una sola unidad, pero internamente está estrictamente dividido en módulos independientes (rutas, servicios, repositorios) para evitar el alto acoplamiento. |
+| **Separación Horizontal (Por Capas)** | Estrategia de organización donde el código se agrupa por su función técnica (ej. todos los controladores juntos, todos los accesos a datos juntos) en lugar de agruparse por característica de negocio (separación vertical). |
+| **Dominio (Domain)** | Es el "corazón" del problema que el software intenta resolver. Contiene las "Reglas de Negocio" (ej. *un usuario no puede evaluarse a sí mismo*). Todo el desarrollo gira en torno a modelar el dominio de forma aislada. |
+| **ORM (Object-Relational Mapping)** | Técnica para convertir datos entre sistemas de tipos incompatibles utilizando lenguajes orientados a objetos. Permite tratar tablas de BD como Clases de Python. En el proyecto se decidió **no** usar un ORM completo para evitar su *overhead*. |
 
-## 2. Frontend (la SPA)
+### 1.2. Patrones de Comportamiento y Desacoplamiento
+| Término | Definición Técnica y Contexto |
+|---------|-------------------------------|
+| **Repository Pattern (Patrón Repositorio)** | Capa de abstracción entre la lógica de negocio y la base de datos. En el proyecto (`repositories/`), encapsula las sentencias SQL (`text()`) para que los servicios no interactúen directamente con el motor de base de datos. |
+| **Dependency Injection (Inyección de Dependencias)** | Técnica donde un objeto recibe sus dependencias externas en lugar de crearlas internamente. En FastAPI, se usa `Depends()` para inyectar servicios en las rutas o repositorios en los servicios, facilitando las pruebas unitarias (Mocking). |
+| **CQRS Ligero (Command Query Responsibility Segregation)** | Separación de las operaciones de escritura (Commands, vía Repositorios) de las operaciones complejas de lectura (Queries). En el proyecto, se evidencia al usar Vistas SQL virtualizadas (`vw_period_metrics`) para calcular el ICP sin saturar la lógica de Python. |
 
-| Término | En simple |
-|---------|-----------|
-| **SPA** (Single Page Application) | Una web de **una sola página** que cambia el contenido sin recargar. Da sensación de app. |
-| **HTML / CSS / JS Vanilla** | HTML = estructura, CSS = estilos, JavaScript "vanilla" = JS puro **sin frameworks** (sin React/Vue/Angular). |
-| **ES Modules** | Forma moderna de dividir el JS en archivos que se **importan** entre sí (`import`/`export`). Como piezas de Lego. |
-| **Vista (`*.view.js`)** | Una pantalla completa (login, dashboard, evaluar). Devuelve el HTML de esa pantalla. |
-| **Componente** | Un pedacito de UI reutilizable (navbar, badge, alerta). Se usa dentro de varias vistas. |
-| **Router** | El que decide **qué vista mostrar** según la URL (`/dashboard`, `/login`). Sin recargar la página. |
-| **Guard (guardia de ruta)** | Chequeo antes de mostrar una vista: "¿está logueado? ¿tiene el rol?". Si no, redirige. Es solo **experiencia de usuario**, no seguridad real. |
-| **Store** | Una "cajita" central de estado compartido (ej. el usuario logueado) que varias partes leen. |
-| **pub/sub** | "Publicar / suscribir": cuando el store cambia, **avisa** a quien esté escuchando para que se actualice. |
-| **Service (`*.service.js`)** | La **única** capa del front que llama a la API. Las vistas no hacen `fetch` directo; le piden al service. |
-| **`fetch`** | La función del navegador para llamar a la API por internet. |
-| **Responsive / mobile-first** | Que se vea bien en celular y en PC. "Mobile-first" = se diseña primero para celular. |
-| **BEM** | Convención para nombrar clases CSS de forma ordenada: `bloque__elemento--modificador`. |
-| **History API** | Función de los navegadores que permite a la SPA cambiar la URL (ej. `/dashboard`) y guardar el historial sin tener que recargar toda la página web. |
-| **View Transitions API** | Tecnología moderna del navegador que permite crear animaciones fluidas al cambiar de una vista a otra, sin requerir librerías pesadas. |
-| **Graceful Degradation** | "Degradación elegante". Diseñar el sistema para que use tecnología avanzada si está disponible, pero si el usuario tiene un navegador viejo, siga funcionando con una experiencia más simple en lugar de romperse. |
+### 1.3. Abstracciones de Datos (DTO vs. Entity vs. Model)
+| Término | Definición Técnica y Contexto |
+|---------|-------------------------------|
+| **Entity (Entidad)** | Representa un concepto central del dominio del negocio (ej. un *Usuario* o una *Evaluación*). Las entidades tienen identidad única e inmutable (un ID) y persisten a través del tiempo. |
+| **Model (Modelo)** | Representación a nivel de código de una tabla en la base de datos (usualmente acoplado a un ORM como SQLAlchemy). En nuestro diseño prescindimos de modelos de ORM completos en Python a favor de sentencias SQL puras sobre las entidades físicas. |
+| **DTO (Data Transfer Object)** | Objeto diseñado **exclusivamente** para transportar datos entre procesos (ej. del backend al frontend). Carece de lógica de negocio o conexión a BD. En el proyecto, los DTOs se implementan usando esquemas de **Pydantic** (`schemas/`), definiendo los contratos exactos de entrada/salida. |
 
----
+### 1.3.1. Caso de Estudio: El Trade-off de Entities vs. Schemas (Pydantic)
+En arquitecturas corporativas masivas (ej. Java Spring Boot), es obligatorio aislar estrictamente las capas, forzando a crear tres objetos y mapeadores para un solo flujo:
+1. **DTO (Red):** `UserCreateDTO { password_plain }`
+2. **Model (Dominio):** `UserDomain { hash_password() }`
+3. **Entity (ORMs):** `UserEntity { password_hashed }`
 
-## 3. Backend (FastAPI) y sus capas
-
-El backend está organizado en **capas**: cada una tiene **un solo trabajo**. Una petición pasa por
-ellas en orden (como una fábrica en línea):
-
-```
-route  →  service  →  repository  →  MySQL
-```
-
-En este proyecto son **3 capas** de código propio (no hay `model` separado): `route` valida y
-delega, `service` tiene las reglas de negocio, y `repository` es quien de verdad escribe y ejecuta
-el SQL contra MySQL.
-
-| Capa / término | En simple |
-|----------------|-----------|
-| **FastAPI** | El framework de Python que usamos para construir la API. |
-| **Route** | La "puerta de entrada" (carpeta `routes/`). Define los endpoints, valida lo que llega y devuelve la respuesta. **No** tiene reglas de negocio. |
-| **Service** | El **cerebro**: aquí viven las **reglas de negocio** (calcular métricas, revisar anonimato, evitar duplicados). Es la parte "que no es solo CRUD". Ya **no** ejecuta SQL: se lo pide al `repository` correspondiente. |
-| **Model** | No hay una capa `models/` en Python: la forma de cada tabla vive en `database/01_ddl.sql`. |
-| **Repository** | Sí existe: `backend/app/repositories/`, **un archivo por entidad** (10 en total). Guarda las consultas SQL (`text()`) para que los `services/` no las tengan mezcladas con las reglas de negocio. El flujo completo es `routes/ → services/ → repositories/ → MySQL`. |
-| **Schema (Pydantic)** | El "molde" que define **qué forma** deben tener los datos que entran y salen. Si no cumplen, se rechazan. **Pydantic** es la librería líder en Python para hacer esta validación ultra-rápida basada en tipos. |
-| **CRUD** | Create, Read, Update, Delete = crear, leer, actualizar, borrar. Lo básico de una BD. La rúbrica pide **más que CRUD** (por eso las métricas y la lógica de negocio). |
-| **DTO (Data Transfer Object)** | Objeto (como una caja) que se usa puramente para llevar datos de un lado a otro (ej. del backend al frontend) sin lógica. Los Schemas de Pydantic cumplen esta función. |
-| **Manejo Opaco de Errores** | Estrategia de seguridad donde, si el servidor falla, no le cuenta al usuario *por qué* falló (para no revelar código o SQL), sino que le da un código (UUID) y guarda el secreto en los logs internos para que los desarrolladores lo revisen. |
-
-> **¿Por qué separar en capas?** Para que cada archivo sea pequeño y fácil de entender, no repetir
-> código (**DRY**) y que cada persona pueda explicar "su" capa. Si mañana cambia una regla de
-> negocio, solo se toca el archivo de `services/` de esa entidad; el route no se entera.
+**La decisión arquitectónica del MVP (FastAPI):**
+Programar "mapeadores" (Traducciones de DTO a Entity) hubiera sido *Overengineering* (Sobre-ingeniería). El equipo optimizó el flujo fusionando capas inteligentemente:
+*   **Capa de Red (DTO):** Se usan los **Schemas de Pydantic** (`schemas/`) para validar los JSON de entrada de forma ultra-rápida.
+*   **Capa de Persistencia (Entity):** En lugar de instanciar Modelos de ORM (SQLAlchemy Entities) pesados en memoria, el repositorio toma los datos limpios del Schema y los inserta en la Base de Datos mediante **SQL Crudo (`text()`)**. La Base de Datos MySQL es la única dueña de la entidad física, reduciendo drásticamente la huella de memoria (RAM) y acelerando el tiempo de respuesta.
 
 ---
 
-## 4. Seguridad y usuarios
+## 2. Conceptos de la API y Flujo de Peticiones
 
-| Término | En simple |
-|---------|-----------|
-| **Autenticación** | Comprobar **quién eres** (login con correo y contraseña). |
-| **Autorización** | Comprobar **qué puedes hacer** (tu rol). Autenticado ≠ autorizado. |
-| **JWT** (JSON Web Token) | Un "carnet" digital firmado que un backend con sesión te daría al iniciar sesión, para probar quién eres en cada petición sin repetir la contraseña. **Riwi LeadTrace no lo usa**: no se emiten tokens (ver `CLAUDE.md`, "Sin JWT"). |
-| **Token** | El texto de ese carnet. En este proyecto no existe: el login devuelve `{ user }`, sin token que guardar. |
-| **Hash / bcrypt** | Convertir la contraseña en un texto irreversible antes de guardarla. Así, **nunca** guardamos la contraseña real. `bcrypt` es el algoritmo que usamos. |
-| **RBAC** (Role-Based Access Control) | Control de acceso **según el rol**. Ej: solo `admin` debería ver el dashboard. **En este proyecto NO se aplica de verdad en el backend** (no hay JWT ni sesión para verificar el rol): el backend confía en el rol/ID que manda el propio front (`viewer_role`, `?role=`, etc.) y solo lo usa para filtrar datos. La única barrera real hoy es la del **frontend** (oculta rutas/opciones), que es UX, no seguridad. |
-| **Rol** | El "tipo" de usuario: `coder`, `tutor`, `team_leader`, `admin`. Un usuario puede tener **más de uno a la vez** (tabla `user_roles`, N:M) — por ejemplo, ser `tutor` y `team_leader` al mismo tiempo. Define qué ve y hace. |
-| **`401` / `403`** | `401` = no has iniciado sesión (o el carnet venció). `403` = estás logueado pero **no tienes permiso**. |
-| **CORS** | Permiso que el backend da para que el frontend (que corre en otra dirección) pueda llamarlo. |
+Términos relacionados con cómo se comunican las distintas partes del sistema a través de la red y cómo viajan los datos.
 
----
+### 2.1. Comunicación y Contratos
+| Término | Definición Técnica y Contexto |
+|---------|-------------------------------|
+| **API REST** | Interfaz de programación que usa HTTP y sus verbos (GET, POST, PUT, DELETE) para operar sobre recursos predecibles (ej. `/evaluations`). |
+| **Flujo de Peticiones (Request Flow)** | El ciclo de vida unidireccional de una solicitud: `Router` (recibe y valida) → `Service` (aplica reglas de negocio) → `Repository` (escribe/lee BD) → Respuesta HTTP. |
+| **CORS (Cross-Origin Resource Sharing)** | Mecanismo de seguridad de los navegadores que restringe cómo una web (Frontend) solicita recursos a otro dominio (Backend). |
 
-## 5. Base de datos
-
-| Término | En simple |
-|---------|-----------|
-| **MySQL** | El motor de base de datos que guarda todo en **tablas** (filas y columnas). |
-| **Tabla** | Una "hoja de Excel": cada fila es un registro (un usuario), cada columna un dato (su correo). |
-| **ORM** | "Object-Relational Mapping": una traducción para manejar las tablas como **objetos de Python** en vez de escribir SQL a mano. |
-| **SQLAlchemy** | La libreria que usamos para hablarle a MySQL desde Python. Tiene una capa ORM completa, pero en este proyecto **solo usamos su motor de conexion y `text()`** (SQL plano) — no mapeamos tablas a clases ni usamos su ORM declarativo. |
-| **PyMySQL** | El "cable" que conecta SQLAlchemy con MySQL. |
-| **Connection Pooling** | "Piscina de conexiones". Mantener un grupo de conexiones a la base de datos abiertas y listas para usarse, en lugar de conectar y desconectar desde cero con cada petición (lo cual es muy lento). |
-| **CQRS (Ligero)** | "Command Query Responsibility Segregation". Patrón arquitectónico que separa la forma en que *escribes* datos (Commands, en repositorios) de la forma en que los *lees* (Queries, usando vistas SQL virtuales para métricas). |
-| **FK (Foreign Key / llave foránea)** | Una columna que **apunta** a otra tabla. Ej: una evaluación guarda el `id` del usuario evaluado. Mantiene los datos conectados y consistentes. |
-| **3FN (Tercera Forma Normal)** | Regla de diseño para **no repetir datos** y evitar inconsistencias. En resumen: cada dato vive en un solo lugar. |
-| **Índice único** | Regla en la BD que impide filas repetidas. Aquí es `uq_submission_once (evaluator_id, evaluatee_id, period_id)` sobre la tabla **`evaluation_submissions`**: evita que un coder evalúe dos veces a la misma persona en el mismo periodo, **incluidas las anónimas**, porque esas tres columnas nunca son NULL. El índice viejo `uq_eval_once` (sobre `evaluations`) **ya no existe**: indexaba `evaluator_id`, que era NULL en las anónimas, y MySQL permite **varios NULL** en un índice único — por eso dejaba pasar duplicados anónimos. Ver la regla 2 de `CLAUDE.md`. |
-| **Seed** | Datos iniciales de ejemplo que se cargan en la BD para poder probar (usuarios, formularios). |
+### 2.2. Seguridad y Estado
+| Término | Definición Técnica y Contexto |
+|---------|-------------------------------|
+| **JWT (JSON Web Token)** | Estándar para transmitir claims verificables criptográficamente entre partes. **Consciente trade-off:** El MVP del proyecto **no** usa JWT, delegando el estado de la sesión al cliente (SPA) para simplificar la infraestructura inicial. |
+| **RBAC (Role-Based Access Control)** | Sistema de control de acceso basado en el rol del usuario (`admin`, `team_leader`, `coder`). En el frontend se implementa mediante *Route Guards*. |
+| **Trade-off** | Un compromiso o concesión de diseño. Por ejemplo, decidir no usar un ORM complejo (SQLAlchemy ORM) para ganar control sobre las consultas SQL puras, a costa de escribir más sentencias a mano. |
+| **Manejo Opaco de Errores** | Estrategia de ciberseguridad donde las fallas internas (Error 500) devuelven un UUID genérico al cliente, mientras el detalle técnico (Stacktrace, sentencias SQL) se registra exclusivamente en los logs del servidor para prevenir fugas de información. |
 
 ---
 
-## 6. Lógica de negocio propia del proyecto
+## 3. Base de Datos y Persistencia
 
-| Término | En simple |
-|---------|-----------|
-| **Feedback ascendente** | Que los **coders evalúen a quienes los acompañan** (Team Leaders y Tutores), no al revés. |
-| **ICP** (Índice de Calidad Percibida) | Un puntaje de **0 a 100** que resume qué tan bien acompaña un TL/Tutor **según la percepción de los Coders**: es el promedio de sus respuestas tipo escala, normalizado. Es el corazón "no-CRUD" del backend. Mide percepción, no aprendizaje real (por eso se llama "percibida"). |
-| **ICP "derivado, no se persiste"** | El ICP **no se guarda** en la BD: se **calcula al momento** de pedirlo, a partir de las evaluaciones. Así siempre está actualizado. |
-| **Mínimo de respuestas** | El ICP solo se muestra si hay al menos N evaluaciones enviadas; con menos, se muestra "datos insuficientes" en vez de un puntaje poco confiable. N **ya no es una constante fija**: es el ajuste configurable `system_settings.required_evaluations` (default 3), que aplica `metrics_repository.py`. Ya no existe ninguna constante `MIN_EVALUATIONS`. |
-| **Periodo** | La ventana de tiempo de una ronda de evaluaciones (ej. un sprint/mes). |
-| **Periodo activo** | El único periodo "abierto": mientras esté activo, los Coders ven y envían formularios. El **admin** lo activa/cierra. Sin periodo activo, la SPA muestra "No hay formularios por realizar". |
-| **Versionar una pregunta** | Cuando el admin edita el texto de una pregunta, **no se sobrescribe**: se crea una pregunta nueva y la vieja se desactiva. Las respuestas históricas conservan el texto original que respondieron. |
-| **Deriva semántica** | El riesgo de que una pregunta editada **deje de medir su categoría** (ej. una de cercanía reescrita como desempeño general): las respuestas se pesarían bajo la categoría equivocada. Se previene con la regla **"reformular, no re-temar"**: editar solo mejora la redacción; para otro tema, se desactiva la pregunta y se crea una nueva en su categoría. Al guardar, **la IA comprueba** que el texto siga midiendo su categoría y advierte si no (el admin debe confirmar). Y como se edita con periodo cerrado y versionando, cualquier desvío se revierte antes de que alguien responda. |
-| **Anonimato real** | Si una evaluación es anónima, **nunca se guarda el vínculo** entre la persona y lo que respondió. La BD sabe *que* participaste (fila en `evaluation_submissions`) y sabe *qué respuestas* hay (fila en `evaluations`), pero **no hay nada que las una**: la columna de enlace `evaluation_id` queda en NULL. Ni el admin, ni nadie con acceso directo a la base, puede reconstruirlo. Efecto secundario buscado: **tú tampoco** puedes volver a ver tus respuestas anónimas — si pudieras tú, podría el admin. |
-| **`evaluation_submissions`** | Tabla que guarda **la participación** (quién evaluó a quién, en qué periodo), separada de `evaluations`, que guarda **el contenido**. Es lo que hace posible tener a la vez anonimato real y control de duplicados: el evaluador siempre se registra, pero solo se conecta con sus respuestas si la evaluación **no** es anónima. |
-| **No-duplicado** | Un coder no puede evaluar dos veces a la misma persona en el mismo periodo. |
-| **Resumen con IA** | Un texto ejecutivo que **Gemini** (IA) genera para el **admin**, resumiendo el feedback. Solo se le envían **datos agregados y anónimos**. |
-| **Agregado / anonimizado** | "Agregado" = promedios y conteos, no respuestas individuales. "Anonimizado" = sin nombres ni identidades. |
-| **Google Gemini** | El servicio de IA de Google al que el backend llama para generar ese resumen (y para el chequeo de coherencia de preguntas). |
+Conceptos vinculados a cómo se almacenan, protegen y normalizan los datos en el motor relacional.
+
+### 3.1. Estructuras Relacionales
+| Término | Definición Técnica y Contexto |
+|---------|-------------------------------|
+| **3FN (Tercera Forma Normal)** | Regla de normalización de bases de datos que elimina la redundancia asegurando que los atributos no clave dependan únicamente de la clave primaria. |
+| **Vista Materializada / Virtual** | Una consulta SQL guardada como una tabla virtual en la base de datos (ej. `vw_period_metrics`). Permite delegar cálculos matemáticos pesados (como el promedio ponderado del ICP) al motor de base de datos. |
+
+### 3.2. Integridad de Datos
+| Término | Definición Técnica y Contexto |
+|---------|-------------------------------|
+| **Índice Único Compuesto** | Restricción a nivel de base de datos (`uq_submission_once`) que previene condiciones de carrera (Race Conditions) al impedir que existan dos filas con la misma combinación de `evaluator_id`, `evaluatee_id` y `period_id`. |
+| **Soft Delete (Borrado Lógico)** | Práctica de marcar un registro como inactivo (ej. `is_active = FALSE` en preguntas) en lugar de eliminarlo físicamente de la base de datos (Hard Delete). Esencial para mantener el histórico de evaluaciones pasadas intacto. |
 
 ---
 
-## 7. Git y entrega
+## 4. Frontend y Experiencia de Usuario
 
-| Término | En simple |
-|---------|-----------|
-| **GitFlow** | Forma ordenada de usar ramas: `main` (producción) ← `develop` (integración) ← `feature/...` (una tarea). |
-| **Rama (branch)** | Una copia paralela del código para trabajar sin romper lo demás. |
-| **Commit** | Una "foto" guardada de tus cambios, con un mensaje que explica qué hiciste. |
-| **Conventional Commits** | Convención para los mensajes: `feat(...)` nueva función, `fix(...)` arreglo, `docs(...)` documentación. |
-| **Pull Request (PR)** | Propuesta de unir tu rama a otra, para que el equipo la revise antes de mezclar. |
-| **DoD (Definition of Done)** | La lista de condiciones para considerar una historia **terminada**. |
-| **MVP** | "Producto Mínimo Viable": lo **mínimo** que sirve para probar la idea. Lo que sobra, se pospone (ver `09-mvp-alcance.md`). |
-| **`.env`** | Archivo con datos secretos/configuración (contraseña de BD, clave de IA). **No** se sube a Git. |
+Términos del lado del cliente.
+
+### 4.1. Componentes y Rendimiento
+| Término | Definición Técnica y Contexto |
+|---------|-------------------------------|
+| **SPA (Single Page Application)** | Aplicación web que carga un solo documento HTML y actualiza dinámicamente el contenido mediante JavaScript, sin requerir recargas de página completas. |
+| **ES Modules** | Estándar de JavaScript para estructurar el código en módulos (`import`/`export`), permitiendo la separación de vistas (`*.view.js`) y servicios (`*.service.js`) sin depender de un empaquetador pesado en entornos de desarrollo. |
+| **Graceful Degradation** | Filosofía de diseño donde el sistema emplea capacidades modernas si están disponibles (ej. *View Transitions API*), pero asegura un funcionamiento base (fallback) en navegadores menos capaces. |
 
 ---
 
-## ¿Sigo con dudas de un término?
+## 5. Lógica de Dominio del Negocio (Business Rules)
 
-1. Búscalo aquí primero.
-2. Si no está, mira dónde aparece en `/docs` (tabla en `CLAUDE.md`).
-3. Si aún no queda claro, pídele a la IA que te lo explique **con una analogía y un ejemplo del
-   propio proyecto** — para eso está el modo *guía generativa*.
+Términos exclusivos de la problemática que resuelve *Riwi Lead Trace*.
+
+### 5.1. Evaluación y Métricas
+| Término | Definición Técnica y Contexto |
+|---------|-------------------------------|
+| **ICP (Índice de Calidad Percibida)** | Métrica principal (0 a 100) que cuantifica el desempeño de un líder basándose en el promedio ponderado de las respuestas de evaluación recibidas. Se calcula *on-read* (en tiempo de consulta). |
+| **Feedback Ascendente** | Modelo de evaluación donde los subordinados (Coders) evalúan el desempeño de sus superiores o mentores (Team Leaders y Tutores). |
+| **Anonimato (Application-Level Filtering)** | Trade-off arquitectónico. Para garantizar que el Coder pueda releer su propio historial, el vínculo físico de la evaluación sí se guarda en disco. Sin embargo, el anonimato se impone a Nivel de Aplicación: las vistas SQL y los endpoints destruyen u ocultan dinámicamente la identidad del autor si el envío se marcó como anónimo, impidiendo al Admin y al evaluado rastrear la autoría. |
+| **Deriva Semántica** | Riesgo de que la alteración del texto de una pregunta cambie su propósito original. Mitigado versionando preguntas (desactivando la anterior y creando una nueva) y validando la coherencia semántica mediante **Google Gemini**. |

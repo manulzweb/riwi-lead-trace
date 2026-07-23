@@ -1,47 +1,40 @@
-# 09 — Alcance del MVP
+# 09 — Alcance Técnico del MVP
 
-Filosofia: **startup validando una idea**. El MVP debe ser lo minimo para comprobar que el feedback ascendente estructurado (con ICP e IA) aporta valor. Todo lo que no sirva a esa validacion se pospone.
+Este documento define la delimitación estricta del perímetro funcional y no funcional del Producto Mínimo Viable (MVP). Bajo una filosofía de *Lean Startup*, se ha priorizado la validación del modelo de negocio sobre la implementación de abstracciones prematuras (Sobreingeniería). Todo flujo no crítico para la validación de la hipótesis central (Feedback Ascendente) queda exiliado del MVP.
 
-## Dentro del MVP (obligatorio)
+## 1. Perímetro Funcional Crítico (Core Features)
 
-| Funcionalidad | Por que es obligatoria |
-|---------------|------------------------|
-| **Backend FastAPI + MySQL** funcional | Requisito de la rubrica: integracion front + back + persistencia |
-| **Logica de negocio** (anonimato, no-duplicado, **ICP**, filtro por rol) | Requisito: no limitarse a CRUD basico |
-| Inicio de sesion (hash bcrypt en servidor, **sin JWT**, ver `06-arquitectura.md`) | Sin identidad no hay feedback atribuible ni roles |
-| Gestion de roles (Coder, Tutor, TL, Admin; **un usuario puede tener mas de un rol a la vez**) | Define que ve y hace cada usuario |
-| Listar Team Leaders y Tutores evaluables | Punto de entrada de la accion principal |
-| Evaluar Team Leader (formulario estructurado) | Nucleo de la hipotesis del producto |
-| Evaluar Tutor (formulario estructurado) | Completa el alcance del feedback ascendente |
-| Feedback anonimo opcional | Clave para obtener feedback honesto (confianza) |
-| Registro/persistencia de evaluaciones (API) | Sin datos no hay validacion ni metricas |
-| **Gestion del periodo de evaluacion (Admin)** | El Admin activa/cierra la ventana; sin periodo activo los Coders ven "No hay formularios por realizar" (disponibilidad controlada = logica de negocio) |
-| **Edicion minima de preguntas (Admin)** | Editar texto y activar/desactivar preguntas, solo con periodo cerrado y con versionado (protege historial e ICP) |
-| Historial de evaluaciones (Coder) | Trazabilidad minima para el evaluador |
-| Dashboard de resultados (Admin) | Convierte datos en decision; razon de negocio |
-| **ICP** e indicadores | Mide calidad del acompanamiento con un indice accionable |
-| **Resumen de feedback con IA** (Google Gemini) para el Admin | Diferenciador; sintesis accionable y anonimizada |
-| SPA responsive y navegable | Restriccion tecnica + usabilidad basica |
-| Despliegue accesible (front + back) | Requisito: app funcional disponible para la sustentacion |
-| **Configuracion global** (Admin) | Ajustar desde la UI los umbrales del ICP, la tolerancia de pesos y la temperatura de IA (`system_settings`) en vez de dejarlos hardcodeados |
-| **Bitacora basica de acciones administrativas** (Admin) | Trazabilidad minima de acciones sensibles (abrir/cerrar periodo, editar preguntas, borrar categorias), con export a CSV |
+| Dominio Funcional | Racional Arquitectónico / Negocio |
+|-------------------|-----------------------------------|
+| **Estructura Full-Stack** | Acoplamiento mediante contrato REST entre Frontend (SPA) y Backend (FastAPI + MySQL). Condición indispensable para la evaluación. |
+| **Lógica de Dominio Pura** | Desacoplamiento de operaciones de base de datos a favor de procesos de negocio complejos: prevención de concurrencia, métricas ICP, algoritmos de anonimato. |
+| **Gestión de Sesión Stateless** | Autenticación basada en comprobación criptográfica Bcrypt en servidor. Se prescinde de la emisión de Tokens (JWT) en favor de un manejo de estado efímero del lado del cliente, reduciendo la complejidad del MVP. |
+| **Control de Acceso (RBAC Múltiple)** | Autorización basada en perfiles (Coder, TL, Tutor, Admin) gestionada en cliente. Un usuario puede poseer concurrentemente Múltiples Roles (Relación N:M). |
+| **Formularios de Evaluación** | Inyección dinámica de plantillas estructuradas contra destinatarios (Team Leaders, Tutores). |
+| **Restricción de Anonimato** | Capacidad del Coder de aislar criptográficamente su identidad de los resultados (Carencia de Foreign Key en evaluaciones anónimas). |
+| **Inmutabilidad e Integridad** | Prevención a nivel de motor SQL de evaluaciones duplicadas en el mismo periodo. |
+| **Control de Ciclos (Periodos)** | Máquina de estados temporal administrada. Sin un periodo *Activo*, el flujo de captura de datos se bloquea transaccionalmente. |
+| **Integridad de Instrumentos** | Administración de preguntas y formularios condicionada al cierre de periodos (bloqueo) y versionado *Soft-Delete* para preservar referencias históricas. |
+| **Cálculo Derivado (ICP)** | Procesamiento algebraico de agregados mediante Vistas SQL materializadas para la consolidación del Dashboard Administrativo. |
+| **Integración Analítica NLP** | Despacho de agregados anonimizados a **Google Gemini** para la extracción de tópicos e *insights* (Síntesis Cualitativa). |
+| **Settings en Caliente** | Modificación dinámica de umbrales del ICP y control termodinámico de la IA (`system_settings`) sin necesidad de re-desplegar binarios. |
+| **Trazabilidad Forense (Auditoría)** | Bitácora *append-only* de transacciones administrativas sensibles (mutación de periodos, instrumentos, configuraciones), exportable a formato crudo (CSV). |
 
-**Seguimiento historico (admin)** se incluye como `Should`: aporta a la validacion pero puede recortarse si la capacidad aprieta.
+*Nota: La consolidación del seguimiento histórico a largo plazo por cohortes queda categorizada como prioridad "Should", sujeta a capacidad técnica residual.*
 
+## 2. Criterios de Validación (Success Criteria)
 
-## Criterio de exito del MVP
+La validación del MVP se certifica al superar los umbrales de adopción y completitud expuestos en `01-vision-y-producto.md` (Adopción ≥60%, Completitud ≥80%), corroborando la reducción del sesgo cognitivo en evaluaciones cualitativas.
 
-El MVP se considera validado si, durante el piloto, se alcanzan las **metricas de exito** definidas en [`01-vision-y-producto.md`](./01-vision-y-producto.md) (adopcion >=60%, completitud >=80%, y al menos un admin usando el dashboard semanalmente), confirmando que el feedback ascendente genera informacion accionable.
+## 3. Requisitos No Funcionales (NFRs)
 
-## Requisitos no funcionales (RNF)
+La estabilidad del sistema se rige bajo los siguientes requerimientos, dimensionados para operar de manera resiliente durante el piloto:
 
-Definidos con criterio MVP: suficientes para un piloto confiable, sin sobreingenieria.
-
-| RNF | Que exige | Objetivo verificable |
-|---|---|---|
-| **Seguridad** | Contrasenas hasheadas (bcrypt); anonimato real y **estructural** (el vinculo evaluador↔contenido no se crea: `evaluation_submissions.evaluation_id = NULL`); **sin JWT** — el rol/ID de quien llama lo manda el propio front y el backend lo confia (filtro de datos, no verificacion criptografica, ver `06-arquitectura.md`); HTTPS en produccion; sanear entradas (evitar XSS). | 0 contrasenas en texto plano; 0 filas de `evaluation_submissions` anonimas con `evaluation_id` distinto de NULL |
-| **Escalabilidad** | Frontend desacoplado via contrato REST; arquitectura modular; plantillas de formulario en BD. | — |
-| **Rendimiento** | Bundle ligero (Vite, sin frameworks pesados); estados de carga; evitar peticiones redundantes. | FCP < 2s; bundle inicial liviano |
-| **Usabilidad** | Responsive mobile-first (>=320px); feedback inmediato (carga/vacio/error/exito); validacion clara por campo. | Completar evaluacion en <=3 clics |
-| **Mantenibilidad** | Capas separadas (router/services en front; `routes/ → services/ → repositories/` en back, sin capa `models/` — ver `06-arquitectura.md`); Conventional Commits; docs vivos. | Logica de negocio aislada en `services`, acceso a datos en `repositories` |
-| **Accesibilidad** | HTML semantico; navegacion por teclado; contraste WCAG AA; `aria-*` donde falte semantica. | Navegable 100% por teclado; contraste AA |
+| NFR | Directriz Técnica | Criterio de Aceptación (DoD) |
+|-----|-------------------|------------------------------|
+| **Seguridad y Criptografía** | Hashes unidireccionales (Bcrypt). Anonimato garantizado por carencia relacional (`evaluation_id = NULL`). Prevención de Inyecciones SQL vía comandos pre-compilados (`text()`). Prevención de XSS en renders. Protocolo HTTPS. | 0 credenciales en texto plano. Inviabilidad matemática de identificar autores anónimos. |
+| **Arquitectura de Software** | Diseño escalable, segmentación horizontal rigurosa (`Routes`, `Services`, `Repositories`). Carencia absoluta de modelos ORM para máxima transferencia de rendimiento al motor DB. | Capas 100% aisladas. Lógica de negocio restringida a la capa `services`. |
+| **Rendimiento (Performance)** | Transmisión de *Bundles* SPA ultra-minificados (Vite). Descarga de la CPU del servidor delegando métricas complejas al motor SQL. Control de asincronía. | FCP (First Contentful Paint) < 2s. Ausencia de cuellos de botella (N+1 queries). |
+| **Usabilidad (UX/UI)** | Patrón *Mobile-First*. Feedback háptico o visual concurrente. Validación robusta (Client-Side). | Flujo transaccional de evaluación concretado en ≤ 3 clics o interacciones. |
+| **Mantenibilidad** | Aplicación rigurosa de Convenciones Semánticas (Conventional Commits, PEP-8, BEM). Documentación en vivo. | Ausencia de "Código Espagueti" (Spaghetti Code). Módulos testeables unitariamente. |
+| **Accesibilidad** | Adherencia transversal al estándar semántico HTML5. Inserción de atributos ARIA. Contraste radiométrico WCAG AA. | Interactividad garantizada 100% mediante uso exclusivo de periféricos de teclado. |

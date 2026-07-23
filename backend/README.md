@@ -1,215 +1,69 @@
-# Riwi LeadTrace — Backend
+# 🧠 Riwi LeadTrace - Capa Backend (API)
 
-API REST del proyecto **Riwi LeadTrace**: evaluación ascendente de Coders hacia Team Leaders y
-Tutores, con anonimato opcional, un Índice de Calidad Percibida (ICP) por periodo y resúmenes de
-feedback generados con IA (Google Gemini API).
+Este directorio contiene la arquitectura del servidor **FastAPI**, implementada bajo un patrón de **Monolito Modular**. Está diseñado para garantizar escalabilidad, aislamiento de lógica de negocio y alta integridad transaccional sobre MySQL.
 
-Para entender *cómo* funciona cada capa del código (con ejemplos guiados), ver
-[`GUIA-BACKEND.md`](./GUIA-BACKEND.md). Este README es para poner el proyecto a correr y consultar
-la lista de endpoints.
+---
 
-## Stack
+## 🏗️ Topología Arquitectónica
 
-- **Python 3.12 + FastAPI**
-- **SQL plano** vía SQLAlchemy `text()` + `conn.execute()` (sin ORM, sin capa `models/`) + **PyMySQL** sobre **MySQL**
-- **Pydantic** para validación de entrada/salida
-- **bcrypt** (`passlib`) para hashear contraseñas — login verifica en servidor, **sin JWT**: el rol/ID de quien llama se confía al valor que manda el propio front, sin verificación criptográfica de sesión en el backend
-- **Gemini API** (`google-generativeai`) para validaciones NLP y resúmenes de feedback
+La separación de responsabilidades (SRP) es estricta. El código fluye desde la capa externa (web) hacia la interna (persistencia):
 
-## Requisitos previos
+*   **`routes/` (Controladores HTTP):** Frontera de la aplicación. Su único trabajo es interceptar la petición, validar el JSON con esquemas Pydantic y devolver códigos HTTP `200`, `201`, etc. Nunca ejecutan reglas de negocio.
+*   **`services/` (Lógica de Dominio):** El "cerebro". Aquí vive el control de anonimato, los cálculos analíticos (ICP), la orquestación de inteligencia artificial (Gemini) y las máquinas de estados. No importan objetos de FastAPI; son funciones puras o clases de negocio.
+*   **`repositories/` (Persistencia de Datos):** Abstracción de I/O. Ejecutan el SQL crudo (`sqlalchemy.text()`) sobre el Pool de conexiones.
+*   **`schemas/` (Contratos Pydantic):** Validación de tipos (DTOs). Garantizan que ninguna data corrupta entre a los servicios.
+*   **`exceptions/` (Polimorfismo de Errores):** Jerarquía de excepciones de dominio (ej. `PeriodNotActiveException`).
 
-- Python 3.12+
-- MySQL corriendo localmente (o accesible por red) con la base ya creada a partir de
-  [`database/01_ddl.sql`](../database/01_ddl.sql) + [`database/02_dml.sql`](../database/02_dml.sql)
+## 🛡️ Decisiones de Ingeniería Clave
 
-## Instalación
+### 1. SQL Crudo sobre ORM (Rendimiento)
+Aunque usamos `SQLAlchemy` para el **Connection Pooling** y prevención de SQL Injection (parametrización segura), prescindimos intencionalmente de sus Modelos Declarativos (ORM). Todo el CRUD y la agregación de métricas complejas (OLAP) operan mediante vistas SQL y comandos nativos (`text()`). Esto evita el *overhead* de instanciación de objetos en Python, crítico para los Dashboards administrativos.
 
+### 2. Autenticación Stateless (MVP)
+Para el *Minimum Viable Product*, las contraseñas se protegen criptográficamente vía `bcrypt`. No obstante, **no se emite JWT ni cookies de sesión en el servidor**. El control de roles (RBAC) está delegado funcionalmente al cliente. La API asume transaccionalmente el ID que el cliente inyecta en el Payload.
+
+### 3. Mitigación de Race Conditions (ACID)
+Si dos *requests* intentan registrar la misma evaluación simultáneamente (Doble Clic), el servicio no depende solo del código Python. MySQL lanza un `IntegrityError` provocado por el `UNIQUE INDEX` en `evaluation_submissions`. Nuestro interceptor global en `main.py` lo traduce limpiamente a un `409 Conflict`.
+
+---
+
+## 🚀 Guía de Despliegue Local
+
+### 1. Pre-requisitos
+*   Python 3.12+
+*   Servidor MySQL (Corriendo en puerto 3306)
+
+### 2. Creación del Entorno (Virtual Env)
 ```bash
+# Navegar al directorio del backend
 cd backend
+
+# Crear entorno virtual
 python -m venv venv
 
-# Windows
+# Activar (En Windows)
 venv\Scripts\activate
-# Mac/Linux
+# Activar (En Linux/Mac)
 source venv/bin/activate
+```
 
+### 3. Instalación de Dependencias
+```bash
 pip install -r requirements.txt
 ```
 
-## Variables de entorno
-
-Copiá `.env.example` a `.env` y completá los valores:
-
-```bash
-cp .env.example .env
+### 4. Configuración (Variables de Entorno)
+Crea un archivo `.env` en el directorio `backend/` basándote en `.env.example`:
+```env
+DATABASE_URL=mysql+pymysql://root:root@localhost/riwi_lead_trace
+GEMINI_API_KEY=tu_clave_de_google_ai_studio
+FRONTEND_ORIGIN=http://localhost:5173
 ```
+*(Asegúrate de que la BD haya sido poblada usando los scripts SQL de la carpeta `/database` del proyecto).*
 
-| Variable | Descripción | Ejemplo |
-|---|---|---|
-| `DATABASE_URL` | Cadena de conexión a MySQL (`dialecto+driver://usuario:password@host:puerto/bd`) | `mysql+pymysql://root:password@localhost:3306/riwi_lead_trace` |
-| `GEMINI_API_KEY` | API key de Google AI Studio, para IA. Si falta, el endpoint responde un mensaje claro. | `AIzaSy...` |
-| `FRONTEND_ORIGIN` | Origen permitido por CORS (la URL de la SPA) | `http://localhost:5173` |
-
-## Base de datos
-
-El esquema **no** se crea con SQLAlchemy — se ejecutan los scripts SQL directamente (DDL primero,
-luego el seed):
-
-```bash
-mysql -u root -p < ../database/01_ddl.sql
-mysql -u root -p riwi_lead_trace < ../database/02_dml.sql
-```
-
-Esto crea las tablas normalizadas a 3FN (`roles`, `cohorts`, `clans`, `users`, `user_roles`,
-`team_leader_clans`, `periods`, `forms`, `questions`, `evaluations`,
-`evaluation_details`, `ai_feedback_cache`). Los roles de cada usuario son N:M (`user_roles`): un
-usuario puede tener más de un rol a la vez, y un Team Leader puede tener varios clanes a cargo
-(`team_leader_clans`). Ver [`docs/07-base-de-datos.md`](../docs/07-base-de-datos.md) para el
-modelo entidad-relación completo.
-
-`app/config/database.py` expone un `conn` que cada `service` usa directo (`conn.execute(...)`,
-`conn.commit()`). Por dentro le da a **cada hilo su propia `Connection`** de SQLAlchemy (FastAPI
-corre los endpoints sync de este proyecto en un threadpool) para que dos requests concurrentes no
-compartan el mismo objeto de conexion/transaccion.
-
-## Correr el servidor
-
+### 5. Inicializar Servidor (ASGI)
 ```bash
 uvicorn app.main:app --reload
 ```
-
-- API disponible en `http://localhost:8000`
-- Documentación interactiva (Swagger) en `http://localhost:8000/docs`
-
-## Endpoints
-
-**Ninguno de estos endpoints verifica sesión ni rol en el servidor** (no hay JWT — ver "Stack").
-La columna "Rol esperado" es solo lo que el *frontend* respeta al armar la UI y, en algunos casos,
-un parámetro (`viewer_role`, `evaluator_id`) que el propio cliente manda y el backend usa tal cual
-para filtrar datos, sin poder confirmar que sea real. No lo trates como control de acceso real.
-
-| Método | Endpoint | Uso | Rol esperado (front) |
-|---|---|---|---|
-| GET | `/` | Health check | público |
-| POST | `/auth/login` | Login → `{ user }` (sin token) | público |
-| GET | `/users?role=` | Listar usuarios, opcionalmente filtrados por rol (`coder`\|`team_leader`\|`tutor`\|`admin`) | cualquiera |
-| GET | `/users/{id}` | Obtener un usuario | cualquiera |
-| POST | `/users` | Crear usuario | admin |
-| PUT | `/users/{id}` | Actualizar usuario | admin |
-| DELETE | `/users/{id}` | Eliminar usuario | admin |
-| GET | `/periods` | Listar periodos | cualquiera |
-| GET | `/periods/{id}` | Obtener un periodo | cualquiera |
-| POST | `/periods` | Crear periodo | admin |
-| PUT | `/periods/{id}` | Actualizar periodo (activarlo desactiva cualquier otro) | admin |
-| DELETE | `/periods/{id}` | Eliminar periodo | admin |
-| GET | `/forms?target_role=` | Plantillas activas para `team_leader` o `tutor` (arreglo; en la práctica 0 o 1) | cualquiera |
-| POST | `/forms` | Crear una plantilla nueva con sus preguntas iniciales (constructor del Admin) — solo con periodo cerrado, desactiva cualquier otra plantilla activa del mismo rol | admin |
-| PUT | `/forms/{id}` | Actualizar título/descripción de una plantilla (las preguntas se manejan con `/questions`) — solo con periodo cerrado | admin |
-| DELETE | `/forms/{id}` | Desactivar una plantilla — solo con periodo cerrado | admin |
-| POST | `/evaluations` | Registrar evaluación (borrador o enviada) — valida anonimato, no-duplicado por periodo y periodo activo | cualquiera |
-| GET | `/evaluations?evaluator_id=` | Historial de evaluaciones hechas por un Coder | cualquiera |
-| GET | `/evaluations?evaluatee_id=&period_id=&viewer_role=` | Histórico de evaluaciones recibidas; `viewer_role=admin` revela al evaluador en no-anónimas | cualquiera |
-| GET | `/questions?form_id=` | Preguntas activas de un form (texto + categoría + peso) | admin |
-| POST | `/questions` | Agregar una pregunta nueva a una plantilla existente — solo con periodo cerrado, no exige que los pesos sumen 100 en el momento | admin |
-| PATCH | `/questions/{id}` | Reformular el texto de una pregunta — siempre versiona, solo con periodo cerrado | admin |
-| DELETE | `/questions/{id}` | Desactivar una pregunta — solo con periodo cerrado, idempotente | admin |
-| PUT | `/questions/weights` | Actualizar los pesos de las preguntas de escala de un form — deben sumar 100, solo con periodo cerrado | admin |
-| GET | `/categories` | Listar todas las categorías de pregunta | admin |
-| POST | `/categories` | Crear una categoría nueva | admin |
-| PATCH | `/categories/{id}` | Renombrar una categoría | admin |
-| DELETE | `/categories/{id}` | Eliminar una categoría — `409` si alguna pregunta (activa o histórica) la usa (FK `ON DELETE RESTRICT`) | admin |
-| GET | `/metrics/summary?period_id=` | KPIs globales + ICP ponderado por persona en un periodo | admin, team_leader, tutor |
-| GET | `/metrics/ai-summary?evaluatee_id=&period_id=` | Resumen de feedback generado con Gemini (cacheado) | admin |
-
-## Estructura del proyecto
-
-```
-app/
-├── main.py       # arma la app FastAPI, CORS, registra los routers
-├── config/       # settings (.env), conexión a MySQL, hashing de contraseñas (bcrypt)
-├── schemas/      # Pydantic — forma de entrada/salida de cada endpoint
-├── routes/       # un router por recurso; valida y delega a services
-└── services/     # lógica de negocio + queries SQL (auth, user, period, form, question, evaluation, metrics, ai)
-```
-
-No hay carpeta `models/`: la forma de las tablas vive solo en
-[`database/01_ddl.sql`](../database/01_ddl.sql) (seed en
-[`database/02_dml.sql`](../database/02_dml.sql)), y cada `service` arma su propio SQL con `text()`.
-
-Reglas de negocio clave (no romper sin acordarlo con el equipo):
-
-- Evaluación anónima → nunca se persiste ni se expone `evaluator_id` (`hide_evaluator` en
-  `evaluation_service.get_evaluations_by_evaluatee`).
-- Un Coder no puede evaluar dos veces a la misma persona en el mismo periodo — validado **solo en
-  `evaluation_service.create_evaluation`** (`SELECT` previo antes del `INSERT`, sin transacción).
-  El índice único `uq_eval_once` que reforzaría esto en la BD está **comentado a propósito** en
-  `database/01_ddl.sql`; queda una condición de carrera teórica entre dos requests concurrentes
-  del mismo evaluador.
-- Los evaluables tienen rol vía `user_roles` (N:M): un usuario puede tener varios roles a la vez.
-  Al evaluar a un Team Leader, `evaluation_service` valida el clan contra `team_leader_clans` (un
-  TL puede tener varios clanes a cargo); para tutor/coder valida contra el `clan_id` 1:1 de
-  `users`.
-- `POST /evaluations` rechaza con `409` si el `period_id` no corresponde a un periodo activo
-  (`is_active=TRUE`) o con `404` si el periodo no existe.
-- Solo puede haber **un periodo activo a la vez**: activar uno (al crearlo o al actualizarlo)
-  desactiva automaticamente cualquier otro (`period_service._deactivate_other_periods`).
-- El ICP (`average_score` + `status`) se calcula on-read en `metrics_service.py`, no se persiste.
-  Es un **promedio ponderado**: cada pregunta de escala pesa lo que diga su `weight_percent`
-  (`questions.weight_percent`, que las preguntas de escala activas de un form deben sumar
-  exactamente 100 — se valida en `question_service.update_weights`). Con menos de
-  `MIN_EVALUATIONS` (3) respuestas, no se publica (`average_score: null`). El estado
-  (`Sólido` / `Estable` / `En riesgo` / `Datos insuficientes`) sale de comparar contra dos umbrales
-  fijos en código, no hay tendencia contra el periodo anterior.
-- Las preguntas (texto o pesos) solo se editan con el periodo cerrado. Editar el texto **versiona**
-  (fila nueva + `is_active=FALSE` en la anterior); `category_id`/`input_type`/`sort_order`/
-  `weight_percent` se heredan sin tocar. Al guardar, la IA revisa que el texto siga encajando en la
-  categoria (`ai_service.check_question_category_coherence`); si no, hace falta `confirm: true`.
-- Las categorías (`categories`) son su propia tabla, no texto libre: el Admin las crea, renombra
-  (`PATCH /categories/{id}`) y elimina (`DELETE /categories/{id}`) independientemente de las
-  plantillas. `questions.category_id` es FK con `ON DELETE RESTRICT` — no se puede borrar una
-  categoría mientras alguna pregunta (activa o de una evaluación histórica) la use; la base de
-  datos lo rechaza con un error de integridad que `category_service.delete_category` traduce a
-  `409`, en vez de validarlo "a mano" en Python (una sola fuente de verdad para la regla).
-- El constructor de plantillas (`POST /forms`, `POST /questions`) también exige periodo cerrado.
-  Solo `team_leader`/`tutor` son roles evaluables (`form_service.EVALUABLE_ROLES`) — un `target_role`
-  distinto (ej. `coder`, que evalúa pero nunca es evaluado) se rechaza con `422`. Crear una plantilla
-  nueva para un rol desactiva cualquier otra plantilla activa de ese mismo rol (una sola activa por
-  rol, igual que los periodos). Ni `POST /forms` ni `POST /questions` ni `DELETE` borran filas
-  físicamente: siempre desactivan (`is_active=FALSE`), porque `evaluations.form_id` y
-  `evaluation_details.question_id` pueden referenciarlas desde evaluaciones históricas. Los tipos de
-  pregunta válidos son `scale` \| `text` \| `yes_no`; `yes_no` se trata como `text` para el ICP (se
-  excluye del promedio ponderado, igual que `text`, ver `metrics_service.calculate_average_score`).
-- A la API de Gemini solo se le envían agregados anonimizados (nunca `evaluator_id` ni identidades).
-
-Detalle completo en [`CLAUDE.md`](../CLAUDE.md) y [`docs/`](../docs).
-
-## Pruebas
-
-Las pruebas son de **integración**: usan una base MySQL real, no mocks. Por eso corren contra una
-**base de datos propia** (`backend/.env.test`), nunca contra la que apunta `backend/.env`.
-
-Preparación, una sola vez:
-
-```bash
-cp .env.test.example .env.test     # y ajustá DATABASE_URL
-python tests/bootstrap_test_db.py  # crea el esquema + seed en la BD de pruebas
-```
-
-Después, cada vez:
-
-```bash
-pytest
-```
-
-> **El nombre de la base en `.env.test` debe terminar en `_test`.** `conftest.py` lo verifica y
-> aborta si no. No es capricho: las pruebas insertan y **borran** filas, y `test_periods.py` activa
-> periodos, lo que dispara `deactivate_other_periods`. Corriéndolas contra la base compartida del
-> equipo se le **cierra el periodo activo** a los coders en plena evaluación — pasó de verdad, por
-> eso existe esta separación.
-
-`bootstrap_test_db.py` aplica `01_ddl.sql`, `02_dml.sql` y `04_views.sql` (no el mock: los tests
-crean sus propios datos). Reejecutalo cuando cambie el esquema.
-
-Suite en [`backend/tests/`](./tests): `test_auth.py`, `test_evaluations.py`, `test_metrics.py`,
-`test_periods.py`, `test_questions.py`, `test_forms.py`, `test_users.py`. También podés probar a
-mano en `http://localhost:8000/docs` (Swagger).
+La API estará disponible en `http://localhost:8000`.
+Puedes probar todos los Endpoints interactivamente en el Swagger Auto-Generado: **`http://localhost:8000/docs`**

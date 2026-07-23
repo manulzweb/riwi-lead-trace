@@ -33,6 +33,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str = Field(
+        min_length=6,
         title="Contraseña",
         description="Contraseña en texto plano (será encriptada por el backend)",
         examples=["SecurePass123!"]
