@@ -11,6 +11,7 @@ import { formatDate } from "../../utils/date";
 import { searchBoxComponent, setupSearch } from "../../components/searchBox";
 import { activePeriodBannerComponent } from "../../components/active_period_banner.js";
 import { emptyStateComponent } from "../../components/emptyState.js";
+import { modalComponent, setupModal } from "../../components/modal";
 
 export const renderAdminEvaluations = () => `
   ${navBarComponent()}
@@ -170,9 +171,10 @@ export const renderAdminEvaluations = () => `
     </div>
 
     <!-- Modal Form for New Period (Quick Create) -->
-    <div id="quick-period-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300">
-      <div role="dialog" aria-modal="true" aria-labelledby="quick-period-modal-title" class="w-full max-w-md scale-95 transform rounded-3xl bg-[var(--bg-panel)] p-8 shadow-2xl transition-transform duration-300 border border-[var(--border-main)]">
-        <h2 id="quick-period-modal-title" class="mb-6 text-2xl font-bold font-heading text-[var(--text-main)]">Abrir Nuevo Ciclo Rápidamente</h2>
+    ${modalComponent({
+      id: "quick-period-modal",
+      title: "Abrir Nuevo Ciclo Rápidamente",
+      children: `
         <form id="form-quick-period">
           <div class="mb-4">
             <label for="quick-period-name" class="mb-2 block text-sm font-semibold text-[var(--text-main)]">Nombre del Ciclo</label>
@@ -191,8 +193,8 @@ export const renderAdminEvaluations = () => `
             <button type="submit" class="w-full rounded-xl bg-[var(--brand-bg)] py-3 font-bold text-[var(--brand-text)] transition-all hover:bg-[var(--brand-hover)] cursor-pointer">Guardar e Iniciar</button>
           </div>
         </form>
-      </div>
-    </div>
+      `,
+    })}
     </div>
   </main>
 `;
@@ -215,7 +217,6 @@ export const setupAdminEvaluations = () => {
 
   // Modal rápido de periodos
   const btnQuickPeriod = document.getElementById("btn-quick-period");
-  const quickPeriodModal = document.getElementById("quick-period-modal");
   const formQuickPeriod = document.getElementById("form-quick-period");
   const btnCancelQuickPeriod = document.getElementById("btn-cancel-quick-period");
 
@@ -278,24 +279,14 @@ export const setupAdminEvaluations = () => {
   };
 
   // --- Lógica del modal rápido de periodos ---
-  if (btnQuickPeriod && quickPeriodModal) {
-    const closeQuickModal = () => {
-      quickPeriodModal.classList.add("opacity-0");
-      quickPeriodModal.firstElementChild.classList.add("scale-95");
-      setTimeout(() => {
-        quickPeriodModal.classList.add("hidden");
-        formQuickPeriod.reset();
-      }, 300);
-    };
-
-    btnQuickPeriod.addEventListener("click", () => {
-      quickPeriodModal.classList.remove("hidden");
-      setTimeout(() => {
-        quickPeriodModal.classList.remove("opacity-0");
-        quickPeriodModal.firstElementChild.classList.remove("scale-95");
-      }, 10);
+  if (btnQuickPeriod && formQuickPeriod) {
+    // Migrado al componente compartido: gana Esc + trap de foco (antes este
+    // modal no los tenia). onClose limpia el formulario tras la animacion.
+    const { open: openQuickModal, close: closeQuickModal } = setupModal("quick-period-modal", {
+      onClose: () => formQuickPeriod.reset(),
     });
 
+    btnQuickPeriod.addEventListener("click", (e) => openQuickModal(e.currentTarget));
     btnCancelQuickPeriod.addEventListener("click", closeQuickModal);
 
     formQuickPeriod.addEventListener("submit", async (e) => {

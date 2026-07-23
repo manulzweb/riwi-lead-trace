@@ -2,7 +2,7 @@ import { navBarComponent } from "../../components/navbar";
 import { showToast, showConfirm } from "../../components/alerts";
 import { categoryService } from "../../services/categories.service.js";
 import { escapeHtml } from "../../utils/validators";
-import { setupModalA11y } from "../../utils/modalA11y";
+import { modalComponent, setupModal } from "../../components/modal";
 import { authService } from "../../services/auth.service";
 import { searchBoxComponent, setupSearch } from "../../components/searchBox";
 import { emptyStateComponent } from "../../components/emptyState.js";
@@ -36,9 +36,10 @@ export const renderAdminCategories = () => `
     </section>
 
     <!-- Modal Form -->
-    <div id="category-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300">
-      <div role="dialog" aria-modal="true" aria-labelledby="category-modal-title" class="w-full max-w-md scale-95 transform rounded-3xl bg-[var(--bg-panel)] p-8 shadow-2xl transition-transform duration-300 border border-[var(--border-main)]">
-        <h2 id="category-modal-title" class="mb-6 text-2xl font-bold font-heading text-[var(--text-main)]">Nueva Categoría</h2>
+    ${modalComponent({
+      id: "category-modal",
+      title: "Nueva Categoría",
+      children: `
         <form id="form-category">
           <div class="mb-6">
             <label for="category-name" class="mb-2 block text-sm font-semibold text-[var(--text-main)]">Nombre</label>
@@ -49,8 +50,8 @@ export const renderAdminCategories = () => `
             <button type="submit" class="w-full rounded-xl bg-[var(--brand-bg)] py-3 font-bold text-[var(--brand-text)] transition-all hover:bg-[var(--brand-hover)] cursor-pointer">Guardar</button>
           </div>
         </form>
-      </div>
-    </div>
+      `,
+    })}
 
     <div id="category-search-slot" class="mt-8 max-w-sm"></div>
 
@@ -71,7 +72,6 @@ export const renderAdminCategories = () => `
 `;
 
 export const setupAdminCategories = () => {
-  const modal = document.getElementById("category-modal");
   const modalTitle = document.getElementById("category-modal-title");
   const btnCreate = document.getElementById("btn-create-category");
   const btnCancel = document.getElementById("btn-cancel-category");
@@ -82,16 +82,14 @@ export const setupAdminCategories = () => {
 
   let editCategoryId = null;
 
-  const modalA11y = setupModalA11y(modal, () => closeModal());
-
-  const openModal = (triggerEl) => {
-    modal.classList.remove("hidden");
-    modalA11y.onOpen(triggerEl);
-    setTimeout(() => {
-      modal.classList.remove("opacity-0");
-      modal.firstElementChild.classList.remove("scale-95");
-    }, 10);
-  };
+  // El reset del formulario y del id de edicion va en onClose (lo dispara el
+  // componente tras la animacion de cierre, igual que antes).
+  const { open: openModal, close: closeModal } = setupModal("category-modal", {
+    onClose: () => {
+      form.reset();
+      editCategoryId = null;
+    },
+  });
 
   const openCreateModal = (e) => {
     editCategoryId = null;
@@ -107,17 +105,6 @@ export const setupAdminCategories = () => {
     submitBtn.textContent = "Guardar Cambios";
     nameInput.value = category.name;
     openModal(triggerEl);
-  };
-
-  const closeModal = () => {
-    modal.classList.add("opacity-0");
-    modal.firstElementChild.classList.add("scale-95");
-    setTimeout(() => {
-      modal.classList.add("hidden");
-      form.reset();
-      editCategoryId = null;
-    }, 300);
-    modalA11y.onClose();
   };
 
   btnCreate.addEventListener("click", openCreateModal);
