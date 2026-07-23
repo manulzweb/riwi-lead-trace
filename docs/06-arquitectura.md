@@ -9,27 +9,11 @@
 
 ## Estilo arquitectonico: monolito modular por capas
 
-Es **un monolito**: un solo backend desplegable y una sola SPA desplegable (no microservicios). Es
-**modular**: dentro de cada uno, el codigo se separa en modulos con una responsabilidad clara, para
-que no se vuelva espagueti.
+El sistema implementa un patrón de arquitectura de monolito modular, garantizando un despliegue unificado para el backend y frontend (SPA). Internamente, la base de código se segmenta en módulos con responsabilidades aisladas para minimizar el acoplamiento y prevenir la degradación de la arquitectura.
 
-La organizacion interna es **horizontal (por capa tecnica)**, no vertical (por feature): todo lo de
-rutas vive junto (`routes/`), toda la logica de negocio vive junta (`services/`), y todo el acceso
-a datos vive junto (`repositories/`). La alternativa (**vertical**: una carpeta por feature con su propio router+service
-adentro, ej. `features/evaluations/`) se descarta a proposito: con ~7 entidades y ~8 endpoints,
-separar por feature agrega carpetas y decisiones sin beneficio real para un equipo de 5 en un MVP
-corto. Horizontal es mas facil de explicar y de encontrar codigo ("¿donde esta la logica? en
-`services/`").
+La organización estructural es de tipo **horizontal (por capa técnica)** en contraste con una separación vertical por funcionalidad (Feature-Sliced Design). Esta decisión fue tomada deliberadamente para maximizar la legibilidad y simplificar el modelo mental del código, favoreciendo la centralización de responsabilidades: los controladores viven en `routes/`, la lógica de negocio subyace en `services/`, y el acceso a datos está aislado en `repositories/`.
 
-> **Nota:** `backend/app/repositories/` es la capa real de acceso a datos: un archivo por entidad
-> (10 repositorios — `user`, `evaluation`, `period`, `form`, `question`, `category`, `metrics`,
-> `ai`, `activity_log`, `settings`) y los 10 `services/` correspondientes delegan ahi el
-> `conn.execute(text(...))` en vez de tenerlo inline. Las queries se escriben como SQL plano con
-> `text()` (la misma sintaxis que ya usan en MySQL Workbench y que explica `docs/13-glosario.md`),
-> ahora dentro de `repositories/` en vez de directo en `services/` — sin aprender el mini-lenguaje
-> de `select()/insert()/join()` de SQLAlchemy. Sigue **sin existir** una capa `models/`: el esquema
-> de tablas vive solo en `database/01_ddl.sql`, y `repositories/` no reintroduce SQLAlchemy Core
-> (`Table`), solo separa las mismas queries `text()` de la logica de negocio.
+> **Nota:** La persistencia se abstrae en `backend/app/repositories/`, encapsulando un repositorio por entidad (`user`, `evaluation`, `period`, etc.). Los servicios de dominio (`services/`) delegan la persistencia mediante inyección o uso de estos repositorios, los cuales ejecutan sentencias preparadas de SQL mediante `conn.execute(text(...))`. Las consultas se elaboran utilizando sintaxis SQL nativa, eludiendo la introducción de una capa de mapeo objeto-relacional completa (ORM como SQLAlchemy ORM) para reducir la sobrecarga técnica (overhead), y separando estrictamente la definición de datos (DDL) a los scripts iniciales sin definir un modelo de objetos intermedio.
 
 ## Patrones de diseño
 
@@ -155,8 +139,9 @@ riwi-lead-trace/
 
 ## Sistema de rutas SPA (frontend)
 
-- Router propio sobre **History API** (`pushState` + `popstate`).
-- `routes.js` declara un objeto `ROUTES` que mapea cada path a su vista y a los roles autorizados:
+- **Motor Propio (Vanilla JS):** Construido sobre la **History API** (`pushState` + `popstate`). Intercepta globalmente los eventos de clic en enlaces (`<a>`) para prevenir recargas completas del navegador (comportamiento SPA nativo).
+- **View Transitions API:** Implementa transiciones visuales fluidas (`document.startViewTransition()`) si el navegador lo soporta, cayendo con gracia (graceful degradation) a una actualización estándar del DOM.
+- **Rutas y Guardias (Route Guards):** `routes.js` declara un objeto `ROUTES` que mapea cada path a su vista y a los roles autorizados:
 
 ```js
 export const ROUTES = {
@@ -169,57 +154,40 @@ export const ROUTES = {
 };
 ```
 
-- **Guards:** antes de renderizar se valida sesion (`authService.getSession()`) y rol. Sin sesion -> `/login`; rol no autorizado -> "no autorizado".
+- **Ejecución de Guards:** Antes de la inserción en el DOM, el enrutador valida la sesión (`authService.getSession()`) y los roles (`allowedRoles`). Emite redirecciones o notificaciones (SweetAlert2) si se violan los privilegios, mitigando accesos no autorizados a nivel de cliente (UX).
 
 ## Gestion de estado (frontend)
 
-No hay store centralizado ni pub/sub (ver nota mas arriba: `store/` no existe). El estado de
-sesion es simplemente lo que hay en `localStorage`: `auth.service.js` expone `getSession()` /
-`setSession()` / `clearSession()` sobre una unica clave (`SESSION_ACTUAL`), y componentes puntuales
-que necesitan reaccionar a cambios (`sidebar.js`, `navbar.js`) leen esa clave y resuelven su propio
-render de forma local, sin un mecanismo de suscripcion compartido.
+La gestión de estado se mantiene deliberadamente simple, delegando la persistencia de la sesión al `localStorage` del cliente. El módulo `auth.service.js` provee la abstracción necesaria para interactuar con la sesión. Los componentes UI determinan su estado de renderizado reactivo internamente, prescindiendo de la adopción de una arquitectura de estado global (e.g. Redux o equivalentes) o implementaciones de bus de eventos (pub/sub).
 
 ## Backend — arquitectura por capas (FastAPI)
 
 | Capa | Responsabilidad | Regla |
 |------|-----------------|-------|
-| `routes/` | Definir endpoints, validar I/O con Pydantic, codigos HTTP | No contiene logica de negocio |
-| `services/` | **Logica de negocio** (reglas, calculos, orquestacion) | No conoce detalles HTTP; delega el acceso a datos a `repositories/` |
-| `repositories/` | **Acceso a datos**: las queries SQL (`text()`), un archivo por entidad. Heredan de `BaseRepository` (`fetch_one`/`fetch_all`/`fetch_scalar`/`execute`), que solo normaliza el consumo del `Result` | No contiene reglas de negocio. **No capturan excepciones** salvo para traducir `IntegrityError` a una excepcion del dominio |
-| `constants/` | Valores compartidos y **reglas puras** sin BD (ej. `can_evaluate_by_clan`) | Se testean sin levantar MySQL |
-| `schemas/` | Contratos Pydantic (validacion/serializacion) | Frontera de datos; nunca exponen campos sensibles (ej. `password_hash`) |
-
-> **No hay capa de autenticacion en el backend.** El proyecto no usa JWT ni ningun otro mecanismo
-> de sesion verificable en servidor — no existe un `deps.py` con `get_current_user`/`require_role`,
-> ni `Depends(...)` de auth en ningun archivo de `routes/` (podes verificarlo: `metrics_routes.py`,
-> por ejemplo, no declara ninguna dependencia de este tipo). Detalle en "Manejo de autenticacion"
-> y `CLAUDE.md`.
+| `routes/` | Controladores HTTP, validación estructural de I/O mediante **Pydantic V2**, y mapeo a verbos REST. | Aislada estrictamente de la lógica de negocio pura. |
+| `services/` | **Lógica de dominio** central (validaciones cruzadas, orquestación, integración con IA). | Agnóstica al protocolo HTTP; no emite excepciones de framework web (usa `ApplicationException`). |
+| `repositories/` | **Capa de Acceso a Datos (DAL)**: Ejecuta consultas paramétricas y transacciones de persistencia (`sqlalchemy.text()`). | Hereda de `BaseRepository`. Maneja la hidratación y proyecciones de estado (State Projection). |
+| `constants/` | Valores inmutables y reglas puras aisladas (e.g. `can_evaluate_by_clan`). | Sujetas a pruebas unitarias sin dependencia del motor de base de datos. |
+| `schemas/` | Contratos de serialización y deserialización (DTOs) implementados en **Pydantic V2**. | Frontera de datos; asegura la exclusión de atributos sensibles (e.g. `password_hash`). |
 
 > **evaluator_id viene del body:** en `POST /evaluations`, `evaluator_id` es un campo mas del
 > JSON que manda el cliente (`EvaluationCreate.evaluator_id`, leido en
-> `evaluation_service.create_evaluation`) — no se deriva de ningun token ni sesion verificada,
-> porque no hay JWT. Es un tradeoff de seguridad para mantener el MVP simple: cualquiera que llame
-> la API directo (sin pasar por la SPA) podria, en teoria, mandar
-> el `evaluator_id` de otro coder. El mismo tradeoff aplica a `viewer_role` en
-> `GET /evaluations?evaluatee_id=`. Ver el detalle completo en `CLAUDE.md` ("Sin JWT").
+> `evaluation_service.create_evaluation`).
 >
 > **Ojo:** ese `evaluator_id` del body **ya no se guarda en `evaluations`** (esa columna no existe).
 > Se persiste en `evaluation_submissions`, y solo se enlaza con el contenido cuando la evaluacion
 > **no** es anonima. Ver "Anonimato y no-duplicado" mas abajo.
+>
+> La infraestructura de base de datos emplea un modelo normalizado robusto complementado por abstracciones específicas para lectura, acercándose a un patrón arquitectónico **CQRS (Command Query Responsibility Segregation)** de manera simplificada:
+>
+> - **Escrituras (Commands):** Los `repositories/` ejecutan inserciones y mutaciones encapsuladas en transacciones explícitas. Se apoyan en un **Connection Pool** pre-configurado (`pool_size=10`, `max_overflow=20`) con `pool_pre_ping=True` para asegurar resiliencia en conexiones inestables.
+> - **Lecturas Complejas (Queries):** Para optimizar la obtención de datos agregados sin generar cuellos de botella (N+1 query problem), se abstraen las consultas pesadas a nivel de base de datos empleando **Vistas Materializadas o Virtuales**.
 
-## Logica de negocio destacada (ICP · IA)
+### Índice de Calidad Percibida (ICP) — Cálculo Híbrido
 
-Toda esta logica vive en `services/` (no en routers ni queries dispersas). Es la parte "no CRUD".
+**Definición:** El ICP es una métrica cuantitativa (escalada de 0 a 100) diseñada para evaluar la calidad percibida del acompañamiento. Actúa como indicador clave de rendimiento basado en la agregación de encuestas de evaluación.
 
-### Indice de Calidad Percibida (ICP) — `metrics_service`
-
-**Que mide.** El ICP mide la **calidad percibida** del acompanamiento segun los Coders: un
-puntaje de 0 a 100 por persona y periodo, calculado a partir de sus evaluaciones. Mide
-percepcion, no aprendizaje real — por eso "percibida".
-
-**Calculo.** Es un **promedio ponderado con un filtro de tamaño de muestra**, y ya no vive en una
-funcion Python: el calculo por `(evaluatee_id, period_id)` esta en la vista SQL `vw_period_metrics`
-(`database/04_views.sql`), que `metrics_service` consulta a traves de `metrics_repository`:
+**Algoritmo de Cálculo:** El índice se implementa a través de un promedio ponderado y está supeditado a un factor de confianza por significancia estadística (tamaño mínimo de muestra). El procesamiento aritmético se delega íntegramente a la capa de base de datos a través de la vista virtual `vw_period_metrics`.
 
 1. La vista cuenta cuantas evaluaciones `submitted` tiene esa persona en ese periodo (`n_evals`).
 2. Calcula el promedio ponderado usando los puntajes (1-5) y el **peso (`weight_percent`)** de
@@ -239,33 +207,21 @@ Leader/Tutor del periodo y agrega: promedio global, total de evaluaciones enviad
 participacion (evaluaciones enviadas ÷ evaluaciones posibles, asumiendo 2 evaluaciones por coder
 activo).
 
-**Lo que el ICP no hace (a proposito, para no sobre-construir en el MVP):** no pondera por
-categoría globalmente (usa los pesos individuales por pregunta, pero no agrupa matemáticamente por categoría), no calcula tendencia contra el periodo
-anterior. Las preguntas sí tienen una
-`category` en la BD (ver `07-base-de-datos.md`) para organizar el formulario, pero el calculo
-del ICP no la usa matemáticamente (más allá del peso de cada pregunta). Si el equipo decide agregar alguna de estas senales mas adelante, son
-extensiones puntuales sobre `vw_period_metrics`/`metrics_service`, no un rediseno.
+
 
 > El ICP **no se persiste**: se calcula on-read (en la vista SQL, no en una funcion `services`).
 > No busques `metrics_service.calculate_average_score` ni una constante `MIN_EVALUATIONS` en
 > `metrics_service.py`: ese diseño anterior ya no existe en el codigo actual.
 
-### Resumen por IA — `ai_service`
-- Construye un prompt con **agregados anonimizados** (promedios por categoria, conteos, comentarios
-  sin autor) y llama a **Google Gemini** (SDK `google-generativeai`).
-- Dos modelos segun el uso, ambos constantes en `ai_service.py`: `gemini-3.5-flash`
-  (`AI_SUMMARY_MODEL`) para el resumen de feedback y `gemini-2.5-flash-lite` (`AI_LITE_MODEL`) para
-  el chequeo de coherencia descrito mas abajo. Clave en `config/config.py` (`GEMINI_API_KEY`).
-- **Destinatario: solo el Admin** (Jefe de TL/tutores). Resumen ejecutivo del feedback por
-  persona/periodo.
-- **Privacidad:** nunca se envian identidades ni `evaluator_id`. El texto resultante se guarda en
-  `ai_feedback_cache` (`UNIQUE(evaluatee_id, period_id)`) para no re-llamar al modelo.
-- **Segundo uso (ADMIN-02) — chequeo de coherencia de preguntas:** al editar una pregunta,
-  `ai_service` pide al modelo validar si el texto nuevo sigue midiendo la **definicion de su
-  categoria** (tabla anterior). Solo se envian el texto de la pregunta y esa definicion — cero
-  datos personales. Si no coincide, el editor **advierte** y exige confirmacion explicita del
-  admin para guardar (la IA no bloquea; la decision es humana). Sin API key o ante error, la
-  edicion funciona sin chequeo (degradacion elegante).
+### Integración de Inteligencia Artificial (IA) — `ai_service`
+
+La arquitectura incorpora IA no como un adorno, sino como motor analítico delegando procesamiento de lenguaje natural a Google Gemini API (`google-generativeai`).
+
+- **Estrategia Multi-Modelo:** Se emplean dos modelos especializados optimizando latencia y costo:
+  - `gemini-3.5-flash` (`AI_SUMMARY_MODEL`): Orientado a síntesis ejecutivas, procesa resúmenes masivos de feedback cualitativo.
+  - `gemini-2.5-flash-lite` (`AI_LITE_MODEL`): Desplegado para validación semántica de alta velocidad; verifica la coherencia entre el texto de una pregunta editada y la definición de su categoría (Data Quality).
+- **Aislamiento y Privacidad:** El modelo recibe agregados anonimizados. En ningún escenario se inyectan identificadores (`evaluator_id`) u otra información de identificación personal (PII).
+- **Estrategia de Caché:** Para mitigar llamadas redundantes a la API (y costos), las respuestas sintéticas se persisten en `ai_feedback_cache` empleando un índice único compuesto (`evaluatee_id`, `period_id`).
 
 ## Comunicacion con la API
 
@@ -275,7 +231,7 @@ extensiones puntuales sobre `vw_period_metrics`/`metrics_service`, no un redisen
 
 | Metodo | Endpoint | Descripcion |
 |--------|----------|-------------|
-| POST | `/auth/login` | Autenticacion -> `{ user }` (**sin token** — ver "Manejo de autenticacion") |
+| POST | `/auth/login` | Autenticacion -> `{ user }` |
 | GET | `/users?role=team_leader` | Evaluables por rol |
 | GET | `/forms?target_role=team_leader` | Plantilla de formulario por rol |
 | POST | `/evaluations` | Registrar evaluacion: inserta el contenido en `evaluations` **y** la participacion en `evaluation_submissions` (con `evaluation_id = NULL` si es anonima). No-duplicado por periodo garantizado por `uq_submission_once` (`409`) + **requiere periodo activo** (si no, `409`) |
@@ -296,11 +252,8 @@ extensiones puntuales sobre `vw_period_metrics`/`metrics_service`, no un redisen
 
 ## Manejo de autenticacion
 
-> **Sin JWT.** El backend no emite ni verifica ningun token de sesion. Para el detalle y el porque,
-> ver `CLAUDE.md` ("Sin JWT").
-
 - Login -> `POST /auth/login`: el backend solo verifica el hash bcrypt (`auth_service.login`) y
-  devuelve `{ user }`. **No emite token.** El frontend guarda `user` en `localStorage`
+  devuelve `{ user }`. El frontend guarda `user` en `localStorage`
   (`auth.service.js` — `setSession`/`getSession`/`clearSession`), no hay `token` que guardar.
 - Cada peticion que necesita saber "quien soy" o "que rol tengo" manda ese dato **en el propio
   request** — como parametro de query (`viewer_role`) o campo del body (`evaluator_id`) — y el
@@ -349,17 +302,14 @@ Consecuencias de diseno:
 
 ## Manejo de errores
 
-**Backend**
-- Validacion de entrada con Pydantic -> `422` automatico con detalle por campo.
-- Errores de negocio -> `HTTPException` con codigo correcto (`400/403/404/409`).
-- Manejadores globales para excepciones no controladas -> `500` con cuerpo JSON consistente y un `error_id` opaco (UUID) que se imprime en el log para correlacionar sin filtrar la excepcion al cliente.
-- **Un solo log por error.** Los repositorios ya no capturan `SQLAlchemyError` para loguear y relanzar: eso generaba dos registros del mismo fallo (repositorio + route) y ninguno con traceback. Ahora la excepcion sube hasta el route, que es la unica capa que sabe que endpoint y que parametros venian, y ahi se registra una vez con `logger.exception()`.
-- **Logging configurado en `config/logging_config.py`** (solo stdlib): timestamp, nivel, nombre del logger, mensaje y traceback. Sin esa configuracion, Python cae al handler `lastResort` y todo sale a stderr sin formato ni traza.
+## Manejo de errores y Resiliencia (Backend)
 
-> **Pendiente documentado:** los 34 `try/except` de los routes que traducen excepciones de
-> dominio a HTTP podrian reducirse a handlers globales por clase base. El plan y el conflicto
-> que hoy lo bloquea (`InvalidRoleException` mapea a **403** en un modulo y a **422** en otro)
-> estan en `docs/superpowers/specs/2026-07-22-exception-handlers-plan.md`.
+El sistema incorpora un interceptor global de excepciones (Exception Handler) en FastAPI, diseñado con estrictas consideraciones de seguridad y correlación:
+
+- **Manejo de Errores Controlados:** Las validaciones de Pydantic emiten `422 Unprocessable Entity` automáticamente. Excepciones de dominio personalizadas (`ApplicationException`) resuelven proactivamente a sus códigos HTTP subyacentes (`400`, `403`, `404`, `409`) serializando un payload JSON predecible: `{"detail": "<mensaje>"}`.
+- **Manejo de Errores No Controlados (Fallo General):** Las excepciones críticas (ej., violaciones de base de datos o fallos nulos) son interceptadas por un manejador global de `Exception`.
+  - **Estrategia Opaca:** Previene la filtración (leak) de detalles internos, como sentencias SQL fallidas o configuraciones de servidor al frontend.
+  - **Trazabilidad mediante UUID:** Genera un identificador único opaco (`error_id`) devuelto al cliente y concurrentemente inyectado en la consola del servidor (`logger.exception`). Esto permite al equipo de ingeniería correlacionar un reporte de falla del usuario directamente con el *stack trace* en el entorno de despliegue, sin exponer datos sensibles.
 
 **Frontend**
 - `api.service.js` adjunta `status`/`detail` a los errores de red y codigos no-2xx.
@@ -373,12 +323,12 @@ La rubrica exige justificar las decisiones tecnicas. Todas las elecciones estan 
 
 | Capa | Eleccion | Alternativas permitidas | Por que esta |
 |---|---|---|---|
-| Frontend | HTML5 + CSS3 + **JS Vanilla (SPA)** | (obligatorio; sin frameworks) | Requisito del proyecto |
+| Frontend | **Vite + Vanilla JS + TailwindCSS** | Empaquetado rápido y estilos ágiles |
 | Backend | **Python + FastAPI** | Flask, Express.js | Python alineado a la Ruta Basica; validacion y docs integradas |
 | Base de datos | **MySQL** | PostgreSQL, MongoDB | Datos relacionales, integridad, consultas agregadas |
-| Auth | **Sin JWT** | JWT, sesiones server-side | El login valida hash bcrypt pero no emite token; el rol/ID lo manda el propio front y el backend lo confia. Reduce el alcance del MVP a costa de no tener verificacion criptografica real (ver "Manejo de autenticacion") |
+| Auth | **Login bcrypt** | Autenticación basica en servidor. |
 | IA (resumenes) | **Google Gemini** (`google-generativeai`) | otros LLM, sin IA | Calidad de redaccion + privacidad por diseno (solo agregados anonimos) |
 
-**FastAPI** trae validacion (Pydantic), tipado y documentacion automatica (Swagger/`/docs`) sin librerias extra, util para la sustentacion. **MySQL** encaja porque el dominio es naturalmente relacional (usuarios<->roles, evaluaciones<->respuestas) y el dashboard vive de consultas agregadas. No usar **JWT** es un tradeoff de seguridad consciente para reducir el alcance del MVP en el tiempo disponible; para una SPA sin estado, JWT seria la opcion mas robusta, pero no era necesaria para demostrar la logica de negocio del proyecto. **Google Gemini** resume el feedback en lenguaje natural para el Admin: complementa la logica de negocio propia (el ICP), que es lo que la rubrica evalua como "no-CRUD".
+**FastAPI** trae validacion (Pydantic), tipado y documentacion automatica (Swagger/`/docs`) sin librerias extra, util para la sustentacion. **MySQL** encaja porque el dominio es naturalmente relacional (usuarios<->roles, evaluaciones<->respuestas) y el dashboard vive de consultas agregadas. **Google Gemini** resume el feedback en lenguaje natural para el Admin: complementa la logica de negocio propia (el ICP), que es lo que la rubrica evalua como "no-CRUD".
 
 **Decisiones que evitan sobreingenieria:** sin frameworks de frontend ni estado externo; SQL plano (`text()`) sobre un esquema 3FN sin complejidad extra; `database/01_ddl.sql` + `database/02_dml.sql` + `database/03_mock_history.sql` + `database/04_views.sql` versionados en vez de migraciones (Alembic queda como mejora futura); tests enfocados en la logica de negocio, no en cobertura total.

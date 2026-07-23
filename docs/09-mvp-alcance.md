@@ -28,26 +28,6 @@ Filosofia: **startup validando una idea**. El MVP debe ser lo minimo para compro
 
 **Seguimiento historico (admin)** se incluye como `Should`: aporta a la validacion pero puede recortarse si la capacidad aprieta.
 
-## Fuera del MVP (versiones futuras)
-
-| Funcionalidad | Cuando / por que se pospone |
-|---------------|------------------------------|
-| Areas / segmentacion multi-area | Simplifica el MVP; la segmentacion se agrega post-validacion |
-| Bitacora TL->Tutor (evaluacion descendente) | Excede el feedback ascendente; se agrega como v2 |
-| Analitica de talento (ranking de futuros TL) | Requiere volumen de datos y bitacora; post-validacion |
-| ICP ponderado y agregado por categoria | El MVP ya pondera por pregunta (`weight_percent`), pero no agrupa el resultado por categoria; alcanza para validar la hipotesis del piloto |
-| Mejoras por IA para el evaluado (TL/Tutor) | El MVP entrega IA solo al Admin; el evaluado ve resultados sin IA |
-| Visualizacion de tendencias (graficos temporales) | CSV/tabla basica como `Could`; graficos avanzados son futuro |
-| Reportes avanzados / exportacion PDF estilizada | CSV/impresion basica como `Could`; lo demas es futuro |
-| ~~Editor completo de formularios~~ | Decision revisada: el MVP si incluye crear/desactivar plantillas y preguntas (`POST`/`DELETE /forms`, `POST`/`DELETE /questions`), con tipos `scale`\|`text`\|`yes_no`, para priorizar el trabajo de frontend en curso. Ver `docs/06-arquitectura.md` y `docs/07-base-de-datos.md`. |
-| Notificaciones (email/in-app) y recordatorios | No esencial para validar la hipotesis |
-| Gestion de usuarios/altas desde la UI (admin) | Se cargan via seed/BD en el MVP |
-| Comparativas avanzadas, benchmarking entre cohortes | Requiere volumen de datos; post-validacion |
-| Despliegue en contenedores (Docker) y multi-sede | Se aborda en un plan/iteracion aparte |
-| Internacionalizacion (i18n) | El piloto es en espanol |
-| Auditoria detallada (busqueda avanzada, alertas, purga automatica por retencion) | El MVP ya incluye una bitacora basica de acciones administrativas (`GET /activity-log` + export CSV en `admin_activity_log`); lo que queda fuera es la retencion automatica (el ajuste `log_retention_days` se guarda pero no purga nada) y cualquier busqueda/alerta mas alla del listado cronologico |
-| Roles y permisos granulares (mas alla de los 4) | Los 4 roles cubren el piloto |
-| App movil nativa / PWA offline | La SPA responsive es suficiente para validar |
 
 ## Criterio de exito del MVP
 
