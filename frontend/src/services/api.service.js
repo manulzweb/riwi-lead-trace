@@ -21,6 +21,14 @@ export const request = async (path, options = {}) => {
     let detail = null
     try {
       detail = (await response.json())?.detail ?? null
+      if (Array.isArray(detail)) {
+        detail = detail.map(err => {
+          const field = err.loc ? err.loc[err.loc.length - 1] : "Campo";
+          return `${field}: ${err.msg}`;
+        }).join(" | ");
+      } else if (typeof detail === "object" && detail !== null) {
+        detail = JSON.stringify(detail);
+      }
     } catch {
       // Empty or non-JSON body: detail stays null.
     }

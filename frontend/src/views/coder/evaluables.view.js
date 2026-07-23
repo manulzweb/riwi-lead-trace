@@ -60,7 +60,6 @@ export const renderEvaluables = () => {
   `;
 };
 
-// Container error state with retry: a 3s toast alone left the screen broken.
 const renderLoadError = () => `
   <article class="rounded-3xl border border-[var(--danger-border)] bg-[var(--danger-bg)] p-10 text-center shadow-lg">
     <h3 class="text-xl font-bold text-[var(--danger-text)]">No se pudieron cargar los evaluables</h3>
@@ -102,7 +101,6 @@ const renderEvaluablesList = () => {
   }
 
   if (filtered.length === 0) {
-    // Reuse the shared empty-state component instead of a view-specific one (DRY).
     container.className = "mt-8";
     container.innerHTML = emptyStateComponent(
       "Sin evaluables asignados",
@@ -181,8 +179,6 @@ export const setupEvaluables = async () => {
     }
   });
 
-  // Extracted so it can be retried: on a network failure the skeletons used to
-  // animate forever behind a 3s toast.
   const load = async () => {
     const container = document.getElementById("evaluables-list");
     container?.setAttribute("aria-busy", "true");

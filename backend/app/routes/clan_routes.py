@@ -4,7 +4,12 @@ from app.config.database import get_db
 
 router = APIRouter(prefix="/clans")
 
-@router.get("")
+@router.get(
+    "",
+    summary="Listar clanes",
+    description="Consulta y devuelve el listado completo de clanes con su cohorte asociada.",
+    response_description="Lista de clanes con ID, número, nombre de clan y nombre de cohorte"
+)
 def get_clans(db = Depends(get_db)):
     query = text("""
         SELECT cl.id, cl.cohort_id, cl.number, cl.name as clan_name, co.name as cohort_name

@@ -46,7 +46,7 @@ export const renderMyEvaluations = () => `
     </main>
 `;
 
-// Error state with retry: a 3s toast alone left the skeletons pulsing forever.
+// Error state
 const renderLoadError = () => `
   <div class="rounded-3xl border border-[var(--danger-border)] bg-[var(--danger-bg)] p-6 text-center text-[var(--danger-text)]">
     <p class="font-semibold">No se pudieron cargar tus evaluaciones.</p>
@@ -70,8 +70,6 @@ export const setupMyEvaluations = async () => {
         evaluationService.getByEvaluator(currentUser.id),
         userService.get(),
         periodService.get(),
-        // getFormsForHistory (not getForms): includes archived ones, otherwise
-        // retired forms lose their title in the history.
         formsService.getFormsForHistory()
       ]);
 
@@ -98,13 +96,9 @@ export const setupMyEvaluations = async () => {
           : 'Colaborador';
         const periodName = period ? period.name : `Periodo #${ev.period_id}`;
 
-        // Each entry is a PARTICIPATION, not a full evaluation, but the backend
-        // also sends evaluation_id and answers.
         const isAnonymous = evaluationService.isAnonymousParticipation(ev);
         const hasDetail = evaluationService.hasVisibleDetail(ev);
 
-        // Semantic tokens from global.css switch themselves in dark mode, so no
-        // dark: variants are needed.
         let headerBadge;
         if (isAnonymous) {
           headerBadge = `

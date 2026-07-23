@@ -16,27 +16,32 @@ logger = logging.getLogger(__name__)
 from app.routes import auth_routes, category_routes, check, period_routes, user_routes, form_routes, evaluation_routes, metrics_routes, question_routes, activity_log_routes, settings_routes, cohort_routes, clan_routes
 
 tags_metadata = [
-    {"name": "auth", "description": "Validación de credenciales (bcrypt). No emite JWT; el cliente asume el estado de sesión."},
-    {"name": "users", "description": "CRUD de usuarios. Mapeo de entidades a roles (`team_leader`, `tutor`, `coder`, `admin`)."},
-    {"name": "forms", "description": "Gestión de esquemas de plantillas (`forms`)."},
-    {"name": "questions", "description": "Mutación de preguntas. Utiliza Soft Deletes/Versionado (`is_active` flag) para mantener la integridad de evaluaciones históricas."},
+    {"name": "auth", "description": "Validación de credenciales (bcrypt). No emite JWT; el cliente maneja el estado de sesión."},
+    {"name": "users", "description": "Gestión CRUD de usuarios y mapeo de entidades a roles (`team_leader`, `tutor`, `coder`, `admin`)."},
+    {"name": "forms", "description": "Gestión de esquemas de plantillas (`forms`) y formularios de evaluación activos."},
+    {"name": "questions", "description": "Mutación y banco de preguntas. Utiliza Soft Deletes/Versionado (`is_active` flag) para mantener la integridad histórica."},
     {"name": "evaluations", "description": "Transacciones de evaluación. Implementa control de concurrencia y validación de periodo activo."},
-    {"name": "periods", "description": "Control de ciclos temporales. Constraint de aplicación: max 1 periodo activo global."},
-    {"name": "metrics", "description": "Agregación y cálculo del Índice de Calidad Percibida (ICP) on-read. Integración NLP vía Google Gemini API."},
-    {"name": "health", "description": "Health checks para el Load Balancer / Proxy."},
-    {"name": "activity-log", "description": "Bitacora de acciones administrativas (auditoria basica, sin verificacion criptografica de autoria)."}
+    {"name": "periods", "description": "Control de ciclos temporales y periodos evaluativos. Constraint de aplicación: max 1 periodo activo global."},
+    {"name": "metrics", "description": "Agregación y cálculo del Índice de Calidad Percibida (ICP) on-read. Inferencia NLP e inteligencia artificial vía Google Gemini API."},
+    {"name": "categories", "description": "Gestión de categorías temáticas asociadas a las preguntas de evaluación."},
+    {"name": "master-data", "description": "Lectura de datos maestros relacionales (Cohortes y Clanes)."},
+    {"name": "settings", "description": "Configuración global del sistema y políticas de evaluación (umbrales de ICP, tolerancia de pesos, etc.)."},
+    {"name": "activity-log", "description": "Bitácora de acciones administrativas para auditoría y seguimiento de eventos."},
+    {"name": "health", "description": "Health checks (L7) para validación de disponibilidad del proxy inverso o load balancer."}
 ]
 
 description_text = """
 ### Riwi LeadTrace API — Especificaciones Técnicas
 
-Backend monolítico diseñado en FastAPI para el procesamiento de evaluaciones de desempeño. 
+Backend monolítico diseñado en **FastAPI** para el procesamiento y análisis del Índice de Calidad Percibida (ICP).
 
-#### Arquitectura & Constraints:
-*   **Base de Datos:** MySQL relacional (3FN). Acceso a datos mediante SQL plano (`sqlalchemy.text()`) sobre pool de conexiones; sin abstracción ORM para queries complejas.
-*   **Autenticación & Autorización:** MVP Stateless. Autenticación contra hash Bcrypt. **No implementa JWT ni manejo de sesiones en servidor.** El control de acceso basado en roles (RBAC) está delegado al cliente (SPA); la API confía en los identificadores de sesión proporcionados en el payload (`evaluator_id`).
-*   **Integridad Transaccional:** Control de concurrencia a nivel de base de datos (`UNIQUE INDEX` compuesto) para prevenir race conditions en el envío de evaluaciones. Las mutaciones de esquemas (preguntas) operan bajo lógica de append-only (versionado).
-*   **IA:** Acoplamiento con Google Gemini (Google AI) mediante dos modelos según el uso: `gemini-3.5-flash` para la generación de resúmenes agregados on-fly (cacheado vía `ai_feedback_cache`) y `gemini-2.5-flash-lite` para la validación semántica de coherencia texto↔categoría en actualizaciones de preguntas.
+#### Arquitectura & Principios de Diseño:
+*   **Base de Datos Relacional:** MySQL (3FN). Acceso optimizado a datos mediante SQL plano (`sqlalchemy.text()`) sobre pool de conexiones.
+*   **Autenticación & Autorización:** Modelo Stateless. Autenticación sincrónica contra hash Bcrypt (`auth/login`).
+*   **Cálculo de ICP (Derivación On-Read):** Agregación estadística mediante Vistas SQL (`vw_period_metrics`) para responder en tiempo de lectura sin duplicar datos ni arriesgar desincronizaciones históricas.
+*   **Integridad Transaccional:** Control de concurrencia a nivel de base de datos (`UNIQUE INDEX` compuesto) para prevenir envíos duplicados en una misma ventana evaluativa.
+*   **Inmutable Appends (Soft Delete):** Las modificaciones en preguntas desactivan la versión original y generan un nuevo registro para prevenir deriva semántica en reportes pasados.
+*   **Inteligencia Artificial:** Integración con Google Gemini para síntesis cualitativa de feedback y verificación de coherencia semántica en preguntas.
 """
 
 app = FastAPI(
@@ -52,6 +57,7 @@ app = FastAPI(
     },
     openapi_tags=tags_metadata,
     redoc_url="/dev/docs",
+    swagger_ui_parameters={"docExpansion": "list", "filter": True, "displayRequestDuration": True},
 )
 
 # Middleware de sesión eliminado porque la auto-sanación se hace ahora a nivel de SQLAlchemy en database.py.

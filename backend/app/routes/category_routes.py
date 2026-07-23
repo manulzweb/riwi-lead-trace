@@ -73,7 +73,17 @@ def update_category(category_id: int, payload: CategoryUpdate):
         # este DEBE seguir yendo antes o capturaria el dominio como 500.
         raise
 
-@router.delete("/categories/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/categories/{category_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Eliminar categoría",
+    description="Ejecuta la eliminación física de una categoría en la base de datos previa validación de que no tenga preguntas asociadas (FK restriction).",
+    responses={
+        204: {"description": "Categoría eliminada exitosamente"},
+        404: {"description": "Categoría no encontrada"},
+        409: {"description": "No se puede eliminar la categoría porque tiene preguntas vinculadas"}
+    }
+)
 def delete_category(category_id: int, admin_id: int = None):
     """Ejecuta un hard delete sobre la entidad `categories`. Valida restricciones de FK."""
     try:

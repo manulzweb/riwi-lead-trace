@@ -21,7 +21,7 @@ El ICP (Indice de Calidad Percibida) se calcula al consultar, no se guarda en ta
 
 El login valida la contrasena con bcrypt en el servidor. No usamos JWT: el front recibe el usuario ya validado y decide que mostrar segun el rol que le llega.
 
-Los resumenes con IA (Google Gemini) reciben solo promedios y conteos, nunca los comentarios ni quien los escribio. Se cachean por persona y periodo. La IA tambien revisa, al editar el texto de una pregunta, que siga encajando en su categoria.
+Los resumenes con IA (Google Gemini) reciben solo promedios y conteos, nunca los comentarios ni quien los escribio. Se cachean por persona y periodo.
 
 Las queries son SQL directo con `text()` de SQLAlchemy, sin ORM declarativo.
 

@@ -9,7 +9,13 @@ from app.exceptions.base import ApplicationException
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-@router.get("/forms", response_model=List[FormOut])
+@router.get(
+    "/forms",
+    response_model=List[FormOut],
+    summary="Listar formularios y plantillas",
+    description="Consulta y lista plantillas o formularios activos para evaluación, con opciones de filtrado por rol y estado archivado.",
+    response_description="Lista de formularios o plantillas según los filtros aplicados"
+)
 def get_forms(
     target_role: Optional[str] = Query(
         None,
@@ -61,7 +67,14 @@ def create_form(payload: FormCreate):
         # este DEBE seguir yendo antes o capturaria el dominio como 500.
         raise
 
-@router.put("/forms/{form_id}", response_model=FormOut)
+@router.put(
+    "/forms/{form_id}",
+    response_model=FormOut,
+    summary="Actualizar plantilla/formulario (PUT)",
+    description="Permite modificar el título o descripción de una plantilla o formulario existente.",
+    response_description="Formulario actualizado",
+    responses={404: {"description": "Formulario no encontrado"}}
+)
 def update_form(form_id: int, payload: FormUpdate):
     """Mutación parcial (PATCH) sobre `forms.title` o `description`. Exclusivo estado cerrado."""
     try:

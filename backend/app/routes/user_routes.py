@@ -19,12 +19,25 @@ def get_users(role: Optional[str] = Query(None, description="Filtrar por rol (ej
     """Consulta indexada sobre la tabla `users` mediante el campo `role_id`."""
     return user_service.get_users(role)
 
-@router.get("/evaluables", response_model=List[UserOut])
+@router.get(
+    "/evaluables",
+    response_model=List[UserOut],
+    summary="Listar usuarios evaluables",
+    description="Consulta y resuelve usuarios evaluables (Team Leaders y Tutores). Si se envía evaluator_id, excluye al usuario para evitar autoevaluación.",
+    response_description="Lista de usuarios evaluables"
+)
 def get_evaluables(evaluator_id: Optional[int] = Query(None, description="Si se envía, excluye de la lista al propio usuario aunque tenga otro ID (por email)")):
     """Consulta filtrada con un array `IN` sobre `role_id` para resolver entidades evaluables (`team_leader`, `tutor`)."""
     return user_service.get_evaluables(evaluator_id)
 
-@router.get("/users/{user_id}", response_model=UserOut)
+@router.get(
+    "/users/{user_id}",
+    response_model=UserOut,
+    summary="Obtener detalle de un usuario",
+    description="Consulta la información detallada y roles asignados a un usuario específico por su ID.",
+    response_description="Información detallada del usuario",
+    responses={404: {"description": "Usuario no encontrado"}}
+)
 def get_user(user_id: int):
     """Resolución de entidad `users` por su Primary Key (`id`)."""
     try:

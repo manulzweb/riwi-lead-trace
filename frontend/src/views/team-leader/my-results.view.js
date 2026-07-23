@@ -52,8 +52,6 @@ export const renderMyResults = () => `
   </main>
 `;
 
-// SmartFeedback (AI summary) wrapper: same header and card for both states
-// (summary or insufficient-data notice), so the markup is not duplicated.
 const smartFeedbackSection = (innerHtml) => `
   <section class="mb-10">
     <h2 class="text-xl font-black text-[var(--text-main)] mb-4 flex items-center gap-2">
@@ -66,8 +64,6 @@ const smartFeedbackSection = (innerHtml) => `
   </section>
 `;
 
-// Feedback container error state with retry. retryId tells the initial-load
-// retry apart from a single-period one.
 const renderLoadError = (message, retryId) => `
   <article class="rounded-3xl border border-[var(--danger-border)] bg-[var(--danger-bg)] p-10 text-center">
     <p class="text-[var(--danger-text)] font-bold">${escapeHtml(message)}</p>
@@ -91,7 +87,6 @@ export const setupMyResults = async () => {
   const currentUser = authService.getSession();
   let periods = [];
 
-  // Initial load extracted so it can be retried from the error state.
   const init = async () => {
     feedbackList.setAttribute("aria-busy", "true");
     try {
@@ -117,7 +112,6 @@ export const setupMyResults = async () => {
       </div>`;
       setupDropdown('period-selector');
 
-      // After re-rendering, grab the new input node.
       const periodInput = document.getElementById("period-selector");
 
       await loadResultsForPeriod(currentUser.id, activePeriod.id);
@@ -206,9 +200,6 @@ export const setupMyResults = async () => {
           `);
         }
       } catch (err) {
-        // 400 = InsufficientDataException: not enough evaluations yet for the AI
-        // summary. Expected state, not a failure, so show a notice instead of
-        // hiding the section or logging an error.
         if (err.status === 400) {
           aiSummaryHtml = smartFeedbackSection(`
             <p class="text-sm text-[var(--text-muted)]">
@@ -217,8 +208,6 @@ export const setupMyResults = async () => {
             </p>
           `);
         } else {
-          // Other failures (AI down, network) are real incidents: log them and
-          // drop the section silently so the rest of the view still works.
           console.warn("No se pudo obtener el resumen IA", err);
         }
       }
@@ -235,10 +224,6 @@ export const setupMyResults = async () => {
       `;
 
       const commentsContainer = document.getElementById("comments-pagination-container");
-
-      // No container means the view was re-rendered (concurrent navigation) while
-      // waiting on the backend: feedbackList is detached and this load is stale.
-      // Abort instead of passing a null container to setupPagination.
       if (!commentsContainer) return;
 
       setupPagination({

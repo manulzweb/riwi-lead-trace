@@ -16,11 +16,8 @@ import { settingsService } from "../../services/settings.service.js";
 
 Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Filler);
 
-// Canvas does not resolve CSS variables like DOM elements do, so ask the
-// browser for the computed value.
 const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
-// Grid error state: offers a retry instead of a full page reload.
 const renderMetricsError = () => `
   <div class="col-span-full rounded-3xl border border-[var(--danger-border)] bg-[var(--danger-bg)] p-6 text-center">
     <p class="text-sm font-semibold text-[var(--danger-text)]">No se pudieron cargar las métricas.</p>
@@ -150,19 +147,18 @@ export const setupMetrics = async () => {
   const periodContainer = document.getElementById("period-dropdown-container");
 
   // Role dropdown already exists in the static markup
-  setupDropdown('filter-role');
-  const roleSelector = document.getElementById("filter-role");
+  setupDropdown('filter-role', (val) => {
+    currentRoleFilter = val;
+    applyFilters();
+  });
 
   if (!kpiEvals || !kpiIcp || !kpiPart || !gridContainer || !periodContainer) return;
 
   downloadBtn?.addEventListener("click", async () => {
-    // Printing shows every result temporarily (no pagination)
     renderGrid(currentPeriodId, true);
 
-    // Short delay so the DOM updates before the print dialog opens
     setTimeout(() => {
       window.print();
-      // Restore the paginated view
       renderGrid(currentPeriodId, false);
     }, 500);
   });
@@ -179,16 +175,13 @@ export const setupMetrics = async () => {
   const MIN_EVALUATIONS_FOR_ICP = settings.min_evaluations_for_icp;
   const DEFAULT_ICP = settings.default_icp;
   
-  
   let currentSearchQuery = "";
   let currentFilteredList = [];
   let currentPage = 1;
   const itemsPerPage = 6;
   let currentSort = "score_desc";
-  const historyCharts = new Map(); // evaluateeId -> live Chart.js instance, destroyed before recreating
+  const historyCharts = new Map();
 
-  // Extracted so the error-state retry button can rerun the full load
-  // without reloading the page.
   async function initPeriods() {
     try {
       [periods, masterCohorts, masterClans] = await Promise.all([
@@ -198,7 +191,6 @@ export const setupMetrics = async () => {
       ]);
       
       initMasterFilters();
-      
 
       if (periods.length === 0) {
         periodContainer.innerHTML = '<p class="text-sm text-[var(--text-muted)]">No hay periodos</p>';
@@ -214,44 +206,32 @@ export const setupMetrics = async () => {
         }))
       ];
 
-      currentPeriodId = 0; // defaults to "all periods"
+      currentPeriodId = 0;
 
       periodContainer.innerHTML = dropdownComponent('filter-period', periodOptions, currentPeriodId);
 
-      // Init the dynamic dropdown
-      setupDropdown('filter-period');
-      const periodSelector = document.getElementById("filter-period");
+      setupDropdown('filter-period', async (val) => {
+        currentPeriodId = parseInt(val);
+        await loadMetrics(currentPeriodId);
+      });
 
-      setupDropdown('sort-metrics');
-      const sortSelector = document.getElementById("sort-metrics");
-      if (sortSelector) {
-        sortSelector.addEventListener("change", (e) => {
-          currentSort = e.target.value;
-          currentPage = 1;
-          renderGrid();
-        });
-      }
+      setupDropdown('sort-metrics', (val) => {
+        currentSort = val;
+        currentPage = 1;
+        renderGrid();
+      });
 
       const searchInput = document.getElementById("search-metrics");
       if (searchInput) {
         searchInput.addEventListener("input", (e) => {
           currentSearchQuery = e.target.value.toLowerCase().trim();
           currentPage = 1;
-          // Refilter locally: loadMetrics would refetch on every keystroke.
           applyFilters();
         });
       }
 
-      await loadMetrics(currentPeriodId, currentRoleFilter);
+      await loadMetrics(currentPeriodId);
 
-      // The period selector is recreated on every attempt, so its listener is
-      // registered here (new node = no duplicates).
-      if (periodSelector) {
-        periodSelector.addEventListener("change", async (e) => {
-          currentPeriodId = parseInt(e.target.value);
-          await loadMetrics(currentPeriodId, currentRoleFilter);
-        });
-      }
     } catch (err) {
       showToast("Error", "error", "No se pudieron obtener las métricas.");
       console.error(err);
@@ -260,15 +240,6 @@ export const setupMetrics = async () => {
       document.getElementById("btn-retry-metrics")
         ?.addEventListener("click", initPeriods);
     }
-  }
-
-  // The role selector lives in the static markup and survives retries, so its
-  // listener is registered once, outside initPeriods.
-  if (roleSelector) {
-    roleSelector.addEventListener("change", async (e) => {
-      currentRoleFilter = e.target.value;
-      await loadMetrics(currentPeriodId, currentRoleFilter);
-    });
   }
 
   await initPeriods();
@@ -295,8 +266,6 @@ export const setupMetrics = async () => {
       </article>
     `;
 
-    // Semantic tokens (global.css) already flip in dark mode, so the old
-    // dark: variants are gone.
     const bestCard = highlightCard("Mejor evaluado", best, {
       border: "border-[var(--success-text)]/30",
       bg: "bg-[var(--success-bg)]",
@@ -316,7 +285,6 @@ export const setupMetrics = async () => {
 
   function initMasterFilters() {
     const realCohortContainer = document.getElementById("real-cohort-dropdown-container");
-    const clanContainer = document.getElementById("clan-dropdown-container");
 
     if (realCohortContainer) {
       const cohortOptions = [
@@ -324,16 +292,12 @@ export const setupMetrics = async () => {
         ...masterCohorts.map(c => ({ value: c.name, label: c.name }))
       ];
       realCohortContainer.innerHTML = dropdownComponent('filter-real-cohort', cohortOptions, currentRealCohortFilter);
-      setupDropdown('filter-real-cohort');
-      const cohortSelector = document.getElementById("filter-real-cohort");
-      if (cohortSelector) {
-        cohortSelector.addEventListener("change", async (e) => {
-          currentRealCohortFilter = e.target.value;
-          currentClanFilter = "all";
-          updateClanDropdown();
-          await loadMetrics(currentPeriodId, currentRoleFilter);
-        });
-      }
+      setupDropdown('filter-real-cohort', (val) => {
+        currentRealCohortFilter = val;
+        currentClanFilter = "all";
+        updateClanDropdown();
+        applyFilters();
+      });
     }
     updateClanDropdown();
   }
@@ -352,15 +316,34 @@ export const setupMetrics = async () => {
       ...possibleClans.map(c => ({ value: c.name, label: c.name }))
     ];
     clanContainer.innerHTML = dropdownComponent('filter-clan', clanOptions, currentClanFilter);
-    setupDropdown('filter-clan');
-    const clanSelector = document.getElementById("filter-clan");
-    if (clanSelector) {
-      clanSelector.addEventListener("change", async (e) => {
-        currentClanFilter = e.target.value;
-        await loadMetrics(currentPeriodId, currentRoleFilter);
-      });
-    }
+    setupDropdown('filter-clan', (val) => {
+      currentClanFilter = val;
+      applyFilters();
+    });
   }
+
+  let currentSummaryKpis = null;
+
+  const runCounter = (el, target, suffix = '') => {
+    if (!el) return;
+    const duration = 1200;
+    const startTime = performance.now();
+    const numTarget = parseFloat(target);
+    if (isNaN(numTarget) || numTarget === 0) {
+      el.textContent = target + suffix;
+      return;
+    }
+    const animate = (currentTime) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easeProgress = 1 - Math.pow(1 - progress, 3);
+      const current = easeProgress * numTarget;
+      el.textContent = (Number.isInteger(numTarget) ? Math.round(current) : current.toFixed(1)) + suffix;
+      if (progress < 1) requestAnimationFrame(animate);
+      else el.textContent = target + suffix;
+    };
+    requestAnimationFrame(animate);
+  };
 
   async function loadMetrics(periodId, roleFilter) {
     try {
@@ -376,30 +359,7 @@ export const setupMetrics = async () => {
       `;
 
       const summary = await metricsService.getSummary(periodId);
-
-      const runCounter = (el, target, suffix = '') => {
-        const duration = 1200;
-        const startTime = performance.now();
-        const numTarget = parseFloat(target);
-        if (isNaN(numTarget) || numTarget === 0) {
-          el.textContent = target + suffix;
-          return;
-        }
-        const animate = (currentTime) => {
-          const elapsed = currentTime - startTime;
-          const progress = Math.min(elapsed / duration, 1);
-          const easeProgress = 1 - Math.pow(1 - progress, 3);
-          const current = easeProgress * numTarget;
-          el.textContent = (Number.isInteger(numTarget) ? Math.round(current) : current.toFixed(1)) + suffix;
-          if (progress < 1) requestAnimationFrame(animate);
-          else el.textContent = target + suffix;
-        };
-        requestAnimationFrame(animate);
-      };
-
-      runCounter(kpiEvals, summary.kpis.total_evaluations);
-      runCounter(kpiIcp, summary.kpis.average_score, '/100');
-      runCounter(kpiPart, summary.kpis.participation_rate, '%');
+      currentSummaryKpis = summary.kpis;
 
       if (reportPeriodLabel) {
         const periodName = periods.find(p => p.id === periodId)?.name ?? "";
@@ -431,6 +391,30 @@ export const setupMetrics = async () => {
     if (currentSearchQuery) {
       list = list.filter(e => e.name.toLowerCase().includes(currentSearchQuery));
     }
+
+    const isFiltered = currentRoleFilter !== "all" || currentRealCohortFilter !== "all" || currentClanFilter !== "all" || Boolean(currentSearchQuery);
+
+    let displayEvals = currentSummaryKpis?.total_evaluations ?? 0;
+    let displayIcp = currentSummaryKpis?.average_score ?? 0;
+    let displayPart = currentSummaryKpis?.participation_rate ?? 0;
+
+    if (isFiltered) {
+      displayEvals = list.reduce((acc, e) => acc + (e.n_evals || 0), 0);
+      const validScores = list.map(e => e.average_score).filter(s => s !== null && s !== undefined);
+      displayIcp = validScores.length > 0 ? Math.round(validScores.reduce((a, b) => a + b, 0) / validScores.length) : 0;
+
+      const masterTotalEvals = (window.currentMasterList || []).reduce((acc, e) => acc + (e.n_evals || 0), 0);
+      const basePart = currentSummaryKpis?.participation_rate ?? 0;
+      if (masterTotalEvals > 0) {
+        displayPart = Math.min(100, Math.round((displayEvals / masterTotalEvals) * basePart));
+      } else {
+        displayPart = 0;
+      }
+    }
+
+    runCounter(kpiEvals, displayEvals);
+    runCounter(kpiIcp, displayIcp, '/100');
+    runCounter(kpiPart, displayPart, '%');
 
     renderHighlights(list);
     currentFilteredList = list;
@@ -536,7 +520,7 @@ export const setupMetrics = async () => {
           </div>
 
           <button class="btn-toggle-detail mt-4 w-full text-center text-xs font-semibold text-[var(--brand-bg)] pointer-events-none">
-            Ver detalle por categoría e historial ↓
+            Ver detalle ↓
           </button>
           <div id="detail-${ev.id}" data-detail-panel class="mt-4 hidden border-t border-[var(--border-main)] pt-4 cursor-default"></div>
         </article>
@@ -623,8 +607,6 @@ export const setupMetrics = async () => {
         : `<div class="h-40"><canvas id="history-chart-${evaluateeId}"></canvas></div>`;
 
       container.innerHTML = `
-        <p class="text-xs font-semibold uppercase tracking-wider text-[var(--brand-bg)] mb-2">Por categoría (este periodo)</p>
-        ${breakdownHtml}
         <p class="text-xs font-semibold uppercase tracking-wider text-[var(--brand-bg)] mt-4 mb-2">Historial de ICP</p>
         ${historyHtml}
       `;

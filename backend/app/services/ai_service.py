@@ -9,7 +9,6 @@ from app.exceptions.ai_exceptions import InsufficientDataException, AIServiceUna
 
 AI_SUMMARY_MODEL = "gemini-3.5-flash"
 AI_LITE_MODEL = "gemini-2.5-flash-lite"
-MIN_EVALUATIONS = 3
 
 # Temperatura FIJA para el chequeo de coherencia texto<->categoria (AI_LITE_MODEL).
 #
@@ -22,21 +21,10 @@ MIN_EVALUATIONS = 3
 # texto redactado y donde variar el tono si es una preferencia legitima del admin.
 COHERENCE_TEMPERATURE = 0.0
 
-# AJUSTE SIN FUNCIONALIDAD DETRAS: `ai_auto_summary` (system_settings).
-#
-# La UI de Configuracion Global lo describe como "si esta activo el sistema genera
-# los resumenes automaticamente". Hoy eso NO ocurre y el ajuste no tiene ningun
-# consumidor: se persiste y se lee, nada mas.
-#
-# El unico camino que genera resumenes es GET /metrics/ai-summary -> el admin lo
-# pide explicitamente desde la vista y el resultado queda cacheado en
-# `ai_feedback_cache`. No hay scheduler, ni BackgroundTasks, ni hook de startup,
-# ni disparo al cerrar un periodo en todo el backend.
-#
-# Deliberadamente NO se implementa la generacion automatica aqui: seria una feature
-# nueva (cuando se dispara, para quien, con que coste de API) y esa decision es del
-# equipo, no de un cambio de cableado. Mientras tanto el toggle es cosmetico y la
-# UI promete un comportamiento que no existe.
+# `ai_auto_summary` (system_settings):
+# Cuando esta activo, `period_service.py` ejecuta una BackgroundTask al cerrar un
+# periodo (`is_active` -> False) para pre-generar los resumenes de IA pendientes
+# y dejarlos cacheados en `ai_feedback_cache`.
 
 _CATEGORY_DEFINITIONS = {
     "Comunicación efectiva": "que tan claro y oportuno se comunica el Team Leader con el Coder",
@@ -65,8 +53,10 @@ class AIService:
             period_data = next((p for p in score_info if p["period_id"] == period_id), None)
             
             if not period_data:
+                sys_settings = settings_service.get_settings()
+                min_evals = sys_settings.get("required_evaluations", 3)
                 raise InsufficientDataException(
-                    f"Datos insuficientes para generar resumen con IA (se necesitan al menos {MIN_EVALUATIONS} evaluaciones enviadas)."
+                    f"Datos insuficientes para generar resumen con IA (se necesitan al menos {min_evals} evaluaciones enviadas)."
                 )
                 
             average_score = period_data["average_score"]

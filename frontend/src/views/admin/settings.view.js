@@ -53,7 +53,6 @@ const comingSoonNote = (id, text) => `
     </p>
 `;
 
-// A disabled control must not look clickable.
 const DISABLED_CONTROL_CLASSES = "opacity-60 cursor-not-allowed";
 
 const renderLoadingState = () => `
@@ -364,6 +363,32 @@ export const setupAdminSettings = () => {
       required_evaluations: parseInt(document.getElementById("s_required_evaluations").value),
       log_retention_days: parseInt(document.getElementById("s_log_retention_days").value)
     };
+
+    if (payload.score_risk_threshold < 0) {
+      showToast("Error", "error", "El umbral de riesgo no puede ser negativo.");
+      setButtonLoadingState(btnSave, false, "Guardando...", SAVE_LABEL);
+      return;
+    }
+    if (payload.score_excellent_threshold < 0) {
+      showToast("Error", "error", "El umbral excelente no puede ser negativo.");
+      setButtonLoadingState(btnSave, false, "Guardando...", SAVE_LABEL);
+      return;
+    }
+    if (payload.score_risk_threshold >= payload.score_excellent_threshold) {
+      showToast("Error", "error", "El umbral de riesgo debe ser menor que el umbral excelente.");
+      setButtonLoadingState(btnSave, false, "Guardando...", SAVE_LABEL);
+      return;
+    }
+    if (payload.weight_tolerance < 0) {
+      showToast("Error", "error", "La tolerancia de pesos no puede ser negativa.");
+      setButtonLoadingState(btnSave, false, "Guardando...", SAVE_LABEL);
+      return;
+    }
+    if (isNaN(payload.required_evaluations) || payload.required_evaluations < 1) {
+      showToast("Error", "error", "El mínimo de respuestas debe ser mayor o igual a 1.");
+      setButtonLoadingState(btnSave, false, "Guardando...", SAVE_LABEL);
+      return;
+    }
 
     try {
       await settingsService.updateSettings(payload);

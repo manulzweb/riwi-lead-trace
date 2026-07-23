@@ -40,7 +40,17 @@ def post_question(payload: QuestionCreate):
         # este DEBE seguir yendo antes o capturaria el dominio como 500.
         raise
 
-@router.delete("/questions/{question_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/questions/{question_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Desactivar una pregunta (Soft Delete)",
+    description="Desactiva una pregunta del formulario (`is_active=False`). Precondición: el período de evaluación debe estar cerrado.",
+    responses={
+        204: {"description": "Pregunta desactivada exitosamente"},
+        404: {"description": "Pregunta no encontrada"},
+        409: {"description": "No se puede modificar preguntas mientras haya un período activo"}
+    }
+)
 def delete_question(question_id: int):
     """Desactiva (`is_active=False`) una pregunta. Precondición: periodo global cerrado."""
     try:

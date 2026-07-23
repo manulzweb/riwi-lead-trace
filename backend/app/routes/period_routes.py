@@ -19,7 +19,14 @@ def get_periods():
     """Consulta de la tabla `periods`. Retorna el historial completo de ciclos."""
     return period_service.get_periods()
 
-@router.get("/periods/{period_id}", response_model=PeriodOut)
+@router.get(
+    "/periods/{period_id}",
+    response_model=PeriodOut,
+    summary="Obtener detalle de un período",
+    description="Consulta la información detallada y fechas límite de un período de evaluación específico.",
+    response_description="Detalles del período de evaluación",
+    responses={404: {"description": "Período no encontrado"}}
+)
 def get_period(period_id: int):
     """Consulta por Primary Key (`id`) sobre `periods`."""
     try:

@@ -49,7 +49,6 @@ const roleBadge = (role) =>
     ? `<span class="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-600 dark:bg-blue-950/20 dark:text-blue-400">Team Leader</span>`
     : `<span class="rounded-full bg-purple-50 px-2.5 py-0.5 text-xs font-semibold text-purple-600 dark:bg-purple-950/20 dark:text-purple-400">Tutor</span>`;
 
-// Compact card for the selection modal: the whole card is the button.
 const compactCard = (user, role) => `
   <button type="button" data-user-id="${user.id}" data-role="${role}"
     class="flex items-center gap-3 rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] p-3 text-left transition-all hover:border-[var(--brand-hover)] hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--brand-hover)]">
@@ -88,15 +87,11 @@ export const renderEvaluate = () => `
     <form id="evaluate-form" class="mt-8 grid gap-6">
       <section class="rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-8 shadow-sm">
 
-        <!-- Context card: who is being evaluated. Filled by renderContextCard(). -->
         <div id="evaluatee-context" class="mb-8 empty:mb-0"></div>
 
         <div id="questions-container" class="grid gap-8"></div>
       </section>
 
-      <!-- Hidden until an evaluatee is chosen (loadForm reveals them); otherwise they
-           peek behind the selection modal.
-           WARNING: never use backticks here, this comment lives in a template literal. -->
       <section id="anonymous-section" class="hidden flex flex-col sm:flex-row sm:items-center gap-4 rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm">
         <label class="relative inline-flex cursor-pointer items-center">
           <input type="checkbox" id="is-anonymous" name="anonymous" class="peer sr-only" aria-describedby="anon-help" />
@@ -153,8 +148,7 @@ export const setupEvaluate = async () => {
   const submitBtn = document.getElementById("submit-btn");
   const draftBtn = document.getElementById("draft-btn");
 
-  // Selection is local state, not the DOM: a re-created node read stale and failed
-  // silently. Shape: { id, name, email, role } or null.
+  // Selection is local state. Shape: { id, name, email, role } or null.
   let selection = null;
   const draftKey = () => `evaluation_draft_${currentUser.id}_${selection?.id || ""}`;
 
@@ -170,8 +164,7 @@ export const setupEvaluate = async () => {
 
   const currentUser = authService.getSession();
 
-  // Drop the corrupt draft keyed with an EMPTY suffix: it mixed every evaluatee
-  // and cannot be attributed to anyone, so it is not migrated.
+  // Drop corrupt draft keyed with empty suffix
   localStorage.removeItem(`evaluation_draft_${currentUser.id}_`);
 
   let autosaveTimeout;
@@ -189,9 +182,8 @@ export const setupEvaluate = async () => {
       anonymous: anonCheck.checked,
       answers: answers
     };
-    localStorage.setItem(draftKey(),  JSON.stringify(draft));
+    localStorage.setItem(draftKey(), JSON.stringify(draft));
 
-    // Visual feedback
     const indicator = document.getElementById("autosave-indicator");
     if (indicator) {
       indicator.classList.remove("opacity-0");
@@ -206,11 +198,9 @@ export const setupEvaluate = async () => {
     const questionElements = qContainer.querySelectorAll("[data-question-id]");
     if (questionElements.length === 0) return;
 
-    // Required only: counting open text would demand a comment nobody asks for to hit 100%.
     const requiredQuestions = Array.from(questionElements).filter(el => isRequired(el.dataset.inputType));
 
     if (requiredQuestions.length === 0) {
-      // Text-only form: nothing required to measure, hide the bar instead of NaN%.
       progressContainer.classList.add("hidden");
       saveDraftLocally();
       return;
@@ -229,13 +219,9 @@ export const setupEvaluate = async () => {
     saveDraftLocally();
   };
 
-  // Already submitted evaluations, loaded upfront so the first render can say
-  // "all done" without probing role by role.
   let myEvaluations = [];
 
   try {
-    // /evaluables (not /users): only who THIS coder may evaluate, clan-filtered
-    // on the server.
     const [evaluatees, periods, previousEvaluations] = await Promise.all([
       evaluablesService.get(currentUser.id),
       periodService.get(),
@@ -254,8 +240,6 @@ export const setupEvaluate = async () => {
     console.error(err);
   }
 
-  // People still pending in the active period, role-agnostic: that is what tells
-  // "all done" apart from a per-role notice.
   const pendingInPeriod = () => {
     if (!activePeriod) return [];
     const alreadyEvaluated = myEvaluations
@@ -264,7 +248,6 @@ export const setupEvaluate = async () => {
     return allUsers.filter(u => u.id !== currentUser.id && !alreadyEvaluated.includes(String(u.id)));
   };
 
-  // Everything done: hide the anonymous toggle and the buttons, nothing to send.
   const showAllDoneState = () => {
     document.getElementById('anonymous-section')?.classList.add('hidden');
     document.getElementById('wizard-buttons')?.classList.add('hidden');

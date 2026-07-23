@@ -95,9 +95,6 @@ let currentPeriods = [];
 let masterCohorts = [];
 let masterClans = [];
 let selectedPeriodId = null;
-// Cached so the clan filter does not re-request /metrics. It used to be a global
-// (window.__dashboardEvaluatees) that outlived navigation and served stale data;
-// as a module variable it is reassigned on every render.
 let dashboardEvaluatees = [];
 
 export const setupDashboard = async () => {
@@ -108,7 +105,6 @@ export const setupDashboard = async () => {
   const name = user?.name ? escapeHtml(user.name) : "Usuario";
   const role = user?.roles ? user.roles[0] : "coder";
 
-  // Extracted so it can be retried without reloading: the error state left no way out.
   const load = async () => {
     content.setAttribute("aria-busy", "true");
     try {
@@ -147,7 +143,6 @@ export const setupDashboard = async () => {
 };
 
 const renderDashboardContent = async (content, user, name, role) => {
-  // Cleared on every render so evaluatees from a previous period or user do not leak.
   dashboardEvaluatees = [];
 
   let html = `
@@ -161,8 +156,6 @@ const renderDashboardContent = async (content, user, name, role) => {
           <div class="w-full sm:w-48">
             <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="dashboard-period-filter-btn">Periodo</label>
             ${dropdownComponent('dashboard-period-filter', [
-    // "Todos" (value '0') as in Métricas: the backend aggregates over every period
-    // when period_id == 0 (see metrics_repository); the rest of the flow handles it.
     { value: '0', label: 'Todos' },
     ...currentPeriods.map(p => ({
       value: String(p.id),
@@ -283,7 +276,6 @@ const renderDashboardContent = async (content, user, name, role) => {
     const validEvaluatees = summary.evaluatees?.filter(e => e.average_score !== null) || [];
     const clans = [...new Set(validEvaluatees.map(e => e.clan_name).filter(Boolean))].sort();
 
-    // Stored so the clan filter does not hit the API again.
     dashboardEvaluatees = validEvaluatees;
 
     const uniqueCohorts = [...new Set(validEvaluatees.map(e => e.cohort_name).filter(Boolean))].sort();
@@ -732,10 +724,7 @@ const renderDashboardContent = async (content, user, name, role) => {
       evaluablesService.get(user.id)
     ]);
     
-    // Clan filtering is NOT done here: the SERVER is the authority
-    // (evaluation_service._validate_permissions). Filtering by clan_id on the
-    // client was EXCLUDING every Team Leader -- a TL has users.clan_id = NULL and
-    // their clans live in team_leader_clans (N:M). Only self is dropped here.
+    // Filter out self-evaluation from evaluables
     const evaluables = allEvaluables ? allEvaluables.filter(u => u.id !== user.id) : [];
 
     const completedEvals = myEvals.filter(e => !isPendingParticipation(e));
@@ -881,10 +870,7 @@ const renderDashboardContent = async (content, user, name, role) => {
     if (ctx) {
       const rootStyle = getComputedStyle(document.documentElement);
       const brandColor = rootStyle.getPropertyValue('--brand-bg').trim() || '#4f46e5';
-      // Neutral color for the "not completed" segment, same as the admin doughnut.
-      // It used to read --accent-amber, a token missing from global.css:
-      // getPropertyValue returned "" and it fell back to the amber hardcode,
-      // painting the whole ring as "alert" instead of neutral when completed = 0.
+      // Neutral color for uncompleted participation segment
       const pendingColor = rootStyle.getPropertyValue('--border-main').trim() || '#e5e7eb';
 
       const chartCompleted = completed;
