@@ -40,9 +40,12 @@ export const navBarComponent = () => {
       <div class="flex h-16 items-center justify-between px-6">
         
         <div class="flex items-center gap-4 text-white">
-          <a class="font-heading font-black font-semibold text-xl hidden sm:flex items-center gap-4 mt-1 text-white tracking-wide" href="/dashboard">
+          <button id="mobile-menu-btn" class="p-2 -ml-2 rounded-xl text-white/80 hover:bg-white/10 hover:text-white transition-colors lg:hidden focus:outline-none focus:ring-2 focus:ring-white/20" aria-label="Open Menu">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <a class="font-heading font-black font-semibold text-xl flex items-center gap-4 mt-1 text-white tracking-wide" href="/dashboard">
             <img src="/icons/riwi_logo.png" alt="Logo" class="w-auto h-6"> 
-            <span>LeadTrace</span>
+            <span class="hidden sm:inline">LeadTrace</span>
           </a>
         </div>
 
@@ -138,6 +141,11 @@ export const setupNavBar = () => {
   if (closeSidebarBtn) closeSidebarBtn.addEventListener("click", () => toggleSidebar(true));
   if (desktopSidebarBtn) desktopSidebarBtn.addEventListener("click", () => toggleDesktopSidebar());
   if (overlay) overlay.addEventListener("click", () => toggleSidebar(true));
+
+  const mobileMenuBtn = document.getElementById("mobile-menu-btn");
+  if (mobileMenuBtn) {
+    mobileMenuBtn.addEventListener("click", () => toggleSidebar(false));
+  }
 
   setupSidebar();
 };
