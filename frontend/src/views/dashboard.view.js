@@ -134,10 +134,16 @@ const renderDashboardContent = async (content, user, name, role) => {
         <div class="flex flex-col md:flex-row gap-4 z-20 relative w-full md:w-auto flex-wrap justify-end">
           <div class="w-full sm:w-48">
             <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="dashboard-period-filter-btn">Periodo</label>
-            ${dropdownComponent('dashboard-period-filter', currentPeriods.map(p => ({
-    value: String(p.id),
-    label: p.name + (p.is_active ? ' (Activo)' : '')
-  })), selectedPeriodId)}
+            ${dropdownComponent('dashboard-period-filter', [
+    // "Todos" (value '0') igual que en Métricas: el backend agrega sobre todos
+    // los periodos cuando period_id == 0 (ver metrics_repository). El resto del
+    // flujo ya lo soporta (getSummary('0') y la lógica de alertas tratan el 0).
+    { value: '0', label: 'Todos' },
+    ...currentPeriods.map(p => ({
+      value: String(p.id),
+      label: p.name + (p.is_active ? ' (Activo)' : '')
+    }))
+  ], selectedPeriodId)}
           </div>
           <div class="w-full sm:w-48" id="dashboard-cohort-filter-container">
             <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="dashboard-cohort-filter-btn">Cohorte</label>

@@ -43,9 +43,6 @@ export const emptyStateComponent = (title = "Sin resultados", message = "No hay 
           <!-- Ilustración vector abstracta "Empty Data" de estilo moderno -->
           <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" />
           <path fill="var(--brand-bg)" opacity="0.3" d="M12 4C7.58 4 4 7.58 4 12s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm-1 5h2v6h-2zm0 8h2v2h-2z" />
-          <circle fill="var(--brand-bg)" cx="18" cy="6" r="2" class="animate-bounce" />
-          <circle fill="var(--success-text)" cx="6" cy="18" r="1.5" />
-          <circle fill="var(--warning-text)" cx="5" cy="8" r="2" />
         </svg>
       </div>
       <h3 class="text-xl font-bold text-[var(--text-main)]">${escapeHtml(title)}</h3>

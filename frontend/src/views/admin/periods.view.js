@@ -3,7 +3,7 @@ import { statusBadgeComponent } from "../../components/statusBadge.js";
 import { showToast, showConfirm } from "../../components/alerts";
 import { periodService } from "../../services/periods.service.js";
 import { escapeHtml } from "../../utils/validators";
-import { setupModalA11y } from "../../utils/modalA11y";
+import { modalComponent, setupModal } from "../../components/modal";
 import { authService } from "../../services/auth.service";
 import { searchBoxComponent, setupSearch } from "../../components/searchBox";
 import { emptyStateComponent } from "../../components/emptyState.js";
@@ -41,9 +41,10 @@ export const renderAdminPeriods = () => `
     </section>
 
     <!-- Modal Form for New Period -->
-    <div id="period-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300">
-      <div role="dialog" aria-modal="true" aria-labelledby="period-modal-title" class="w-full max-w-md scale-95 transform rounded-3xl bg-[var(--bg-panel)] p-8 shadow-2xl transition-transform duration-300 border border-[var(--border-main)]">
-        <h2 id="period-modal-title" class="mb-6 text-2xl font-bold font-heading text-[var(--text-main)]">Abrir Nuevo Ciclo</h2>
+    ${modalComponent({
+      id: "period-modal",
+      title: "Abrir Nuevo Ciclo",
+      children: `
         <form id="form-period">
           <div class="mb-4">
             <label for="period-name" class="mb-2 block text-sm font-semibold text-[var(--text-main)]">Nombre del Ciclo</label>
@@ -62,8 +63,8 @@ export const renderAdminPeriods = () => `
             <button type="submit" class="w-full rounded-xl bg-[var(--brand-bg)] py-3 font-bold text-[var(--brand-text)] transition-all hover:bg-[var(--brand-hover)] cursor-pointer">Guardar</button>
           </div>
         </form>
-      </div>
-    </div>
+      `,
+    })}
 
     <div id="period-search-slot" class="mt-8 max-w-sm"></div>
 
@@ -94,7 +95,6 @@ export const renderAdminPeriods = () => `
 `;
 
 export const setupAdminPeriods = () => {
-  const modal = document.getElementById("period-modal");
   const modalTitle = document.getElementById("period-modal-title");
   const btnCreate = document.getElementById("btn-create-form") || document.getElementById("btn-create-period");
   const btnCancel = document.getElementById("btn-cancel-period");
@@ -107,17 +107,14 @@ export const setupAdminPeriods = () => {
   let currentFilteredPeriods = [];
   let paginationInstance = null;
 
-  const modalA11y = setupModalA11y(modal, () => closeModal());
-
-  // Funciones del Modal
-  const openModal = (triggerEl) => {
-    modal.classList.remove("hidden");
-    modalA11y.onOpen(triggerEl);
-    setTimeout(() => {
-      modal.classList.remove("opacity-0");
-      modal.firstElementChild.classList.remove("scale-95");
-    }, 10);
-  };
+  // El reset del formulario y del id de edicion va en onClose (lo dispara el
+  // componente tras la animacion de cierre, igual que antes).
+  const { open: openModal, close: closeModal } = setupModal("period-modal", {
+    onClose: () => {
+      form.reset();
+      editPeriodId = null;
+    },
+  });
 
   const openCreateModal = (e) => {
     editPeriodId = null;
@@ -135,17 +132,6 @@ export const setupAdminPeriods = () => {
     document.getElementById("period-start").value = period.starts_at;
     document.getElementById("period-end").value = period.ends_at;
     openModal(triggerEl);
-  };
-
-  const closeModal = () => {
-    modal.classList.add("opacity-0");
-    modal.firstElementChild.classList.add("scale-95");
-    setTimeout(() => {
-      modal.classList.add("hidden");
-      form.reset();
-      editPeriodId = null;
-    }, 300);
-    modalA11y.onClose();
   };
 
   if (btnCreate) btnCreate.addEventListener("click", openCreateModal);

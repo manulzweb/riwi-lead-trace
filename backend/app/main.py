@@ -50,7 +50,8 @@ app = FastAPI(
     license_info={
         "name": "MIT",
     },
-    openapi_tags=tags_metadata
+    openapi_tags=tags_metadata,
+    redoc_url="/dev/docs",
 )
 
 # Middleware de sesión eliminado porque la auto-sanación se hace ahora a nivel de SQLAlchemy en database.py.
