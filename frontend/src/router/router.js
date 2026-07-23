@@ -24,7 +24,7 @@ export async function renderRoute() {
     const app = document.getElementById("root");
     let currentPath = window.location.pathname;
 
-    // Guard: Redirigir la raíz (/) directamente a /login (el login redirigirá al dashboard si ya hay sesión)
+    // Guard: send the root (/) to /login; login redirects on if a session exists.
     if (currentPath === "/") {
         window.history.replaceState({}, "", "/login");
         currentPath = "/login";
@@ -36,19 +36,19 @@ export async function renderRoute() {
     
     const userRole = userSession?.roles || [];
 
-    // 1. Redirigir al login si es una ruta privada y no está autenticado
+    // 1. Private route without session -> login.
     if (route.requireAuth && !userSession) {
         window.history.replaceState({}, "", "/login");
         return renderRoute();
     }
 
-    // 2. Redirigir al dashboard si ya está autenticado e intenta ir a login/register o home (si configurado)
+    // 2. Already authenticated on login/register -> dashboard.
     if (route.redirectIfAuth && userSession) {
         window.history.replaceState({}, "", "/dashboard");
         return renderRoute();
     }
 
-    // 3. Validar roles permitidos si la ruta está protegida por roles
+    // 3. Check the allowed roles if the route is role-protected.
     if (route.requireAuth && route.allowedRoles && !route.allowedRoles.some(role => userRole.includes(role))) {
         console.warn("Acceso denegado: Rol insuficiente.", { userRole, allowedRoles: route.allowedRoles });
         showToast("Acceso Denegado", "error", "No tienes permiso para acceder a esta página o tu sesión expiró.");
@@ -56,19 +56,20 @@ export async function renderRoute() {
         if (currentPath !== "/dashboard") {
             window.history.replaceState({}, "", "/dashboard");
         } else {
-            // Evitar loop infinito si ni siquiera tiene acceso al dashboard (ej. sesión corrupta o rol vacío)
+            // Avoid an infinite loop when not even the dashboard is allowed
+            // (corrupt session or empty role).
             authService.clearSession();
             window.history.replaceState({}, "", "/login");
         }
         return renderRoute();
     }
 
-    // 4. Actualizar el título de la página si está definido en las properties de la ruta
+    // 4. Update the page title if the route defines one.
     if (route.title) {
         document.title = route.title;
     }
 
-    // 5. Función que ejecuta el renderizado
+    // 5. Actual render.
     const updateDOM = async () => {
         app.innerHTML = `
             <div id="content">
@@ -81,7 +82,7 @@ export async function renderRoute() {
         }
     };
 
-    // 6. Aplicar View Transitions API si está disponible
+    // 6. Use the View Transitions API when available.
     if (document.startViewTransition) {
         document.startViewTransition(() => updateDOM());
     } else {

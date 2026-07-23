@@ -9,8 +9,8 @@ import { emptyStateComponent } from "../../components/emptyState.js";
 import { setupPagination } from "../../components/pagination";
 import { z } from "zod";
 
-// Estado de error del listado: ofrece reintentar en vez de pedir recargar la
-// pagina. El listener del boton se engancha en loadCategories().
+// List error state: offers a retry instead of a page reload. The button
+// listener is wired up in loadCategories().
 const renderCategoriesError = () => `
   <div class="text-center py-8">
     <p class="text-[var(--danger-text)] text-sm">No se pudieron cargar las categorías.</p>
@@ -82,8 +82,7 @@ export const setupAdminCategories = () => {
 
   let editCategoryId = null;
 
-  // El reset del formulario y del id de edicion va en onClose (lo dispara el
-  // componente tras la animacion de cierre, igual que antes).
+  // Form and edit-id reset live in onClose, fired after the close animation.
   const { open: openModal, close: closeModal } = setupModal("category-modal", {
     onClose: () => {
       form.reset();
@@ -185,8 +184,7 @@ export const setupAdminCategories = () => {
       allCategories = await categoryService.getCategories();
       renderCategoriesList(allCategories);
       if (searchSlot) {
-        // Se regenera para no acumular listeners de recargas anteriores
-        // (ver mismo comentario en periods.view.js).
+        // Regenerated so listeners from previous reloads do not pile up.
         searchSlot.innerHTML = searchBoxComponent('category-search', 'Buscar categoría...');
         setupSearch('category-search', allCategories, ['name'], renderCategoriesList);
       }
@@ -202,7 +200,7 @@ export const setupAdminCategories = () => {
     e.preventDefault();
     const name = nameInput.value.trim();
 
-    // Validacion Zod
+    // Zod validation
     const categorySchema = z.object({
       name: z.string().min(3, "El nombre debe tener al menos 3 caracteres").max(60, "El nombre es muy largo (máximo 60)")
     });
@@ -213,14 +211,14 @@ export const setupAdminCategories = () => {
       return;
     }
 
-    // Optimistic UI: Actualizar o agregar a la lista inmediatamente
+    // Optimistic UI: update or append to the list right away
     const originalCategories = [...allCategories];
     
     if (editCategoryId) {
       const idx = allCategories.findIndex(c => c.id === editCategoryId);
       if (idx !== -1) allCategories[idx] = { ...allCategories[idx], name };
     } else {
-      // Fake ID temporal para el renderizado optimista
+      // Temporary fake ID for the optimistic render
       allCategories.push({ id: Date.now(), name });
     }
     
@@ -235,10 +233,10 @@ export const setupAdminCategories = () => {
         await categoryService.create(name);
         showToast("Categoría Creada", "success");
       }
-      // Refrescar para obtener los IDs reales de la base de datos
+      // Refetch to get the real database IDs
       loadCategories();
     } catch (error) {
-      // Rollback en caso de error
+      // Rollback
       allCategories = originalCategories;
       renderCategoriesList(allCategories);
       

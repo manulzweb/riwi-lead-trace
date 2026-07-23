@@ -1,20 +1,19 @@
 import { request, jsonOptions } from './api.service.js';
 
-// api.service.js no exporta BASE_URL ni un helper para respuestas binarias
-// (`request` siempre hace response.json()), asi que la descarga del CSV resuelve
-// la URL aqui. Es duplicacion consciente y esta reportada al equipo: lo correcto
-// es exportar BASE_URL / un `requestBlob` desde api.service.js y consumirlo aqui.
+// api.service.js exports neither BASE_URL nor a binary-response helper
+// (request always calls response.json()), so the CSV download resolves the URL
+// here. Known duplication, already reported to the team.
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 const getSettings = async () => await request('/settings');
 
-// Valores de fabrica que expone el backend. Es una lectura: no guarda nada.
+// Factory values exposed by the backend. Read-only: it persists nothing.
 const getDefaults = async () => await request('/settings/defaults');
 
 const updateSettings = async (data) => await request('/settings', jsonOptions('PUT', data));
 
-// Devuelve el CSV del registro como Blob. Lanza un error con la misma forma
-// que `request` (status/detail) para que las vistas discriminen por err.status.
+// Returns the activity log CSV as a Blob. Throws the same error shape as
+// request (status/detail) so views can branch on err.status.
 const downloadActivityLogCsv = async () => {
   const response = await fetch(`${BASE_URL}/activity-log/export`, { cache: 'no-store' });
 
@@ -23,7 +22,7 @@ const downloadActivityLogCsv = async () => {
     try {
       detail = (await response.json())?.detail ?? null;
     } catch {
-      // body vacio o no-JSON, se deja detail en null
+      // Empty or non-JSON body: detail stays null.
     }
     const error = new Error(`Error: ${response.status} La peticion ha fallado en el endpoint ${BASE_URL}/activity-log/export`);
     error.status = response.status;

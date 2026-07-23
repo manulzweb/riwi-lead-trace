@@ -1,17 +1,13 @@
 import { createFocusTrap } from 'focus-trap';
 
-// Accesibilidad basica para los modales de "crear/editar" del admin
-// (periods.view.js, categories.view.js): cierre con Esc, trap de foco (Tab
-// no se escapa del modal, via focus-trap) y devolver el foco al boton que lo
-// abrio al cerrar (setReturnFocus, lo maneja la libreria). No reemplaza la
-// logica de abrir/cerrar (animaciones, reset de formulario) que ya tiene
-// cada vista -- solo se conecta a ella via onOpen/onClose.
+// Basic a11y for the admin create/edit modals: Esc to close, focus trap and
+// focus returned to the trigger. It does not replace each view open/close
+// logic, it plugs into it via onOpen/onClose.
 export const setupModalA11y = (modal, closeModal) => {
   let trap = null;
 
-  // El Esc lo capturamos nosotros (no focus-trap: escapeDeactivates:false)
-  // para que dispare closeModal() de la vista, con su animacion de cierre,
-  // en vez de que la libreria oculte el modal de golpe.
+  // We handle Esc ourselves (escapeDeactivates:false) so it fires the view
+  // closeModal() with its animation instead of hiding the modal abruptly.
   modal.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
       e.preventDefault();

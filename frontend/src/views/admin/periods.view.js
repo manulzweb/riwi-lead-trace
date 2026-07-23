@@ -10,12 +10,12 @@ import { emptyStateComponent } from "../../components/emptyState.js";
 import { setupPagination } from "../../components/pagination";
 import { z } from "zod";
 
-// Clases del input del modal, extraidas para no repetir la misma cadena en los
-// tres campos (DRY) y para que los tokens de color queden en un solo sitio.
+// Modal input classes extracted so the same string is not repeated across the
+// three fields (DRY) and the color tokens live in one place.
 const INPUT_CLASSES = "w-full rounded-xl border border-[var(--border-main)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text-main)] transition-all focus:border-[var(--brand-bg)] focus:bg-[var(--bg-panel)] focus:outline-none focus:ring-4 focus:ring-[var(--brand-bg)]/10";
 
-// Estado de error del listado: ofrece reintentar en vez de pedir recargar la
-// pagina. El listener del boton se engancha en loadPeriods().
+// List error state: offers a retry instead of a page reload. The button
+// listener is wired up in loadPeriods().
 const renderPeriodsError = () => `
   <div class="text-center py-8">
     <p class="text-[var(--danger-text)] text-sm">No se pudieron cargar los ciclos.</p>
@@ -40,7 +40,7 @@ export const renderAdminPeriods = () => `
       </button>
     </section>
 
-    <!-- Modal Form for New Period -->
+    <!-- New period modal -->
     ${modalComponent({
       id: "period-modal",
       title: "Abrir Nuevo Ciclo",
@@ -107,8 +107,7 @@ export const setupAdminPeriods = () => {
   let currentFilteredPeriods = [];
   let paginationInstance = null;
 
-  // El reset del formulario y del id de edicion va en onClose (lo dispara el
-  // componente tras la animacion de cierre, igual que antes).
+  // Form and edit-id reset live in onClose, fired after the close animation.
   const { open: openModal, close: closeModal } = setupModal("period-modal", {
     onClose: () => {
       form.reset();
@@ -191,7 +190,7 @@ export const setupAdminPeriods = () => {
         `;
       },
       onRenderCompleted: () => {
-        // Lógica de los botones de Activar/Desactivar
+        // Open/close buttons
         document.querySelectorAll(".btn-toggle-period").forEach(btn => {
           btn.addEventListener("click", async (e) => {
             const id = parseInt(e.target.dataset.id);
@@ -222,7 +221,7 @@ export const setupAdminPeriods = () => {
           });
         });
 
-        // Lógica del botón Editar
+        // Edit button
         document.querySelectorAll(".btn-edit-period").forEach(btn => {
           btn.addEventListener("click", () => {
             const id = parseInt(btn.dataset.id);
@@ -231,7 +230,7 @@ export const setupAdminPeriods = () => {
           });
         });
 
-        // Lógica del botón Eliminar
+        // Delete button
         document.querySelectorAll(".btn-delete-period").forEach(btn => {
           btn.addEventListener("click", async (e) => {
             const id = e.currentTarget.dataset.id;
@@ -268,10 +267,8 @@ export const setupAdminPeriods = () => {
     try {
       allPeriods = await periodService.get();
       renderPeriodsList(allPeriods);
-      // Se regenera el input en cada carga para no acumular listeners de
-      // versiones anteriores (loadPeriods se vuelve a llamar tras crear/
-      // editar/borrar/activar un ciclo, pero el nodo del input persiste
-      // fuera de listContainer si no se reemplaza).
+      // Regenerated on each load so listeners from previous versions do not
+      // pile up: the input node lives outside listContainer.
       if (searchSlot) {
         searchSlot.innerHTML = searchBoxComponent('period-search', 'Buscar ciclo por nombre...');
         setupSearch('period-search', allPeriods, ['name'], renderPeriodsList);
@@ -284,7 +281,7 @@ export const setupAdminPeriods = () => {
     }
   };
 
-  // Crear o editar Periodo
+  // Create or edit a period
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -292,10 +289,10 @@ export const setupAdminPeriods = () => {
       name: document.getElementById("period-name").value.trim(),
       starts_at: document.getElementById("period-start").value,
       ends_at: document.getElementById("period-end").value,
-      is_active: true // Por defecto al crear es activo, al editar depende pero lo ignoramos optimista
+      is_active: true // active by default on create; ignored optimistically on edit
     };
 
-    // Validacion Zod
+    // Zod validation
     const periodSchema = z.object({
       name: z.string().min(3, "El nombre debe tener al menos 3 caracteres").max(100, "Nombre demasiado largo"),
       starts_at: z.string().min(1, "La fecha de inicio es requerida"),
@@ -322,7 +319,7 @@ export const setupAdminPeriods = () => {
         allPeriods[idx] = { ...allPeriods[idx], ...data, is_active: allPeriods[idx].is_active };
       }
     } else {
-      // Fake ID temporal para renderizado optimista
+      // Temporary fake ID for the optimistic render
       allPeriods.push({ id: Date.now(), ...data });
     }
 

@@ -52,9 +52,8 @@ export const renderMyResults = () => `
   </main>
 `;
 
-// Sección "SmartFeedback" (resumen IA). Envuelve el contenido variable (el
-// resumen, o el aviso de datos insuficientes) en la misma cabecera y tarjeta,
-// para no duplicar el markup entre ambos estados.
+// SmartFeedback (AI summary) wrapper: same header and card for both states
+// (summary or insufficient-data notice), so the markup is not duplicated.
 const smartFeedbackSection = (innerHtml) => `
   <section class="mb-10">
     <h2 class="text-xl font-black text-[var(--text-main)] mb-4 flex items-center gap-2">
@@ -67,8 +66,8 @@ const smartFeedbackSection = (innerHtml) => `
   </section>
 `;
 
-// Estado de error del contenedor de feedback, con reintento. `retryId` permite
-// distinguir el reintento de la carga inicial del de un periodo puntual.
+// Feedback container error state with retry. retryId tells the initial-load
+// retry apart from a single-period one.
 const renderLoadError = (message, retryId) => `
   <article class="rounded-3xl border border-[var(--danger-border)] bg-[var(--danger-bg)] p-10 text-center">
     <p class="text-[var(--danger-text)] font-bold">${escapeHtml(message)}</p>
@@ -92,7 +91,7 @@ export const setupMyResults = async () => {
   const currentUser = authService.getSession();
   let periods = [];
 
-  // Carga inicial extraida para poder reintentarla desde el estado de error.
+  // Initial load extracted so it can be retried from the error state.
   const init = async () => {
     feedbackList.setAttribute("aria-busy", "true");
     try {
@@ -118,10 +117,9 @@ export const setupMyResults = async () => {
       </div>`;
       setupDropdown('period-selector');
 
-      // After re-rendering, get the new input
+      // After re-rendering, grab the new input node.
       const periodInput = document.getElementById("period-selector");
 
-      // Cargar datos del periodo inicial
       await loadResultsForPeriod(currentUser.id, activePeriod.id);
 
       if (periodInput) {
@@ -176,7 +174,6 @@ export const setupMyResults = async () => {
         evalStatus.innerHTML = `<span class="${statusColor}">${escapeHtml(myMetrics.status)}</span>`;
       }
 
-      // Filtrar evaluaciones pertenecientes al periodo seleccionado
       const periodEvaluations = evaluations.filter(e => e.period_id === periodId && e.status === "submitted");
 
       if (periodEvaluations.length === 0) {
@@ -187,7 +184,6 @@ export const setupMyResults = async () => {
         return;
       }
 
-      // Recopilar comentarios de texto y puntajes
       const allAnswers = [];
       periodEvaluations.forEach(ev => {
         ev.answers.forEach(ans => {
@@ -210,10 +206,9 @@ export const setupMyResults = async () => {
           `);
         }
       } catch (err) {
-        // 400 = InsufficientDataException: aún no hay suficientes evaluaciones en
-        // el periodo para que la IA genere el resumen. Es un estado esperado, no
-        // un fallo, así que en lugar de omitir la sección (o loguear un error) se
-        // muestra un aviso claro en el lugar del resumen.
+        // 400 = InsufficientDataException: not enough evaluations yet for the AI
+        // summary. Expected state, not a failure, so show a notice instead of
+        // hiding the section or logging an error.
         if (err.status === 400) {
           aiSummaryHtml = smartFeedbackSection(`
             <p class="text-sm text-[var(--text-muted)]">
@@ -222,8 +217,8 @@ export const setupMyResults = async () => {
             </p>
           `);
         } else {
-          // Otros fallos (IA no disponible, red) sí son incidencias: se registran
-          // y la sección se omite en silencio para no romper el resto de la vista.
+          // Other failures (AI down, network) are real incidents: log them and
+          // drop the section silently so the rest of the view still works.
           console.warn("No se pudo obtener el resumen IA", err);
         }
       }
@@ -241,10 +236,9 @@ export const setupMyResults = async () => {
 
       const commentsContainer = document.getElementById("comments-pagination-container");
 
-      // Si el contenedor no esta en el DOM vivo, la vista se re-renderizo
-      // (navegacion concurrente) mientras se esperaba al backend --lento en el
-      // deploy--: `feedbackList` quedo detached y esta carga es obsoleta. Se
-      // aborta en vez de pasar un contenedor null a setupPagination.
+      // No container means the view was re-rendered (concurrent navigation) while
+      // waiting on the backend: feedbackList is detached and this load is stale.
+      // Abort instead of passing a null container to setupPagination.
       if (!commentsContainer) return;
 
       setupPagination({

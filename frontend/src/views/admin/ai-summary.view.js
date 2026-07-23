@@ -84,8 +84,7 @@ export const setupAiSummary = async () => {
 
   let evaluables = [];
 
-  // Carga de opciones extraida a una funcion para poder reintentarla desde el
-  // boton de error sin recargar la pagina.
+  // Extracted so the error-state retry button can rerun it without a reload.
   const loadOptions = async () => {
   try {
     const [users, periods] = await Promise.all([userService.get(), periodService.get()]);
@@ -139,7 +138,7 @@ export const setupAiSummary = async () => {
   await loadOptions();
 
   generateBtn.addEventListener("click", async () => {
-    // We must query the input value dynamically at click time
+    // Read the input value on click, not before: it may have changed.
     const targetUserInput = document.getElementById("target-user");
     const periodInput = document.getElementById("period");
     const evaluateeId = parseInt(targetUserInput.value);
@@ -167,9 +166,8 @@ export const setupAiSummary = async () => {
     }
   });
 
-  // Genera el resumen de IA para cada tutor/lider evaluable, uno por uno
-  // (no en paralelo: evita saturar la API de Claude y respeta el cache de
-  // ai_feedback_cache -- si ya existe, la llamada es practicamente inmediata).
+  // One AI summary per evaluable person, sequentially: parallel calls would
+  // hammer the API and bypass the ai_feedback_cache warm path.
   generateAllBtn.addEventListener("click", async () => {
     const periodInput = document.getElementById("period");
     const periodId = parseInt(periodInput.value);

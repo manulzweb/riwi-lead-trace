@@ -1,8 +1,7 @@
 import { escapeHtml } from "../utils/validators.js";
 
-// Estilos por familia semantica. Los colores salen de los tokens de
-// global.css, que ya cambian solos en dark mode: por eso no hay variantes
-// `dark:` aqui.
+// Styles by semantic family. Colors come from global.css tokens, which already
+// switch in dark mode, so there are no dark: variants here.
 const SUCCESS = { text: "text-[var(--success-text)]", bg: "bg-[var(--success-bg)]", dot: "bg-[var(--success-dot)]" };
 const WARNING = { text: "text-[var(--warning-text)]", bg: "bg-[var(--warning-bg)]", dot: "bg-[var(--warning-dot)]" };
 const INFO = { text: "text-[var(--info-text)]", bg: "bg-[var(--info-bg)]", dot: "bg-[var(--info-dot)]" };
@@ -11,29 +10,28 @@ const NEUTRAL = { text: "text-[var(--text-muted)]", bg: "bg-[var(--bg-base)]", d
 
 export const statusBadgeComponent = ({ status, variant = 'text' }) => {
   const config = {
-    // Estados de evaluaciones
+    // Evaluation statuses
     "Completada": SUCCESS,
     "En progreso": INFO,
     "Pendiente": WARNING,
 
-    // Estados de formularios
+    // Form statuses
     "Activa": SUCCESS,
     "Inactiva": DANGER,
 
-    // Estados de ciclos
-    // "Cerrado" es un estado neutro (no semantico).
+    // Period statuses: closed is neutral, not semantic.
     "Cerrado": NEUTRAL,
 
-    // Estados de métricas ICP
+    // ICP metric statuses
     "Sólido": SUCCESS,
     "En riesgo": DANGER,
     "Estable": WARNING
   };
 
-  // Fallback neutro para estados no catalogados: mismos tokens que "Cerrado".
+  // Neutral fallback for uncatalogued statuses.
   const style = config[status] || NEUTRAL;
-  // `status` hoy siempre viene de literales del codigo, pero se escapa igual:
-  // el valor entra en un template que se inyecta con innerHTML.
+  // status always comes from code literals today, but it is escaped anyway:
+  // the value lands in a template injected with innerHTML.
   const label = escapeHtml(status);
 
   if (variant === 'dot') {
@@ -45,7 +43,7 @@ export const statusBadgeComponent = ({ status, variant = 'text' }) => {
     `;
   }
 
-  // default variant 'text' (el diseño original de p)
+  // Default variant 'text'.
   return `
     <p class="text-xs font-bold uppercase tracking-[0.25em] ${style.text}">${label}</p>
   `;

@@ -95,10 +95,9 @@ let currentPeriods = [];
 let masterCohorts = [];
 let masterClans = [];
 let selectedPeriodId = null;
-// tenga que volver a pedir /metrics. Antes vivia en window.__dashboardEvaluatees:
-// un global sobrevive a la navegacion y podia servir datos rancios de una
-// sesion o un periodo anterior. Como variable de modulo se reasigna en cada
-// render y no se expone fuera del archivo.
+// Cached so the clan filter does not re-request /metrics. It used to be a global
+// (window.__dashboardEvaluatees) that outlived navigation and served stale data;
+// as a module variable it is reassigned on every render.
 let dashboardEvaluatees = [];
 
 export const setupDashboard = async () => {
@@ -109,8 +108,7 @@ export const setupDashboard = async () => {
   const name = user?.name ? escapeHtml(user.name) : "Usuario";
   const role = user?.roles ? user.roles[0] : "coder";
 
-  // Carga extraida para poder reintentarla sin recargar la pagina: el estado
-  // de error dejaba al usuario sin salida salvo F5.
+  // Extracted so it can be retried without reloading: the error state left no way out.
   const load = async () => {
     content.setAttribute("aria-busy", "true");
     try {
@@ -149,8 +147,7 @@ export const setupDashboard = async () => {
 };
 
 const renderDashboardContent = async (content, user, name, role) => {
-  // Se limpia en cada render para no arrastrar los evaluables del periodo o
-  // del usuario anterior.
+  // Cleared on every render so evaluatees from a previous period or user do not leak.
   dashboardEvaluatees = [];
 
   let html = `
@@ -164,9 +161,8 @@ const renderDashboardContent = async (content, user, name, role) => {
           <div class="w-full sm:w-48">
             <label class="text-xs font-bold text-[var(--text-muted)] mb-1 block uppercase tracking-wider" for="dashboard-period-filter-btn">Periodo</label>
             ${dropdownComponent('dashboard-period-filter', [
-    // "Todos" (value '0') igual que en Métricas: el backend agrega sobre todos
-    // los periodos cuando period_id == 0 (ver metrics_repository). El resto del
-    // flujo ya lo soporta (getSummary('0') y la lógica de alertas tratan el 0).
+    // "Todos" (value '0') as in Métricas: the backend aggregates over every period
+    // when period_id == 0 (see metrics_repository); the rest of the flow handles it.
     { value: '0', label: 'Todos' },
     ...currentPeriods.map(p => ({
       value: String(p.id),
@@ -196,12 +192,10 @@ const renderDashboardContent = async (content, user, name, role) => {
   let currentKpis = null;
 
   if (role === "admin") {
-    // Admin View
     const summary = selectedPeriodId ? await metricsService.getSummary(selectedPeriodId) : { kpis: { total_evaluations: 0, average_score: 0, participation_rate: 0 }, evaluatees: [] };
     const kpis = summary.kpis || { total_evaluations: 0, average_score: 0, participation_rate: 0 };
     currentKpis = kpis;
 
-    // Alertas Activas logic
     let alertMsg = "Ninguna por el momento";
     let alertIconColor = "text-green-500";
     if (selectedPeriodId) {
@@ -250,7 +244,6 @@ const renderDashboardContent = async (content, user, name, role) => {
 
     content.innerHTML = html;
 
-    // Initialize participation doughnut chart
     const pChartCtx = document.getElementById('participation-chart');
     if (pChartCtx && currentKpis) {
       const rootStyle = getComputedStyle(document.documentElement);
@@ -287,11 +280,10 @@ const renderDashboardContent = async (content, user, name, role) => {
       }).catch(e => console.error("Chart load error:", e));
     }
 
-    // Extract unique clans
     const validEvaluatees = summary.evaluatees?.filter(e => e.average_score !== null) || [];
     const clans = [...new Set(validEvaluatees.map(e => e.clan_name).filter(Boolean))].sort();
 
-    // Se guarda para que el filtro por clan no vuelva a pedir la API.
+    // Stored so the clan filter does not hit the API again.
     dashboardEvaluatees = validEvaluatees;
 
     const uniqueCohorts = [...new Set(validEvaluatees.map(e => e.cohort_name).filter(Boolean))].sort();
@@ -389,8 +381,7 @@ const renderDashboardContent = async (content, user, name, role) => {
     if (currentPeriods.length > 0) {
       setupDropdown('dashboard-period-filter', async (val) => {
         selectedPeriodId = val;
-        
-        // Disable dropdowns to show loading state
+
         const periodBtn = document.getElementById("dashboard-period-filter-btn");
         if (periodBtn) {
             periodBtn.disabled = true;
@@ -424,7 +415,6 @@ const renderDashboardContent = async (content, user, name, role) => {
     let tlHistory = [];
     let tlReceivedEvals = [];
 
-    // Leader, Tutor and Coder combined view
     if (role === "team_leader" || role === "tutor") {
       const summaryPromise = selectedPeriodId ? metricsService.getSummary(selectedPeriodId) : Promise.resolve({ evaluatees: [] });
       const [summary, history, receivedEvals] = await Promise.all([
@@ -444,10 +434,9 @@ const renderDashboardContent = async (content, user, name, role) => {
       let comparisonHtml = "";
 
       if (role === "team_leader" && validEvaluatees.length > 0) {
-        // Ranking Motivacional
         const tlList = validEvaluatees.filter(e => e.role === "team_leader").sort((a, b) => b.average_score - a.average_score);
         const myIndex = tlList.findIndex(e => String(e.id) === String(user.id));
-        
+
         if (myIndex !== -1) {
           const myRank = myIndex + 1;
           const total = tlList.length;
@@ -486,7 +475,6 @@ const renderDashboardContent = async (content, user, name, role) => {
         }
       }
 
-      // Comparativa de periodo actual con anterior
       if (selectedPeriodId) {
         const sortedPeriods = [...currentPeriods].sort((a, b) => new Date(b.starts_at) - new Date(a.starts_at));
         const currIdx = sortedPeriods.findIndex(p => String(p.id) === String(selectedPeriodId));
@@ -587,7 +575,6 @@ const renderDashboardContent = async (content, user, name, role) => {
     }
 
     const initTLCharts = () => {
-      // Comparativa ICP Bar Chart
       const compCtx = document.getElementById('tl-comparison-chart');
       if (compCtx) {
         const curr = parseFloat(compCtx.dataset.curr);
@@ -617,7 +604,6 @@ const renderDashboardContent = async (content, user, name, role) => {
         }).catch(err => console.error(err));
       }
 
-      // Tendencia Mensual Line Chart
       const trendCtx = document.getElementById('tl-trend-chart');
       if (trendCtx && tlHistory.length > 0) {
         import('chart.js/auto').then(({ default: Chart }) => {
@@ -664,10 +650,9 @@ const renderDashboardContent = async (content, user, name, role) => {
         trendCtx.parentElement.innerHTML = '<div class="flex h-full items-center justify-center text-sm text-[var(--text-muted)]">No hay datos suficientes para la tendencia</div>';
       }
 
-      // Tabla de Actividad Reciente Paginada
       const activityContainer = document.getElementById('tl-recent-activity');
       if (activityContainer) {
-        // Obtenemos todos los items de respuestas de texto y los aplanamos
+        // Flatten every text answer into a single list.
         const allComments = [];
         tlReceivedEvals.forEach(ev => {
            ev.answers?.forEach(ans => {
@@ -683,7 +668,6 @@ const renderDashboardContent = async (content, user, name, role) => {
            });
         });
 
-        // Ordenar por fecha descendente
         allComments.sort((a, b) => new Date(b.date) - new Date(a.date));
 
         if (allComments.length === 0) {
@@ -743,18 +727,15 @@ const renderDashboardContent = async (content, user, name, role) => {
       `;
     }
 
-    // Tutor or Coder View
     const [myEvals, allEvaluables] = await Promise.all([
       evaluationService.getByEvaluator(user.id, 100),
       evaluablesService.get(user.id)
     ]);
     
-    // El filtro por clan NO se hace aqui: lo aplica el servidor, que es la
-    // autoridad (evaluation_service._validate_permissions). Filtrarlo en el
-    // cliente por `clan_id` estaba EXCLUYENDO a todos los Team Leaders --
-    // un TL tiene `users.clan_id = NULL` y su relacion con clanes vive en la
-    // tabla `team_leader_clans` (N:M, un TL puede llevar varios clanes).
-    // Aqui solo se descarta al propio usuario, que no es una regla de clan.
+    // Clan filtering is NOT done here: the SERVER is the authority
+    // (evaluation_service._validate_permissions). Filtering by clan_id on the
+    // client was EXCLUDING every Team Leader -- a TL has users.clan_id = NULL and
+    // their clans live in team_leader_clans (N:M). Only self is dropped here.
     const evaluables = allEvaluables ? allEvaluables.filter(u => u.id !== user.id) : [];
 
     const completedEvals = myEvals.filter(e => !isPendingParticipation(e));
@@ -762,8 +743,7 @@ const renderDashboardContent = async (content, user, name, role) => {
     const totalEvaluables = evaluables.length;
     const pending = Math.max(0, totalEvaluables - completed);
     
-    // Averiguar si hay formularios disponibles y para que roles
-    // Para no hacer 2 peticiones mas, usamos evaluables que ya estan filtrados
+    // Which roles are still pending, reusing evaluables to avoid two more requests.
     const evaluatedIds = completedEvals.map(e => String(e.evaluatee_id));
     const pendingUsers = evaluables.filter(u => !evaluatedIds.includes(String(u.id)));
     
@@ -773,16 +753,14 @@ const renderDashboardContent = async (content, user, name, role) => {
         if (u.roles && u.roles.includes("tutor")) pendingRoles.add("Tutor");
     });
 
-    // Nombres para "Actividad reciente": `evaluables` ya trae a todo evaluable
-    // del clan (evaluado o no), asi que sirve como diccionario id -> nombre sin
-    // pedir /users aparte.
+    // evaluables already holds every evaluatee of the clan, so it works as an
+    // id -> name map without calling /users.
     const evaluableNameById = new Map(evaluables.map(u => [String(u.id), u.name]));
 
     const recentActivity = completedEvals
       .map(ev => {
         const isAnonymous = evaluationService.isAnonymousParticipation(ev);
-        // En una participacion anonima no hay `submitted_at`; `created_at`
-        // (cuando se registro la participacion) si existe y es la fecha honesta.
+        // Anonymous participations have no submitted_at; created_at is the honest date.
         const dateSource = isAnonymous ? ev.created_at : (ev.submitted_at || ev.created_at);
         return { ev, isAnonymous, dateSource };
       })
@@ -823,9 +801,8 @@ const renderDashboardContent = async (content, user, name, role) => {
         `
     })}
 
-      <!-- Banner de recordatorio, independiente (ya no envuelto en la tarjeta
-           de saludo). Cuando no hay pendientes se muestra un estado "al dia"
-           para que la celda de 2 columnas no quede vacia. -->
+      <!-- Standalone reminder banner. With nothing pending it shows an "up to date"
+           state so the 2-column cell is not left empty. -->
       <div class="col-span-1 md:col-span-2 lg:col-span-2 mt-4 lg:mt-0">
         ${pendingRoles.size > 0 ? `
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6 rounded-3xl bg-[var(--brand-bg)] text-[var(--brand-text)] px-6 py-6 sm:px-8 sm:py-7 shadow-md h-full">
@@ -904,12 +881,10 @@ const renderDashboardContent = async (content, user, name, role) => {
     if (ctx) {
       const rootStyle = getComputedStyle(document.documentElement);
       const brandColor = rootStyle.getPropertyValue('--brand-bg').trim() || '#4f46e5';
-      // Color neutro para el segmento "sin completar" -- el mismo criterio que
-      // el donut del admin (ver mas arriba en este archivo). Antes usaba
-      // `--accent-amber`, un token que no existe en global.css: getPropertyValue
-      // devolvia "" y caia siempre al hardcode '#f59e0b' (ambar), pintando el
-      // anillo entero de "alerta" en vez de "pendiente neutral" cuando
-      // completadas = 0.
+      // Neutral color for the "not completed" segment, same as the admin doughnut.
+      // It used to read --accent-amber, a token missing from global.css:
+      // getPropertyValue returned "" and it fell back to the amber hardcode,
+      // painting the whole ring as "alert" instead of neutral when completed = 0.
       const pendingColor = rootStyle.getPropertyValue('--border-main').trim() || '#e5e7eb';
 
       const chartCompleted = completed;
@@ -982,7 +957,6 @@ const renderDashboardContent = async (content, user, name, role) => {
       }).catch(err => console.error("Error loading Chart.js", err));
     }
   }
-  
-  // Trigger reflow to start fade-in animation for all roles
+
   runDashboardAnimations();
 };

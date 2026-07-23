@@ -26,10 +26,8 @@ export const dropdownComponent = (id, options, selectedValue, placeholder = "Sel
   `;
 };
 
-// UN solo listener de modulo que despacha a los dropdowns vivos: el router
-// recrea el contenedor en cada navegacion, asi que `dataset.initialized` no
-// evitaba acumular un listener sobre `document` por dropdown y navegacion.
-// El registro se purga solo al detectar contenedores fuera del documento.
+// Single module-level listener: the router recreates containers on every
+// navigation, so per-dropdown listeners piled up on `document`.
 const registeredDropdowns = new Set();
 let globalClickListenerAttached = false;
 
@@ -51,19 +49,11 @@ const registerDropdown = (container, close) => {
 };
 
 /**
- * Selecciona una opcion del dropdown POR CODIGO, dejandolo igual que si el
- * usuario la hubiera clicado.
+ * Selects an option programmatically. Needed because this is not a native
+ * `<select>`: setting `.value` only updates the hidden input, leaving the
+ * visible label stuck on the placeholder.
  *
- * Existe porque este dropdown NO es un `<select>` nativo: es un
- * `<input type="hidden">` (el valor) mas un `<button>` (lo que se ve). Hacer
- * `document.getElementById(id).value = x` escribe solo en el input oculto, asi
- * que el valor queda bien pero **la etiqueta visible sigue mostrando el
- * placeholder** -- el usuario ve "Selecciona un rol" sobre un valor ya elegido.
- * Ese desfase es el que rompia la preseleccion por query params.
- *
- * @returns {boolean} false si el dropdown o la opcion no existen (por ejemplo,
- *   preseleccionar a alguien que no esta en la lista). No lanza: el llamador
- *   decide si eso es un error o simplemente "no habia nada que preseleccionar".
+ * @returns {boolean} false if the dropdown or option doesn't exist. Never throws.
  */
 export const setDropdownValue = (id, value) => {
   const input = document.getElementById(id);
@@ -150,7 +140,7 @@ export const setupDropdown = (id, onChangeCallback = null) => {
     toggleMenu(isHidden);
   });
   
-  // Cerrar al hacer click fuera: se delega al listener global unico del modulo.
+  // Close on outside click
   registerDropdown(container, () => toggleMenu(false));
 
   document.querySelectorAll(`.${id}-option`).forEach(opt => {
@@ -175,7 +165,7 @@ export const setupDropdown = (id, onChangeCallback = null) => {
         onChangeCallback(val);
       }
       
-      // Dispara 'change' en el input para notificar a otros listeners.
+      // Notify other listeners
       if (input) {
         input.dispatchEvent(new Event('change', { bubbles: true }));
       }

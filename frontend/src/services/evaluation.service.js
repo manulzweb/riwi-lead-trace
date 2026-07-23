@@ -10,26 +10,22 @@ const getForm = async (targetRole) => {
 
 const create = async (evaluationData) => await request('/evaluations', jsonOptions('POST', evaluationData))
 
-// Historial del evaluador. `limit` es opcional: sin el, la URL queda igual que
-// siempre y manda el default del backend (limit=100 en GET /evaluations). El
-// dashboard lo pasa explicito para no depender de ese default.
+// Evaluator history. limit is optional; without it the backend default
+// (limit=100) applies.
 //
-// OJO con la forma que devuelve: NO son evaluaciones, son PARTICIPACIONES
-// (`EvaluationHistoryOut`, filas de `evaluation_submissions`). No traen `id`
-// sino `participation_id`. Si es anónima, `is_anonymous` viene en `true`, pero
-// el backend aún envía el `evaluation_id` y las respuestas para que el coder
-// pueda revisarlas en su historial privado.
+// WATCH THE SHAPE: these are not evaluations but PARTICIPATIONS (rows of
+// evaluation_submissions), keyed by participation_id, not id. Anonymous ones
+// still carry evaluation_id and answers so the coder can review them.
 const getByEvaluator = async (evaluatorId, limit) =>
   await request(`/evaluations?evaluator_id=${evaluatorId}${limit ? `&limit=${limit}` : ''}`)
 
 const getByEvaluatee = async (evaluateeId) => await request(`/evaluations?evaluatee_id=${evaluateeId}`)
 
-// Predicados puros sobre una participacion del historial. Viven aca (y no
-// duplicados en cada vista) porque describen la FORMA que devuelve la API, que
-// es responsabilidad de esta capa. No tocan el DOM.
+// Pure predicates over a history participation. They live here because they
+// describe the API shape, which is this layer responsibility. No DOM.
 const isAnonymousParticipation = (entry) => entry?.is_anonymous === true
 
-// Hay detalle que abrir siempre que el backend mande el evaluation_id
+// There is detail to open whenever the backend sends evaluation_id.
 const hasVisibleDetail = (entry) => entry?.evaluation_id != null
 
 export const evaluationService = {

@@ -1,25 +1,14 @@
 import { setupModalA11y } from "../utils/modalA11y";
 
-// Modal compartido de la SPA. Nace de la duplicacion ya presente en
-// categories.view.js, periods.view.js y admin/evaluations.view.js: los tres
-// tenian el MISMO markup de backdrop + panel y los MISMOS openModal/closeModal
-// (incluidos los setTimeout de 10ms/300ms que sincronizan la animacion). Aqui
-// vive una sola vez.
+// Shared SPA modal, factored out of the identical backdrop + panel markup and
+// open/close logic duplicated in categories, periods and admin/evaluations.
+// Same split as the rest of components/: modalComponent returns markup,
+// setupModal wires behaviour on top of modalA11y.
 //
-// Reparte responsabilidades como el resto de components/:
-//   - `modalComponent(...)` devuelve markup (se usa dentro de un render*).
-//   - `setupModal(id)` conecta el comportamiento en setup*, encima de
-//     `modalA11y` (Esc + trap de foco + devolver foco al disparador).
-//
-// NO resetea formularios ni estado de la vista: eso es propio de cada pantalla.
-// Para engancharlo, `setupModal` acepta callbacks `onOpen`/`onClose`.
+// It does NOT reset forms or view state; hook that via onOpen/onClose.
 
-// Markup del modal. `children` es el HTML interior (form, lista, lo que sea) y
-// va tal cual: quien llame es responsable de escapar los datos que meta ahi
-// (mismo contrato que el resto de components/ que reciben markup).
-//
-// `size` mapea al max-width del panel; por defecto `md`, que es el que usan los
-// tres modales existentes.
+// Modal markup. children is injected as-is: the caller must escape its data.
+// size maps to the panel max-width.
 export const modalComponent = ({ id, title, children = "", size = "md", panelClass = "" }) => {
   const maxWidth = { sm: "max-w-sm", md: "max-w-md", lg: "max-w-lg", xl: "max-w-2xl" }[size] || "max-w-md";
 
@@ -33,29 +22,24 @@ export const modalComponent = ({ id, title, children = "", size = "md", panelCla
   `;
 };
 
-// Conecta abrir/cerrar sobre el markup de `modalComponent`. Devuelve
-// { open, close } y expone `titleEl` por si la vista cambia el titulo entre
-// "Crear"/"Editar" (como hacen periods y categories).
-//
-// `onOpen(triggerEl)` / `onClose()` son los enganches para el estado propio de
-// la vista (poblar campos, form.reset(), limpiar seleccion). Se ejecutan dentro
-// del ciclo de animacion, en el mismo punto donde los tres modales originales
-// lo hacian.
+// Wires open/close over modalComponent markup. Exposes titleEl for views that
+// swap the title between create/edit, and onOpen/onClose hooks for their own
+// state (populate fields, form.reset(), clear selection).
 export const setupModal = (id, { onOpen, onClose } = {}) => {
   const modal = document.getElementById(id);
   if (!modal) return { open: () => {}, close: () => {}, modal: null, titleEl: null };
 
   const titleEl = document.getElementById(`${id}-title`);
-  // `close` se referencia dentro de `modalA11y` (para el Esc) antes de estar
-  // definida, por eso el wrapper en flecha: se resuelve en tiempo de llamada.
+  // close is referenced before it is defined, hence the arrow wrapper: it
+  // resolves at call time.
   const a11y = setupModalA11y(modal, () => close());
 
   const open = (triggerEl) => {
     modal.classList.remove("hidden");
     a11y.onOpen(triggerEl);
     onOpen?.(triggerEl);
-    // 10ms: deja que el navegador pinte el estado inicial (hidden->flex,
-    // opacity-0, scale-95) antes de transicionar, si no la animacion no corre.
+    // 10ms: let the browser paint the initial state before transitioning,
+    // otherwise the animation does not run.
     setTimeout(() => {
       modal.classList.remove("opacity-0");
       modal.firstElementChild.classList.remove("scale-95");
@@ -65,8 +49,7 @@ export const setupModal = (id, { onOpen, onClose } = {}) => {
   const close = () => {
     modal.classList.add("opacity-0");
     modal.firstElementChild.classList.add("scale-95");
-    // 300ms: coincide con `duration-300` de la transicion; recien ahi se
-    // oculta del todo y se limpia el estado de la vista.
+    // 300ms: matches duration-300; only then hide it and clear view state.
     setTimeout(() => {
       modal.classList.add("hidden");
       onClose?.();

@@ -9,14 +9,12 @@ import { showToast } from "../../components/alerts";
 import { renderRoute } from "../../router/router";
 import { z } from "zod";
 
-// Unica fuente de verdad de "pregunta obligatoria" (barra de progreso,
-// answerSchema e insignia "Opcional"): escala y si/no alimentan el ICP; el
-// texto abierto no.
+// Single source of truth for "required question" (progress bar, answerSchema,
+// "Opcional" badge): scale and yes/no feed the ICP, open text does not.
 const REQUIRED_TYPES = new Set(["scale", "scale_1_5", "yes_no"]);
 const isRequired = (inputType) => REQUIRED_TYPES.has(inputType);
 
-// La validacion vive aca en vez de un if/else imperativo por cada pregunta --
-// mas facil de leer que "que hace falta para poder enviar" de un vistazo.
+// Schema instead of per-question if/else: what blocks submit is visible at a glance.
 const answerSchema = z.object({
   question_id: z.number(),
   type: z.enum(["scale", "scale_1_5", "yes_no", "open_text", "text"]),
@@ -38,22 +36,20 @@ let allUsers = [];
 let activePeriod = null;
 let currentForm = null;
 
-// Iniciales para el avatar (hasta dos palabras). Evita traer imagenes: el
-// backend no tiene fotos de perfil.
+// Avatar initials (up to two words). No images: the backend has no profile photos.
 const getInitials = (name = "") =>
   name.split(" ").filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase() || "?";
 
 const roleLabel = (role) => (role === "team_leader" ? "Team Leader" : "Tutor");
 
-// Mismo criterio de color que las tarjetas de /evaluables (azul TL, morado
-// tutor), para que el coder reconozca el rol de un vistazo entre las dos vistas.
+// Same role colors as the /evaluables cards (blue TL, purple tutor), so the role
+// reads the same across both views.
 const roleBadge = (role) =>
   role === "team_leader"
     ? `<span class="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-600 dark:bg-blue-950/20 dark:text-blue-400">Team Leader</span>`
     : `<span class="rounded-full bg-purple-50 px-2.5 py-0.5 text-xs font-semibold text-purple-600 dark:bg-purple-950/20 dark:text-purple-400">Tutor</span>`;
 
-// Tarjeta compacta del modal de seleccion. Mas pequena que la de /evaluables
-// (sin insignia de estado ni boton propio): la tarjeta entera es el boton.
+// Compact card for the selection modal: the whole card is the button.
 const compactCard = (user, role) => `
   <button type="button" data-user-id="${user.id}" data-role="${role}"
     class="flex items-center gap-3 rounded-2xl border border-[var(--border-main)] bg-[var(--bg-base)] p-3 text-left transition-all hover:border-[var(--brand-hover)] hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--brand-hover)]">
@@ -92,16 +88,15 @@ export const renderEvaluate = () => `
     <form id="evaluate-form" class="mt-8 grid gap-6">
       <section class="rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-8 shadow-sm">
 
-        <!-- Tarjeta de contexto: a quien se esta evaluando. La rellena
-             renderContextCard() cuando hay seleccion; vacia mientras no la hay. -->
+        <!-- Context card: who is being evaluated. Filled by renderContextCard(). -->
         <div id="evaluatee-context" class="mb-8 empty:mb-0"></div>
 
         <div id="questions-container" class="grid gap-8"></div>
       </section>
 
-      <!-- Ocultos hasta que haya evaluado elegido (los muestra loadForm):
-           visibles de arranque asomaban por detras del modal de seleccion.
-           OJO: sin backticks aqui, este comentario vive en un template literal. -->
+      <!-- Hidden until an evaluatee is chosen (loadForm reveals them); otherwise they
+           peek behind the selection modal.
+           WARNING: never use backticks here, this comment lives in a template literal. -->
       <section id="anonymous-section" class="hidden flex flex-col sm:flex-row sm:items-center gap-4 rounded-[2rem] border border-[var(--border-main)] bg-[var(--bg-panel)] p-6 shadow-sm">
         <label class="relative inline-flex cursor-pointer items-center">
           <input type="checkbox" id="is-anonymous" name="anonymous" class="peer sr-only" aria-describedby="anon-help" />
@@ -158,8 +153,8 @@ export const setupEvaluate = async () => {
   const submitBtn = document.getElementById("submit-btn");
   const draftBtn = document.getElementById("draft-btn");
 
-  // La seleccion NO vive en el DOM: un nodo recreado se leia huerfano y fallaba
-  // en silencio. Aqui es estado propio: { id, name, email, role } o null.
+  // Selection is local state, not the DOM: a re-created node read stale and failed
+  // silently. Shape: { id, name, email, role } or null.
   let selection = null;
   const draftKey = () => `evaluation_draft_${currentUser.id}_${selection?.id || ""}`;
 
@@ -175,11 +170,10 @@ export const setupEvaluate = async () => {
 
   const currentUser = authService.getSession();
 
-  // Purga el borrador corrupto de clave con sufijo VACIO (mezclaba los de todas
-  // las personas). No se migra: no se puede atribuir a nadie con certeza.
+  // Drop the corrupt draft keyed with an EMPTY suffix: it mixed every evaluatee
+  // and cannot be attributed to anyone, so it is not migrated.
   localStorage.removeItem(`evaluation_draft_${currentUser.id}_`);
 
-  // Lógica centralizada para auto-guardado
   let autosaveTimeout;
   const saveDraftLocally = () => {
     const answers = {};
@@ -197,7 +191,7 @@ export const setupEvaluate = async () => {
     };
     localStorage.setItem(draftKey(),  JSON.stringify(draft));
 
-    // Feedback visual
+    // Visual feedback
     const indicator = document.getElementById("autosave-indicator");
     if (indicator) {
       indicator.classList.remove("opacity-0");
@@ -208,18 +202,15 @@ export const setupEvaluate = async () => {
     }
   };
 
-  // Función para actualizar la barra de progreso
   const updateProgress = () => {
     const questionElements = qContainer.querySelectorAll("[data-question-id]");
     if (questionElements.length === 0) return;
 
-    // Solo cuenta obligatorias: incluir el texto abierto exigia un comentario
-    // que nadie pide para llegar al 100%.
+    // Required only: counting open text would demand a comment nobody asks for to hit 100%.
     const requiredQuestions = Array.from(questionElements).filter(el => isRequired(el.dataset.inputType));
 
     if (requiredQuestions.length === 0) {
-      // Formulario solo de texto: nada obligatorio que medir, se oculta la
-      // barra en vez de mostrar NaN%.
+      // Text-only form: nothing required to measure, hide the bar instead of NaN%.
       progressContainer.classList.add("hidden");
       saveDraftLocally();
       return;
@@ -235,17 +226,16 @@ export const setupEvaluate = async () => {
     progressText.textContent = `${answered} de ${requiredQuestions.length} respondidas`;
     progressPercent.textContent = `${percentage}%`;
 
-    // Disparar auto-guardado cada vez que cambia el progreso
     saveDraftLocally();
   };
 
-  // Evaluaciones ya enviadas. Se cargan de entrada para poder decir "ya
-  // completaste todo" en el primer render, sin probar rol por rol.
+  // Already submitted evaluations, loaded upfront so the first render can say
+  // "all done" without probing role by role.
   let myEvaluations = [];
 
   try {
-    // /evaluables (no /users): devuelve solo Tutores y Team Leaders que ESTE
-    // coder puede evaluar, ya filtrados por clan en el servidor.
+    // /evaluables (not /users): only who THIS coder may evaluate, clan-filtered
+    // on the server.
     const [evaluatees, periods, previousEvaluations] = await Promise.all([
       evaluablesService.get(currentUser.id),
       periodService.get(),
@@ -264,8 +254,8 @@ export const setupEvaluate = async () => {
     console.error(err);
   }
 
-  // Personas que le faltan al coder en el periodo activo, SIN mirar el rol: es
-  // lo que distingue "ya terminaste todo" de un aviso parcial por rol.
+  // People still pending in the active period, role-agnostic: that is what tells
+  // "all done" apart from a per-role notice.
   const pendingInPeriod = () => {
     if (!activePeriod) return [];
     const alreadyEvaluated = myEvaluations
@@ -274,8 +264,7 @@ export const setupEvaluate = async () => {
     return allUsers.filter(u => u.id !== currentUser.id && !alreadyEvaluated.includes(String(u.id)));
   };
 
-  // Con todo completado se ocultan envio anonimo y botones: no hay evaluacion
-  // que guardar ni enviar.
+  // Everything done: hide the anonymous toggle and the buttons, nothing to send.
   const showAllDoneState = () => {
     document.getElementById('anonymous-section')?.classList.add('hidden');
     document.getElementById('wizard-buttons')?.classList.add('hidden');
@@ -293,12 +282,11 @@ export const setupEvaluate = async () => {
       </div>`;
   };
 
-  // uq_submission_once es (evaluador, evaluado, periodo) sin el rol, asi que
-  // basta UNA tarjeta por persona. Prioriza team_leader, igual que /evaluables.
+  // uq_submission_once ignores role: one card per person. team_leader wins on
+  // dual-role users, same as /evaluables.
   const deriveRole = (user) => (user.roles?.includes("team_leader") ? "team_leader" : "tutor");
 
-  // Tarjeta de contexto sobre el formulario: a quien se esta evaluando. El boton
-  // "Cambiar" reabre el modal de seleccion.
+  // Context card above the form: who is being evaluated. "Cambiar" reopens the modal.
   const renderContextCard = () => {
     if (!contextCard) return;
     if (!selection) { contextCard.innerHTML = ""; return; }
@@ -321,8 +309,7 @@ export const setupEvaluate = async () => {
     document.getElementById("evaluatee-change")?.addEventListener("click", (e) => openSelectionModal(e.currentTarget));
   };
 
-  // Trae el formulario del rol y lo pinta. Aislado de la seleccion para que
-  // tanto la eleccion en el modal como la preseleccion por URL lo reutilicen.
+  // Loads and renders the role form; shared by the modal choice and the URL preselection.
   const loadForm = async (role) => {
     currentForm = null;
     document.getElementById("anonymous-section")?.classList.remove("hidden");
@@ -341,7 +328,7 @@ export const setupEvaluate = async () => {
       updateProgress();
       loadDraft(role);
     } catch (err) {
-      // 404 = no hay formulario activo para ese rol (ver contrato de /forms).
+      // 404 = no active form for that role (see the /forms contract).
       if (err.status === 404) {
         document.getElementById("anonymous-section")?.classList.add("hidden");
         document.getElementById("wizard-buttons")?.classList.add("hidden");
@@ -359,8 +346,8 @@ export const setupEvaluate = async () => {
     }
   };
 
-  // Punto unico de seleccion. `selection` se fija ANTES de cerrar el modal:
-  // si no, su onClose lo toma por un cierre sin eleccion y navega a /evaluables.
+  // Single selection point. selection is set BEFORE closing the modal, or onClose
+  // reads it as a cancel and navigates to /evaluables.
   const selectEvaluatee = async (user, role) => {
     selection = { id: user.id, name: user.name, email: user.email, role };
     renderContextCard();
@@ -384,8 +371,8 @@ export const setupEvaluate = async () => {
     selectionModal.open(triggerEl);
   };
 
-  // Cerrar sin seleccion (Esc/Cancelar) saca al coder de la vista: un formulario
-  // sin destinatario deja la pantalla muerta. Con seleccion previa, no se toca.
+  // Closing with no selection (Esc/Cancel) leaves the view: a targetless form is
+  // a dead screen. With a previous selection, nothing happens.
   const selectionModal = setupModal("evaluatee-modal", {
     onClose: () => {
       if (!selection) {
@@ -395,8 +382,8 @@ export const setupEvaluate = async () => {
     },
   });
 
-  // Delegado en el contenedor: sobrevive a los re-render de renderModalList.
-  // closest() porque el click puede caer en el avatar o el nombre.
+  // Delegated on the container: survives renderModalList re-renders. closest()
+  // because the click may land on the avatar or the name.
   document.getElementById("evaluatee-modal-list")?.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-user-id]");
     if (!btn) return;
@@ -407,8 +394,8 @@ export const setupEvaluate = async () => {
   document.getElementById("evaluatee-modal-cancel")?.addEventListener("click", () => selectionModal.close());
 
 
-  // La entrada a la vista NO va aqui: dependeria de `renderQuestions`, un
-  // `const` declarado mas abajo (TDZ). Se ejecuta al final, ver enterView().
+  // View entry does NOT go here: it needs renderQuestions, a const declared below
+  // and therefore not hoisted (TDZ). It runs at the end, see enterView().
 
 
   let currentStep = 0;
@@ -472,7 +459,6 @@ export const setupEvaluate = async () => {
       const pageDiv = document.createElement("div");
       pageDiv.className = "wizard-page hidden";
 
-      // Para mostrar la categoria
       let currentCategory = null;
 
       pageQuestions.forEach(q => {
@@ -493,8 +479,8 @@ export const setupEvaluate = async () => {
         qLabel.className = "mb-4 text-base font-medium text-[var(--text-main)]";
         qLabel.textContent = q.text;
 
-        // Insignia "Opcional": sin ella, la barra marca 100% con un textarea
-        // vacio y parece un bug.
+        // "Opcional" badge: without it the bar reads 100% with an empty textarea
+        // and looks like a bug.
         if (!isRequired(q.input_type)) {
           const optionalBadge = document.createElement("span");
           optionalBadge.className = "ml-2 align-middle rounded-full bg-[var(--bg-base)] px-2 py-0.5 text-xs font-semibold text-[var(--text-muted)] border border-[var(--border-main)]";
@@ -593,7 +579,6 @@ export const setupEvaluate = async () => {
     updateWizardUI();
   };
 
-  // Lógica de guardado manual del borrador (mantiene el toast original)
   if (draftBtn) {
     draftBtn.addEventListener("click", () => {
       saveDraftLocally();
@@ -601,17 +586,18 @@ export const setupEvaluate = async () => {
     });
   }
 
-  // Lógica de carga de borrador
   const loadDraft = (currentRole) => {
     const savedDraft = localStorage.getItem(draftKey());
     if (savedDraft) {
       try {
         const draft = JSON.parse(savedDraft);
         if (draft.role === currentRole) {
-          // La persona no se restaura: draftKey ya esta namespaced por evaluado,
-          // asi que este borrador ES el de `selection`.
+          // The evaluatee is not restored: draftKey is already namespaced per
+          // evaluatee, so this draft belongs to the current selection.
           if (draft.anonymous !== undefined) anonCheck.checked = draft.anonymous;
 
+          // Selecting from code fires no 'change'/click event (only a real user
+          // click does), so dataset and styles are restored by hand here.
           qContainer.querySelectorAll("[data-question-id]").forEach(el => {
             const qId = el.dataset.questionId;
             const savedVal = draft.answers[qId];
@@ -668,7 +654,7 @@ export const setupEvaluate = async () => {
       return;
     }
 
-    // El backend no espera el campo "type" (solo se usaba para validar aca).
+    // The backend does not expect "type": it was only used to validate here.
     const answers = draftAnswers.map(({ type, ...rest }) => rest);
 
     const evaluationData = {
@@ -686,8 +672,8 @@ export const setupEvaluate = async () => {
     submitBtn.textContent = "Enviando...";
 
     try {
-      // Se espera al servidor antes de anunciar exito: la SPA no es la autoridad
-      // sobre periodo cerrado ni duplicados (regla 5).
+      // Wait for the server before claiming success: the SPA is not the authority
+      // on closed periods or duplicates (rule 5).
       await evaluationService.create(evaluationData);
 
       showToast("¡Evaluación enviada!", "success", "Tu feedback ha sido registrado exitosamente.");
@@ -698,8 +684,7 @@ export const setupEvaluate = async () => {
       submitBtn.disabled = false;
       submitBtn.textContent = "Enviar evaluación";
 
-      // El borrador nunca se borro, pero se reescribe con lo ultimo respondido
-      // por si el usuario cambio algo despues de cargarlo.
+      // The draft was never deleted, but rewrite it with the latest answers.
       localStorage.setItem(draftKey(),  JSON.stringify({
         role: selection.role,
         evaluatee: selection.id,
@@ -711,8 +696,8 @@ export const setupEvaluate = async () => {
       }));
 
       if (err.status === 409) {
-        // 409 cubre dos conflictos (duplicado o periodo inactivo) y solo los
-        // distingue `err.detail`, que puede venir vacio: siempre con fallback.
+        // 409 covers duplicate and inactive period; only err.detail tells them
+        // apart and it may be empty, so always keep a fallback.
         const reason = err.detail
           ? err.detail
           : "Puede que ya hayas evaluado a esta persona en este periodo, o que el periodo de evaluación ya no esté activo.";
@@ -724,12 +709,10 @@ export const setupEvaluate = async () => {
     }
   });
 
-  // --- ENTRADA A LA VISTA ---
-  // Va al final a proposito: usa `renderQuestions`, un `const` que no se
-  // hoistea -- invocarla desde arriba entraria en la TDZ (ReferenceError).
+  // --- VIEW ENTRY --- Last on purpose: it uses renderQuestions, a const that is
+  // not hoisted, so calling it earlier would throw a TDZ ReferenceError.
   const enterView = async () => {
-    // Sin periodo activo no hay nada que evaluar, y "completado" mentiria: no
-    // es que termino, es que no hay periodo (regla 5).
+    // No active period: nothing to evaluate, and "all done" would lie (rule 5).
     if (!activePeriod) {
       document.getElementById("anonymous-section")?.classList.add("hidden");
       document.getElementById("wizard-buttons")?.classList.add("hidden");
@@ -745,9 +728,8 @@ export const setupEvaluate = async () => {
     const preselectedRole = params.get("role");
     const preselectedId = params.get("evaluatee_id");
 
-    // Preseleccion valida solo si la persona existe entre los evaluables. El rol
-    // se toma de la URL si viene, o se deriva de la persona (defensa por si la
-    // URL trae uno incoherente con los roles del usuario).
+    // Preselection is valid only if the person is evaluable. Role comes from the
+    // URL, else it is derived (the URL may carry an inconsistent one).
     const preUser = preselectedId
       ? allUsers.find(u => String(u.id) === String(preselectedId))
       : null;
@@ -765,16 +747,15 @@ export const setupEvaluate = async () => {
       return;
     }
 
-    // Con un solo pendiente (lo habitual: un clan tiene un tutor y un TL) el
-    // modal pediria una decision que no existe. El boton "Cambiar" de la
-    // tarjeta de contexto lo reabre si el coder esperaba a otra persona.
+    // A single pending person: the modal would ask for a choice that does not
+    // exist. "Cambiar" on the context card reopens it if needed.
     if (pending.length === 1) {
       const onlyCandidate = pending[0];
       await selectEvaluatee(onlyCandidate, deriveRole(onlyCandidate));
       return;
     }
 
-    // Con dos o mas, la eleccion SI es real: el modal es la unica via.
+    // Two or more: the choice is real, the modal is the only way.
     openSelectionModal();
   };
 

@@ -89,14 +89,10 @@ export const sidebarComponent = (isActive) => {
     navConfig = [
       { href: "/dashboard", label: "Dashboard", icon: icons.home },
       { label: "Evaluaciones", icon: icons.evaluations, submenu: [
-        // /evaluables solo existe para el Coder (allowedRoles en routes.js), y
-        // este bloque lo comparten tutor y coder: al tutor se le ocultaría un
-        // enlace que el router le rechazaría igual.
-        //
-        // Se añade porque antes solo era alcanzable desde el banner del
-        // dashboard, y ese banner desaparece al completar todas las
-        // evaluaciones: el Coder se quedaba sin forma de volver salvo
-        // escribiendo la URL a mano.
+        // /evaluables is Coder-only (allowedRoles in routes.js) and this block
+        // is shared with tutor, so the link is hidden for tutors anyway.
+        // It is here because the dashboard banner was the only way in, and
+        // that banner disappears once every evaluation is done.
         ...(role === "coder"
           ? [{ href: "/evaluables", label: "Por Evaluar", icon: icons.list }]
           : []),

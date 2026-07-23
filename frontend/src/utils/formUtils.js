@@ -1,7 +1,5 @@
 /**
- * Marca visualmente un campo como inválido y muestra el mensaje de error.
- * Asume que el contenedor del error es el siguiente elemento hermano del input, 
- * o se pasa explícitamente el elemento de mensaje.
+ * Marks a field as invalid and shows its error message in errorElement.
  */
 export const showFieldError = (input, message, errorElement = null) => {
   if (!input) return;
@@ -17,7 +15,7 @@ export const showFieldError = (input, message, errorElement = null) => {
 };
 
 /**
- * Limpia el estado de error de un input.
+ * Clears the error state of an input.
  */
 export const clearFieldError = (input, errorElement = null) => {
   if (!input) return;
@@ -48,7 +46,7 @@ export const validateSync = (input, errorElement, schemaOrRules) => {
       return false;
     }
   } else {
-    // Legacy rules array
+    // Modo heredado: arreglo de reglas de validación.
     for (const rule of schemaOrRules) {
       if (rule.validate(inputValue)) {
         showFieldError(input, rule.errorMessage, errorElement);
@@ -72,26 +70,23 @@ export const createDebouncedValidator = (input, errorElement, schemaOrRules, del
 };
 
 /**
- * Guarda el markup original de cada botón mientras está en estado de carga.
+ * Keeps each button original markup while it is in the loading state.
  *
- * Por qué un WeakMap y no un `data-` attribute: el contenido de estos botones es
- * HTML (un `<svg>` + texto), y serializarlo dentro de un atributo obliga a
- * escaparlo/desescaparlo a mano. Además el router hace `app.innerHTML = ...` en
- * cada navegación: los botones viejos quedan sin referencias y el WeakMap los
- * suelta solo, sin fugas ni limpieza manual.
+ * A WeakMap and not a data- attribute: the content is HTML (svg + text), which
+ * an attribute would force us to escape by hand, and the router replaces the
+ * whole DOM on every navigation, so old buttons are released automatically.
  */
 const originalButtonMarkup = new WeakMap();
 
 /**
- * Gestiona el estado visual de carga de un botón.
+ * Handles the visual loading state of a button.
  *
- * La rama de carga reemplaza el contenido por un spinner (`innerHTML`), así que
- * el reseteo tiene que restaurar **markup**, no texto plano: los botones del
- * proyecto llevan `<svg>` + texto y un `textContent = originalText` les borraba
- * el icono para siempre tras el primer "Guardando...".
+ * The loading branch swaps the content for a spinner via innerHTML, so the
+ * reset must restore markup, not plain text: these buttons carry an svg icon
+ * that a textContent reset would wipe out for good.
  *
- * `originalText` se conserva como fallback (firma intacta) para el caso en que
- * se pida el reseteo sin que este helper haya puesto antes el estado de carga.
+ * originalText stays as a fallback for resets that never went through the
+ * loading branch.
  */
 export const setButtonLoadingState = (button, isLoading, loadingText = "Guardando...", originalText = "Guardar") => {
   if (!button) return
@@ -99,8 +94,8 @@ export const setButtonLoadingState = (button, isLoading, loadingText = "Guardand
   button.disabled = isLoading
 
   if (isLoading) {
-    // Solo la PRIMERA entrada en carga guarda el markup: si ya hay uno guardado,
-    // lo que está en el botón ahora es el spinner, no el contenido original.
+    // Only the FIRST entry into loading saves the markup: if one is already
+    // stored, the button now holds the spinner, not the original content.
     if (!originalButtonMarkup.has(button)) {
       originalButtonMarkup.set(button, button.innerHTML)
     }
@@ -122,7 +117,7 @@ export const setButtonLoadingState = (button, isLoading, loadingText = "Guardand
       button.innerHTML = savedMarkup
       originalButtonMarkup.delete(button)
     } else {
-      // Nunca pasó por la rama de carga: comportamiento histórico.
+      // Never went through the loading branch: legacy behaviour.
       button.textContent = originalText
     }
   }

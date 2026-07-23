@@ -1,12 +1,12 @@
 import { request } from './api.service.js'
 
-// Tutores y Team Leaders que ESTE evaluador puede evaluar. Sin `evaluator_id`
-// el backend devuelve la lista sin filtrar y la UI ofrece gente que luego
-// POST /evaluations rechaza con 403.
+// Tutors and Team Leaders THIS evaluator may evaluate. Without evaluator_id
+// the backend returns the list unfiltered and the UI offers people that
+// POST /evaluations later rejects with 403.
 //
-// El filtro por clan lo aplica el SERVIDOR (can_evaluate_by_clan), no el
-// cliente: un Team Leader tiene `clan_id = NULL` (vive en team_leader_clans),
-// asi que comparar clan_id en el front los deja fuera a todos.
+// The clan filter is applied by the SERVER (can_evaluate_by_clan), not the
+// client: a Team Leader has clan_id = NULL (their clans live in
+// team_leader_clans), so comparing clan_id in the front would exclude them all.
 const get = async (evaluatorId) => {
   const query = evaluatorId ? `?evaluator_id=${encodeURIComponent(evaluatorId)}` : ''
   return await request(`/evaluables${query}`)
